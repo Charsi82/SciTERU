@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>
+      Download Scintilla and SciTE
+    </title>
+  </head>
+  <body bgcolor="#FFFFFF" text="#000000">
+    <table bgcolor="#000000" width="100%" cellspacing="0" cellpadding="0" border="0">
+      <tr>
+        <td>
+          <img src="SciTEIco.png" border="3" height="64" width="64" alt="Scintilla icon" />
+        </td>
+        <td>
+          <a href="index.html" style="color:white;text-decoration:none"><font size="5">
+	  Добавить лексер в Scintilla и SciTE</font></a>
+        </td>
+      </tr>
+    </table>
+    <h2>
+       Добавление лексера.
+    </h2>
+     <p>Процесс добавления нового лексера как в Scintilla, так и в SciTE довольно долгий. Вот мой ответ на вопрос, как добавить лексер для файлов Apache CONF в SciTE. Дополнительная информация о написании кода лексера (этапы 4 и 5) содержится в документации по Scintilla.</p>
+<p>Не беспокойтесь о шагах, которые предназначены для конфигураций, которые вам не нужны. Используйте все 6 make-файлов - я исправлю их позже, если вы хотите
+внести лексер.</p>
+    <ol>
+<li>
+В файл scintilla/include/Scintilla.iface добавьте ID для лексера:<br>
+val SCLEX_CONF=17
+</li>
+<li>
+И идентификаторы каких-нибудь лексических классов:<br>
+val SCE_CONF_DEFAULT=0<br>
+val SCE_CONF_COMMENT=1
+</li>
+<li>
+В папке scintilla/scripts запустите скрипт HFacer.py для перестроения файла
+SciLexer.h. Аналогично (если вы не желаете запускать Python скрипт)
+просто добавьте эти значения в SciLexer.h как #defines и я добавлю их в Scintilla.iface.
+</li>
+<li>
+В файле scintilla/src/LexOthers.cxx напишите функцию ColouriseConfDoc
+подобную другим, навроде ColouriseLatexDoc.<br>
+static void ColouriseConfDoc (unsigned int startPos, int length, int
+initStyle, WordList *[], Accessor &amp;styler) {
+</li>
+<li>
+В конце файла ассоциируйте ID лексера и его имя с помощью функции:<br>
+LexerModule lmConf(SCLEX_CONF, ColouriseConfDoc, "conf");
+</li>
+<li>
+Если это сложный лексер, то лучше разместить его в отдельном файле, в
+в этом случае клонируйте один из текущих файлов.
+В каталоге scite/scripts запустите RegenerateSource.py, чтобы добавить новый
+lexer к каждому make-файлу.
+</li>
+<li>
+В scite/src/others.properties добавьте запись, чтобы ассоциировать
+расширение файла с лексером:<br>
+lexer.*.conf=conf<br>
+    Если вместо добавления в LexOthers был создан новый файл лексера, то
+новый файл свойств должен быть создан путем клонирования scite/src/others.properties
+и изменение этого файла в следующих шагах.
+</li>
+<li>
+Настройка стилей:<br>
+# Default<br>
+style.conf.0=fore:#FF0000,bold<br>
+# Comment<br>
+style.conf.1=fore:#007F7F,$(font.comment)<br>
+</li>
+<li>
+Для *.conf файлов в scite/src/others.properties должен быть добавлен фильтр:
+filter.conf=Configuration (.conf)|*.conf|
+</li>
+<li>
+В scite/src/SciTEGlobal.properties добавьте $(filter.conf) к определению свойства open.filter.
+</li>
+<li>
+Чтобы добавить этот язык в меню Подсветка в SciTE, добавьте запись в свойство menu.language - свойство, включающее название языка и наиболее часто используемое расширение файла для этого.
+</li>
+<li>
+Постройте и Scintilla и SciTE.
+</li>
+<li>
+Делитесь и наслаждайтесь.
+</li>
+</ol>
+<p>
+Для получения более подробной информации о построении лексеров см.
+<a href ="http://www.scintilla.org/ScintillaDoc.html#BuildingScintilla">
+инструкции в документации Scintilla</a>.
+</p>
+  </body>
+</html>
+

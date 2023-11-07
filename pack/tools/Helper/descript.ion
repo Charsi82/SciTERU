@@ -1,0 +1,14 @@
+Example.js пример и описание всех доступных методов SciTE Helper
+Example.vbs пример и описание всех доступных методов SciTE Helper
+SciTE.dll SciTE Helper
+Setup.vbs Install and Remove Register SciTE Helper
+SciTE.Helper.html Documentation
+SciTE.Helper_rus.html Документация
+descript.ion В этом файле хранятся комментарии
+
+gen_python_3_api.py
+Скрипт генерации python3.api и python3_keywords.properties
+Использование: копируем его в папку с python.exe и запускаем.
+В ней же забираем сформированные скриптом файлы и копируем
+python3.api в api\python3.api
+python3_keywords.properties в languages\python3_keywords.properties

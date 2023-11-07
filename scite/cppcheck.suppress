@@ -1,0 +1,53 @@
+// File to suppress cppcheck warnings for files that will not be fixed.
+// Does not suppress warnings where an additional occurrence of the warning may be of interest.
+// Configured for cppcheck 2.11
+
+// These may be interesting but its not clear without examining each instance closely
+useStlAlgorithm
+
+// Coding style is to use assignments in constructor when there are many
+// members to initialize or the initialization is complex or has comments.
+useInitializationList
+
+// FilePath has a non-explicit constructor used for conversions
+noExplicitConstructor:scite/src/FilePath.h
+
+// Cppcheck wrongly flags check as always true
+knownConditionTrueFalse:scite/src/PropSetFile.cxx
+
+// Cppcheck wrongly assumes string_view::remove_prefix can not empty the view
+knownConditionTrueFalse:scite/src/Cookie.cxx
+knownConditionTrueFalse:scite/src/FilePath.cxx
+knownConditionTrueFalse:scite/src/PathMatch.cxx
+
+// cppcheck 2.11 can't find system headers on Win32.
+missingIncludeSystem
+
+// Windows and GTK define classes with the same name
+ctuOneDefinitionRuleViolation:scite/win32/Strips.h
+ctuOneDefinitionRuleViolation:scite/gtk/Widget.h
+ctuOneDefinitionRuleViolation:scite/gtk/Strips.h
+
+// This is an unusual case where a pointer inside a std::string is needed later in the code.
+variableScope:scite/src/SciTEBase.cxx
+
+// Accessing 0th element of string is OK. Only triggers on non-threaded runs.
+//ctuArrayIndex:scite/src/SciTEBuffers.cxx
+
+// Cppcheck seems to be assuming only first condition (start < length) can cause loop termination
+knownConditionTrueFalse:scite/src/SciTEIO.cxx
+
+// This code is using NULs inside strings to terminate early so fixing warning causes failure.
+stlcstrConstructor:scite/gtk/SciTEGTK.cxx
+
+// Changing events to const pointers changes signature and would require casts when hooking up
+constParameterCallback:scite/gtk/SciTEGTK.cxx
+constParameterPointer:scite/gtk/SciTEGTK.cxx
+constParameterCallback:scite/gtk/Widget.cxx
+constParameterCallback:scite/gtk/Strips.cxx
+
+// Physically but not logically const.
+constParameterReference:scite/gtk/Widget.cxx
+
+// Suppress everything in lua as that comes from the Lua distribution
+*:scite/lua/*

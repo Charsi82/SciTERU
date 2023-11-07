@@ -1,0 +1,70 @@
+#include <winver.h>
+
+00 ICON DISCARDABLE "ico\\new.ico"
+01 ICON DISCARDABLE "ico\\open.ico"
+02 ICON DISCARDABLE "ico\\save.ico"
+03 ICON DISCARDABLE "ico\\print.ico"
+04 ICON DISCARDABLE "ico\\cut.ico"
+05 ICON DISCARDABLE "ico\\copy.ico"
+06 ICON DISCARDABLE "ico\\paste.ico"
+07 ICON DISCARDABLE "ico\\clear.ico"
+08 ICON DISCARDABLE "ico\\undo.ico"
+09 ICON DISCARDABLE "ico\\redo.ico"
+10 ICON DISCARDABLE "ico\\find.ico"
+11 ICON DISCARDABLE "ico\\replase.ico"
+12 ICON DISCARDABLE "ico\\close.ico"
+13 ICON DISCARDABLE "ico\\macroplay.ico"
+14 ICON DISCARDABLE "ico\\macrostoprecord.ico"
+15 ICON DISCARDABLE "ico\\macrorecord.ico"
+16 ICON DISCARDABLE "ico\\go.ico"
+17 ICON DISCARDABLE "ico\\build.ico"
+18 ICON DISCARDABLE "ico\\compile.ico"
+19 ICON DISCARDABLE "ico\\vieweol.ico"
+20 ICON DISCARDABLE "ico\\saveas.ico"
+21 ICON DISCARDABLE "ico\\monofont.ico"
+22 ICON DISCARDABLE "ico\\readonly.ico"
+23 ICON DISCARDABLE "ico\\toggleoutput.ico"
+24 ICON DISCARDABLE "ico\\fullscreen.ico"
+25 ICON DISCARDABLE "ico\\help.ico"
+26 ICON DISCARDABLE "ico\\openglobalproperties.ico"
+27 ICON DISCARDABLE "ico\\openuserproperties.ico"
+28 ICON DISCARDABLE "ico\\openabbrevproperties.ico"
+29 ICON DISCARDABLE "ico\\wrap.ico"
+30 ICON DISCARDABLE "ico\\saveall.ico"
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,0
+ PRODUCTVERSION 1,0,0,0
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "Comments", "Toolbar Gnome - SciTE toolbar icons Lib\0"
+            VALUE "CompanyName", "SciTE-Ru\0"
+            VALUE "FileDescription", "Toolbar Gnome - SciTE toolbar icons Lib\0"
+            VALUE "FileVersion", "1.0\0"
+            VALUE "InternalName", "toolbar\0"
+            VALUE "LegalCopyright", "Copyright © Gnome\0"
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OriginalFilename", "toolbar.dll\0"
+            VALUE "PrivateBuild", "\0"
+            VALUE "ProductName", "Toolbar - SciTE toolbar icons Lib\0"
+            VALUE "ProductVersion", "1.0\0"
+            VALUE "SpecialBuild", "\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END

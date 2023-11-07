@@ -1,0 +1,98 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Исходные файлы">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Файлы заголовков">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Файлы ресурсов">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Исходные файлы\astyle">
+      <UniqueIdentifier>{e7e6e284-7360-4a30-902f-978dd2de051f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="src\shell.rc">
+      <Filter>Файлы ресурсов</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\ibox.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\luaargs.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\shell.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\astyle\ASBeautifier.cpp">
+      <Filter>Исходные файлы\astyle</Filter>
+    </ClCompile>
+    <ClCompile Include="src\astyle\ASEnhancer.cpp">
+      <Filter>Исходные файлы\astyle</Filter>
+    </ClCompile>
+    <ClCompile Include="src\astyle\ASFormatter.cpp">
+      <Filter>Исходные файлы\astyle</Filter>
+    </ClCompile>
+    <ClCompile Include="src\astyle\ASLocalizer.cpp">
+      <Filter>Исходные файлы\astyle</Filter>
+    </ClCompile>
+    <ClCompile Include="src\astyle\ASResource.cpp">
+      <Filter>Исходные файлы\astyle</Filter>
+    </ClCompile>
+    <ClCompile Include="src\astyle\astyle_main.cpp">
+      <Filter>Исходные файлы\astyle</Filter>
+    </ClCompile>
+    <ClCompile Include="src\sha2\sha-256.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\sha1\calc_sha1.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\sha512\sha512.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="src\sha1\sha1.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\luaargs.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="src\md5.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resource.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="src\astyle\ASLocalizer.h">
+      <Filter>Исходные файлы\astyle</Filter>
+    </ClInclude>
+    <ClInclude Include="src\astyle\astyle.h">
+      <Filter>Исходные файлы\astyle</Filter>
+    </ClInclude>
+    <ClInclude Include="src\astyle\astyle_main.h">
+      <Filter>Исходные файлы\astyle</Filter>
+    </ClInclude>
+    <ClInclude Include="src\sha2\sha-256.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="src\sha1\calc_sha1.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="src\sha512\sha512.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="src\sha1\sha1.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,106 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include <winres.h>
+#include "resource.h"
+/////////////////////////////////////////////////////////////////////////////
+// Русский (Россия) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_RUS)
+LANGUAGE LANG_RUSSIAN, SUBLANG_DEFAULT
+#pragma code_page(1251)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,5,0,0
+ PRODUCTVERSION 1,5,0,0
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "Comments", "Windows Shell Lua Lib for SciTE"
+            VALUE "CompanyName", "SciTE-Ru"
+            VALUE "FileDescription", "Windows Shell Lua Lib for SciTE"
+            VALUE "FileVersion", "1.5.1"
+            VALUE "InternalName", "shell"
+            VALUE "LegalCopyright", "Copyright © 2008-2023"
+            VALUE "OriginalFilename", "shell.dll"
+            VALUE "ProductName", "Shell - SciTE Lua Lib"
+            VALUE "ProductVersion", "1.5.1"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IBOX_DLG DIALOGEX 6, 5, 172, 73
+STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+FONT 8, "MS Sans Serif", 700, 0, 0xCC
+BEGIN
+    EDITTEXT        IDC_EDITTEXT,5,23,160,14,ES_AUTOHSCROLL | WS_CLIPSIBLINGS,WS_EX_CLIENTEDGE
+    DEFPUSHBUTTON   "Ok",IDOK,22,50,60,15,WS_CLIPSIBLINGS
+    PUSHBUTTON      "Cancel",IDCANCEL,89,50,60,15,WS_CLIPSIBLINGS
+    LTEXT           "",IDC_PROMPTTEXT,6,8,158,8,NOT WS_GROUP
+END
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+#endif    // Русский (Россия) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

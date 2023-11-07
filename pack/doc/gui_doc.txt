@@ -1,0 +1,294 @@
+***** описание дополнительного функционала gui.dll ***
+
+***** обозначения *****
+
+panel - панель\окно, к которому приаттачиваем элемент управления
+id -  уникальный идентификатор элемента управления
+idx - индекс строки/стоблца в списке
+caption - текст элемента управления
+itm - ссылка на хендлер объекта(lightuserdata)
+data - дополнительные произвольные данные(ссылка сохраняется в реестре Lua)
+colorfore, colorback -- цвет в формате '#RRGGBB'
+style - набор флагов, указывающий стиль отображения
+
+****** panel: ******
+
+panel:tooltip(id, "текст подсказки") -- установить подсказку для контрола с указанным id
+panel:on_command(function(id, state) end) -- установка обработчика событий для элементов на панели
+
+****** listbox ******
+
+local listbox = gui.listbox(id, is_sorted)
+panel:add(listbox, "top", 100)
+listbox:insert(idx, "caption", data) -- вставка строки 'caption' в позицию idx
+listbox:append("caption", data) -- вставка строки 'caption' в конец списка
+listbox:select(idx) -- выделить строку списка
+idx = listbox:select() -- получить индекс выделенной строки списка
+listbox:remove(idx) -- удалить строку с индексом idx
+size = listbox:count() -- количество строк в списке
+listbox:clear() -- очистить список (data удаляется из реестра)
+text = listbox:get_line_text(idx) -- получить текст строки с указанным индексом
+data = listbox:get_line_data(idx)-- получить данные строки с указанным индексом
+
+panel:on_command(function(fromId, state)
+if fromId==idx then--[[
+1 - clicked
+2 - db clicked
+4 - focused
+5 - unfocused
+]]
+if state==2 then
+	print("db clicked list on ",listbox:get_line_text(listbox:select()))
+end
+end
+end)
+
+***** listview *****
+
+local list = gui.list([false] [,true] [,false]) -- MultiColumn = false, SingleSelect = true, iconed = false
+list:set_list_colour(colorfore, colorback) -- set colors
+list:clear() -- очистка списка
+list:selected_count() -- количество выделенных строк
+list:add_item(text, data)
+list:add_item({text_column_1, ... ,text_column_k}, data) -- for MultiColumn
+list:autosize( idx ) -- автоподстройка ширины столбца idx
+idx = list:get_selected_item() -- номер выделенной строки
+data = list:get_item_data( idx ) -- данные, привязанные к строке idx
+list:set_theme(true) -- установка темы "explorer"
+list_ascii:on_double_click( function (row_idx, column_idx, text)
+	-- list db click event
+end)
+list:on_key(function(key)
+ -- key pressed when list focused
+end)
+list:context_menu {
+	'item1_caption|item1_action',
+	'item2_caption|item2_action',
+	}
+-- item_action - имя глобальной функции или IDM_* идентификатор события редактора
+
+***** treeview *****
+
+local tree = gui.tree([true]) -- haslines[true]
+tree:set_tree_colour(colorfore, colorback) -- set colors
+panel:add(tree, 'top', 150) -- 'align_type', width
+local itm = tree:add_item("item1", nil, 1) -- ("caption" [, parent_item = root][, icon_idx=-1][, sel_icon_idx=-1])
+
+local imgcnt = tree:set_iconlib(["toolbar\\cool.dll"][, small_size = true]) -- возвращает количество загруженных иконок
+tree:set_selected_item(itm) -- выделить узел
+tree:tree_get_item_text(itm) -- получить текст узла
+tree:tree_get_item_data(itm) -- получить данные узла
+-- установить обработчик веделения узла дерева
+tree:on_select(function(sel_item)
+-- 	print('selected item with text:', tree:tree_get_item_text(sel_item))
+end)
+-- установить обработчик дв. клика узла дерева
+tree:on_double_click(function(sel_item) end)
+-- установка контекстного меню для активной области дерева
+function tree_test_menu() print('test menu for tree') end
+tree:context_menu{"item1|tree_test_menu"}
+tree:set_tree_editable(bool) -- разрешает изменять имена узлов дерева
+tree:set_theme(true) -- установка темы "explorer"
+tree:tree_remove_item(item)
+tree:tree_set_insert_mode( item ) -- вставлять за указанным узлом
+tree:tree_set_insert_mode( 'first' ) -- вставлять первым
+tree:tree_set_insert_mode( 'last' ) -- вставлять последним
+tree:tree_set_insert_mode( 'root' ) -- вставлять в корень( по умолчанию )
+
+***** button  *****
+
+local btn = gui.button("caption", id)
+panel:add(btn, "none")
+btn:position(20, 20)
+btn:size(50, 30)
+
+-- установка обработки нажатия кнопки id
+panel:on_command(function(id) end)
+
+***** checkbox *****
+
+local chbox = gui.checkbox("caption", id, true) -- text, id, threestate
+panel:add(chbox, "none")
+chbox:position(140, 20)
+состояние: 0 - откл, 1 - вкл, для threestate 2 - неопределено
+state = chbox:check() -- получить состояние
+chbox:check( state ) -- установить состояние
+
+***** radiobutton *****
+
+local rbtn = gui.radiobutton("caption", id, true) -- text, id, autoradiobutton
+test_panel:add(rbtn, "none")
+rbtn:position(100, 60)
+
+***** label *****
+
+--[[ опции стилей label
+-- text alignment
+left   0
+center 1
+right  2
+
+-- markers
+#define SS_BLACKRECT        0x00000004
+#define SS_GRAYRECT         0x00000005
+#define SS_WHITERECT        0x00000006
+
+-- icon, bitmap
+#define SS_ICON             0x00000003L
+#define SS_BITMAP           0x0000000EL
+
+-- borders
+#define SS_BLACKFRAME       0x00000007
+#define SS_GRAYFRAME        0x00000008
+#define SS_WHITEFRAME       0x00000009
+#define SS_ETCHEDFRAME      0x00000012
+
+-- text with border
+#define SS_SUNKEN           0x00001000 
+]]
+
+local label = gui.label("caption", style)
+test_panel:add(label, "none")
+label:position(180, 60)
+
+label_icon = gui.label("ignored", 0x00000003)
+test_panel:add(label_icon, "none")
+label_icon:position(20, 155)
+label_icon:set_icon([[path\to\cool.ico]]) -- установка иконки из ico файла
+label_icon:set_icon([[path\to\cool.dll]], idx) -- установка иконки по индеску idx из ресурсов exe или dll
+label_icon:set_bitmap([[path\to\cool.bmp]]) -- установка изображения из файла
+
+***** trackbar *****
+
+--[[ опции стилей toolbar
+#define TBS_AUTOTICKS           0x0001
+#define TBS_VERT                0x0002
+#define TBS_HORZ                0x0000
+#define TBS_TOP                 0x0004
+#define TBS_BOTTOM              0x0000
+#define TBS_LEFT                0x0004
+#define TBS_RIGHT               0x0000
+#define TBS_BOTH                0x0008
+#define TBS_NOTICKS             0x0010
+#define TBS_ENABLESELRANGE      0x0020
+#define TBS_FIXEDLENGTH         0x0040
+#define TBS_NOTHUMB             0x0080
+#define TBS_TOOLTIPS            0x0100
+#define TBS_REVERSED            0x0200
+]]
+trbar = gui.trackbar(0x20 + 0x200, 77) -- style, id
+test_panel:add(trbar, "none")
+trbar:position(20, 90)
+trbar:size(250, 20)
+
+-- выделение требует указать стиль TBS_ENABLESELRANGE
+-- установка выделения
+trbar:select(30, 60)
+-- снять выделение
+trbar:sel_clear()
+-- установить диапазон (по умолчанию 0 .. 100)
+trbar:range(20, 80)
+-- установка обработчика события прокрутки трекбара
+panel:on_scroll( function(id, pos) print("scroll pos: " .. pos) end)
+
+***** tabbar *****
+
+tabs = gui.tabbar(parent [, miltiline = false])
+(miltiline not implemented yet)
+tabs:set_iconlib([[toolbar\cool.dll]]) -- загрузить иконки из файла, возвращает количество иконок
+tab_n = tabs:add_tab("caption", child_panel [, icon_id =-1])
+parent:client(tab_n) -- установка активной области панели child_panel, привязанной к tab_n.
+
+***** combobox *****
+
+local cbbox = gui.combobox( id )
+panel:add(cbbox, "top") -- align 'top' or 'bottom'
+cbbox:cb_append( 'text' [, data] ) -- добавить строку 'text' в конец списка
+cbbox:cb_cb_insert( idx, 'text' [,data]  ) -- вставить строку 'text' в позицию idx
+cbbox:cb_items_h(15) -- установить высоту элментов списка
+cbbox:cb_setcursel( id ) -- выбрать текст строки по номеру
+cbbox:cb_setcursel(-1) -- очистить текст
+id = cbbox:cb_getcursel() -- номер выбранной строки
+cbbox:get_text() -- получить выбранный текст
+cbbox:cb_getdata() -- получить данные, связанные с текущим элементом
+cbbox:cb_clear() -- очистить список
+panel:on_command(function(id, state)
+	if id==88 then -- combobox idx
+		if state == 1 then
+			-- update text event
+		end
+	end
+end)
+
+***** memo *****
+
+memo = gui.memo()
+
+***** editbox ****
+--[[ стили для editbox
+#define ES_LEFT             0x0000
+#define ES_CENTER           0x0001
+#define ES_RIGHT            0x0002
+#define ES_MULTILINE        0x0004
+#define ES_UPPERCASE        0x0008
+#define ES_LOWERCASE        0x0010
+#define ES_PASSWORD         0x0020
+#define ES_AUTOVSCROLL      0x0040
+#define ES_AUTOHSCROLL      0x0080
+#define ES_NOHIDESEL        0x0100
+#define ES_OEMCONVERT       0x0400
+#define ES_READONLY         0x0800
+#define ES_WANTRETURN       0x1000
+#define ES_NUMBER           0x2000
+]]
+editbox = gui.editbox( 'text', style[, id = -1] )
+pane:add(editbox, "none")
+editbox:position(190, 155)
+editbox:size(80,20)
+editbox:set_text("EditBox")
+
+***** updown *****
+сначала создаём окно для вывода значения, например - поле ввода
+local editbox = gui.editbox()
+--[[ опции стиля для updown
+#define UDS_WRAP                0x0001
+#define UDS_ALIGNRIGHT          0x0004
+#define UDS_ALIGNLEFT           0x0008
+#define UDS_AUTOBUDDY           0x0010
+#define UDS_ARROWKEYS           0x0020
+#define UDS_HORZ                0x0040
+#define UDS_NOTHOUSANDS         0x0080
+#define UDS_HOTTRACK            0x0100
+]]
+local updown = gui.updown( editbox, style ) --buddy_window, style
+!!позиция и размер вычисляются автоматически!!
+updown:updown_set_range(-50,50) -- установка диапазона
+updown:updown_set_current(7) -- установка текущего значения
+
+***** progressbar *****
+
+prog = gui.progress() vertical=false, hasborder=false, smooth=false, smoothrevers=false
+tab4:add(prog, "none")
+prog:position(20, 180)
+prog:size(250,10)
+prog:set_progress_pos( 40 ) -- установка текущего значения
+prog:go() -- увеличиваем прогресс
+
+***** ini_file *****
+
+поддержка работы с примитивными ini файлами (без возможности наследования секций и подключения других файлов)
+path - путь к файлу; in_cwd - true, если путь задан относительно текущей рабочей папки
+local ini = gui.ini_file(path [,in_cwd=false])		-- создаем объект для работы с файлом
+ini:set_section(section_name) 						-- устанавливаем текущую секцию
+section_name = ini:get_section() 					-- получаем текущую секцию
+local tbl = ini:get_keys() 							-- получаем список ключей в текущей секции
+local tbl = ini:get_sections()						-- получаем список секций в файле
+path = ini:get_path() 								-- получаем путь к текущему файлу
+ini:write_string(key, str_val) 						-- запись в текущую секцию
+ini:write_number(key, num_val) 						-- запись в текущую секцию
+str_val = ini:read_string(key [,def_srt_val = ""]) 	-- чтение значения по указанному ключу
+num_val = ini:read_number(key [,def_num_val = 0]) 	-- чтение значения по указанному ключу
+ini:remove_section(section_name) 					-- удаление указанной секции
+ini:remove_section() 								-- удаление текущей секции
+ini:remove_key(key_name) 							-- удаление ключа из текущей секции
+
