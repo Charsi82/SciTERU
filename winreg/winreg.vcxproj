@@ -19,11 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\lualib\lua\lua54.vcxproj">
-      <Project>{55158ed9-c103-4f39-b2fc-850eab57a470}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="src\l52util.c" />
     <ClCompile Include="src\luawin_dllerror.c" />
     <ClCompile Include="src\lua_int64.c" />
@@ -47,6 +42,11 @@
     <ClInclude Include="src\win_privileges.h" />
     <ClInclude Include="src\win_registry.h" />
     <ClInclude Include="src\win_trace.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\lualib\lua\lua54.vcxproj">
+      <Project>{55158ed9-c103-4f39-b2fc-850eab57a470}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

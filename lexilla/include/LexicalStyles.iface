@@ -510,15 +510,18 @@ val SCE_PROPS_SECTION=2
 val SCE_PROPS_ASSIGNMENT=3
 val SCE_PROPS_DEFVAL=4
 val SCE_PROPS_KEY=5
+
 #!-start-[PropsKeysSets]
 val SCE_PROPS_KEYSSET0=6
 val SCE_PROPS_KEYSSET1=7
 val SCE_PROPS_KEYSSET2=8
 val SCE_PROPS_KEYSSET3=9
 #!-end-[PropsKeysSets]
+
 #!-start-[PropsKeywords]
 val SCE_PROPS_KEYWORD=10
 #!-end-[PropsKeywords]
+
 # Lexical states for SCLEX_LATEX
 lex LaTeX=SCLEX_LATEX SCE_L_
 val SCE_L_DEFAULT=0
@@ -582,9 +585,11 @@ val SCE_ERR_TIDY=19
 val SCE_ERR_JAVA_STACK=20
 val SCE_ERR_VALUE=21
 val SCE_ERR_GCC_INCLUDED_FROM=22
+
 ##!-start-[FindResultListStyle]
 val SCE_ERR_FIND_VALUE=30
 ##!-end-[FindResultListStyle]
+
 val SCE_ERR_ESCSEQ=23
 val SCE_ERR_ESCSEQ_UNKNOWN=24
 val SCE_ERR_GCC_EXCERPT=25
@@ -616,11 +621,13 @@ val SCE_BAT_COMMAND=5
 val SCE_BAT_IDENTIFIER=6
 val SCE_BAT_OPERATOR=7
 val SCE_BAT_AFTER_LABEL=8
+
 ##!-start-[BatchLexerImprovement]
 val SCE_BAT_ENVIRONMENT=9
 val SCE_BAT_EXPANSION=10
 val SCE_BAT_CLABEL=11
 ##!-end-[BatchLexerImprovement]
+
 # Lexical states for SCLEX_TCMD
 lex TCMD=SCLEX_TCMD SCE_TCMD_
 val SCE_TCMD_DEFAULT=0

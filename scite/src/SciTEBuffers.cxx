@@ -1120,18 +1120,29 @@ SciTEBase::SaveResult SciTEBase::SaveAllBuffers(bool alwaysYes) {
 	for (BufferIndex i = 0; (i < buffers.lengthVisible) && (choice != SaveResult::cancelled); i++) {
 #ifdef RB_ONE
 		if (buffers.buffers[i].DocumentNotSaved()) { //!-change-[OpenNonExistent]
-#else
-		if (buffers.buffers[i].isDirty) {
-#endif
 			SetDocumentAt(i);
 			if (alwaysYes) {
 				if (!Save()) {
 					choice = SaveResult::cancelled;
 				}
-			} else {
+			}
+			else {
 				choice = SaveIfUnsure(false);
 			}
 		}
+#else
+		if (buffers.buffers[i].isDirty) {
+			SetDocumentAt(i);
+			if (alwaysYes) {
+				if (!Save()) {
+					choice = SaveResult::cancelled;
+				}
+			}
+			else {
+				choice = SaveIfUnsure(false);
+			}
+		}
+#endif
 	}
 	SetDocumentAt(currentBuffer);
 	return choice;
@@ -1143,12 +1154,15 @@ void SciTEBase::SaveTitledBuffers() {
 	for (BufferIndex i = 0; i < buffers.lengthVisible; i++) {
 #ifdef RB_ONE
 		if (buffers.buffers[i].DocumentNotSaved() && !buffers.buffers[i].file.IsUntitled()) {
-#else
-		if (buffers.buffers[i].isDirty && !buffers.buffers[i].file.IsUntitled()) {
-#endif // RB_ONE
 			SetDocumentAt(i);
 			Save();
 		}
+#else
+		if (buffers.buffers[i].isDirty && !buffers.buffers[i].file.IsUntitled()) {
+			SetDocumentAt(i);
+			Save();
+		}
+#endif // RB_ONE
 	}
 	SetDocumentAt(currentBuffer);
 }
@@ -1398,9 +1412,8 @@ void SciTEBase::SetFileStackMenu() {
 				GUI::gui_string sEntry;
 
 #if defined(_WIN32) || defined(GTK)
-				GUI::gui_string sPos = GUI::StringFromInteger((stackPos + 1) % 10);
-				GUI::gui_string sHotKey = GUI_TEXT("&") + sPos + GUI_TEXT(" ");
-				sEntry = sHotKey;
+				const GUI::gui_string sPos = GUI::StringFromInteger((stackPos + 1) % 10);
+				sEntry = GUI_TEXT("&") + sPos + GUI_TEXT(" ");
 #endif
 
 				const GUI::gui_string path = EscapeFilePath(
@@ -1526,7 +1539,7 @@ void SciTEBase::StackMenuPrev() {
 					rf = rfLast;
 					rfLast.Init();
 				} else {
-					rf = rfCurrent;
+					rf = std::move(rfCurrent);
 					break;
 				}
 			}

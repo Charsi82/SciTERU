@@ -370,6 +370,7 @@ FilePath SciTEWin::ChooseSaveName(const FilePath &directory, const char *title, 
 		ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR;
 		ofn.lpstrFilter = filesFilter;
 		ofn.lpstrInitialDir = directory.AsInternal();
+		ofn.lpstrDefExt = GUI_TEXT("");
 
 		dialogsOnScreen++;
 		if (::GetSaveFileNameW(&ofn)) {
@@ -1680,9 +1681,7 @@ BOOL SciTEWin::ParametersMessage(HWND hDlg, UINT message, WPARAM wParam) {
 			LocaliseDialog(hDlg);
 			wParameters = hDlg;
 			Dialog dlg(hDlg);
-
 			if (modalParameters) {
-
 				const GUI::gui_string sCommand = GUI::StringFromUTF8(parameterisedCommand);
 				dlg.SetItemText(IDCMD, sCommand);
 			}

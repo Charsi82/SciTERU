@@ -251,7 +251,7 @@ end
 function os_copy(source_path, dest_path)
 	local res, err = shell.fileCopy(source_path, dest_path)
 	-- if not res then print(err) end
---[[	source_path = source_path:from_utf8(0)
+	--[[	source_path = source_path:from_utf8(0)
 	dest_path = dest_path:from_utf8(0)
 	-- "библиотечная" функция
 	local function unwind_protect(thunk, cleanup)
@@ -281,19 +281,17 @@ function os_copy(source_path, dest_path)
 end
 
 function os_rename(old, new)
--- 	print('os.rename >>> ',os.rename(old:from_utf8(0), new:from_utf8(0)))
--- 	os.rename(old:from_utf8(0), new:from_utf8(0))
+	-- 	print('os.rename >>> ',os.rename(old:from_utf8(0), new:from_utf8(0)))
+	-- 	os.rename(old:from_utf8(0), new:from_utf8(0))
 	local res, err = shell.fileRename(old, new)
 	-- if not res then print(err) end
 end
 
-function os_move(from, to)
-	shell.fileMove(from, to)
-end
+function os_move(from, to) shell.fileMove(from, to) end
 
 function os_remove(filename, nonconfirm)
--- 	print('os.remove >>>',os.remove(filename:from_utf8(0)))
--- 	os.remove(filename:from_utf8(0))
+	-- 	print('os.remove >>>',os.remove(filename:from_utf8(0)))
+	-- 	os.remove(filename:from_utf8(0))
 	if nonconfirm == nil then nonconfirm = true end
 	local res, err = shell.fileDelete(filename, nonconfirm)
 	-- if not res then print(err) end
@@ -354,6 +352,7 @@ AddEventHandler("OnOpen", function()
 	string.lower = StringLower
 	string.upper = StringUpper
 	string.len = StringLen
+	string.trim = function(s) return string.match(s, '^%s*(.*%S)') or '' end
 	EditorInitMarkStyles()
 	SetMarginTypeN()
 	props["pane.accessible"] = '1'

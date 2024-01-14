@@ -6,6 +6,7 @@
 
 #include "SciTE_RB_defs.h"
 #include "SciTE.h"
+
 SciTE ICON SciBall.ico
 SciTEfile ICON "SciTE-file.ico" //!-add-[NewIcons]
 SciTEses ICON "SciTE-ses.ico" //!-add-[NewIcons]

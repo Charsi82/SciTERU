@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include <ctime>
+#include <cmath>
 #include <cerrno>
 #include <csignal>
 
@@ -198,6 +199,20 @@ struct SciTEItemFactoryEntry {
 	int callback_action;
 	const char *item_type;
 };
+
+SystemAppearance GetCurrentAppearance(GtkSettings *settings) noexcept {
+	SystemAppearance currentAppearance{};
+	gchar *themeName = nullptr;
+	g_object_get(settings, "gtk-theme-name", &themeName, nullptr);
+	currentAppearance.dark = g_str_has_suffix(themeName, "-dark");
+	currentAppearance.highContrast = g_str_has_prefix(themeName, "HighContrast");
+	if (g_strcmp0(themeName, "HighContrastInverse") == 0) {
+		currentAppearance.dark = true;
+	}
+	//fprintf(stderr, "Theme '%s' %d %d\n", themeName, currentAppearance.dark, currentAppearance.highContrast);
+	g_free(themeName);
+	return currentAppearance;
+}
 
 }
 
@@ -731,7 +746,7 @@ SciTEGTK::SciTEGTK(Extension *ext) : SciTEBase(ext) {
 	pathAbbreviations = GetAbbrevPropertiesFileName();
 
 	settings.reset(gtk_settings_get_default());
-	appearance = CurrentAppearance();
+	appearance = GetCurrentAppearance(settings.get());
 	g_signal_connect(settings.get(), "notify::gtk-theme-name", G_CALLBACK(ThemeSignal), this);
 
 	ReadGlobalPropFile();
@@ -3180,12 +3195,13 @@ gint SciTEGTK::Mouse(GdkEventButton *event) {
 				return FALSE;
 			}
 		}
+		const GUI::Point ptClient(static_cast<int>(std::lround(event->x)), static_cast<int>(std::lround(event->y)));
 		// Convert to screen
 		int ox = 0;
 		int oy = 0;
 		gdk_window_get_origin(WindowFromWidget(PWidget(*w)), &ox, &oy);
-		ContextMenu(*w, GUI::Point(static_cast<int>(event->x) + ox,
-		                     static_cast<int>(event->y) + oy), wSciTE);
+		const GUI::Point ptScreen(ptClient.x + ox, ptClient.y + oy);
+		ContextMenu(*w, ptScreen, ptClient, wSciTE);
 		//fprintf(stderr, "Menu source %s\n",
 		//	(menuSource == IDM_SRCWIN) ? "IDM_SRCWIN" : "IDM_RUNWIN");
 	} else {
@@ -3707,17 +3723,7 @@ void SciTEGTK::CreateMenu() {
 }
 
 SystemAppearance SciTEGTK::CurrentAppearance() const noexcept {
-	SystemAppearance currentAppearance{};
-	gchar *themeName = nullptr;
-	g_object_get(settings.get(), "gtk-theme-name", &themeName, nullptr);
-	currentAppearance.dark = g_str_has_suffix(themeName, "-dark");
-	currentAppearance.highContrast = g_str_has_prefix(themeName, "HighContrast");
-	if (g_strcmp0(themeName, "HighContrastInverse") == 0) {
-		currentAppearance.dark = true;
-	}
-	//fprintf(stderr, "Theme '%s' %d %d\n", themeName, currentAppearance.dark, currentAppearance.highContrast);
-	g_free(themeName);
-	return currentAppearance;
+	return GetCurrentAppearance(settings.get());
 }
 
 void SciTEGTK::CreateStrips(GtkWidget *boxMain) {

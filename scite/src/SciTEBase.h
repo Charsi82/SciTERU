@@ -249,7 +249,7 @@ class StyleAndWords {
 	int styleNumber = 0;
 	std::set<std::string> words;
 public:
-	StyleAndWords() noexcept;
+	StyleAndWords();
 	explicit StyleAndWords(const std::string &definition);
 	[[nodiscard]] bool IsEmpty() const noexcept;
 	[[nodiscard]] bool IsSingleChar() const noexcept;
@@ -427,9 +427,16 @@ protected:
 	GUI::Window wToolBar;
 	GUI::Window wStatusBar;
 	GUI::Window wTabBar;
-	
+
 #ifndef RB_ECM
 	GUI::Menu popup; //!-remove-[ExtendedContextMenu]
+#endif
+
+	SA::Position contextPosition = SA::InvalidPosition;
+
+#ifdef RB_ECM
+	// ContextMenu -> GenerateMenu
+	// bool allowDrop = false;
 #endif
 
 	bool tbVisible;
@@ -739,6 +746,7 @@ protected:
 	SelectedRange GetSelectedRange();
 	void SetSelection(SA::Position anchor, SA::Position currentPos);
 	std::string GetCTag(GUI::ScintillaWindow *pw);
+	static void DropSelectionAt(GUI::ScintillaWindow &win, SA::Position position);
 	virtual std::string GetRangeInUIEncoding(GUI::ScintillaWindow &win, SA::Span span);
 	static std::string GetLine(GUI::ScintillaWindow &win, SA::Line line);
 	void RangeExtend(GUI::ScintillaWindow &wCurrent, SA::Span &range,
@@ -934,13 +942,13 @@ protected:
 	//!-end-[ExtendedContextMenu]
 #endif // RB_ECM
 
-	void ContextMenu(GUI::ScintillaWindow &wSource, GUI::Point pt, GUI::Window wCmd);
-
 #ifdef RB_SUBMENU
 	//!-start-[SubMenu]
 	virtual MenuEx GetToolsMenu() = 0;
 	//!-end-[SubMenu]
 #endif // RB_SUBMENU
+
+	void ContextMenu(GUI::ScintillaWindow &wSource, GUI::Point pt, GUI::Point ptClient, GUI::Window wCmd);
 
 	void DeleteFileStackMenu();
 	void SetFileStackMenu();

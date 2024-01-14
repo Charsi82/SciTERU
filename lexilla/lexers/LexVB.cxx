@@ -83,11 +83,8 @@ static void ColouriseVBDoc(Sci_PositionU startPos, Sci_Position length, int init
 
 	StyleContext sc(startPos, length, initStyle, styler);
 
-#ifdef RB_LLWF
-	for (bool doing = sc.More(); doing; doing = sc.More(), sc.Forward()) { //!-change-[LexersLastWordFix]
-#else
 	for (; sc.More(); sc.Forward()) {
-#endif // RB_LLWF
+
 		if (sc.state == SCE_B_OPERATOR) {
 			sc.SetState(SCE_B_DEFAULT);
 		} else if (sc.state == SCE_B_IDENTIFIER) {
@@ -131,7 +128,6 @@ static void ColouriseVBDoc(Sci_PositionU startPos, Sci_Position length, int init
 						}
 						//!-end-[VBLexerImprovement]
 #endif // RB_VBLI
-
 					}	// Else, it is really an identifier...
 					sc.SetState(SCE_B_DEFAULT);
 				}

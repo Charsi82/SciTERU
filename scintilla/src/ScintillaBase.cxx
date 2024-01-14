@@ -463,7 +463,7 @@ void ScintillaBase::AutoCompleteCompleted(char ch, CompletionMethods completionM
 	if (endPos < firstPos)
 		return;
 
-#ifdef RB_ACMERGE
+#ifdef RB_ACMERGE1
 	Sci::Position shift = 0;
 	const size_t buffsize = pdoc->LineEndPosition(endPos) - endPos;
 	if (buffsize > 0)

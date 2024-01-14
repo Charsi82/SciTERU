@@ -2,13 +2,13 @@
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommand>$(SolutionDir)../../pack\$(TargetName)$(TargetExt)</LocalDebuggerCommand>
     <LocalDebuggerWorkingDirectory>$(SolutionDir)../../pack\</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerCommand>$(SolutionDir)../../pack\$(TargetName)$(TargetExt)</LocalDebuggerCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommand>$(SolutionDir)../../pack\$(TargetName)$(TargetExt)</LocalDebuggerCommand>
     <LocalDebuggerWorkingDirectory>$(SolutionDir)../../pack\</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerCommand>$(SolutionDir)../../pack\$(TargetName)$(TargetExt)</LocalDebuggerCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LocalDebuggerCommand>$(SolutionDir)../../pack\$(TargetName)$(TargetExt)</LocalDebuggerCommand>

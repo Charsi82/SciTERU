@@ -95,10 +95,25 @@ void SciTEWin::UpdateTabs(const std::vector<GUI::gui_string> &tabNames) {
 
 	// Avoiding drawing with WM_SETREDRAW here does not improve speed or flashing.
 
+	size_t tabDeleted = 0;
 	while (tabNames.size() < tabNamesCurrent.size()) {
 		// Remove extra tabs
 		TabCtrl_DeleteItem(HwndOf(wTabBar), tabChange);
 		tabNamesCurrent.erase(tabNamesCurrent.begin() + tabChange);
+		tabDeleted++;
+	}
+
+	// Dirty fix for bug #2347
+	if (tabDeleted > 0 && tabChange > 0 && tabChange == tabNames.size()) {
+		// Already deleted last tab, try to delete and insert the current last tab
+		TabCtrl_DeleteItem(HwndOf(wTabBar), tabChange - 1);
+
+		GUI::gui_string tabNameNext = tabNames.at(tabChange - 1);
+		TCITEMW tie {};
+		tie.mask = TCIF_TEXT | TCIF_IMAGE;
+		tie.iImage = -1;
+		tie.pszText = tabNameNext.data();
+		TabCtrl_InsertItem(HwndOf(wTabBar), tabChange - 1, &tie);
 	}
 
 	while (tabNames.size() > tabNamesCurrent.size()) {
@@ -628,10 +643,9 @@ void SciTEWin::DestroyMenuItem(int menuNumber, int itemID) {
 }
 
 #ifdef RB_UT //!-add-[user.toolbar]
-static void CheckToolbarButton(HWND wTools, int id, bool enable) {
-	if (wTools) {
-		::SendMessage(wTools, TB_CHECKBUTTON, id, (enable ? 1LL : 0LL)
-		/*SA::Internal::Platform::LongFromTwoShorts(static_cast<short>(enable ? TRUE : FALSE), 0)*/);
+namespace {
+	void CheckToolbarButton(HWND wTools, int id, int enable) {
+		::SendMessage(wTools, TB_CHECKBUTTON, id, enable);
 	}
 }
 #endif
@@ -643,7 +657,7 @@ void SciTEWin::CheckAMenuItem(int wIDCheckItem, bool val) {
 		CheckMenuItem(::GetMenu(MainHWND()), wIDCheckItem, MF_UNCHECKED | MF_BYCOMMAND);
 
 #ifdef RB_UT
-	CheckToolbarButton(reinterpret_cast<HWND>(wToolBar.GetID()), wIDCheckItem, val); //!-add-[user.toolbar]
+		CheckToolbarButton(HwndOf(wToolBar), wIDCheckItem, val); //!-add-[user.toolbar]
 #endif // RB_UT
 
 }
@@ -668,13 +682,14 @@ void SciTEWin::CheckMenus() {
 	//!-start-[user.toolbar]
 	// check user toolbar buttons status
 	if (props.GetInt("toolbar.visible") != 0) {
-		std::string fileNameForExtension = ExtensionFileName();
-		//for (int i = 0; i < toolbarUsersPressableButtons.GetSize(); i++) {
-		for (int i = 0; i < toolbarUsersPressableButtons.size(); i++) {
-			std::string prefix = "command.checked." + StdStringFromInteger(toolbarUsersPressableButtons[i] - IDM_TOOLS) + ".";
-			std::string val = props.GetNewExpandString(prefix, fileNameForExtension);
-			int ischecked = IntegerFromString(val, 0);
-			CheckToolbarButton(reinterpret_cast<HWND>(wToolBar.GetID()), toolbarUsersPressableButtons[i], ischecked);
+		if (HWND hToolBar = HwndOf(wToolBar)) {
+			const std::string fileNameForExtension = ExtensionFileName();
+			for (int i = 0; i < toolbarUsersPressableButtons.size(); i++) {
+				const std::string prefix = "command.checked." + StdStringFromInteger(toolbarUsersPressableButtons[i] - IDM_TOOLS) + ".";
+				const std::string val = props.GetNewExpandString(prefix, fileNameForExtension);
+				const int ischecked = IntegerFromString(val, 0);
+				CheckToolbarButton(hToolBar, toolbarUsersPressableButtons[i], ischecked);
+			}
 		}
 	}
 	//!-end-[user.toolbar]
@@ -1216,8 +1231,8 @@ struct BarButtonIn
 
 void SciTEWin::SetToolBar()
 {
-	HWND hwndToolBar = (HWND)wToolBar.GetID();
-	if (hwndToolBar == NULL) return;
+	HWND hwndToolBar = HwndOf(wToolBar);
+	if (!hwndToolBar) return;
 
 	ToolBarTips.clear();
 	toolbarUsersPressableButtons.clear();

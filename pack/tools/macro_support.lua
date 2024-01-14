@@ -92,7 +92,7 @@ function MacroPlay(name)
 end
 
 
-function OnMacro(cmd, msg) print('macro_cmd:', cmd, msg)
+function OnMacro(cmd, msg)
   if cmd == "macro:run" then
     if msg == "<clean list>" then
       MacroClearList()

@@ -388,14 +388,9 @@ void SciTEBase::OpenCurrentFile(const long long fileSize, bool suppressMessage, 
 
 		std::vector<char> data(blockSize);
 		size_t lenFile = fread(&data[0], 1, data.size(), fp);
-#ifdef RB_UTF8AC	
-		UniMode umCodingCookie = CodingCookieValue(std::string_view(data.data(), lenFile));
-#else
-		const UniMode umCodingCookie = CodingCookieValue(std::string_view(data.data(), lenFile));
-#endif
-
 #ifdef RB_UTF8AC
-		//!-start-[utf8.auto.check]
+		//!-start-[utf8.auto.check]	
+		UniMode umCodingCookie = CodingCookieValue(std::string_view(data.data(), lenFile));
 		if (umCodingCookie == UniMode::uni8Bit && check_utf8 == 2) {
 			if (Has_UTF8_Char((unsigned char*)&data[0], lenFile)) {
 				umCodingCookie = UniMode::cookie;
@@ -403,6 +398,8 @@ void SciTEBase::OpenCurrentFile(const long long fileSize, bool suppressMessage, 
 		}
 		Utf8_16_Read convert(umCodingCookie == UniMode::uni8Bit && check_utf8 == 1);
 		//!-end-[utf8.auto.check]
+#else
+		const UniMode umCodingCookie = CodingCookieValue(std::string_view(data.data(), lenFile));
 #endif // RB_UTF8AC
 
 		while (lenFile > 0) {
@@ -1466,10 +1463,8 @@ void SciTEBase::SaveAs(const GUI::gui_char *file, bool fixCase) {
 	Redraw();
 	SetWindowName();
 	BuffersMenu();
-#ifndef RB_EVINV1 // !-remove-[EventInvalid]
 	if (extender)
 		extender->OnSave(filePath.AsUTF8().c_str());
-#endif
 }
 
 bool SciTEBase::SaveIfNotOpen(const FilePath &destFile, bool fixCase) {

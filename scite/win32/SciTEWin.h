@@ -149,7 +149,7 @@ struct Band {
 	int height;
 	bool expands;
 	GUI::Window win;
-	Band(bool visible_, int height_, bool expands_, GUI::Window win_) noexcept :
+	Band(bool visible_, int height_, bool expands_, const GUI::Window &win_) noexcept :
 		visible(visible_),
 		height(height_),
 		expands(expands_),
@@ -170,7 +170,7 @@ class SciTEWin : public SciTEBase {
 protected:
 #ifdef RB_UT
 	//!-start-[user.toolbar]
-	void SetToolBar();
+	void SetToolBar() override;
 	std::map<uptr_t, std::string> ToolBarTips;
 	HBITMAP hToolbarBitmap;
 	UINT_PTR oldToolbarBitmapID;
@@ -484,7 +484,7 @@ constexpr int ControlIDOfWParam(WPARAM wParam) noexcept {
 	return wParam & 0xffff;
 }
 
-inline HWND HwndOf(GUI::Window w) noexcept {
+inline HWND HwndOf(const GUI::Window &w) noexcept {
 	return static_cast<HWND>(w.GetID());
 }
 

@@ -19,15 +19,15 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\lualib\lua\lua54.vcxproj">
-      <Project>{55158ed9-c103-4f39-b2fc-850eab57a470}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="src\lfs.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\lfs.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\lualib\lua\lua54.vcxproj">
+      <Project>{55158ed9-c103-4f39-b2fc-850eab57a470}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

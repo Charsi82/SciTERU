@@ -621,6 +621,7 @@ static const char *propertiesToForward[] = {
 	"lexer.python.literals.binary",
 	"lexer.python.strings.b",
 	"lexer.python.strings.f",
+	"lexer.python.strings.f.pep.701",
 	"lexer.python.strings.over.newline",
 	"lexer.python.strings.u",
 	"lexer.python.unicode.identifiers",
@@ -1229,6 +1230,9 @@ void SciTEBase::ReadProperties() {
 
 	const int autoCChooseSingle = props.GetInt("autocomplete.choose.single");
 	wEditor.AutoCSetChooseSingle(autoCChooseSingle);
+
+	const Scintilla::MultiAutoComplete autoCMulti = static_cast<Scintilla::MultiAutoComplete>(props.GetInt("autocomplete.multi"));
+	wEditor.AutoCSetMulti(autoCMulti);
 
 	wEditor.AutoCSetCancelAtStart(false);
 	wEditor.AutoCSetDropRestOfWord(false);

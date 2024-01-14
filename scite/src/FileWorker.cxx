@@ -53,14 +53,10 @@ void FileLoader::Execute() {
 
 		std::vector<char> data(blockSize);
 		size_t lenFile = fread(&data[0], 1, blockSize, fp);
-#ifdef RB_UTF8AC
-		UniMode umCodingCookie = CodingCookieValue(std::string_view(data.data(), lenFile));
-#else
-		const UniMode umCodingCookie = CodingCookieValue(std::string_view(data.data(), lenFile));
-#endif
-
+		
 #ifdef RB_UTF8AC
 		//!-start-[utf8.auto.check]
+		UniMode umCodingCookie = CodingCookieValue(std::string_view(data.data(), lenFile));
 		if (umCodingCookie == UniMode::uni8Bit && check_utf8 == 2) {
 			if (Has_UTF8_Char((unsigned char*)(&data.front()), lenFile)) {
 				umCodingCookie = UniMode::cookie;
@@ -68,6 +64,8 @@ void FileLoader::Execute() {
 		}
 		Utf8_16_Read convert(umCodingCookie == UniMode::uni8Bit && check_utf8 == 1);
 		//!-end-[utf8.auto.check]
+#else
+		const UniMode umCodingCookie = CodingCookieValue(std::string_view(data.data(), lenFile));
 #endif // RB_UTF8AC
 
 		while ((lenFile > 0) && (err == 0) && (!Cancelling())) {

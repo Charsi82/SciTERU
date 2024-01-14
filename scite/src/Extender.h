@@ -126,6 +126,8 @@ public:
 	virtual bool OnUserListSelection(int, const char *) { return false; }
 #endif
 
+	virtual bool SendProperty(const char *) { return false; }
+
 #ifdef RB_OMC
 	virtual bool OnMenuCommand(int, int) { return false; } //!-add-[OnMenuCommand]
 #endif
@@ -138,8 +140,6 @@ public:
 #ifdef RB_ONTABMOVE
 	virtual void OnTabMove(int, int) {};
 #endif //RB_ONTABMOVE
-
-	virtual bool SendProperty(const char *) { return false; }
 	
 #ifdef RB_ONKEY
 	virtual bool OnKey(int, int, char) { return false; } //!-change-[OnKey]

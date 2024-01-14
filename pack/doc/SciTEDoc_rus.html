@@ -1883,6 +1883,10 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
         <td><dfn><a name="autocomplete.visible.item.count">autocomplete.visible.item.count</a></dfn></td>
         <td>Количество элементов, отображаемых в списках автозаполнения. По умолчанию <var>9</var>.</td>
     </tr>
+    <tr>
+        <td><dfn><a name="autocomplete.multi">autocomplete.multi</a></dfn></td>
+        <td>Если установлено значение 1, вариант автозавершения вставляется во все варианты выделения.</td>
+    </tr>
 
     <tr>
       <td><dfn><a name="autocompleteword.automatic">autocompleteword.automatic</a></dfn></td>
@@ -2289,6 +2293,16 @@ style the path and line number separately from the rest of the line with style 2
 	<tr>
       <td><dfn><a name="lexer.python.strings.b">lexer.python.strings.b</a></dfn></td>
 	<td>Set to 0 to not recognise Python 3 bytes literals b"x".</td>
+	</tr>
+	
+	<tr>
+      <td><dfn><a name="lexer.python.strings.f">lexer.python.strings.f</a></dfn></td>
+	<td>Set to 0 to not recognise Python 3.6 bytes f-string literals f"var={var}".</td>
+	</tr>
+	
+	<tr>
+      <td><dfn><a name="lexer.python.strings.f.pep.701">lexer.python.strings.f.pep.701</a></dfn></td>
+	<td>Set to 0 to use pre-PEP 701 / Python 3.12 f-string lexing.</td>
 	</tr>
 
 	<tr>

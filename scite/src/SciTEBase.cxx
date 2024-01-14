@@ -126,7 +126,7 @@ bool &Searcher::FlagFromCmd(int cmd) noexcept {
 	return notFound;
 }
 
-StyleAndWords::StyleAndWords() noexcept {
+StyleAndWords::StyleAndWords() {
 }
 
 // Set of words separated by spaces. First is style number, rest are symbols.
@@ -308,7 +308,8 @@ SciTEBase::~SciTEBase() {
 	if (extender)
 		extender->Finalise();
 #ifndef RB_ECM
-	popup.Destroy(); //!-remove-[ExtendedContextMenu]
+	//!-remove-[ExtendedContextMenu]
+	popup.Destroy();
 #endif // RB_ECM
 }
 
@@ -1000,6 +1001,19 @@ std::string SciTEBase::GetCTag(GUI::ScintillaWindow *pw) {
 	}
 }
 
+void SciTEBase::DropSelectionAt(GUI::ScintillaWindow &win, SA::Position position) {
+	if (win.SelectionMode() != SA::SelectionMode::Stream) {
+		return;
+	}
+	const int selections = win.Selections();
+	for (int sel = 0; sel < selections; ++sel) {
+		if (position >= win.SelectionNStart(sel) && position < win.SelectionNEnd(sel)) {
+			win.DropSelectionN(sel);
+			return;
+		}
+	}
+}
+
 // Default characters that can appear in a word
 bool SciTEBase::iswordcharforsel(char ch) noexcept {
 	return !strchr("\t\n\r !\"#$%&'()*+,-./:;<=>?@[\\]^`{|}~", ch);
@@ -1107,19 +1121,10 @@ std::string SciTEBase::RangeExtendAndGrab(
 	bool stripEol /*=true*/) {
 
 	RangeExtend(wCurrent, span, ischarforsel);
-	std::string selected;
-	if (span.start != span.end) {
-		selected = GetRangeInUIEncoding(wCurrent, span);
-	}
+	std::string selected = GetRangeInUIEncoding(wCurrent, span);
 	if (stripEol) {
-		// Change whole line selected but normally end of line characters not wanted.
-		// Remove possible terminating \r, \n, or \r\n.
-		const size_t sellen = selected.length();
-		if (sellen >= 2 && (selected[sellen - 2] == '\r' && selected[sellen - 1] == '\n')) {
-			selected.erase(sellen - 2);
-		} else if (sellen >= 1 && (selected[sellen - 1] == '\r' || selected[sellen - 1] == '\n')) {
-			selected.erase(sellen - 1);
-		}
+		// Whole line may be selected but normally end of line characters not wanted.
+		StripEOL(selected);
 	}
 
 	return selected;
@@ -1127,11 +1132,10 @@ std::string SciTEBase::RangeExtendAndGrab(
 
 /**
  * If there is selected text, either in the editor or the output pane,
- * put the selection in the @a sel buffer, up to @a len characters.
+ * return the selected text.
  * Otherwise, try and select characters around the caret, as long as they are OK
  * for the @a ischarforsel function.
- * Remove the last two character controls from the result, as they are likely
- * to be CR and/or LF.
+ * For @a stripEol, remove one trailing line end if present.
  */
 std::string SciTEBase::SelectionExtend(
 	bool (SciTEBase::*ischarforsel)(char ch),	///< Function returning @c true if the given char. is part of the selection.
@@ -1164,7 +1168,11 @@ void SciTEBase::SelectionIntoProperties() {
 }
 
 void SciTEBase::SelectionIntoFind(bool stripEol /*=true*/) {
+#ifdef RB_FINDFILL
 	std::string sel = SelectionWord(stripEol);
+#else
+	const std::string sel = SelectionWord(stripEol);
+#endif
 	if (sel.length() && (sel.find_first_of("\r\n") == std::string::npos)) {
 		// The selection does not include a new line, so is likely to be
 		// the expression to search...
@@ -1189,8 +1197,7 @@ void SciTEBase::SelectionIntoFind(bool stripEol /*=true*/) {
 
 		findWhat = sel;
 		if (unSlash) {
-			std::string slashedFind = Slash(findWhat, false);
-			findWhat = slashedFind;
+			findWhat = Slash(findWhat, false);
 		}
 	}
 	// else findWhat remains the same as last time.
@@ -1715,9 +1722,7 @@ void SciTEBase::Execute() {
 	bool bCBE = jobQueue.ClearBeforeExecute();
 	for (auto& job : jobQueue.jobQueue)
 		bCBE = (bCBE || job.flags & clearBeforeEnabled) && !(job.flags & clearBeforeDisabled);
-	if (bCBE) {
-		wOutput.ClearAll();
-	}
+	if (bCBE) wOutput.ClearAll();
 #else
 	if (jobQueue.ClearBeforeExecute()) {
 		wOutput.ClearAll();
@@ -2716,7 +2721,10 @@ void SciTEBase::UpdateStatusBar(bool bUpdateSlowData) {
 		propsStatus.Set("ColumnNumber", std::to_string(GetCurrentColumnNumber() + 1));
 		propsStatus.Set("OverType", wEditor.Overtype() ? "OVR" : "INS");
 		propsStatus.Set("ZoomFactor", std::to_string(wEditor.Zoom()));
+
+#ifdef RB_ZFP
 		propsStatus.Set("ZoomFactorPercent", std::to_string(100 + 10 * wEditor.Zoom()).append("%"));
+#endif
 
 		const std::string sbKey = "statusbar.text." + std::to_string(sbNum);
 		std::string msg = propsStatus.GetExpandedString(sbKey);
@@ -3141,6 +3149,7 @@ void SciTEBase::CharAddedOutput(int ch) {
  * @param ch The character we are dealing with, currently only works with the '>' character
  * @return True if handled, false otherwise
  */
+
 bool SciTEBase::HandleXml(char ch) {
 	// We're looking for this char
 	// Quit quickly if not found
@@ -3574,6 +3583,9 @@ void SciTEBase::MenuCommand(int cmdID, int source) {
 			PaneFocused().CharLeft();
 			PaneFocused().LineDown();
 		}
+		break;
+	case IDM_DROPSELECTION:
+		DropSelectionAt(PaneFocused(), contextPosition);
 		break;
 	case IDM_CLEAR:
 		PaneSource(source).Clear();
@@ -4731,12 +4743,14 @@ void SciTEBase::CheckMenus() {
 }
 #ifdef RB_ECM
 //!-start-[ExtendedContextMenu]
-void SciTEBase::ContextMenu(GUI::ScintillaWindow& wSource, GUI::Point pt, GUI::Window wCmd) {
+void SciTEBase::ContextMenu(GUI::ScintillaWindow& wSource, GUI::Point pt,GUI::Point ptClient, GUI::Window wCmd) {
 	int item = 0;
 	MenuEx subMenu[50];
 	subMenu[0].CreatePopUp(NULL);
 	bool isAdded = false;
 
+	contextPosition = wSource.CharPositionFromPoint(ptClient.x, ptClient.y);
+	
 	if (wSource.GetID() == wOutput.GetID()) {
 		std::string userContextMenu = props.GetNewExpandString("user.outputcontext.menu.", ExtensionFileName());
 		std::replace(userContextMenu.begin(), userContextMenu.end(), '|', '\0');
@@ -4764,6 +4778,7 @@ void SciTEBase::ContextMenu(GUI::ScintillaWindow& wSource, GUI::Point pt, GUI::W
 		subMenu[0].Add(localiser.Text("Delete").c_str(), IDM_CLEAR, IsMenuItemEnabled(IDM_CLEAR));
 		subMenu[0].Add();
 		subMenu[0].Add(localiser.Text("Select All").c_str(), IDM_SELECTALL, IsMenuItemEnabled(IDM_SELECTALL));
+		subMenu[0].Add(localiser.Text("Drop Selection").c_str(), IDM_DROPSELECTION, IsMenuItemEnabled(IDM_DROPSELECTION));
 		subMenu[0].Add();
 		if (wSource.GetID() == wOutput.GetID()) {
 			subMenu[0].Add(localiser.Text("Hide").c_str(), IDM_TOGGLEOUTPUT, IsMenuItemEnabled(IDM_TOGGLEOUTPUT));
@@ -4775,10 +4790,16 @@ void SciTEBase::ContextMenu(GUI::ScintillaWindow& wSource, GUI::Point pt, GUI::W
 
 	subMenu[0].Show(pt, wCmd);
 }
+
 #define CallFocused(P) PaneFocused().Call(reinterpret_cast<SA::Message>(P),0,0)
+
 int SciTEBase::IsMenuItemEnabled(int cmd) {
 	switch (cmd)
 	{
+	case IDM_DROPSELECTION:
+	{
+		return (contextPosition != SA::InvalidPosition && PaneFocused().SelectionMode() == SA::SelectionMode::Stream) ? 1 : 0;
+	}
 	case IDM_SAVEALL:
 	{
 		for (int i = 0; i < buffers.length; i++) {
@@ -4889,9 +4910,12 @@ void SciTEBase::GenerateMenu(MenuEx* subMenu, const char*& userContextItem,
 //!-end-[ExtendedContextMenu]
 #else  // RB_ECM
 
-void SciTEBase::ContextMenu(GUI::ScintillaWindow &wSource, GUI::Point pt, GUI::Window wCmd) {
+void SciTEBase::ContextMenu(GUI::ScintillaWindow &wSource, GUI::Point pt, GUI::Point ptClient, GUI::Window wCmd) {
 	const SA::Position currentPos = wSource.CurrentPos();
 	const SA::Position anchor = wSource.Anchor();
+	contextPosition = wSource.CharPositionFromPoint(ptClient.x, ptClient.y);
+	const bool isStreamSelction = wSource.SelectionMode() == SA::SelectionMode::Stream;
+	const bool allowDrop = isStreamSelction && (contextPosition != SA::InvalidPosition);
 	popup.CreatePopUp();
 	const bool writable = !wSource.ReadOnly();
 	AddToPopUp("Undo", IDM_UNDO, writable && wSource.CanUndo());
@@ -4903,6 +4927,7 @@ void SciTEBase::ContextMenu(GUI::ScintillaWindow &wSource, GUI::Point pt, GUI::W
 	AddToPopUp("Delete", IDM_CLEAR, writable && currentPos != anchor);
 	AddToPopUp("");
 	AddToPopUp("Select All", IDM_SELECTALL);
+	AddToPopUp("Drop Selection", IDM_DROPSELECTION, allowDrop);
 	AddToPopUp("");
 	if (wSource.GetID() == wOutput.GetID()) {
 		AddToPopUp("Hide", IDM_TOGGLEOUTPUT, true);
@@ -5460,7 +5485,7 @@ bool SciTEBase::ProcessCommandLine(const std::vector<GUI::gui_string> &args, int
 					}
 				} else {
 					if (evaluate) {
-						props.ReadLine(GUI::UTF8FromString(arg).c_str(), PropSetFile::ReadLineState::active,
+						props.ReadLine(GUI::UTF8FromString(arg), PropSetFile::ReadLineState::active,
 							       FilePath::GetWorkingDirectory(), filter, nullptr, 0);
 					}
 				}

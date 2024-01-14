@@ -364,7 +364,6 @@ AddEventHandler("OnUserListSelection", function(tp, sel_value)
 			end
 		end
 		editor:SetSel(current_pos, editor.CurrentPos + shift)
-		
 		editor:ReplaceSel(--[[object_good_name..]]sel_value)
 	end
 end)

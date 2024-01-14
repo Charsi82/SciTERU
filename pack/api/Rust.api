@@ -1,6 +1,2 @@
 println!("{}", ...) \n макрос вывода на печать
-match value {...}\n выбор из нескольких значений или деструктуризация
-for .. in items%.iter() {...}\n итерация по ссылкам на элементы коллекции
-for .. in items%.into_iter() {...}\n iterate collection с заимствованием
-for .. in items%.iter_mut() {...}\n iterate collection с изменением элементов коллекции
-struct
+
