@@ -16,7 +16,7 @@ Requirements: shell.dll
 require 'shell'
 local cur_path = debug.getinfo(1,"S").short_src:match(".+\\")
 print('current path: ', cur_path)
-local projects = shell.findfiles( cur_path.."*.vcxproj" ) or {}
+local projects = shell.findfiles( cur_path:to_utf8(0).."*.vcxproj" ) or {}
 print('founded', #projects, 'files')
 local project_name = projects[1] and projects[1].name
 -- if true then return end
@@ -73,7 +73,10 @@ end
 fb:close() -- close read
 
 print("saving result...")
-local text = table.concat(res,"\n"):gsub([[;%.%.\lua\src]], [[;..\..\lualib\src]], 1)
+local text = table.concat(res,"\n"):gsub([[;%.%.\lua\src]], [[;..\..\lualib\src]], 1):gsub([[  </ItemDefinitionGroup>]],[[    <PostBuildEvent>
+      <Command>copy "$(TargetPath)" "$(SolutionDir)../../pack\"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>]], 1)
 f = io.open(path,"wb")
 f:write(text)
 f:close()

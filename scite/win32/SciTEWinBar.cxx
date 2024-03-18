@@ -831,7 +831,7 @@ static LRESULT PASCAL TabWndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM
 			::SendMessage(::GetParent(hWnd), WM_COMMAND, IDC_TABDBLCLK, (LPARAM)tab);
 		}
 	}
-		 break;
+	break;
 //!-end-[close_on_dbl_clk]
 #endif // RB_TAB_DB_CLICK
 
@@ -1246,7 +1246,7 @@ void SciTEWin::SetToolBar()
 	if (sIconlib.empty()) sIconlib = GUI::StringFromUTF8(props.Expand("$(SciteDefaultHome)\\toolbar\\cool.dll"));
 
 	HBITMAP hToolbarBitmapNew = NULL;
-	const int iIconsCount = ExtractIconEx(sIconlib.c_str(), -1, NULL, NULL, 1);;
+	const int iIconsCount = ExtractIconEx(sIconlib.c_str(), -1, NULL, NULL, 1);
 	if (iIconsCount > 0) {
 		HICON* arrIcons = new HICON[iIconsCount]{};
 		ExtractIconEx(sIconlib.c_str(), 0, nullptr/*&hIconBig*/, arrIcons, iIconsCount);

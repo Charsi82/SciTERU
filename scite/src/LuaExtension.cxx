@@ -136,16 +136,14 @@ bool IFaceFunctionIsScriptable(const IFaceFunction &f) noexcept {
 bool IFacePropertyIsScriptable(const IFaceProperty &p) noexcept {
 	return (((p.valueType > iface_void) && (p.valueType <= iface_stringresult) && (p.valueType != iface_keymod)) &&
 		((p.paramType < iface_colour) || (p.paramType == iface_string) ||
-		 (p.paramType == iface_bool)) && (p.getter || p.setter));
+			(p.paramType == iface_bool)) && (p.getter || p.setter));
 }
 
-// RB: return type fixed for compat with old Lua
-//const char *push_string(lua_State *L, const std::string &s) noexcept {
-auto push_string(lua_State *L, const std::string &s) noexcept {
+const char* push_string(lua_State* L, const std::string& s) noexcept {
 	return lua_pushlstring(L, s.data(), s.length());
 }
 
-void raise_error(lua_State *L, const char *errMsg=nullptr) noexcept {
+void raise_error(lua_State* L, const char* errMsg = nullptr) noexcept {
 	luaL_where(L, 1);
 	if (errMsg) {
 		lua_pushstring(L, errMsg);
@@ -1823,7 +1821,7 @@ bool InitGlobalScope(bool checkProperties, bool forceReload = false) {
 
 	lua_pushcfunction(luaState, cf_scite_strip_set);
 	lua_setfield(luaState, -2, "StripSet");
-	
+
 #ifdef RB_USBTT
 	lua_pushcfunction(luaState, cf_scite_strip_set_tip_text);
 	lua_setfield(luaState, -2, "StripSetBtnTipText");
@@ -2646,8 +2644,8 @@ bool LuaExtension::OnKey(int keyval, int modifiers, char ch) { //!-change-[OnKey
 			handled = call_function(luaState, 5);
 		} else {
 			lua_pop(luaState, 1);
-}
-}
+		}
+	}
 	return handled;
 }
 #else

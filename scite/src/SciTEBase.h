@@ -99,11 +99,10 @@ struct FileWorker;
 // Scintilla documents can only be released by calling a method on a Scintilla
 // instance so store a Scintilla instance in the release functor
 struct BufferDocReleaser {
-	GUI::ScintillaWindow *pSci = nullptr;	// Non-owning
-	void operator()(void *pDoc) noexcept;
+	void operator()(SA::IDocumentEditable *pDoc) noexcept;
 };
 
-using BufferDoc = std::unique_ptr<void, BufferDocReleaser>;
+using BufferDoc = std::unique_ptr<SA::IDocumentEditable, BufferDocReleaser>;
 
 class Buffer {
 public:
@@ -130,7 +129,7 @@ public:
 	void Init();
 
 	void SetTimeFromFile();
-	
+
 #ifdef RB_ONE	
 	//!-start-[OpenNonExistent]
 	bool DocumentNotSaved() const {
@@ -381,7 +380,6 @@ protected:
 	StringList apis;
 	std::string apisFileNames;
 	std::string functionDefinition;
-	BufferDocReleaser docReleaser;
 
 	int diagnosticStyleStart;
 	enum { diagnosticStyles=4};
@@ -430,14 +428,9 @@ protected:
 
 #ifndef RB_ECM
 	GUI::Menu popup; //!-remove-[ExtendedContextMenu]
-#endif
+#endif // RB_ECM
 
-	SA::Position contextPosition = SA::InvalidPosition;
-
-#ifdef RB_ECM
-	// ContextMenu -> GenerateMenu
-	// bool allowDrop = false;
-#endif
+	int contextSelection = -1;
 
 	bool tbVisible;
 	bool tabVisible;
@@ -576,8 +569,8 @@ protected:
 	BufferList buffers;
 
 	// Handle buffers
-	void *GetDocumentAt(BufferIndex index);
-	void SwitchDocumentAt(BufferIndex index, void *pdoc);
+	SA::IDocumentEditable *GetDocumentAt(BufferIndex index);
+	void SwitchDocumentAt(BufferIndex index, SA::IDocumentEditable *pdoc);
 	void SaveFolds(std::vector<SA::Line> &folds);
 	void RestoreFolds(const std::vector<SA::Line> &folds);
 	void UpdateBuffersCurrent();
@@ -630,7 +623,7 @@ protected:
 	bool FindMatchingPreprocCondPosition(bool isForward, SA::Position mppcAtCaret, SA::Position &mppcMatch);
 	bool FindMatchingBracePosition(bool editor, SA::Position &braceAtCaret, SA::Position &braceOpposite, bool sloppy);
 	void BraceMatch(bool editor);
-	
+
 #ifdef RB_WRNM
 	virtual void WarnUser(int warnID, const char* msg = nullptr, bool isCanBeAlerted = true) = 0; //!-change-[WarningMessage]
 #else
@@ -746,7 +739,7 @@ protected:
 	SelectedRange GetSelectedRange();
 	void SetSelection(SA::Position anchor, SA::Position currentPos);
 	std::string GetCTag(GUI::ScintillaWindow *pw);
-	static void DropSelectionAt(GUI::ScintillaWindow &win, SA::Position position);
+	static void DropSelectionAt(GUI::ScintillaWindow &win, int selection);
 	virtual std::string GetRangeInUIEncoding(GUI::ScintillaWindow &win, SA::Span span);
 	static std::string GetLine(GUI::ScintillaWindow &win, SA::Line line);
 	void RangeExtend(GUI::ScintillaWindow &wCurrent, SA::Span &range,

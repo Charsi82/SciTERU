@@ -313,13 +313,14 @@ long long PropSetFile::GetLongLong(std::string_view key, long long defaultValue)
 }
 
 namespace {
+
 /**
-* Get a line of input. If end of line escaped with '\\' then continue reading.
-*/
+ * Get a line of input. If end of line escaped with '\\' then continue reading.
+ */
 
 #ifdef RB_PCMF
-	void GetFullLine(std::string_view& data, std::string& lineBuffer) {
-		lineBuffer.clear();
+void GetFullLine(std::string_view &data, std::string &lineBuffer) {
+	lineBuffer.clear();
 		bool continuation = true;
 		while (!data.empty()) {
 			char ch = data[0];
@@ -361,28 +362,26 @@ namespace {
 #else
 	void GetFullLine_old(std::string_view& data, std::string& lineBuffer) {
 		lineBuffer.clear();
-		while (!data.empty()) {
-			const char ch = data[0];
-			data.remove_prefix(1);
-			if ((ch == '\r') || (ch == '\n')) {
-				if ((data.length() > 0) && (ch == '\r') && (data[0] == '\n')) {
-					// munch the second half of a crlf
-					data.remove_prefix(1);
-				}
-				return;
-			}
-			else if ((ch == '\\') && (data.length() > 0) && ((data[0] == '\r') || (data[0] == '\n'))) {
-				const char next = data[0];
+	while (!data.empty()) {
+		const char ch = data[0];
+		data.remove_prefix(1);
+		if ((ch == '\r') || (ch == '\n')) {
+			if ((data.length() > 0) && (ch == '\r') && (data[0] == '\n')) {
+				// munch the second half of a crlf
 				data.remove_prefix(1);
-				if ((data.length() > 0) && (next == '\r') && (data[0] == '\n')) {
-					data.remove_prefix(1);
-				}
 			}
-			else {
-				lineBuffer.push_back(ch);
+			return;
+		} else if ((ch == '\\') && (data.length() > 0) && ((data[0] == '\r') || (data[0] == '\n'))) {
+			const char next = data[0];
+			data.remove_prefix(1);
+			if ((data.length() > 0) && (next == '\r') && (data[0] == '\n')) {
+				data.remove_prefix(1);
 			}
+		} else {
+			lineBuffer.push_back(ch);
 		}
 	}
+}
 #endif
 
 bool IsCommentLine(std::string_view line) noexcept {
@@ -413,6 +412,9 @@ void PropSetFile::Import(const FilePath &filename, const FilePath &directoryForI
 
 PropSetFile::ReadLineState PropSetFile::ReadLine(const std::string &lineBuffer, ReadLineState rls, const FilePath &directoryForImports,
 		const ImportFilter &filter, FilePathSet *imports, size_t depth) {
+	if (lineBuffer.empty()) {
+		return rls;
+	}
 	if ((rls == ReadLineState::conditionFalse) && (!IsSpaceOrTab(lineBuffer[0])))    // If clause ends with first non-indented line
 		rls = ReadLineState::active;
 	if (StartsWith(lineBuffer, "module ")) {

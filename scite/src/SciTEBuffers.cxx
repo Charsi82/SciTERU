@@ -54,12 +54,12 @@
 
 const GUI::gui_char defaultSessionFileName[] = GUI_TEXT("SciTE.session");
 
-void BufferDocReleaser::operator()(void *pDoc) noexcept {
+void BufferDocReleaser::operator()(SA::IDocumentEditable *pDoc) noexcept {
 	if (pDoc) {
 		try {
-			pSci->ReleaseDocument(pDoc);
+			pDoc->Release();
 		} catch (...) {
-			// ReleaseDocument must not throw, ignore if it does.
+			// Release must not throw, ignore if it does.
 		}
 	}
 }
@@ -437,22 +437,22 @@ void BufferList::SetVisible(BufferIndex index, bool visible) {
 	}
 }
 
-void *SciTEBase::GetDocumentAt(BufferIndex index) {
+SA::IDocumentEditable *SciTEBase::GetDocumentAt(BufferIndex index) {
 	if (index < 0 || index >= buffers.size()) {
 		return nullptr;
 	}
 	if (!buffers.buffers[index].doc) {
 		// Create a new document buffer
-		buffers.buffers[index].doc = BufferDoc(wEditor.CreateDocument(0, SA::DocumentOption::Default), docReleaser);
+		buffers.buffers[index].doc.reset(wEditor.CreateDocument(0, SA::DocumentOption::Default));
 	}
 	return buffers.buffers[index].doc.get();
 }
 
-void SciTEBase::SwitchDocumentAt(BufferIndex index, void *pdoc) {
+void SciTEBase::SwitchDocumentAt(BufferIndex index, SA::IDocumentEditable *pdoc) {
 	if (index < 0 || index >= buffers.size()) {
 		return;
 	}
-	buffers.buffers[index].doc = BufferDoc(pdoc, docReleaser);
+	buffers.buffers[index].doc.reset(pdoc);
 	if (index == buffers.Current()) {
 		wEditor.SetDocPointer(buffers.buffers[index].doc.get());
 	}
@@ -604,8 +604,8 @@ void SciTEBase::InitialiseBuffers() {
 	if (!buffers.initialised) {
 		buffers.initialised = true;
 		// First document is the default from creation of control
-		buffers.buffers[0].doc = BufferDoc(wEditor.DocPointer(), docReleaser);
-		wEditor.AddRefDocument(buffers.buffers[0].doc.get()); // We own this reference
+		buffers.buffers[0].doc.reset(wEditor.DocPointer());
+		buffers.buffers[0].doc->AddRef(); // We own this reference
 		if (buffers.size() == 1) {
 			// Single buffer mode, delete the Buffers main menu entry
 			DestroyMenuItem(menuBuffers, 0);
@@ -949,7 +949,7 @@ void SciTEBase::New() {
 		buffers.SetCurrent(buffers.Add());
 	}
 
-	void *doc = GetDocumentAt(buffers.Current());
+	SA::IDocumentEditable *doc = GetDocumentAt(buffers.Current());
 	wEditor.SetDocPointer(doc);
 
 	FilePath curDirectory(filePath.Directory());
@@ -1137,8 +1137,7 @@ SciTEBase::SaveResult SciTEBase::SaveAllBuffers(bool alwaysYes) {
 				if (!Save()) {
 					choice = SaveResult::cancelled;
 				}
-			}
-			else {
+			} else {
 				choice = SaveIfUnsure(false);
 			}
 		}
@@ -1399,11 +1398,9 @@ void SciTEBase::SetFileStackMenu() {
 		SetMenuItem(menuFile, MRU_START, IDM_MRU_SEP, GUI_TEXT(""));
 #ifdef RB_MoreRecentFiles
 		//!-start-[MoreRecentFiles]
-		int fileStackMaxToUse = props.GetInt("save.recent.max", fileStackMaxDefault); //-> props
-		if (fileStackMaxToUse > fileStackMax)
-			fileStackMaxToUse = fileStackMax;
+		const int fileStackMaxToUse = std::min(fileStackMax, props.GetInt("save.recent.max", fileStackMaxDefault)); //-> props
 		for (int stackPos = 0; stackPos < fileStackMaxToUse; stackPos++) {
-			//!-end-[MoreRecentFiles]
+		//!-end-[MoreRecentFiles]
 #else //RB_MoreRecentFiles
 		for (int stackPos = 0; stackPos < fileStackMax; stackPos++) {
 #endif //RB_MoreRecentFiles
@@ -2168,7 +2165,7 @@ void SciTEBase::ShowMessages(SA::Line line) {
 	while ((line < maxLine) && (acc.StyleAt(acc.LineStart(line)) != SCE_ERR_CMD)) {
 		const SA::Position startPosLine = wOutput.LineStart(line);
 		const SA::Position lineEnd = wOutput.LineEnd(line);
-		std::string message = wOutput.StringOfSpan(SA::Span(startPosLine, lineEnd));
+		std::string message = wOutput.StringOfRange(SA::Span(startPosLine, lineEnd));
 		std::string source;
 		SA::Position column = 0;
 		int style = acc.StyleAt(startPosLine);
@@ -2249,7 +2246,7 @@ void SciTEBase::GoMessage(int dir) {
 #endif // RB_ELB
 			wOutput.MarkerAdd(lookLine, 0);
 			wOutput.SetSel(startPosLine, startPosLine);
-			std::string message = wOutput.StringOfSpan(SA::Span(startPosLine, startPosLine + lineLength));
+			std::string message = wOutput.StringOfRange(SA::Span(startPosLine, startPosLine + lineLength));
 			if ((style == SCE_ERR_ESCSEQ) || (style == SCE_ERR_ESCSEQ_UNKNOWN) || (style >= SCE_ERR_ES_BLACK)) {
 				// GCC message with ANSI escape sequences
 				RemoveEscSeq(message);

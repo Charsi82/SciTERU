@@ -327,7 +327,7 @@ protected:
 
 	/// Warn the user, by means defined in its properties.
 #ifdef RB_WRNM
-	void WarnUser(int warnID, const char* msg = NULL, bool isCanBeAlerted = true) override; //!-change-[WarningMessage]
+	void WarnUser(int warnID, const char* msg = nullptr, bool isCanBeAlerted = true) override; //!-change-[WarningMessage]
 #else
 	void WarnUser(int warnID) override;
 #endif // RB_WRNM

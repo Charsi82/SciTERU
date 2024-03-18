@@ -355,7 +355,7 @@ return function(tabs, panel_width, colorback, colorfore)
 			-- local fnames = shell.findfiles(current_path.."\\"..ext) or {}
 			local fnames = gui.files(current_path .. "\\" .. ext)
 			for _, fname in ipairs(fnames) do
-				local res, err = loadfile(current_path .. "\\" .. fname)
+				local res, err = loadfile(current_path .. fname)
 				print(res and (fname .. ' - ok') or err)
 			end
 		end

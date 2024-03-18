@@ -25,11 +25,12 @@ enum JobFlags {
 	jobRepSelMask = 48,
 	jobRepSelYes = 16,
 	jobRepSelAuto = 32,
+	jobGroupUndo = 64,
+	jobLowPriority = 128,
 #ifdef RB_CBE // [clear_before_execute]
-	clearBeforeEnabled = 128,
-	clearBeforeDisabled = 256,
+	clearBeforeEnabled = 256,
+	clearBeforeDisabled = 512,
 #endif // RB_CBE
-	jobGroupUndo = 64
 };
 
 struct JobMode {

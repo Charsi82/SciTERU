@@ -9,12 +9,12 @@
 #define SCITE_H
 
 // Version numbers and dates
-#define VERSION_SCITE "5.3.9"
-#define VERSION_WORDS 5, 3, 9, 0
-#define COPYRIGHT_DATES "December 1998-November 2023"
+#define VERSION_SCITE "5.4.1"
+#define VERSION_WORDS 5, 4, 1, 0
+#define COPYRIGHT_DATES "December 1998-December 2023"
 #define COPYRIGHT_YEARS "1998-2023"
-#define VERSION_SCINTILLA "5.3.8"
-#define VERSION_LEXILLA "5.2.8"
+#define VERSION_SCINTILLA "5.4.1"
+#define VERSION_LEXILLA "5.3.0"
 
 // Menu IDs.
 // These are located 100 apart. No one will want more than 100 in each menu ;)

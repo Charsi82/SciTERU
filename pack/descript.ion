@@ -13,5 +13,5 @@ lua54.dll 					Встроенный интепретатор Lua
 SciTEGlobal.properties 		Файл глобальных настроек интерфейса
 SciTEToolsMenu.properties 	Настройки меню Tools
 utils\lua.exe 				Внешний интерпретатор Lua
-utils\lua-format.exe 		Утилита автоформатирования для Lua скриптов
-tools\LuaLib 				Внешние библиотеки для Lua
+utils\lua-format.exe 		утилита автоформатирования для Lua скриптов
+tools\LuaLib внешние 		библиотеки для Lua

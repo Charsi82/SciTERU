@@ -26,21 +26,34 @@ if not res then
 	return
 end
 
-local function get_bookmarks()
-	local res = {}
-	local line = 0
-	while true do
-		line = editor:MarkerNext(line, 2)
-		if (line == -1) then break end
-		res[#res + 1] = {line = line}
-		line = line + 1
+local f = io.open(cur_file)
+if f then
+	local content = f:read("a")
+	local len_or_err, err_pos = utf8.len(content)
+	if not len_or_err then
+		f:close()
+		print('non unicode file!')
+		return
 	end
-	return res
 end
+f:close()
 
 local s = io.popen(string.format("%s %q %s", lf_path, cur_file, options))
 if s then
-	local text, qwe = s:read("a")
+
+	local function get_bookmarks()
+		local res = {}
+		local line = 0
+		while true do
+			line = editor:MarkerNext(line, 2)
+			if (line == -1) then break end
+			res[#res + 1] = {line = line}
+			line = line + 1
+		end
+		return res
+	end
+
+	local text = s:read("a")
 	s:close()
 	if #text > 0 then
 		local bookmarks = get_bookmarks()

@@ -205,7 +205,7 @@ void SciTEBase::DiscoverEOLSetting() {
 std::string SciTEBase::DiscoverLanguage() {
 	constexpr SA::Position oneK = 1024;
 	const SA::Position length = std::min<SA::Position>(LengthDocument(), 64 * oneK);
-	std::string buf = wEditor.StringOfSpan(SA::Span(0, length));
+	std::string buf = wEditor.StringOfRange(SA::Span(0, length));
 	std::string languageOverride;
 	std::string_view line = ExtractLine(buf);
 	if (StartsWith(line, "<?xml")) {
@@ -297,6 +297,24 @@ void SciTEBase::DiscoverIndentSetting() {
 	}
 }
 
+namespace {
+
+SA::DocumentOption LoadingOptions(const PropSetFile &props, const long long fileSize) {
+	SA::DocumentOption docOptions = SA::DocumentOption::Default;
+
+	const long long sizeLarge = props.GetLongLong("file.size.large");
+	if (sizeLarge && (fileSize > sizeLarge))
+		docOptions = SA::DocumentOption::TextLarge;
+
+	const long long sizeNoStyles = props.GetLongLong("file.size.no.styles");
+	if (sizeNoStyles && (fileSize > sizeNoStyles))
+		docOptions = docOptions | SA::DocumentOption::StylesNone;
+
+	return docOptions;
+}
+
+}
+
 void SciTEBase::OpenCurrentFile(const long long fileSize, bool suppressMessage, bool asynchronous) {
 #ifdef RB_WNRSUPRESS
 	//!-start-[warning.couldnotopenfile.disable]
@@ -355,17 +373,7 @@ void SciTEBase::OpenCurrentFile(const long long fileSize, bool suppressMessage, 
 		assert(CurrentBufferConst()->pFileWorker == nullptr);
 		Scintilla::ILoader *pdocLoad = nullptr;
 		try {
-			SA::DocumentOption docOptions = SA::DocumentOption::Default;
-
-			const long long sizeLarge = props.GetLongLong("file.size.large");
-			if (sizeLarge && (fileSize > sizeLarge))
-				docOptions = SA::DocumentOption::TextLarge;
-
-			const long long sizeNoStyles = props.GetLongLong("file.size.no.styles");
-			if (sizeNoStyles && (fileSize > sizeNoStyles))
-				docOptions = static_cast<SA::DocumentOption>(
-						     static_cast<int>(docOptions) | static_cast<int>(SA::DocumentOption::StylesNone));
-
+			const SA::DocumentOption docOptions = LoadingOptions(props, fileSize);
 			pdocLoad = static_cast<Scintilla::ILoader *>(
 					   wEditor.CreateLoader(bufferSize, docOptions));
 		} catch (...) {
@@ -444,7 +452,8 @@ void SciTEBase::TextRead(FileWorker *pFileWorker) {
 			buffers.buffers[iBuffer].lifeState = Buffer::LifeState::empty;
 		}
 		// Switch documents
-		void *pdocLoading = pFileLoader->pLoader->ConvertToDocument();
+		SA::IDocumentEditable *pdocLoading = static_cast<SA::IDocumentEditable *>(
+			pFileLoader->pLoader->ConvertToDocument());
 		pFileLoader->pLoader = nullptr;
 		SwitchDocumentAt(iBuffer, pdocLoading);
 		if (iBuffer == buffers.Current()) {
@@ -481,7 +490,7 @@ void SciTEBase::CompleteOpen(OpenCompletion oc) {
 			SetIndentSettings();
 		}
 	}
-	
+
 #ifdef RB_EUM
 	props.Set("editor.unicode.mode", std::to_string((int)CurrentBuffer()->unicodeMode + IDM_ENCODING_DEFAULT)); //!-add-[EditorUnicodeMode]
 #endif // RB_EUM
@@ -716,21 +725,32 @@ bool SciTEBase::Open(const FilePath &file, OpenFlags of) {
 	if (!filePath.IsUntitled()) {
 		wEditor.SetReadOnly(false);
 		wEditor.Cancel();
-		if (of & ofPreserveUndo) {
+
+		bool allowUndoLoad = of & ofPreserveUndo;
+
+		asynchronous = (fileSize > props.GetInt("background.open.size", -1)) &&
+			!(of & (ofPreserveUndo | ofSynchronous));
+		const SA::DocumentOption loadingOptions = LoadingOptions(props, fileSize);
+		if (!asynchronous && loadingOptions != wEditor.DocumentOptions()) {
+			// File needs different options than current document so create new.
+			SwitchDocumentAt(buffers.Current(), wEditor.CreateDocument(0, loadingOptions));
+			allowUndoLoad = false;
+		}
+
+		if (allowUndoLoad) {
 			wEditor.BeginUndoAction();
 		} else {
 			wEditor.SetUndoCollection(false);
 		}
 
-		asynchronous = (fileSize > props.GetInt("background.open.size", -1)) &&
-			       !(of & (ofPreserveUndo|ofSynchronous));
 		OpenCurrentFile(fileSize, of & ofQuiet, asynchronous);
 
-		if (of & ofPreserveUndo) {
+		if (allowUndoLoad) {
 			wEditor.EndUndoAction();
 		} else {
 			wEditor.EmptyUndoBuffer();
 		}
+
 		CurrentBuffer()->isReadOnly = props.GetInt("read.only");
 		wEditor.SetReadOnly(CurrentBuffer()->isReadOnly);
 	}
@@ -781,6 +801,13 @@ bool SciTEBase::OpenSelected() {
 		if (selName[0] == '/' && selName[2] == ':') { // file:///C:/filename.ext
 			selName.erase(0, 1);
 		}
+	}
+
+	if (StartsWith(selName, "~/")) {
+		selName.erase(0, 2);
+		const FilePath selPath(GUI::StringFromUTF8(selName));
+		const FilePath expandedPath(FilePath::UserHomeDirectory(), selPath);
+		selName = expandedPath.AsUTF8();
 	}
 
 	std::string fileNameForExtension = ExtensionFileName();
@@ -1118,17 +1145,24 @@ SciTEBase::SaveResult SciTEBase::SaveIfUnsureForBuilt() {
 	if (props.GetInt("save.all.for.build")) {
 		return SaveAllBuffers(!props.GetInt("are.you.sure.for.build"));
 	}
+
 #ifdef RB_ONE
 	if (CurrentBuffer()->DocumentNotSaved()) {
+		if (props.GetInt("are.you.sure.for.build"))
+			return SaveIfUnsure(true);
+
+		Save();
+	}
 #else
 	if (CurrentBuffer()->isDirty) {
-#endif // RB_ONE
 
 		if (props.GetInt("are.you.sure.for.build"))
 			return SaveIfUnsure(true);
 
 		Save();
 	}
+#endif // RB_ONE
+
 	return SaveResult::completed;
 }
 
@@ -1245,18 +1279,15 @@ private:
 void SciTEBase::StripTrailingSpaces() {
 	const SA::Line maxLines = wEditor.LineCount();
 	SelectionKeeper keeper(wEditor);
-	for (int line = 0; line < maxLines; line++) {
+	for (SA::Line line = 0; line < maxLines; line++) {
 		const SA::Position lineStart = wEditor.LineStart(line);
 		const SA::Position lineEnd = wEditor.LineEnd(line);
-		SA::Position i = lineEnd - 1;
-		char ch = wEditor.CharacterAt(i);
-		while ((i >= lineStart) && ((ch == ' ') || (ch == '\t'))) {
+		SA::Position i = lineEnd;
+		while ((i > lineStart) && IsSpaceOrTab(wEditor.CharacterAt(i-1))) {
 			i--;
-			ch = wEditor.CharacterAt(i);
 		}
-		if (i < (lineEnd - 1)) {
-			wEditor.SetTarget(SA::Span(i + 1, lineEnd));
-			wEditor.ReplaceTarget("");
+		if (i < lineEnd) {
+			wEditor.DeleteRange(i, lineEnd-i);
 		}
 	}
 }
@@ -1338,9 +1369,8 @@ bool SciTEBase::SaveBuffer(const FilePath &saveName, SaveFlags sf) {
 					grabSize = wEditor.PositionBefore(i + grabSize + 1) - i;
 					const SA::Position startBlock = i;
 					const SA::Span rangeGrab(startBlock, startBlock + grabSize);
-					wEditor.SetTarget(rangeGrab);
-					wEditor.TargetText(&data[0]);
-					const size_t written = convert.fwrite(&data[0], grabSize);
+					CopyText(wEditor, data.data(), rangeGrab);
+					const size_t written = convert.fwrite(data.data(), grabSize);
 					if (written == 0) {
 						retVal = false;
 						break;

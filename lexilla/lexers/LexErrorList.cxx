@@ -18,11 +18,12 @@
 #include "ILexer.h"
 #include "Scintilla.h"
 #include "SciLexer.h"
+#include "WordList.h"
+
 #ifdef RB_FRLS
 #include "PropSetSimple.h"  //!-add-[FindResultListStyle]
 #endif // RB_FRLS
 
-#include "WordList.h"
 #include "LexAccessor.h"
 #include "Accessor.h"
 #include "StyleContext.h"

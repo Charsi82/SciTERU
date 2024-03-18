@@ -160,7 +160,9 @@ BEGIN
 	MENUITEM SEPARATOR
 	MENUITEM "Change Inden&tation Settings...\tCtrl+Shift+I",	IDM_TABSIZE
 	MENUITEM "Use &Monospaced Font\tCtrl+F11",	IDM_MONOFONT
+#ifdef RB_NFS
 	MENUITEM "Use &Next FontSet", IDM_NEXTFONTSET
+#endif
 	MENUITEM SEPARATOR
 	MENUITEM "Open Local &Options File",		IDM_OPENLOCALPROPERTIES
 	MENUITEM "Open &Directory Options File",		IDM_OPENDIRECTORYPROPERTIES

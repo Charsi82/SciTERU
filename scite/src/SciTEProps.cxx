@@ -1006,7 +1006,7 @@ void SciTEBase::ReadProperties() {
 
 	wEditor.SetCaretWidth(props.GetInt("caret.width", 1));
 	wOutput.SetCaretWidth(props.GetInt("caret.width", 1));
-	
+
 #ifdef RB_CARET
 	}
 #endif // RB_CARET

@@ -15,6 +15,7 @@
 #include <string>
 #include <string_view>
 
+#include "SciTE_RB_defs.h" //+
 #include "ILexer.h"
 #include "Scintilla.h"
 #include "SciLexer.h"

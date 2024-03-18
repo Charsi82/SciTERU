@@ -317,11 +317,9 @@ SciTEWin::~SciTEWin() {
 	for (Buffer &buffer : buffers.buffers) {
 		// At this point, there should be no documents but sometimes there are
 		// which may be due to asynchronous I/O.
-		// wEditor has been closed so can't perform correct release of documents.
-		// Show debugger in this case.
-		assert(!buffer.doc);
-		// Drop ownership, leads to leak but exiting anyway.
-		std::ignore = buffer.doc.release();
+		// To break in debugger to see any documents that still exist:
+		//assert(!buffer.doc);
+		buffer.doc.reset();
 	}
 
 	if (hDevMode)
@@ -1119,11 +1117,14 @@ DWORD SciTEWin::ExecuteOne(const Job &jobToRun) {
 	// Make a mutable copy as the CreateProcess parameter is mutable
 	GUI::gui_string sCommand = GUI::StringFromUTF8(jobToRun.command);
 
+	const DWORD creationFlags = CREATE_NEW_PROCESS_GROUP |
+		((jobToRun.flags & jobLowPriority) ? BELOW_NORMAL_PRIORITY_CLASS : 0);
+
 	BOOL running = ::CreateProcessW(
 			       nullptr,
 			       sCommand.data(),
 			       nullptr, nullptr,
-			       TRUE, CREATE_NEW_PROCESS_GROUP,
+			       TRUE, creationFlags,
 			       nullptr,
 			       startDirectory.IsSet() ?
 			       startDirectory.AsInternal() : nullptr,
@@ -1143,7 +1144,7 @@ DWORD SciTEWin::ExecuteOne(const Job &jobToRun) {
 				  nullptr,
 				  sRunComLine.data(),
 				  nullptr, nullptr,
-				  TRUE, CREATE_NEW_PROCESS_GROUP,
+				  TRUE, creationFlags,
 				  nullptr,
 				  startDirectory.IsSet() ?
 				  startDirectory.AsInternal() : nullptr,

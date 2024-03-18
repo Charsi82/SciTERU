@@ -193,7 +193,6 @@ SciTEBase::SciTEBase(Extension *ext) : apis(true), pwFocussed(&wEditor), extende
 	language = "java";
 	lexLanguage = SCLEX_CPP;
 	functionDefinition = "";
-	docReleaser.pSci = &wEditor;
 	diagnosticStyleStart = 0;
 	stripTrailingSpaces = false;
 	ensureFinalLineEnd = false;
@@ -283,9 +282,14 @@ SciTEBase::SciTEBase(Extension *ext) : apis(true), pwFocussed(&wEditor), extende
 	propsStatus.superPS = &props;
 
 	needReadProperties = false;
+
 #ifdef RB_GMI
 	preserveFocusOnEditor = false; //!-add-[GoMessageImprovement]
 #endif // RB_GMI
+
+#ifdef RB_BTCT2
+	callTipAutomatic = false; //!-add-[BetterCalltips]
+#endif // RB_BTCT2
 
 	quitting = false;
 	canUndo = false;
@@ -636,7 +640,7 @@ SA::Position SciTEBase::GetCaretInLine() {
 
 std::string SciTEBase::GetLine(SA::Line line) {
 	const SA::Span rangeLine(wEditor.LineStart(line), wEditor.LineEnd(line));
-	return wEditor.StringOfSpan(rangeLine);
+	return wEditor.StringOfRange(rangeLine);
 }
 
 std::string SciTEBase::GetCurrentLine() {
@@ -797,12 +801,11 @@ bool SciTEBase::FindMatchingBracePosition(bool editor, SA::Position &braceAtCare
 	char charBefore = '\0';
 	int styleBefore = 0;
 	const SA::Position lengthDoc = win.Length();
-	TextReader acc(win);
 	if ((lengthDoc > 0) && (caretPos > 0)) {
 		// Check to ensure not matching brace that is part of a multibyte character
 		if (win.PositionBefore(caretPos) == (caretPos - 1)) {
-			charBefore = acc[caretPos - 1];
-			styleBefore = acc.StyleAt(caretPos - 1);
+			charBefore = win.CharacterAt(caretPos - 1);
+			styleBefore = win.UnsignedStyleAt(caretPos - 1);
 		}
 	}
 	// Priority goes to character before caret
@@ -821,8 +824,8 @@ bool SciTEBase::FindMatchingBracePosition(bool editor, SA::Position &braceAtCare
 		// No brace found so check other side
 		// Check to ensure not matching brace that is part of a multibyte character
 		if (win.PositionAfter(caretPos) == (caretPos + 1)) {
-			const char charAfter = acc[caretPos];
-			const int styleAfter = acc.StyleAt(caretPos);
+			const char charAfter = win.CharacterAt(caretPos);
+			const int styleAfter = win.UnsignedStyleAt(caretPos);
 			if (charAfter && IsBrace(charAfter) && ((styleAfter == bracesStyleCheck) || (!bracesStyle))) {
 				braceAtCaret = caretPos;
 				isAfter = false;
@@ -995,22 +998,18 @@ std::string SciTEBase::GetCTag(GUI::ScintillaWindow *pw) {
 	}
 
 	if (selStart < selEnd) {
-		return pw->StringOfSpan(SA::Span(selStart, selEnd));
+		return pw->StringOfRange(SA::Span(selStart, selEnd));
 	} else {
 		return std::string();
 	}
 }
 
-void SciTEBase::DropSelectionAt(GUI::ScintillaWindow &win, SA::Position position) {
+void SciTEBase::DropSelectionAt(GUI::ScintillaWindow &win, int selection) {
 	if (win.SelectionMode() != SA::SelectionMode::Stream) {
 		return;
 	}
-	const int selections = win.Selections();
-	for (int sel = 0; sel < selections; ++sel) {
-		if (position >= win.SelectionNStart(sel) && position < win.SelectionNEnd(sel)) {
-			win.DropSelectionN(sel);
-			return;
-		}
+	if (selection >= 0) {
+		win.DropSelectionN(selection);
 	}
 }
 
@@ -1083,7 +1082,7 @@ void SciTEBase::HighlightCurrentWord(bool highlight) {
 }
 
 std::string SciTEBase::GetRangeInUIEncoding(GUI::ScintillaWindow &win, SA::Span span) {
-	return win.StringOfSpan(span);
+	return win.StringOfRange(span);
 }
 
 std::string SciTEBase::GetLine(GUI::ScintillaWindow &win, SA::Line line) {
@@ -1091,14 +1090,14 @@ std::string SciTEBase::GetLine(GUI::ScintillaWindow &win, SA::Line line) {
 	const SA::Position lineEnd = win.LineEnd(line);
 	if ((lineStart < 0) || (lineEnd < 0))
 		return std::string();
-	return win.StringOfSpan(SA::Span(lineStart, lineEnd));
+	return win.StringOfRange(SA::Span(lineStart, lineEnd));
 }
 
 void SciTEBase::RangeExtend(
 	GUI::ScintillaWindow &wCurrent,
 	SA::Span &span,
 	bool (SciTEBase::*ischarforsel)(char ch)) {	///< Function returning @c true if the given char. is part of the selection.
-	if (span.start == span.end && ischarforsel) {
+	if (span.start == span.end) {
 		// Empty span and have a function to extend it
 		const SA::Position lengthDoc = wCurrent.Length();
 		TextReader acc(wCurrent);
@@ -1154,17 +1153,18 @@ std::string SciTEBase::SelectionFilename() {
 }
 
 void SciTEBase::SelectionIntoProperties() {
-	std::string currentSelection = SelectionExtend(nullptr, false);
+	const SA::Span range = pwFocussed->SelectionSpan();
+
+	const std::string currentSelection = GetRangeInUIEncoding(*pwFocussed, range);
 	props.Set("CurrentSelection", currentSelection);
 
-	std::string word = SelectionWord();
+	const std::string word = SelectionWord();
 	props.Set("CurrentWord", word);
 
-	const SA::Span range = PaneFocused().SelectionSpan();
-	props.Set("SelectionStartLine", std::to_string(PaneFocused().LineFromPosition(range.start) + 1));
-	props.Set("SelectionStartColumn", std::to_string(PaneFocused().Column(range.start) + 1));
-	props.Set("SelectionEndLine", std::to_string(PaneFocused().LineFromPosition(range.end) + 1));
-	props.Set("SelectionEndColumn", std::to_string(PaneFocused().Column(range.end) + 1));
+	props.Set("SelectionStartLine", std::to_string(pwFocussed->LineFromPosition(range.start) + 1));
+	props.Set("SelectionStartColumn", std::to_string(pwFocussed->Column(range.start) + 1));
+	props.Set("SelectionEndLine", std::to_string(pwFocussed->LineFromPosition(range.end) + 1));
+	props.Set("SelectionEndColumn", std::to_string(pwFocussed->Column(range.end) + 1));
 }
 
 void SciTEBase::SelectionIntoFind(bool stripEol /*=true*/) {
@@ -2133,7 +2133,7 @@ bool SciTEBase::StartAutoCompleteWord(bool onlyOneWord) {
 				wordEnd++;
 			const SA::Position wordLength = wordEnd - posFind;
 			if (wordLength > rootLength) {
-				const std::string word = wEditor.StringOfSpan(SA::Span(posFind, wordEnd));
+				const std::string word = wEditor.StringOfRange(SA::Span(posFind, wordEnd));
 				if (wordList.Add(word)) {
 					if (onlyOneWord && wordList.Count() > 1) {
 						return true;
@@ -2419,7 +2419,7 @@ bool SciTEBase::StartBlockComment() {
 		if (!placeCommentsAtLineStart) {
 			lineIndent = GetLineIndentPosition(i);
 		}
-		std::string linebuf = wEditor.StringOfSpan(SA::Span(lineIndent, lineEnd));
+		std::string linebuf = wEditor.StringOfRange(SA::Span(lineIndent, lineEnd));
 		// empty lines are not commented
 		if (linebuf.length() < 1)
 			continue;
@@ -2525,7 +2525,7 @@ bool SciTEBase::StartBoxComment() {
 
 	// Insert startComment if needed
 	SA::Position lineStart = wEditor.LineStart(selStartLine);
-	std::string tempString = wEditor.StringOfSpan(SA::Span(lineStart, lineStart + startCommentLength));
+	std::string tempString = wEditor.StringOfRange(SA::Span(lineStart, lineStart + startCommentLength));
 	if (startComment != tempString) {
 		wEditor.InsertText(lineStart, startComment.c_str());
 		selectionStart += startCommentLength;
@@ -2535,7 +2535,7 @@ bool SciTEBase::StartBoxComment() {
 	if (lines <= 1) {
 		// Only a single line was selected, so just append whitespace + end-comment at end of line if needed
 		const SA::Position lineEnd = wEditor.LineEnd(selEndLine);
-		tempString = wEditor.StringOfSpan(SA::Span(lineEnd - endCommentLength, lineEnd));
+		tempString = wEditor.StringOfRange(SA::Span(lineEnd - endCommentLength, lineEnd));
 		if (endComment != tempString) {
 			endComment.insert(0, whiteSpace);
 			wEditor.InsertText(lineEnd, endComment.c_str());
@@ -2544,7 +2544,7 @@ bool SciTEBase::StartBoxComment() {
 		// More than one line selected, so insert middleComments where needed
 		for (SA::Line i = selStartLine + 1; i < selEndLine; i++) {
 			lineStart = wEditor.LineStart(i);
-			tempString = wEditor.StringOfSpan(SA::Span(lineStart, lineStart + middleCommentLength));
+			tempString = wEditor.StringOfRange(SA::Span(lineStart, lineStart + middleCommentLength));
 			if (middleComment != tempString) {
 				wEditor.InsertText(lineStart, middleComment.c_str());
 				selectionEnd += middleCommentLength;
@@ -2556,9 +2556,9 @@ bool SciTEBase::StartBoxComment() {
 		// and end-comment tag after the last line (extra logic is necessary to
 		// deal with the case that user selected the end-comment tag)
 		lineStart = wEditor.LineStart(selEndLine);
-		tempString = wEditor.StringOfSpan(SA::Span(lineStart, lineStart + endCommentLength));
+		tempString = wEditor.StringOfRange(SA::Span(lineStart, lineStart + endCommentLength));
 		if (endComment != tempString) {
-			tempString = wEditor.StringOfSpan(SA::Span(lineStart, lineStart + middleCommentLength));
+			tempString = wEditor.StringOfRange(SA::Span(lineStart, lineStart + middleCommentLength));
 			if (middleComment != tempString) {
 				wEditor.InsertText(lineStart, middleComment.c_str());
 				selectionEnd += middleCommentLength;
@@ -2567,7 +2567,7 @@ bool SciTEBase::StartBoxComment() {
 			// And since we didn't find the end-comment string yet, we need to check the *next* line
 			//  to see if it's necessary to insert an end-comment string and a linefeed there....
 			lineStart = wEditor.LineStart(selEndLine + 1);
-			tempString = wEditor.StringOfSpan(SA::Span(lineStart, lineStart + endCommentLength));
+			tempString = wEditor.StringOfRange(SA::Span(lineStart, lineStart + endCommentLength));
 			if (endComment != tempString) {
 				endComment += eol;
 				wEditor.InsertText(lineStart, endComment.c_str());
@@ -2806,7 +2806,7 @@ void SciTEBase::ConvertIndentation(int tabSize, int useTabs) {
 		const SA::Position indentPos = GetLineIndentPosition(line);
 		constexpr int maxIndentation = 1000;
 		if (indent < maxIndentation) {
-			std::string indentationNow = wEditor.StringOfSpan(SA::Span(lineStart, indentPos));
+			std::string indentationNow = wEditor.StringOfRange(SA::Span(lineStart, indentPos));
 			std::string indentationWanted = CreateIndentation(indent, tabSize, !useTabs);
 			if (indentationNow != indentationWanted) {
 				wEditor.SetTarget(SA::Span(lineStart, indentPos));
@@ -3149,7 +3149,6 @@ void SciTEBase::CharAddedOutput(int ch) {
  * @param ch The character we are dealing with, currently only works with the '>' character
  * @return True if handled, false otherwise
  */
-
 bool SciTEBase::HandleXml(char ch) {
 	// We're looking for this char
 	// Quit quickly if not found
@@ -3179,7 +3178,7 @@ bool SciTEBase::HandleXml(char ch) {
 	if (nCaret - nMin < 3) {
 		return false; // Smallest tag is 3 characters ex. <p>
 	}
-	std::string sel = wEditor.StringOfSpan(SA::Span(nMin, nCaret));
+	std::string sel = wEditor.StringOfRange(SA::Span(nMin, nCaret));
 
 	if (sel[nCaret - nMin - 2] == '/') {
 		// User typed something like "<br/>"
@@ -3585,7 +3584,7 @@ void SciTEBase::MenuCommand(int cmdID, int source) {
 		}
 		break;
 	case IDM_DROPSELECTION:
-		DropSelectionAt(PaneFocused(), contextPosition);
+		DropSelectionAt(PaneFocused(), contextSelection);
 		break;
 	case IDM_CLEAR:
 		PaneSource(source).Clear();
@@ -4724,7 +4723,7 @@ void SciTEBase::CheckMenus() {
 	if (language != last_lang) {
 		for (int i = 0; i < languageMenu.size(); i++) {
 			CheckAMenuItem(IDM_LANGUAGE + i, false);
-}
+		}
 		for (int item = 0; item < languageMenu.size(); item++) {
 			if (languageMenu[item].menuItem[0] == '#') continue;
 			int itemID = IDM_LANGUAGE + item;
@@ -4749,7 +4748,7 @@ void SciTEBase::ContextMenu(GUI::ScintillaWindow& wSource, GUI::Point pt,GUI::Po
 	subMenu[0].CreatePopUp(NULL);
 	bool isAdded = false;
 
-	contextPosition = wSource.CharPositionFromPoint(ptClient.x, ptClient.y);
+	contextSelection = wSource.SelectionFromPoint(ptClient.x, ptClient.y);
 	
 	if (wSource.GetID() == wOutput.GetID()) {
 		std::string userContextMenu = props.GetNewExpandString("user.outputcontext.menu.", ExtensionFileName());
@@ -4760,7 +4759,7 @@ void SciTEBase::ContextMenu(GUI::ScintillaWindow& wSource, GUI::Point pt,GUI::Po
 	}
 	else {
 		std::string userContextMenu = props.GetNewExpandString("user.context.menu.", ExtensionFileName());
-		if (userContextMenu.length() == 0)
+		if (userContextMenu.empty())
 			userContextMenu = props.GetNewExpandString("user.context.menu");
 		std::replace(userContextMenu.begin(), userContextMenu.end(), '|', '\0');
 		const char* userContextItem = userContextMenu.c_str();
@@ -4798,7 +4797,9 @@ int SciTEBase::IsMenuItemEnabled(int cmd) {
 	{
 	case IDM_DROPSELECTION:
 	{
-		return (contextPosition != SA::InvalidPosition && PaneFocused().SelectionMode() == SA::SelectionMode::Stream) ? 1 : 0;
+		//return ((contextSelection >= 0) && (PaneFocused().SelectionMode() == SA::SelectionMode::Stream)) ? 1 : 0;
+		//return (PaneFocused().Selections() > 1 && PaneFocused().SelectionMode() == SA::SelectionMode::Stream) ? 1 : 0;
+		return (PaneFocused().Selections() > 1) ? 1 : 0;
 	}
 	case IDM_SAVEALL:
 	{
@@ -4913,9 +4914,9 @@ void SciTEBase::GenerateMenu(MenuEx* subMenu, const char*& userContextItem,
 void SciTEBase::ContextMenu(GUI::ScintillaWindow &wSource, GUI::Point pt, GUI::Point ptClient, GUI::Window wCmd) {
 	const SA::Position currentPos = wSource.CurrentPos();
 	const SA::Position anchor = wSource.Anchor();
-	contextPosition = wSource.CharPositionFromPoint(ptClient.x, ptClient.y);
-	const bool isStreamSelction = wSource.SelectionMode() == SA::SelectionMode::Stream;
-	const bool allowDrop = isStreamSelction && (contextPosition != SA::InvalidPosition);
+	contextSelection = wSource.SelectionFromPoint(ptClient.x, ptClient.y);
+	const bool isStreamSelection = wSource.SelectionMode() == SA::SelectionMode::Stream;
+	const bool allowDrop = isStreamSelection && (contextSelection >= 0);
 	popup.CreatePopUp();
 	const bool writable = !wSource.ReadOnly();
 	AddToPopUp("Undo", IDM_UNDO, writable && wSource.CanUndo());
@@ -5248,10 +5249,9 @@ void SciTEBase::StartRecordMacro() {
  */
 bool SciTEBase::RecordMacroCommand(const SCNotification *notification) {
 #ifdef RB_OnSendEditor
-	if (extender && !static_iOnSendEditorCallsCount) { //!-change-[OnSendEditor]
-#else
-	if (extender) {
+	if (!static_iOnSendEditorCallsCount) { //!-change-[OnSendEditor]
 #endif //RB_OnSendEditor
+	if (extender) {
 		std::string sMessage = StdStringFromInteger(notification->message);
 		sMessage += ";";
 		sMessage += std::to_string(notification->wParam);
@@ -5268,6 +5268,9 @@ bool SciTEBase::RecordMacroCommand(const SCNotification *notification) {
 		const bool handled = extender->OnMacro("macro:record", sMessage.c_str());
 		return handled;
 	}
+#ifdef RB_OnSendEditor
+	}
+#endif //RB_OnSendEditor
 	return true;
 }
 
@@ -5537,9 +5540,9 @@ intptr_t SciTEBase::Send(Pane p, SA::Message msg, uintptr_t wParam, intptr_t lPa
 }
 std::string SciTEBase::Range(Pane p, SA::Span range) {
 	if (p == paneEditor)
-		return wEditor.StringOfSpan(range);
+		return wEditor.StringOfRange(range);
 	else
-		return wOutput.StringOfSpan(range);
+		return wOutput.StringOfRange(range);
 }
 void SciTEBase::Remove(Pane p, SA::Position start, SA::Position end) {
 	if (p == paneEditor) {

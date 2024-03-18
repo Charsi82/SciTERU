@@ -536,14 +536,15 @@
     <ClCompile Include="..\..\scintilla\win32\ScintillaWin.cxx">
       <Filter>scintilla</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\scintilla\src\ChangeHistory.cxx" />
     <ClCompile Include="..\src\LuaUtf8.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexLua.cxx">
       <Filter>lexers</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\scintilla\src\ChangeHistory.cxx">
+      <Filter>scintilla</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\lexilla\lexlib\CatalogueModules.h" />
     <ClInclude Include="..\src\Cookie.h" />
     <ClInclude Include="..\src\EditorConfig.h" />
     <ClInclude Include="..\src\Extender.h" />
@@ -782,8 +783,13 @@
     <ClInclude Include="..\..\scintilla\win32\WinTypes.h">
       <Filter>scintilla</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\scintilla\src\ChangeHistory.h" />
     <ClInclude Include="..\src\SciTE_RB_defs.h" />
+    <ClInclude Include="..\..\scintilla\src\ChangeHistory.h">
+      <Filter>scintilla</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\lexilla\lexlib\CatalogueModules.h">
+      <Filter>lexilla</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\win32\SciTERes.rc" />
