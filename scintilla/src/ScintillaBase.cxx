@@ -353,6 +353,8 @@ void ScintillaBase::AutoCompleteMove(int delta) {
 }
 
 void ScintillaBase::AutoCompleteMoveToCurrentWord() {
+	if (FlagSet(ac.options, AutoCompleteOption::SelectFirstItem))
+		return;
 	std::string wordCurrent = RangeText(ac.posStart - ac.startLen, sel.MainCaret());
 	ac.Select(wordCurrent.c_str());
 }
@@ -395,7 +397,7 @@ void ScintillaBase::AutoCompleteCharacterDeleted() {
 		AutoCompleteMoveToCurrentWord();
 #ifdef RB_ACI
 		//!-start-[autocompleteword.incremental]
-		NotificationData scn = {};
+		NotificationData scn{};
 		scn.nmhdr.code = Notification::AutoCUpdated;
 		scn.wParam = 0;
 		scn.listType = 0;
@@ -462,36 +464,7 @@ void ScintillaBase::AutoCompleteCompleted(char ch, CompletionMethods completionM
 		endPos = pdoc->ExtendWordSelect(endPos, 1, true);
 	if (endPos < firstPos)
 		return;
-
-#ifdef RB_ACMERGE1
-	Sci::Position shift = 0;
-	const size_t buffsize = pdoc->LineEndPosition(endPos) - endPos;
-	if (buffsize > 0)
-	{
-		std::string s1(selected.size(), '\0');
-		std::string s2(buffsize, '\0');
-		pdoc->GetCharRange(s2.data(), endPos, buffsize);
-		// case insensitive
-		auto _tolower = [](unsigned char c) { return static_cast<unsigned char>(std::tolower(c)); };
-		std::transform(selected.begin(), selected.end(), s1.begin(), _tolower);
-		std::transform(s2.begin(), s2.end(), s2.begin(), _tolower);
-		const size_t cnt = std::min(s1.size(), s2.size());
-		for (size_t m = 1; m <= cnt; ++m)
-		{
-			//cut m characters from tail
-			std::string_view substr1(s1.data() + s1.size() - m, m);
-			if (s2._Starts_with(substr1))
-			{
-				shift = m;
-				break;
-			}
-		}
-	}
-	AutoCompleteInsert(firstPos, endPos - firstPos + shift, selected);
-#else
 	AutoCompleteInsert(firstPos, endPos - firstPos, selected);
-#endif
-
 	SetLastXChosen();
 
 	AutoCompleteNotifyCompleted(ch, completionMethod, firstPos, selected.c_str());

@@ -9,7 +9,7 @@
 #define ILEXER_H
 
 #include "Sci_Position.h"
-
+#include "SciTE_RB_defs.h" //+
 namespace Scintilla {
 
 enum { dvRelease4=2 };

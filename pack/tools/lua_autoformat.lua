@@ -3,7 +3,7 @@
 	Autoformatter fo Lua scripts
 	Authors: Charsi
 	Using: https://github.com/Koihik/LuaFormatter
-	version 1.0.2
+	version 1.0.3
 ------------------------------------------------------
 	Автоформатирование текста Lua скриптов
 ------------------------------------------------------
@@ -17,28 +17,17 @@
 	command.shortcut.114.$(file.patterns.lua)=Alt+F
 --]] -------------------------------------------------
 local lf_path = [[.\utils\lua-format.exe]]
+local err_file = [[.\utils\lua_formatter_info.txt]]
 local cur_file = props['FilePath']:from_utf8(0)
 local options = "--indent-width=1 --use-tab --column-limit=300 --line-breaks-after-function-body=1"
 
 local res, err = load(editor:GetText())
 if not res then
-	print('syntax error:', err)
+	print('LuaFormatter: Syntax Error:', err)
 	return
 end
 
-local f = io.open(cur_file)
-if f then
-	local content = f:read("a")
-	local len_or_err, err_pos = utf8.len(content)
-	if not len_or_err then
-		f:close()
-		print('non unicode file!')
-		return
-	end
-end
-f:close()
-
-local s = io.popen(string.format("%s %q %s", lf_path, cur_file, options))
+local s = io.popen(string.format("%s %q %s 2>%s", lf_path, cur_file, options, err_file))
 if s then
 
 	local function get_bookmarks()
@@ -66,9 +55,17 @@ if s then
 			if editor:MarkerGet(v.line, 2) // 2 % 2 ~= 1 then editor:MarkerAdd(v.line, 1) end
 		end
 		scite.MenuCommand(IDM_SAVE)
+		print("LuaFormatter success:", cur_file)
 	else
-		print('LuaFormatter error: invalid options')
+		local errf = io.open(err_file)
+		if errf then
+			local content = errf:read("a")
+			if #content > 0 then print("LuaFormatter info:\n", content) end
+			errf:close()
+		end
 	end
+else
+	print("LuaFormatter: call popen failed")
 end
 
 --[[

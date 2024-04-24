@@ -11,8 +11,10 @@
 #define GUI_H
 
 #include "SciTE_RB_defs.h"
+#ifdef RB_ENCODING
 #include <ScintillaTypes.h>
-#include <chrono>
+#endif
+
 namespace GUI {
 
 class Point {
@@ -92,7 +94,6 @@ std::string ConvertToUTF8(const std::string& s, int codePage);
 std::string UpperCaseUTF8(std::string_view sv);
 //!-end-[FixEncoding]
 #endif
-
 typedef void *WindowID;
 class Window {
 protected:

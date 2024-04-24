@@ -95,8 +95,8 @@ SciTE Ru-Board additions defines
 // [LexersFoldFix]
 #define RB_LFF
 
-// [LexersLastWordFix]
-#define RB_LLWF
+// [LexersLastWordFix]	deprecated
+// #define RB_LLWF
 
 // [LocalizationFromLua]
 #define RB_LFL
@@ -280,6 +280,9 @@ SciTE Ru-Board additions defines
 // [warning.couldnotopenfile.disable]
 #define RB_WNRSUPRESS
 
+// управление static_build и т.п. особенностями сборки
+#define RB_BUILD
+
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 // открывает файл, вместо ярлыка файла
@@ -342,7 +345,7 @@ SciTE Ru-Board additions defines
 #define RB_SF
 
 // поглощение совпадающих символов в строке при выборе из списка автозавершения
-#define RB_ACMERGE
+// #define RB_ACMERGE
 
 // восстановление сессии при открытии одиночного файла
 #define RB_RSOL

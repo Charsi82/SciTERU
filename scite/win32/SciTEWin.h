@@ -492,8 +492,4 @@ inline HMENU HmenuID(size_t id) noexcept {
 	return reinterpret_cast<HMENU>(id);
 }
 
-inline POINT *PointPointer(GUI::Point *pt) noexcept {
-	return reinterpret_cast<POINT *>(pt);
-}
-
 #endif

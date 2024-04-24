@@ -906,7 +906,7 @@ void SciTEWin::UserStripSet(int control, const char *value) {
 #ifdef RB_USVC // RB: userstrip visible condition added
 	if (userStrip.visible) userStrip.Set(control, value);
 #else
-	userStrip.Set(control, value); // RB:condition visible added
+	userStrip.Set(control, value);
 #endif
 }
 
@@ -917,11 +917,7 @@ void SciTEWin::UserStripSetTipText(int control, const char* value) {
 #endif
 
 void SciTEWin::UserStripSetList(int control, const char *value) {
-#ifdef RB_USVC // RB: userstrip visible condition added
-	if (userStrip.visible) userStrip.SetList(control, value);
-#else
 	userStrip.SetList(control, value);
-#endif	
 }
 
 std::string SciTEWin::UserStripValue(int control) {

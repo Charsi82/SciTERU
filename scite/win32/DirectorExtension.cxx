@@ -275,7 +275,6 @@ bool DirectorExtension::OnClick(int) {
 bool DirectorExtension::OnMouseButtonUp(int) {
 	return false;
 }
-
 #endif // RB_OMBU
 
 #ifdef RB_ODBCLK

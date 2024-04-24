@@ -224,7 +224,7 @@ static void ColourisePropsDoc(Sci_PositionU startPos, Sci_Position length, int, 
 			//else
 			ColourisePropsLine(lineBuffer.data(), lineBuffer.length(), startLine, i,keywordlists, styler, allowInitialSpaces);
 #else
-			ColourisePropsLine(lineBuffer.data(), lineBuffer.length(), startLine, i, styler, allowInitialSpaces);
+			ColourisePropsLine(lineBuffer.c_str(), lineBuffer.length(), startLine, i, styler, allowInitialSpaces);
 #endif // RB_PKS
 
 #endif
@@ -245,7 +245,6 @@ static void ColourisePropsDoc(Sci_PositionU startPos, Sci_Position length, int, 
 #else
 		ColourisePropsLine(lineBuffer.c_str(), lineBuffer.length(), startLine, startPos + length - 1, styler, allowInitialSpaces);
 #endif // RB_PKS
-
 	}
 }
 

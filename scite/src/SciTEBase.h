@@ -431,7 +431,6 @@ protected:
 #endif // RB_ECM
 
 	int contextSelection = -1;
-
 	bool tbVisible;
 	bool tabVisible;
 	bool tabHideOne; // Hide tab bar if one buffer is opened only

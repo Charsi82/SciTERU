@@ -19,9 +19,9 @@
 
 #include "ILexer.h"
 #include "Scintilla.h"
-#include "WordList.h"
 #include "SciLexer.h"
 
+#include "WordList.h"
 #include "LexAccessor.h"
 #include "Accessor.h"
 #include "StyleContext.h"
@@ -336,6 +336,6 @@ static const char * const cronWordListDesc[] = {
 #ifdef RB_FRIM
 LexerModule lmNncrontab(SCLEX_NNCRONTAB, ColouriseNncrontabDoc, "nncrontab", FoldNncrontabDoc, cronWordListDesc); //!-change-[ForthImprovement]
 #else
-LexerModule lmNncrontab(SCLEX_NNCRONTAB, ColouriseNncrontabDoc, "nncrontab", nullptr, cronWordListDesc);
+LexerModule lmNncrontab(SCLEX_NNCRONTAB, ColouriseNncrontabDoc, "nncrontab", 0, cronWordListDesc);
 #endif // RB_FRIM
 

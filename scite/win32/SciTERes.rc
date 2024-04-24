@@ -205,13 +205,18 @@ END
 POPUP "&Help"
 BEGIN
 	MENUITEM "&Help\tF1", 				IDM_HELP
-//#ifdef STATIC_BUILD
-	//MENUITEM "&Sc1 Help",			IDM_HELP_SCITE
-	//MENUITEM "&About Sc1",				IDM_ABOUT
-//#else
+#ifdef RB_BUILD
 	MENUITEM "&SciTE Help",			IDM_HELP_SCITE
 	MENUITEM "&About SciTE",			IDM_ABOUT
-//#endif
+#else
+#ifdef STATIC_BUILD
+	MENUITEM "&Sc1 Help",			IDM_HELP_SCITE
+	MENUITEM "&About Sc1",				IDM_ABOUT
+#else
+	MENUITEM "&SciTE Help",			IDM_HELP_SCITE
+	MENUITEM "&About SciTE",			IDM_ABOUT
+#endif
+#endif // RB_BUILD
 END
 
 END
@@ -596,7 +601,6 @@ IDR_BUTTONS BITMAP "buttons.bmp"	//!-add-[user.toolbar]
 #else
 IDR_CLOSEFILE BITMAP "closefile.bmp"
 #endif
-
 IDR_CLOSEFILE24 BITMAP "closefile24.bmp"
 
 IDBM_WORD BITMAP "word.bmp"
@@ -636,9 +640,13 @@ IDBM_32_FILTER BITMAP "filter32.bmp"
 IDBM_32_CONTEXT BITMAP "context32.bmp"
 
 //The embedded properties file is to allow a one file distribution of Sc1.EXE
-//#ifdef STATIC_BUILD
+#ifdef RB_BUILD
 Embedded Properties Embedded.properties
-//#endif
+#else
+#ifdef STATIC_BUILD
+Embedded Properties Embedded.properties
+#endif
+#endif
 IDC_DRAGDROP       CURSOR  DISCARDABLE     "DragDrop.cur"
 
 VS_VERSION_INFO VERSIONINFO

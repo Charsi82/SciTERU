@@ -2238,6 +2238,21 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
       <td><dfn><a name="lexer.cpp.allow.dollars">lexer.cpp.allow.dollars</a></dfn></td>
       <td>Задайте этой переменной значение <var>0</var>, чтобы запретить символ &#39;<code>$</code>&#39; в идентификаторах с лексером cpp.</td>
     </tr>
+ 
+	<tr>
+      <td><dfn><a name="lexer.cpp.backquoted.strings">lexer.cpp.backquoted.strings</a></dfn></td>
+      <td>Установите способ выделения строк в обратных кавычках. 0 (по умолчанию) без выделения. 1 выделена как необработанная строка Go. 2 выделен как литерал шаблона JavaScript.</td>
+    </tr>
+
+	<tr>
+      <td><dfn><a name="lexer.cpp.escape.sequence">lexer.cpp.escape.sequence</a></dfn></td>
+      <td>Установите значение 1, чтобы включить выделение escape-последовательностей в строках.</td>
+    </tr>
+
+	<tr>
+      <td><dfn><a name="lexer.cpp.hashquoted.strings">lexer.cpp.hashquoted.strings</a></dfn></td>
+      <td>Установите значение 1, чтобы включить подсветку строк в хеш-кавычках.</td>
+    </tr>
 
     <tr>
       <td><dfn><a name="lexer.cpp.track.preprocessor">lexer.cpp.track.preprocessor</a></dfn></td>
@@ -2245,13 +2260,18 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
     </tr>
 
     <tr>
-      <td>lexer.cpp.triplequoted.strings</td>
-      <td>Set to 1 to enable highlighting of triple-quoted strings.</td>
+      <td><dfn><a name="lexer.cpp.triplequoted.strings">lexer.cpp.triplequoted.strings</a></dfn></td>
+      <td>Установите значение 1, чтобы включить подсветку строк в тройных кавычках.</td>
     </tr>
 
     <tr>
       <td><dfn><a name="lexer.cpp.update.preprocessor">lexer.cpp.update.preprocessor</a></dfn></td>
-      <td>Set to 1 to update preprocessor definitions when #define found.</td>
+      <td>Установите значение 1, чтобы обновлять определения препроцессора при обнаружении #define.</td>
+    </tr>
+
+    <tr>
+      <td><dfn><a name="lexer.cpp.verbatim.strings.allow.escapes">lexer.cpp.verbatim.strings.allow.escapes</a></dfn></td>
+      <td>Установите значение 1, чтобы дословные строки могли содержать escape-последовательности.</td>
     </tr>
 
 	<tr>
@@ -2864,7 +2884,7 @@ if "Language:Korean" in open(sys.argv[1]).read():<br>
       <td>Лексер разбивает текст на синтаксические части. После этого SciTE может отображать эти части в различных визуальных стилях. Лексеры, входящие в SciTE, предназначены для таких популярных языков программирования, как Python, Java, C/C++, JavaScript и VB. Часто несколько типов файлов относятся к одному языку (например, файлы с расширением .cpp, .cc, .h относятся к C++) и, следовательно, к одному лексеру. Данные опции ассоциируют имя файла с лексером.<br />
           Лексеры, входящие в SciTE, написаны на C++ и скомпилированы в исполняемое ядро программы.
           Также лексеры могут быть написаны в виде <a href="ScriptLexer.html">Lua скриптов</a>.
-          Кроме этого возможно применение скриптовых лексеров из пакета <a href="http://code.google.com/p/scintillua/">scintillua</a>, которые используют Lua LPeg парсер.</td>
+          Кроме этого возможно применение скриптовых лексеров из пакета <a href="https://orbitalquark.github.io/scintillua">scintillua</a>, которые используют Lua LPeg парсер.</td>
     </tr>
 
     <tr>
@@ -3844,7 +3864,7 @@ if "Language:Korean" in open(sys.argv[1]).read():<br>
   <h3><a name="creatapi">Создание API файлов</a></h3>
 
   <p><code>*.api</code>-файл представляет собой текстовый документ, формат которого изложен в описании параметров <dfn><a href="#api">api.<i>filepattern</i></a></dfn> и <dfn><a href="#autocomplete.start.characters">autocomplete.<i>lexer</i></a></dfn>.<br>
-    Такие файлы можно создать вручную или с помощью программы. Существуют также уже готовые <a href="http://code.google.com/p/scite-files/wiki/Customization">.api файлы.</a></p>
+    Такие файлы можно создать вручную или с помощью программы. Существуют также уже готовые <a href="https://github.com/moltenform/scite-files">.api файлы.</a></p>
 
   <p>Для C/C++ файлов API-файлы можно создавать с помощью <a href="http://ctags.sourceforge.net/">ctags</a>, а затем скрипта на Python <a href="tags2api.py">tags2api</a> (что предполагает исходный код на C/C++) на основе файла тегов для выполения захвата прототипов функций, расположенных на нескольких строках. Некоторые часто используемые файлы заголовков окружают списки параметров макросом &quot;<code>__P</code>&quot; и могут иметь комментарии. Для таких файлов может быть использована утилита <a href="cleanapi.cc">cleanapi</a>.<br>
     API файл для модулей Python создается с помощью скрипта <a href="gen_python_api.py">gen_python_api</a>.<br>
@@ -3859,7 +3879,7 @@ if "Language:Korean" in open(sys.argv[1]).read():<br>
 
   <p>Если в каталоге, определяемом переменной <a href="#SciteVar"><code>SciteDefaultHome</code></a> присутствует файл <code>locale.properties</code>, с записями в формате:
   <div class="example">Menu Item=Перевод данного пункта</div> то имеющиеся пункты интерфейса будут отображены SciTE на языке переводчика.<br>
-    Различные локализации SciTE можно найти на <a href="http://code.google.com/p/scite-files/wiki/Translations">этой странице</a>.</p>
+    Различные локализации SciTE можно найти на <a href="https://github.com/moltenform/scite-files/blob/main/files/translations.md">этой странице</a>.</p>
 
   <h3><a name="build">Сборка SciTE</a></h3>
 

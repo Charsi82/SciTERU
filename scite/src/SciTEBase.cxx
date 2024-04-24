@@ -1984,7 +1984,7 @@ void SciTEBase::ContinueCallTip() {
 	int commas = 0;
 #ifdef RB_BTCT3
 	if(FindLanguageProperty("calltip.*.fixcolorize", "0") == "1")
-	for (SA::Position i = startCalltipWord - 1; i>0; i--) {
+	for (SA::Position i = startCalltipWord - 1; i>0 ; i--) {
 		if (line[i] == '.')
 			break;
 		if (line[i] == ':') {
@@ -4733,7 +4733,7 @@ void SciTEBase::CheckMenus() {
 				CheckAMenuItem(itemID, true);
 				last_lang = language;
 				//break;
-			}
+}
 		}
 	}
 	//!-end-[LangMenuChecker]

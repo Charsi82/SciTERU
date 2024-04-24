@@ -8,14 +8,12 @@
 #ifndef WORDLIST_H
 #define WORDLIST_H
 
-#include "SciTE_RB_defs.h"
-
 namespace Lexilla {
 
 /**
  */
 class WordList {
-	// Each word contains at least one character - a empty word acts as sentinel at the end.
+	// Each word contains at least one character - an empty word acts as sentinel at the end.
 	char **words;
 	char *list;
 	size_t len;

@@ -23,12 +23,17 @@
 
 #endif
 
-//#ifdef STATIC_BUILD
-//const GUI::gui_char appName[] = GUI_TEXT("Sc1");
-//#else
+#ifdef RB_BUILD
 const GUI::gui_char appName[] = GUI_TEXT("SciTE");
 static const GUI::gui_char scintillaName[] = GUI_TEXT("Scintilla.DLL");
-//#endif
+#else
+#ifdef STATIC_BUILD
+const GUI::gui_char appName[] = GUI_TEXT("Sc1");
+#else
+const GUI::gui_char appName[] = GUI_TEXT("SciTE");
+static const GUI::gui_char scintillaName[] = GUI_TEXT("Scintilla.DLL");
+#endif
+#endif // RB_BUILD
 
 #define XMAS_JOKE_DAY 354
 
@@ -1405,7 +1410,7 @@ void SciTEWin::ShellExec(std::string_view cmd, std::string_view dir) {
 		s = strstr(mycmdLowered, ".com");
 	std::string cmdcopy(cmd);
 	char *mycmdcopy = &cmdcopy[0];
-	char *mycmd;
+	const char *mycmd;
 	char *mycmdEnd = nullptr;
 	if (s && ((*(s + 4) == '\0') || (*(s + 4) == ' '))) {
 		ptrdiff_t len_mycmd = s - mycmdLowered + 4;
@@ -1813,11 +1818,15 @@ void ContentWin::Paint(HDC hDC, GUI::Rectangle) {
 }
 
 void SciTEWin::AboutDialog() {
-//#ifdef STATIC_BUILD
-	//AboutDialogWithBuild(1);
-//#else
+#ifdef RB_BUILD
 	AboutDialogWithBuild(0);
-//#endif
+#else
+#ifdef STATIC_BUILD
+	AboutDialogWithBuild(1);
+#else
+	AboutDialogWithBuild(0);
+#endif
+#endif // RB_BUILD
 }
 
 /**

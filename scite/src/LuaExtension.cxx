@@ -31,17 +31,22 @@
 #include "SciTEKeys.h"
 #include "LuaExtension.h"
 
-//#define LUA_COMPAT_5_1
+#ifdef RB_BUILD
 #define LUA_COMPAT_5_3
+#else
+#define LUA_COMPAT_5_1
+#endif
 extern "C" {
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
 }
 
+#ifdef RB_BUILD
 #include "Scintilla.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#endif
 
 #ifdef RB_UTF8
 //!-start-[EncodingToLua]
@@ -136,14 +141,14 @@ bool IFaceFunctionIsScriptable(const IFaceFunction &f) noexcept {
 bool IFacePropertyIsScriptable(const IFaceProperty &p) noexcept {
 	return (((p.valueType > iface_void) && (p.valueType <= iface_stringresult) && (p.valueType != iface_keymod)) &&
 		((p.paramType < iface_colour) || (p.paramType == iface_string) ||
-			(p.paramType == iface_bool)) && (p.getter || p.setter));
+		 (p.paramType == iface_bool)) && (p.getter || p.setter));
 }
 
-const char* push_string(lua_State* L, const std::string& s) noexcept {
+const char *push_string(lua_State *L, const std::string &s) noexcept {
 	return lua_pushlstring(L, s.data(), s.length());
 }
 
-void raise_error(lua_State* L, const char* errMsg = nullptr) noexcept {
+void raise_error(lua_State *L, const char *errMsg=nullptr) noexcept {
 	luaL_where(L, 1);
 	if (errMsg) {
 		lua_pushstring(L, errMsg);
@@ -2644,8 +2649,8 @@ bool LuaExtension::OnKey(int keyval, int modifiers, char ch) { //!-change-[OnKey
 			handled = call_function(luaState, 5);
 		} else {
 			lua_pop(luaState, 1);
-		}
-	}
+}
+}
 	return handled;
 }
 #else
