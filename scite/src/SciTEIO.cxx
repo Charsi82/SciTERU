@@ -49,11 +49,15 @@
 #include "JobQueue.h"
 #include "Cookie.h"
 #include "Worker.h"
+#include "Utf8_16.h"
 #include "FileWorker.h"
 #include "MatchMarker.h"
 #include "Searcher.h"
 #include "SciTEBase.h"
-#include "Utf8_16.h"
+
+#ifdef RB_FRLS
+constexpr GUI::gui_char pathSepChar = '\\';
+#endif //RB_FRLS
 
 #ifdef RB_LINK
 // part of Notepad++
@@ -313,6 +317,10 @@ SA::DocumentOption LoadingOptions(const PropSetFile &props, const long long file
 	return docOptions;
 }
 
+void AddText(GUI::ScintillaWindow &wDestination, std::string_view sv) {
+	wDestination.AddText(sv.size(), sv.data());
+}
+
 }
 
 void SciTEBase::OpenCurrentFile(const long long fileSize, bool suppressMessage, bool asynchronous) {
@@ -343,10 +351,6 @@ void SciTEBase::OpenCurrentFile(const long long fileSize, bool suppressMessage, 
 	}
 
 	FILE *fp = filePath.Open(fileRead);
-#ifdef RB_UTF8AC
-	int check_utf8 = props.GetInt("utf8.auto.check"); //!-add-[utf8.auto.check]
-#endif // RB_UTF8AC
-
 	if (!fp) {
 		if (!suppressMessage) {
 			GUI::gui_string msg = LocaliseMessage("Could not open file '^0'.", filePath.AsInternal());
@@ -359,6 +363,10 @@ void SciTEBase::OpenCurrentFile(const long long fileSize, bool suppressMessage, 
 	}
 
 	const SA::Position bufferSize = static_cast<SA::Position>(fileAllocationSize);
+
+#ifdef RB_UTF8AC
+	const int check_utf8 = props.GetInt("utf8.auto.check"); //!-add-[utf8.auto.check]
+#endif // RB_UTF8AC
 
 	CurrentBuffer()->SetTimeFromFile();
 
@@ -382,6 +390,7 @@ void SciTEBase::OpenCurrentFile(const long long fileSize, bool suppressMessage, 
 		}
 		CurrentBuffer()->pFileWorker = std::make_unique<FileLoader>(this, pdocLoad, filePath, static_cast<size_t>(fileSize), fp);
 		CurrentBuffer()->pFileWorker->sleepTime = props.GetInt("asynchronous.sleep");
+
 #ifdef RB_UTF8AC
 		CurrentBuffer()->pFileWorker->check_utf8 = check_utf8; //!-add-[utf8.auto.check]
 #endif // RB_UTF8AC
@@ -390,49 +399,40 @@ void SciTEBase::OpenCurrentFile(const long long fileSize, bool suppressMessage, 
 	} else {
 		wEditor.Allocate(bufferSize);
 
-#ifndef RB_UTF8AC
-		Utf8_16_Read convert;
-#endif // !RB_UTF8AC
-
+		std::unique_ptr<Utf8_16::Reader> convert = Utf8_16::Reader::Allocate();
 		std::vector<char> data(blockSize);
-		size_t lenFile = fread(&data[0], 1, data.size(), fp);
+		size_t lenFile = fread(data.data(), 1, data.size(), fp);
+
 #ifdef RB_UTF8AC
-		//!-start-[utf8.auto.check]	
+		//!-start-[utf8.auto.check]
 		UniMode umCodingCookie = CodingCookieValue(std::string_view(data.data(), lenFile));
 		if (umCodingCookie == UniMode::uni8Bit && check_utf8 == 2) {
-			if (Has_UTF8_Char((unsigned char*)&data[0], lenFile)) {
+			if (Has_UTF8_Char(data.data(), lenFile)) {
 				umCodingCookie = UniMode::cookie;
 			}
 		}
-		Utf8_16_Read convert(umCodingCookie == UniMode::uni8Bit && check_utf8 == 1);
+		convert->set_utf8_autocheck(umCodingCookie == UniMode::uni8Bit && check_utf8 == 1);
 		//!-end-[utf8.auto.check]
-#else
-		const UniMode umCodingCookie = CodingCookieValue(std::string_view(data.data(), lenFile));
 #endif // RB_UTF8AC
 
 		while (lenFile > 0) {
-			lenFile = convert.convert(&data[0], lenFile);
-			const char *dataBlock = convert.getNewBuf();
-			wEditor.AddText(lenFile, dataBlock);
-			lenFile = fread(&data[0], 1, data.size(), fp);
-			if (lenFile == 0) {
-				// Handle case where convert is holding a lead surrogate but no more data
-				const size_t lenFileTrail = convert.convert(nullptr, lenFile);
-				if (lenFileTrail) {
-					const char *dataTrail = convert.getNewBuf();
-					wEditor.AddText(lenFileTrail, dataTrail);
-				}
-			}
+			const std::string_view dataBlock = convert->convert(std::string_view(data.data(), lenFile));
+			AddText(wEditor, dataBlock);
+			lenFile = fread(data.data(), 1, data.size(), fp);
 		}
 		fclose(fp);
+		// Handle case where convert is holding a lead surrogate but no more data
+		const std::string_view dataTrail = convert->convert("");
+		AddText(wEditor, dataTrail);
 		wEditor.EndUndoAction();
 
-		CurrentBuffer()->unicodeMode = static_cast<UniMode>(
-						       static_cast<int>(convert.getEncoding()));
+		CurrentBuffer()->unicodeMode = convert->getEncoding();
+#ifdef RB_UTF8AC
 		// Check the first two lines for coding cookies
 		if (CurrentBuffer()->unicodeMode == UniMode::uni8Bit) {
 			CurrentBuffer()->unicodeMode = umCodingCookie;
 		}
+#endif // RB_UTF8AC
 
 		CompleteOpen(OpenCompletion::synchronous);
 	}
@@ -492,7 +492,7 @@ void SciTEBase::CompleteOpen(OpenCompletion oc) {
 	}
 
 #ifdef RB_EUM
-	props.Set("editor.unicode.mode", std::to_string((int)CurrentBuffer()->unicodeMode + IDM_ENCODING_DEFAULT)); //!-add-[EditorUnicodeMode]
+	props.Set("editor.unicode.mode", std::to_string(static_cast<int>(CurrentBuffer()->unicodeMode) + IDM_ENCODING_DEFAULT)); //!-add-[EditorUnicodeMode]
 #endif // RB_EUM
 
 	if (oc != OpenCompletion::synchronous) {
@@ -1351,33 +1351,26 @@ bool SciTEBase::SaveBuffer(const FilePath &saveName, SaveFlags sf) {
 					WindowMessageBox(wSciTE, msg);
 				}
 			} else {
-				Utf8_16_Write convert;
-				if (CurrentBuffer()->unicodeMode != UniMode::cookie) {	// Save file with cookie without BOM.
-					convert.setEncoding(static_cast<Utf8_16::encodingType>(
-								    static_cast<int>(CurrentBuffer()->unicodeMode)));
-				}
-				convert.setfile(fp);
-				std::vector<char> data(blockSize + 1);
+				std::unique_ptr<Utf8_16::Writer> convert = Utf8_16::Writer::Allocate(CurrentBuffer()->unicodeMode, blockSize);
+				std::vector<char> data(blockSize);
 				retVal = true;
-				size_t grabSize = 0;
-				for (size_t i = 0; i < lengthDoc; i += grabSize) {
-					grabSize = lengthDoc - i;
-					if (grabSize > blockSize)
-						grabSize = blockSize;
+				for (size_t startBlock = 0; startBlock < lengthDoc;) {
+					size_t grabSize = std::min<size_t>(lengthDoc - startBlock, blockSize);
 					// Round down so only whole characters retrieved.
-					grabSize = wEditor.PositionBefore(i + grabSize + 1) - i;
-					const SA::Position startBlock = i;
+					grabSize = wEditor.PositionBefore(startBlock + grabSize + 1) - startBlock;
 					const SA::Span rangeGrab(startBlock, startBlock + grabSize);
 					CopyText(wEditor, data.data(), rangeGrab);
-					const size_t written = convert.fwrite(data.data(), grabSize);
+					const size_t written = convert->fwrite(std::string_view(data.data(), grabSize), fp);
 					if (written == 0) {
 						retVal = false;
 						break;
 					}
+					startBlock += grabSize;
 				}
-				if (convert.fclose() != 0) {
+				if (fclose(fp) != 0) {
 					retVal = false;
 				}
+				fp = nullptr;
 			}
 		}
 	}
@@ -1519,7 +1512,7 @@ bool SciTEBase::IsStdinBlocked() noexcept {
 }
 
 void SciTEBase::OpenFromStdin(bool UseOutputPane) {
-	Utf8_16_Read convert;
+	std::unique_ptr<Utf8_16::Reader> convert = Utf8_16::Reader::Allocate();
 	std::vector<char> data(blockSize);
 
 	/* if stdin is blocked, do not execute this method */
@@ -1527,22 +1520,16 @@ void SciTEBase::OpenFromStdin(bool UseOutputPane) {
 		return;
 
 	Open(FilePath());
-	if (UseOutputPane) {
-		wOutput.ClearAll();
-	} else {
+	GUI::ScintillaWindow &wText = UseOutputPane ? wOutput : wEditor;
+	if (!UseOutputPane) {
 		wEditor.BeginUndoAction();	// Group together clear and insert
-		wEditor.ClearAll();
 	}
-	size_t lenFile = fread(&data[0], 1, data.size(), stdin);
-	const UniMode umCodingCookie = CodingCookieValue(std::string_view(data.data(), lenFile));
+	wText.ClearAll();
+	size_t lenFile = fread(data.data(), 1, data.size(), stdin);
 	while (lenFile > 0) {
-		lenFile = convert.convert(&data[0], lenFile);
-		if (UseOutputPane) {
-			wOutput.AddText(lenFile, convert.getNewBuf());
-		} else {
-			wEditor.AddText(lenFile, convert.getNewBuf());
-		}
-		lenFile = fread(&data[0], 1, data.size(), stdin);
+		const std::string_view dataConverted = convert->convert(std::string_view(data.data(), lenFile));
+		AddText(wText, dataConverted);
+		lenFile = fread(data.data(), 1, data.size(), stdin);
 	}
 	if (UseOutputPane) {
 		if (props.GetInt("split.vertical") == 0) {
@@ -1554,12 +1541,7 @@ void SciTEBase::OpenFromStdin(bool UseOutputPane) {
 	} else {
 		wEditor.EndUndoAction();
 	}
-	CurrentBuffer()->unicodeMode = static_cast<UniMode>(
-					       static_cast<int>(convert.getEncoding()));
-	// Check the first two lines for coding cookies
-	if (CurrentBuffer()->unicodeMode == UniMode::uni8Bit) {
-		CurrentBuffer()->unicodeMode = umCodingCookie;
-	}
+	CurrentBuffer()->unicodeMode = convert->getEncoding();
 	if (CurrentBuffer()->unicodeMode != UniMode::uni8Bit) {
 		// Override the code page if Unicode
 		codePage = SA::CpUtf8;

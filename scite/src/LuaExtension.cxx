@@ -2644,13 +2644,13 @@ bool LuaExtension::OnKey(int keyval, int modifiers, char ch) { //!-change-[OnKey
 			lua_pushboolean(luaState, CheckModifiers(modifiers, SA::KeyMod::Shift)); // shift/lock
 			lua_pushboolean(luaState, CheckModifiers(modifiers, SA::KeyMod::Ctrl)); // control
 			lua_pushboolean(luaState, CheckModifiers(modifiers, SA::KeyMod::Alt)); // alt
-			char str[2] = { ch, 0 };
+			const char str[2] = { ch, 0 };
 			lua_pushstring(luaState, str);
 			handled = call_function(luaState, 5);
 		} else {
 			lua_pop(luaState, 1);
-}
-}
+		}
+	}
 	return handled;
 }
 #else

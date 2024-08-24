@@ -427,7 +427,8 @@ protected:
 	GUI::Window wTabBar;
 
 #ifndef RB_ECM
-	GUI::Menu popup; //!-remove-[ExtendedContextMenu]
+	//!-remove-[ExtendedContextMenu]
+	GUI::Menu popup;
 #endif // RB_ECM
 
 	int contextSelection = -1;
@@ -755,6 +756,7 @@ protected:
 	virtual std::string EncodeString(const std::string &s);
 	virtual void Find() = 0;
 	enum class MessageBoxChoice {
+		invalid = -1,
 		ok,
 		cancel,
 		yes,

@@ -83,55 +83,36 @@ SciTEWin *Caller(HWND hDlg, UINT message, LPARAM lParam) noexcept {
 
 }
 
-#ifdef RB_WRNM
+#ifdef RB_WRNM  //!-[WarningMessage]
 void SciTEWin::WarnUser(int warnID, const char* msg /* = NULL */, bool isCanBeAlerted /* = true */) { //!-change-[WarningMessage]
-#else
-void SciTEWin::WarnUser(int warnID) {
-#endif // RB_WRNM
 
 	std::string warning;
-
-#ifdef RB_WRNM
 	std::string warning_msg; //!-add-[WarningMessage]
-#endif
 
 	switch (warnID) {
 	case warnFindWrapped:
 		warning = props.GetString("warning.findwrapped");
-
-#ifdef RB_WRNM
 		warning_msg = props.GetString("warning.findwrapped.message"); //!-add-[WarningMessage]
-#endif
 		break;
 	case warnNotFound:
 		warning = props.GetString("warning.notfound");
-#ifdef RB_WRNM
 		warning_msg = props.GetString("warning.notfound.message"); //!-add-[WarningMessage]
-#endif
 		break;
 	case warnWrongFile:
 		warning = props.GetString("warning.wrongfile");
-#ifdef RB_WRNM
 		warning_msg = props.GetString("warning.wrongfile.message"); //!-add-[WarningMessage]
-#endif
 		break;
 	case warnExecuteOK:
 		warning = props.GetString("warning.executeok");
-#ifdef RB_WRNM
 		warning_msg = props.GetString("warning.executeok.message"); //!-add-[WarningMessage]
-#endif
 		break;
 	case warnExecuteKO:
 		warning = props.GetString("warning.executeko");
-#ifdef RB_WRNM
 		warning_msg = props.GetString("warning.executeko.message"); //!-add-[WarningMessage]
-#endif
 		break;
 	case warnNoOtherBookmark:
 		warning = props.GetString("warning.nootherbookmark");
-#ifdef RB_WRNM
 		warning_msg = props.GetString("warning.nootherbookmark.message"); //!-add-[WarningMessage]
-#endif
 		break;
 	default:
 		warning = "";
@@ -156,8 +137,7 @@ void SciTEWin::WarnUser(int warnID) {
 		FlashThisWindow(HwndOf(wEditor), flashLen);
 	}
 	PlayThisSound(sound.c_str(), duration, hMM);
-#ifdef RB_WRNM
-	//!-start-[WarningMessage]
+
 	if (warning_msg.length() > 0 && isCanBeAlerted) {
 		warning_msg = GUI::UTF8FromString(localiser.Text(warning_msg)).c_str();
 		warning_msg += "     ";
@@ -168,9 +148,56 @@ void SciTEWin::WarnUser(int warnID) {
 		}
 		WindowMessageBox(wEditor, GUI::StringFromUTF8(warning_msg), MB_OK | MB_ICONWARNING);
 	}
-	//!-end-[WarningMessage]
-#endif
 }
+
+#else //!-else-[WarningMessage]
+void SciTEWin::WarnUser(int warnID) {
+
+	std::string warning;
+	switch (warnID) {
+	case warnFindWrapped:
+		warning = props.GetString("warning.findwrapped");
+		break;
+	case warnNotFound:
+		warning = props.GetString("warning.notfound");
+		break;
+	case warnWrongFile:
+		warning = props.GetString("warning.wrongfile");
+		break;
+	case warnExecuteOK:
+		warning = props.GetString("warning.executeok");
+		break;
+	case warnExecuteKO:
+		warning = props.GetString("warning.executeko");
+		break;
+	case warnNoOtherBookmark:
+		warning = props.GetString("warning.nootherbookmark");
+		break;
+	default:
+		warning = "";
+		break;
+	}
+
+	const std::vector<std::string> warningFields = StringSplit(warning, ',');
+	int duration = 0;
+	if (warningFields.size() > 2) {
+		duration = IntegerFromString(warningFields[2], 0);
+	}
+	std::string sound;
+	if (warningFields.size() > 1) {
+		sound = warningFields[1];
+	}
+	int flashLen = 0;
+	if (warningFields.size() > 0) {
+		flashLen = IntegerFromString(warningFields[0], 0);
+	}
+
+	if (flashLen) {
+		FlashThisWindow(HwndOf(wEditor), flashLen);
+	}
+	PlayThisSound(sound.c_str(), duration, hMM);
+}
+#endif //RB_WRNM
 
 bool SciTEWin::DialogHandled(GUI::WindowID id, MSG *pmsg) noexcept {
 	if (id) {

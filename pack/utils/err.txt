@@ -1,2 +1,0 @@
-using default configuration
-formatting: C:\\Users\\User\\Desktop\\tool2\\tool_utf8.script

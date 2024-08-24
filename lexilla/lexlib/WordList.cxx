@@ -16,6 +16,7 @@
 
 #include "SciTE_RB_defs.h"
 #include "WordList.h"
+
 using namespace Lexilla;
 
 namespace {

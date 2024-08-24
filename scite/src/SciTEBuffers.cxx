@@ -47,10 +47,15 @@
 #include "JobQueue.h"
 #include "Cookie.h"
 #include "Worker.h"
+#include "Utf8_16.h"
 #include "FileWorker.h"
 #include "MatchMarker.h"
 #include "Searcher.h"
 #include "SciTEBase.h"
+
+#ifdef RB_FRLS
+constexpr GUI::gui_char pathSepChar = '\\';
+#endif //RB_FRLS
 
 const GUI::gui_char defaultSessionFileName[] = GUI_TEXT("SciTE.session");
 

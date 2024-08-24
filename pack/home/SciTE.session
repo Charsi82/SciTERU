@@ -1,10 +1,77 @@
 # SciTE session file
 
-position.left=623
-position.top=137
-position.width=1180
-position.height=849
+position.left=444
+position.top=126
+position.width=1409
+position.height=832
 position.maximize=0
+
+mru.1.path=C:\Users\User\Desktop\path_test\456678\bin64\paths.xml
+mru.2.path=E:\Program Files\korabli_mods\old\lisa.lua
+mru.3.path=C:\Users\User\Desktop\mod_copy.lua
+mru.4.path=C:\Users\User\Desktop\path_test\mod_enable.lua
+mru.5.path=E:\downloads\POTOChNAYa_OBRABOTKA_1_SERIYa.odt
+mru.6.path=E:\scite543\pack\tools\SciTEStartup.lua
+mru.7.path=E:\scite543\pack\tools\LuaLib\xml2lua.lua
+mru.8.path=E:\Program Files\korabli_mods\mk_copy.lua
+mru.9.path=E:\scite543\lua_format_err.txt
+mru.10.path=E:\Program Files\Korabli\bin\8275422\res_mods\banks\mods\STLK_SIDOR\mod.xml
+mru.11.path=E:\Program Files\korabli_mods\bonuscode.lua
+mru.12.path=E:\Program Files\korabli_mods\mod_copy.lua
+mru.13.path=E:\Program Files\korabli_mods\mod_enable.lua
+mru.14.path=E:\Program Files\Korabli_PT\res_unpack\banks\Languages\RU\mod.xml
+mru.15.path=E:\snd_mod_mk\utils\gen_audiomod_xml.lua
+mru.16.path=E:\snd_mod_mk\utils\wem2mp3\_convert_wem2mp3.bat
+mru.17.path=C:\Users\User\Desktop\Rust\test123\src\main.rs
+mru.18.path=E:\snd_mod_mk\utils\event_data.lua
+mru.19.path=C:\Users\User\Desktop\scite\scite changes_utf8.txt
+mru.20.path=C:\Users\User\Desktop\scite\scite changes_utf16_LE_bom.txt
+mru.21.path=C:\Users\User\Desktop\scite\scite changes_utf16_BE_bom.txt
+mru.22.path=C:\Users\User\Desktop\scite\scite changes_utf8bom.txt
+mru.23.path=C:\Users\User\Desktop\scite changes_ansi.rtf
+mru.24.path=C:\Users\User\Desktop\scite\scite changes_ansi.txt
+mru.25.path=C:\Users\User\Desktop\scite changes.txt
+mru.26.path=E:\snd_mod_mk\stlk_sidor\prefixes.txt
+mru.27.path=E:\scite550\pack\home\SciTEUser.properties
+mru.28.path=C:\Users\User\Desktop\test — копия.script
+mru.29.path=E:\scite550\pack\SciTEGlobal.properties
+mru.30.path=C:\Users\User\Desktop\test.lua
+
+search.1.findwhat=autocompleteword.automatic
+search.2.findwhat=AutoComplete
+search.3.findwhat=check
+search.4.findwhat=Hydroacoustic
+search.5.findwhat=ExternalEvent
+search.6.findwhat=_Autopilot
+search.7.findwhat=Module_State_Crit
+search.8.findwhat=Module_Type_TA
+search.9.findwhat=Modules_TA
+search.10.findwhat=path_pt
+
+search.1.replacewith=path_client
+search.2.replacewith=path_mods
+search.3.replacewith=CMD_QUICK
+search.4.replacewith=FilePrefix = "CMD_QUICK_Receive
+search.5.replacewith=command_key
+search.6.replacewith=# f
+search.7.replacewith=# l
+search.8.replacewith=# s
+search.9.replacewith=lua_old_func
+search.10.replacewith==xrlua_old.
+
+buffer.1.path=C:\Users\User\Desktop\test — копия.script
+buffer.1.position=68
+buffer.1.scroll=0
+
+buffer.2.path=E:\scite550\pack\SciTEGlobal.properties
+buffer.2.position=2290
+buffer.2.scroll=6
+buffer.2.folds=256,400,416,428,449,473,506,521,540,565,620,650,724,746,774,780,802,827,872,987,1004,1056,1225,1269,1282,1459,1475,1480,1500,1518,1566
+
+buffer.3.path=C:\Users\User\Desktop\test.lua
+buffer.3.position=83
+buffer.3.scroll=0
+buffer.3.current=1
 
 toolbar.visible=1
 tabbar.visible=1
@@ -19,8 +86,8 @@ output.wrap=1
 magnification=0
 print.magnification=0
 sidebar.show=1
-sidebar.active.tab=0
+sidebar.active.tab=2
 sidebar.win=0
-output.code.page=65001
+output.code.page=0
 highlighting.identical.text=1
 font.set=0

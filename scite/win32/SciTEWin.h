@@ -92,6 +92,7 @@ typedef void *HTHEME;
 #include "JobQueue.h"
 #include "Cookie.h"
 #include "Worker.h"
+#include "Utf8_16.h"
 #include "FileWorker.h"
 #include "MatchMarker.h"
 #include "Searcher.h"
@@ -126,7 +127,7 @@ public:
 
 	CommandWorker() noexcept;
 	void Initialise(bool resetToStart) noexcept;
-	void Execute() override;
+	void Execute() noexcept override;
 };
 
 class Dialog;
@@ -448,7 +449,6 @@ public:
 
 	std::string EncodeString(const std::string &s) override;
 	std::string GetRangeInUIEncoding(GUI::ScintillaWindow &win, SA::Span span) override;
-
 	HACCEL GetAcceleratorTable() noexcept {
 		return hAccTable;
 	}

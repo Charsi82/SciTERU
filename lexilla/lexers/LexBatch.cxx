@@ -59,7 +59,7 @@ constexpr bool IsBSeparator(char ch) noexcept {
 }
 
 // Tests for escape character
-bool IsEscaped(const char* wordStr, Sci_PositionU pos) noexcept {
+constexpr bool IsEscaped(const char* wordStr, Sci_PositionU pos) noexcept {
 	bool isQoted=false;
 	while (pos>0){
 		pos--;
@@ -71,46 +71,40 @@ bool IsEscaped(const char* wordStr, Sci_PositionU pos) noexcept {
 	return isQoted;
 }
 
-// Tests for quote character
-bool textQuoted(const char *lineBuffer, Sci_PositionU endPos) {
-	char strBuffer[1024];
-	strncpy(strBuffer, lineBuffer, endPos);
-	strBuffer[endPos] = '\0';
+constexpr bool IsQuotedBy(std::string_view svBuffer, char quote) noexcept {
 	bool CurrentStatus = false;
-	const char strQuotes[] = "\"'";
-	const size_t strLength = strlen(strQuotes);
-	for (size_t i = 0; i < strLength; i++) {
-		const char *pQuote = strchr(strBuffer, strQuotes[i]);
-		while (pQuote)
-		{
-			if (!IsEscaped(strBuffer, pQuote - strBuffer)) {
-				CurrentStatus = !CurrentStatus;
-			}
-			pQuote = strchr(pQuote + 1, strQuotes[i]);
+	size_t pQuote = svBuffer.find(quote);
+	while (pQuote != std::string_view::npos) {
+		if (!IsEscaped(svBuffer.data(), pQuote)) {
+			CurrentStatus = !CurrentStatus;
 		}
-		if (CurrentStatus) {
-			break;
-		}
+		pQuote = svBuffer.find(quote, pQuote + 1);
 	}
 	return CurrentStatus;
+}
+
+// Tests for quote character
+constexpr bool textQuoted(const char *lineBuffer, Sci_PositionU endPos) noexcept {
+	const std::string_view svBuffer(lineBuffer, endPos);
+	return IsQuotedBy(svBuffer, '\"') || IsQuotedBy(svBuffer, '\'');
 }
 
 #ifdef RB_BALI
 //!-start-[BatchLexerImprovement]
 // Tests for Environment Variable simbol
-static inline bool IsEnvironmentVar(char ch)
+inline bool IsEnvironmentVar(char ch)
 {
 	return isalpha(ch) || Is0To9(ch) || (ch == '_');
 }
 
 // Tests for BATCH Variable simbol
-static inline bool IsBatchVar(char ch)
+inline bool IsBatchVar(char ch)
 {
 	return isalpha(ch) || Is0To9(ch);
 }
 
 // Find length of BATCH Variable with modifier (%~...) or return 0
-static Sci_PositionU GetBatchVarLen(char* wordBuffer, Sci_PositionU wbl)
+Sci_PositionU GetBatchVarLen(char* wordBuffer, Sci_PositionU wbl)
 {
 	if (wbl > 2 && wordBuffer[0] == '%' && wordBuffer[1] == '~') {
 		wordBuffer += 2;
@@ -144,15 +138,15 @@ static Sci_PositionU GetBatchVarLen(char* wordBuffer, Sci_PositionU wbl)
 					else
 						if (wbl > 3 &&
 							(wordBuffer[0] == 'f' || wordBuffer[0] == 'F' ||
-								wordBuffer[0] == 'd' || wordBuffer[0] == 'D' ||
-								wordBuffer[0] == 'p' || wordBuffer[0] == 'P' ||
-								wordBuffer[0] == 'n' || wordBuffer[0] == 'N' ||
-								wordBuffer[0] == 'x' || wordBuffer[0] == 'X' ||
-								wordBuffer[0] == 's' || wordBuffer[0] == 'S' ||
-								wordBuffer[0] == 'a' || wordBuffer[0] == 'A' ||
-								wordBuffer[0] == 't' || wordBuffer[0] == 'T' ||
-								wordBuffer[0] == 'z' || wordBuffer[0] == 'Z') &&
-							IsBatchVar(wordBuffer[1])) {
+							wordBuffer[0] == 'd' || wordBuffer[0] == 'D' ||
+							wordBuffer[0] == 'p' || wordBuffer[0] == 'P' ||
+							wordBuffer[0] == 'n' || wordBuffer[0] == 'N' ||
+							wordBuffer[0] == 'x' || wordBuffer[0] == 'X' ||
+							wordBuffer[0] == 's' || wordBuffer[0] == 'S' ||
+							wordBuffer[0] == 'a' || wordBuffer[0] == 'A' ||
+							wordBuffer[0] == 't' || wordBuffer[0] == 'T' ||
+							wordBuffer[0] == 'z' || wordBuffer[0] == 'Z')
+							&& IsBatchVar(wordBuffer[1])) {
 							return 4;
 						}
 						else
@@ -860,7 +854,7 @@ void ColouriseBatchDoc(
 
 #ifdef RB_BALI
 //!-start-[BatchLexerImprovement]
-static void FoldBatchDoc(Sci_PositionU startPos, Sci_Position length, int,
+void FoldBatchDoc(Sci_PositionU startPos, Sci_Position length, int,
 	WordList* [], Accessor& styler)
 {
 	int line = styler.GetLine(startPos);

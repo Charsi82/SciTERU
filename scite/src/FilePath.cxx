@@ -52,14 +52,14 @@
 
 #if defined(__unix__) || defined(__APPLE__)
 const GUI::gui_char pathSepString[] = "/";
-const GUI::gui_char pathSepChar = '/';
+constexpr GUI::gui_char pathSepChar = '/';
 const GUI::gui_char listSepString[] = ":";
 const GUI::gui_char configFileVisibilityString[] = ".";
 #endif
-#ifdef WIN32
+#ifdef _WIN32
 // Windows
 const GUI::gui_char pathSepString[] = GUI_TEXT("\\");
-const GUI::gui_char pathSepChar = '\\';
+constexpr GUI::gui_char pathSepChar = '\\';
 const GUI::gui_char listSepString[] = GUI_TEXT(";");
 const GUI::gui_char configFileVisibilityString[] = GUI_TEXT("");
 #endif
@@ -119,8 +119,8 @@ namespace {
 // Encapsulate Win32 CompareStringW
 [[nodiscard]] int Compare(const GUI::gui_string &a, const GUI::gui_string &b) noexcept {
 	return ::CompareStringW(LOCALE_SYSTEM_DEFAULT, NORM_IGNORECASE,
-		a.c_str(), static_cast<int>(a.length()),
-		b.c_str(), static_cast<int>(b.length()));
+		a.c_str(), -1,
+		b.c_str(), -1);
 }
 
 }
@@ -163,7 +163,7 @@ bool FilePath::IsAbsolute() const noexcept {
 	if (fileName[0] == '/')
 		return true;
 #endif
-#ifdef WIN32
+#ifdef _WIN32
 	if (fileName[0] == pathSepChar || fileName[1] == ':')	// UNC path or drive separator
 		return true;
 #endif
@@ -172,7 +172,7 @@ bool FilePath::IsAbsolute() const noexcept {
 }
 
 bool FilePath::IsRoot() const noexcept {
-#ifdef WIN32
+#ifdef _WIN32
 	if (fileName.length() >= 2 && (fileName[0] == pathSepChar) && (fileName[1] == pathSepChar)) {
 		// Starts with "\\" so could be UNC \\server or \\server\share
 		const size_t posSep = fileName.find(pathSepChar, 2);
@@ -189,7 +189,7 @@ bool FilePath::IsRoot() const noexcept {
 }
 
 int FilePath::RootLength() noexcept {
-#ifdef WIN32
+#ifdef _WIN32
 	return 3;
 #else
 	return 1;
@@ -301,8 +301,8 @@ FilePath FilePath::NormalizePath() const {
 		return FilePath();
 	}
 	GUI::gui_string path(fileName);
-#ifdef WIN32
-	// Convert unix path separators to Windows
+#ifdef _WIN32
+	// Convert Unix path separators to Windows
 	std::replace(path.begin(), path.end(), L'/', pathSepChar);
 #endif
 	GUI::gui_string_view source = path;
@@ -345,9 +345,9 @@ FilePath FilePath::NormalizePath() const {
 }
 
 GUI::gui_string FilePath::RelativePathTo(const FilePath &filePath) const {
-	// Only handles simple case where filePath is in this directory or a subdirectory
+	// Only handles simple case where filePath is in this directory or a sub-directory
 	GUI::gui_string relPath = filePath.fileName;
-	if (!fileName.empty() && StartsWith(relPath, fileName)) {
+	if (!fileName.empty() && relPath.starts_with(fileName)) {
 		relPath = relPath.substr(fileName.length());
 		if (!relPath.empty()) {
 			// Remove directory separator
@@ -362,8 +362,8 @@ GUI::gui_string FilePath::RelativePathTo(const FilePath &filePath) const {
  * If the path is absolute, return the same path.
  */
 FilePath FilePath::AbsolutePath() const {
-#ifdef WIN32
-	// The runtime libraries for GCC and Visual C++ give different results for _fullpath
+#ifdef _WIN32
+	// The run-time libraries for GCC and Visual C++ give different results for _fullpath
 	// so use the OS.
 	GUI::gui_char absPath[2000] {};
 	GUI::gui_char *fileBit = nullptr;
@@ -380,7 +380,7 @@ FilePath FilePath::AbsolutePath() const {
 
 FilePath FilePath::GetWorkingDirectory() {
 	// Call getcwd with (nullptr, 0) to always allocate
-#ifdef WIN32
+#ifdef _WIN32
 	GUI::gui_char *pdir = _wgetcwd(nullptr, 0);
 #else
 	GUI::gui_char *pdir = getcwd(nullptr, 0);
@@ -422,7 +422,7 @@ FilePath FilePath::UserHomeDirectory() {
 }
 
 void FilePath::List(FilePathSet &directories, FilePathSet &files) const {
-#ifdef WIN32
+#ifdef _WIN32
 	FilePath wildCard(*this, GUI_TEXT("*.*"));
 	WIN32_FIND_DATAW findFileData;
 	HANDLE hFind = ::FindFirstFileW(wildCard.AsInternal(), &findFileData);
@@ -486,10 +486,10 @@ std::string FilePath::Read() const {
 	FileHolder fp(Open(fileRead));
 	if (fp) {
 		std::string block(readBlockSize, '\0');
-		size_t lenBlock = fread(&block[0], 1, block.size(), fp.get());
+		size_t lenBlock = fread(block.data(), 1, block.size(), fp.get());
 		while (lenBlock > 0) {
 			data.append(block, 0, lenBlock);
-			lenBlock = fread(&block[0], 1, block.size(), fp.get());
+			lenBlock = fread(block.data(), 1, block.size(), fp.get());
 		}
 	}
 	return data;
@@ -517,7 +517,7 @@ time_t FilePath::ModifiedTime() const noexcept {
 }
 
 long long FilePath::GetFileLength() const noexcept {
-#ifdef WIN32
+#ifdef _WIN32
 	// Using Win32 API as stat variants are complex and there were problems with stat
 	// working on XP when compiling with XP compatibility flag.
 	WIN32_FILE_ATTRIBUTE_DATA fad {};
@@ -543,7 +543,7 @@ bool FilePath::Exists() const noexcept {
 bool FilePath::IsDirectory() const noexcept {
 	FileStatus statusFile;
 	if (stat(AsInternal(), &statusFile) != -1)
-#ifdef WIN32
+#ifdef _WIN32
 		return (statusFile.st_mode & _S_IFDIR) != 0;
 #else
 		return (statusFile.st_mode & S_IFDIR) != 0;
@@ -558,9 +558,8 @@ namespace {
 void Lowercase(GUI::gui_string &s) {
 	const int sLength = static_cast<int>(s.length());
 	const int chars = ::LCMapString(LOCALE_SYSTEM_DEFAULT, LCMAP_LOWERCASE, s.c_str(), sLength, nullptr, 0);
-	GUI::gui_string vc(chars, 0);
-	::LCMapString(LOCALE_SYSTEM_DEFAULT, LCMAP_LOWERCASE, s.c_str(), sLength, vc.data(), chars);
-	s = vc;
+	s.resize(chars);
+	::LCMapString(LOCALE_SYSTEM_DEFAULT, LCMAP_LOWERCASE, s.c_str(), sLength, s.data(), chars);
 }
 #endif
 
@@ -618,7 +617,7 @@ bool FilePath::Matches(GUI::gui_string_view pattern) const {
 	return false;
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 
 namespace {
 
@@ -673,7 +672,7 @@ bool MakeLongPath(const GUI::gui_char *shortPath, GUI::gui_string &longPath) {
 #endif
 
 void FilePath::FixName() {
-#ifdef WIN32
+#ifdef _WIN32
 	// Only used on Windows to use long file names and fix the case of file names
 	GUI::gui_string longPath;
 	// first try MakeLongPath which corrects the path and the case of filename too
@@ -682,7 +681,7 @@ void FilePath::FixName() {
 	} else {
 		// On Windows file comparison is done case insensitively so the user can
 		// enter scite.cxx and still open this file, SciTE.cxx. To ensure that the file
-		// is saved with correct capitalisation FindFirstFile is used to find out the
+		// is saved with correct capitalization FindFirstFile is used to find out the
 		// real name of the file.
 		WIN32_FIND_DATAW FindFileData;
 		HANDLE hFind = ::FindFirstFileW(AsInternal(), &FindFileData);

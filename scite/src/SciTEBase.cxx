@@ -56,6 +56,7 @@
 
 #include "Cookie.h"
 #include "Worker.h"
+#include "Utf8_16.h"
 #include "FileWorker.h"
 #include "MatchMarker.h"
 #include "EditorConfig.h"
@@ -1182,14 +1183,16 @@ void SciTEBase::SelectionIntoFind(bool stripEol /*=true*/) {
 		int findFillout = props.GetInt("find.fillout", 0);
 		switch (findFillout) {
 		case 2:
-			; //never fill search field
+			//never fill search field
 			sel = "";
 			break;
 		case 1:
-			sel = SelectionExtend(0, stripEol); //fill with selection, if none leave blank
+ 			//fill with selection, if none leave blank
+ 			sel = SelectionExtend(0, stripEol);
 			break;
 		default:
-			//sel = SelectionWord(stripEol); //fill with word if no selection is present
+			//fill with word if no selection is present
+			//sel = SelectionWord(stripEol);
 			break;
 		}
 		//!-end-[find.fillout]
@@ -1225,7 +1228,7 @@ void SciTEBase::SelectionAdd(AddSelection add) {
 
 std::string SciTEBase::EncodeString(const std::string &s) {
 	return s;
-}
+} 
 
 static std::string UnSlashAsNeeded(const std::string &s, bool escapes, bool regularExpression) {
 	if (escapes) {
@@ -2085,7 +2088,7 @@ bool SciTEBase::StartAutoComplete() {
 						    calltipParametersStart.c_str(), autoCompleteIgnoreCase);
 		if (!words.empty()) {
 			std::string wordsUnique = EliminateDuplicateWords(words);
-			wEditor.AutoCSetSeparator(' ');
+			wEditor.AutoCSetSeparator(' ');		 wordsUnique += " point1";
 			wEditor.AutoCSetMaxHeight(autoCompleteVisibleItemCount);
 			wEditor.AutoCShow(root.length(), wordsUnique.c_str());
 		}
@@ -4721,19 +4724,17 @@ void SciTEBase::CheckMenus() {
 	//!-start-[LangMenuChecker]
 	static std::string last_lang = "";
 	if (language != last_lang) {
-		for (int i = 0; i < languageMenu.size(); i++) {
-			CheckAMenuItem(IDM_LANGUAGE + i, false);
+		for (size_t i = 0; i < languageMenu.size(); i++) {
+			CheckAMenuItem(IDM_LANGUAGE + static_cast<int>(i), false);
 		}
-		for (int item = 0; item < languageMenu.size(); item++) {
+		for (size_t item = 0; item < languageMenu.size(); item++) {
 			if (languageMenu[item].menuItem[0] == '#') continue;
-			int itemID = IDM_LANGUAGE + item;
-			std::string fn = "x.";
-			fn += languageMenu[item].extension;
+			const int itemID = IDM_LANGUAGE + static_cast<int>(item);
+			const std::string fn = "x." + languageMenu[item].extension;
 			if (language == props.GetNewExpandString("lexer.", fn)) {
 				CheckAMenuItem(itemID, true);
 				last_lang = language;
-				//break;
-}
+			}
 		}
 	}
 	//!-end-[LangMenuChecker]

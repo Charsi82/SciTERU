@@ -73,10 +73,26 @@ end
 fb:close() -- close read
 
 print("saving result...")
-local text = table.concat(res,"\n"):gsub([[;%.%.\lua\src]], [[;..\..\lualib\src]], 1):gsub([[  </ItemDefinitionGroup>]],[[    <PostBuildEvent>
+local text = table.concat(res,"\n"):gsub("<PropertyGroup Label=\"Globals\">","%1\r\n    <ProjectName>SciTE</ProjectName>"):gsub(
+"  <PropertyGroup Label=\"UserMacros\" />",[[
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="SciTERU.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="SciTERU.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="SciTERU.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="SciTERU.props" />
+  </ImportGroup>
+%1]])
+-- :gsub([[;%.%.\lua\src]], [[;..\..\lualib\src]], 1):
+--[=[gsub([[  </ItemDefinitionGroup>]],[[    <PostBuildEvent>
       <Command>copy "$(TargetPath)" "$(SolutionDir)../../pack\"</Command>
     </PostBuildEvent>
-  </ItemDefinitionGroup>]], 1)
+  </ItemDefinitionGroup>]], 1)]=]
 f = io.open(path,"wb")
 f:write(text)
 f:close()

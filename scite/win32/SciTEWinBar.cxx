@@ -684,7 +684,7 @@ void SciTEWin::CheckMenus() {
 	if (props.GetInt("toolbar.visible") != 0) {
 		if (HWND hToolBar = HwndOf(wToolBar)) {
 			const std::string fileNameForExtension = ExtensionFileName();
-			for (int i = 0; i < toolbarUsersPressableButtons.size(); i++) {
+			for (size_t i = 0; i < toolbarUsersPressableButtons.size(); i++) {
 				const std::string prefix = "command.checked." + StdStringFromInteger(toolbarUsersPressableButtons[i] - IDM_TOOLS) + ".";
 				const std::string val = props.GetNewExpandString(prefix, fileNameForExtension);
 				const int ischecked = IntegerFromString(val, 0);
@@ -934,7 +934,7 @@ static LRESULT PASCAL TabWndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM
 	case WM_PAINT: {
 
 #ifdef RB_TABTOP
-			if ( toptab_h ) {
+			if (toptab_h) {
 				RECT tabrc{};
 				TabCtrl_GetItemRect(hWnd, TabCtrl_GetCurSel(hWnd), &tabrc); // rect of selected tab
 				HDC hDC = ::GetDC(hWnd);
