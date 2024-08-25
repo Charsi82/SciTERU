@@ -186,15 +186,14 @@ gui_string StringFromLongLong(long long i) {
 }
 
 	//!-start-[EncodingToLua]
-
-	//int CodePageFromName(const std::string& encodingName) {
-	unsigned int CodePageFromName(std::string_view encodingName) {
+	int CodePageFromName(std::string_view encodingName) noexcept {
 		struct Encoding {
 			const char* name;
-			unsigned int codePage;
-		} knownEncodings[] = {
-			{ "ascii", CP_UTF8/*SC_CP_UTF8*/ },
-			{ "utf-8", CP_UTF8/*SC_CP_UTF8*/ },
+			int codePage;
+		};
+		const Encoding	knownEncodings[] = {
+			{ "ascii", CP_UTF8 },
+			{ "utf-8", CP_UTF8 },
 			{ "latin1", 1252 },
 			{ "latin2", 28592 },
 			{ "big5", 950 },
@@ -206,45 +205,22 @@ gui_string StringFromLongLong(long long i) {
 			{ "iso8859-11", 874 },
 			{ "1250", 1250 },
 			{ "windows-1251", 1251 },
-			{ 0, 0 },
 		};
-		for (Encoding* enc = knownEncodings; enc->name; enc++) {
-			if (encodingName == enc->name) {
-				return enc->codePage;
+		for (const Encoding& enc : knownEncodings) {
+			if (encodingName == enc.name) {
+				return enc.codePage;
 			}
 		}
-		return CP_UTF8/*SC_CP_UTF8*/;
+		return CP_UTF8;
 	}
-
-	//inline wchar_t MyCharUpper(wchar_t c)
-	//{
-	//	return (wchar_t)(unsigned int)(UINT_PTR)CharUpperW((LPWSTR)(UINT_PTR)(unsigned int)c);
-	//}
-	//inline wchar_t MyCharLower(wchar_t c)
-	//{
-	//	return (wchar_t)(unsigned int)(UINT_PTR)CharLowerW((LPWSTR)(UINT_PTR)(unsigned int)c);
-	//}
-	//
-	//std::string UTF8ToUpper(const std::string& str) {
-	//	gui_string s = StringFromUTF8(str.c_str());
-	//	std::transform(s.begin(), s.end(), s.begin(), MyCharUpper);
-	//	return UTF8FromString(s);
-	//}
-	//
-	//std::string UTF8ToLower(const std::string& str) {
-	//	gui_string s = StringFromUTF8(str.c_str());
-	//	std::transform(s.begin(), s.end(), s.begin(), MyCharLower);
-	//	return UTF8FromString(s);
-	//}
-	
 	//!-end-[EncodingToLua]
 
 #ifdef RB_ENCODING
 //!-start-[FixEncoding]
 // from ScintillaWin.cxx
 	unsigned int CodePageFromCharSet(Scintilla::CharacterSet characterSet, unsigned int documentCodePage) {
-		CHARSETINFO ci = { 0, 0, { { 0, 0, 0, 0 }, { 0, 0 } } };
-		BOOL bci = ::TranslateCharsetInfo((DWORD*)characterSet,
+		CHARSETINFO ci{};
+		BOOL bci = ::TranslateCharsetInfo(reinterpret_cast<DWORD*>(static_cast<uintptr_t>(characterSet)),
 			&ci, TCI_SRCCHARSET);
 
 		UINT cp;
@@ -255,7 +231,7 @@ gui_string StringFromLongLong(long long i) {
 		else
 			cp = documentCodePage;
 
-		CPINFO cpi;
+		CPINFO cpi{};
 		if (!::IsValidCodePage(cp) && !::GetCPInfo(cp, &cpi))
 			cp = CP_ACP;
 

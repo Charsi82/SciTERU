@@ -37,8 +37,8 @@ namespace {
 
 #ifdef RB_PKW
 	//!-start-[PropsKeywords]
-	bool isprefix(std::string_view target, std::string_view prefix) {
-		return target._Starts_with(prefix);
+	inline bool isprefix(std::string_view target, std::string_view prefix) noexcept {
+		return target.starts_with(prefix);
 	}
 	//!-end-[PropsKeywords]
 #endif
@@ -97,9 +97,9 @@ namespace {
 				if (isAssignChar(lineBuffer[i++]))
 					styler.ColourTo(startLine + i, SCE_PROPS_ASSIGNMENT);
 				styler.ColourTo(endPos, SCE_PROPS_DEFAULT);
-#ifdef RB_PKW
-				//!-start-[PropsKeywords]
 			}
+#ifdef RB_PKW
+			//!-start-[PropsKeywords]
 			else if (isprefix(lineBuffer, "import ")) {
 				styler.ColourTo(startLine + 6, SCE_PROPS_KEYWORD);
 				styler.ColourTo(endPos, SCE_PROPS_DEFAULT);
@@ -111,10 +111,10 @@ namespace {
 			else if (isprefix(lineBuffer, "match ")) {
 				styler.ColourTo(startLine + 5, SCE_PROPS_KEYWORD);
 				styler.ColourTo(endPos, SCE_PROPS_DEFAULT);
-				//!-end-[PropsKeywords]
+			}
+			//!-end-[PropsKeywords]
 #endif // RB_PKW
 
-			}
 			else {
 				// Search for the '=' character
 				while ((i < lengthLine) && !isAssignChar(lineBuffer[i]))
@@ -154,13 +154,11 @@ namespace {
 #endif
 					styler.ColourTo(startLine + i, SCE_PROPS_ASSIGNMENT);
 					styler.ColourTo(endPos, SCE_PROPS_DEFAULT);
-				}
-				else {
+				} else {
 					styler.ColourTo(endPos, SCE_PROPS_DEFAULT);
 				}
 			}
-		}
-		else {
+		} else {
 			styler.ColourTo(endPos, SCE_PROPS_DEFAULT);
 		}
 #ifdef RB_PCF
@@ -312,13 +310,9 @@ namespace {
 		styler.SetLevel(lineCurrent, level | (flagsNext & ~SC_FOLDLEVELNUMBERMASK));
 	}
 
-	const char* const emptyWordListDesc[] = {
-		nullptr
-	};
-
 #ifdef RB_PKS
 	//!-start-[PropsKeysSets]
-	static const char* const propsWordListDesc[] = {
+	const char* const propsWordListDesc[] = {
 		"Keys set 0",
 		"Keys set 1",
 		"Keys set 2",
@@ -326,7 +320,12 @@ namespace {
 		nullptr
 	};
 	//!-end-[PropsKeysSets]
+#else
+	const char* const emptyWordListDesc[] = {
+		nullptr
+	};
 #endif // RB_PKS
+
 }
 
 #ifdef RB_PKS

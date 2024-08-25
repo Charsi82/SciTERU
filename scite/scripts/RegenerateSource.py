@@ -13,7 +13,7 @@
 
 # Regenerates Scintilla files by calling LexGen.RegenerateAll
 
-import datetime, pathlib, re, sys
+import datetime, html, pathlib, re, sys
 
 sciteBase = pathlib.Path(__file__).resolve().parent.parent
 baseDirectory = sciteBase.parent
@@ -286,6 +286,38 @@ def RecentHistoryVersion(pathHistory):
     release = re.search("Release ([0-9.]+)", contents)
     return release.group(1)
 
+def TagName(t):
+    if ' ' in t:
+        t = t.split()[0]
+    t = "".join(c for c in t if c.isalpha())
+    return t
+
+def CheckTags(text, context):
+    stack = []
+    lineNumber = 0
+    for l in text.splitlines():
+        lineNumber += 1
+        inTag = False
+        tag = ""
+        for ch in l:
+            if ch == '<':
+                tag = ch
+                inTag = True
+            elif inTag:
+                tag = tag + ch
+                if ch == '>':
+                    if not (tag.endswith("/>") or tag.startswith("<?")):
+                        # Start or end tag
+                        if tag.startswith("</"):
+                            # End tag
+                            previous = stack[-1]
+                            if TagName(tag) != TagName(previous[0]):
+                                print(f"{context}:{previous[1]}: tag mismatch {previous[0]} -> {lineNumber} {tag} ")
+                            stack = stack[:len(stack)-1]
+                        else:
+                            stack.append([tag, lineNumber])
+                    inTag = False
+
 def CheckHistoryLinks(pathHistory):
     contents = pathHistory.read_text("utf-8")
 
@@ -319,6 +351,8 @@ def CheckHistoryLinks(pathHistory):
         if linkNums != literalNums and linkNums != "200":
             print(f"{link} {linkNums}-> {literal}")
 
+    CheckTags(contents, pathHistory)
+
 def RegenerateAll():
     sci = ScintillaData.ScintillaData(sciDirectory)
     lex = LexillaData.LexillaData(lexDirectory)
@@ -339,7 +373,7 @@ def RegenerateAll():
     propertiesHTML = []
     for k in documentProperties:
         propertiesHTML.append("        <tr id='property-%s'>\n        <td>%s</td>\n        <td>%s</td>\n        </tr>" %
-            (k, k, lex.propertyDocuments[k]))
+            (k, k, html.escape(lex.propertyDocuments[k], quote=False)))
 
     # Find all the SciTE properties files
     otherProps = [

@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
+    <ProjectName>SciTE</ProjectName>
     <ProjectGuid>{5641EA06-A73C-4297-B287-48B40850C708}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
@@ -75,9 +76,9 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <PreprocessorDefinitions>WIN32;_WINDOWS;STATIC_BUILD;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;LUA_USER_H="scite_lua_win.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\src;..\..\lexilla\include;..\..\lexilla\access;..\..\lexilla\lexlib;..\..\scintilla\include;..\..\scintilla\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src;..\lua\src;..\..\lexilla\include;..\..\lexilla\access;..\..\lexilla\lexlib;..\..\scintilla\include;..\..\scintilla\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BrowseInformation>true</BrowseInformation>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DisableSpecificWarnings>4702;4324</DisableSpecificWarnings>
@@ -94,9 +95,6 @@
       <Culture>0x0c09</Culture>
       <PreprocessorDefinitions>STATIC_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
-    <PostBuildEvent>
-      <Command>copy "$(TargetPath)" "$(SolutionDir)../../pack\"</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -152,7 +150,6 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -174,7 +171,6 @@
     <ClCompile Include="..\..\lexilla\lexlib\LexAccessor.cxx" />
     <ClCompile Include="..\..\lexilla\lexlib\LexerBase.cxx" />
     <ClCompile Include="..\..\lexilla\lexlib\LexerModule.cxx" />
-    <ClCompile Include="..\..\lexilla\lexlib\LexerNoExceptions.cxx" />
     <ClCompile Include="..\..\lexilla\lexlib\LexerSimple.cxx" />
     <ClCompile Include="..\..\lexilla\lexlib\PropSetSimple.cxx" />
     <ClCompile Include="..\..\lexilla\lexlib\StyleContext.cxx" />
@@ -391,7 +387,6 @@
     <ClInclude Include="..\..\lexilla\lexlib\LexAccessor.h" />
     <ClInclude Include="..\..\lexilla\lexlib\LexerBase.h" />
     <ClInclude Include="..\..\lexilla\lexlib\LexerModule.h" />
-    <ClInclude Include="..\..\lexilla\lexlib\LexerNoExceptions.h" />
     <ClInclude Include="..\..\lexilla\lexlib\LexerSimple.h" />
     <ClInclude Include="..\..\lexilla\lexlib\OptionSet.h" />
     <ClInclude Include="..\..\lexilla\lexlib\PropSetSimple.h" />

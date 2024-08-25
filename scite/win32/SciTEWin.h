@@ -410,7 +410,7 @@ public:
 	SciTEWin &operator=(const SciTEWin &) = delete;
 	SciTEWin &operator=(SciTEWin &&) = delete;
 
-	~SciTEWin();
+	~SciTEWin() override;
 
 	static bool DialogHandled(GUI::WindowID id, MSG *pmsg) noexcept;
 	bool ModelessHandler(MSG *pmsg);
@@ -449,12 +449,13 @@ public:
 
 	std::string EncodeString(const std::string &s) override;
 	std::string GetRangeInUIEncoding(GUI::ScintillaWindow &win, SA::Span span) override;
+
 	HACCEL GetAcceleratorTable() noexcept {
 		return hAccTable;
 	}
 
 	uintptr_t GetInstance() override;
-	static void Register(HINSTANCE hInstance_);
+	static void Register(HINSTANCE hInstance_) noexcept;
 	static LRESULT PASCAL TWndProc(
 		HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
 

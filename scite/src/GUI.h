@@ -84,16 +84,14 @@ std::string LowerCaseUTF8(std::string_view sv);
 
 #ifdef RB_ENCODING
 //!-start-[FixEncoding]
-//int CodePageFromName(const std::string& encodingName);
-unsigned int CodePageFromName(std::string_view encodingName);
-unsigned int CodePageFromCharSet(/*unsigned long*/ Scintilla::CharacterSet characterSet, unsigned int documentCodePage);
+int CodePageFromName(std::string_view encodingName) noexcept;
+unsigned int CodePageFromCharSet(Scintilla::CharacterSet characterSet, unsigned int documentCodePage);
 std::string ConvertFromUTF8(const std::string& s, int codePage);
 std::string ConvertToUTF8(const std::string& s, int codePage);
-//std::string UTF8ToUpper(const char* str);
-//std::string UTF8ToLower(const char* str);
 std::string UpperCaseUTF8(std::string_view sv);
 //!-end-[FixEncoding]
 #endif
+
 typedef void *WindowID;
 class Window {
 protected:

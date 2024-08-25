@@ -411,7 +411,7 @@ void SciTEBase::OpenCurrentFile(const long long fileSize, bool suppressMessage, 
 				umCodingCookie = UniMode::cookie;
 			}
 		}
-		convert->set_utf8_autocheck(umCodingCookie == UniMode::uni8Bit && check_utf8 == 1);
+		//convert->set_utf8_autocheck(umCodingCookie == UniMode::uni8Bit && check_utf8 == 1);
 		//!-end-[utf8.auto.check]
 #endif // RB_UTF8AC
 
@@ -1281,12 +1281,12 @@ void SciTEBase::StripTrailingSpaces() {
 	for (SA::Line line = 0; line < maxLines; line++) {
 		const SA::Position lineStart = wEditor.LineStart(line);
 		const SA::Position lineEnd = wEditor.LineEnd(line);
-		SA::Position i = lineEnd;
-		while ((i > lineStart) && IsSpaceOrTab(wEditor.CharacterAt(i-1))) {
-			i--;
+		SA::Position firstSpace = lineEnd;
+		while ((firstSpace > lineStart) && IsSpaceOrTab(wEditor.CharacterAt(firstSpace-1))) {
+			firstSpace--;
 		}
-		if (i < lineEnd) {
-			wEditor.DeleteRange(i, lineEnd-i);
+		if (firstSpace < lineEnd) {
+			wEditor.DeleteRange(firstSpace, lineEnd-firstSpace);
 		}
 	}
 }

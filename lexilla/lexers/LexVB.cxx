@@ -117,8 +117,7 @@ void ColouriseVBDoc(Sci_PositionU startPos, Sci_Position length, int initStyle,
 						sc.ChangeState(SCE_B_KEYWORD4);
 #ifdef RB_VBLI
 						//!-start-[VBLexerImprovement]
-					}
-					else if (keywordlists[4]->Length()) {
+					} else if (keywordlists[4]->Length()) {
 						for (int wl = 4; wl < KEYWORDSET_MAX; wl++) {
 							if (keywordlists[wl]->InList(s)) {
 								sc.ChangeState(SCE_B_KEYWORD4 + wl - 3);

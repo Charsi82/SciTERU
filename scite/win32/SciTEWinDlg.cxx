@@ -182,7 +182,7 @@ void SciTEWin::WarnUser(int warnID) {
 	int duration = 0;
 	if (warningFields.size() > 2) {
 		duration = IntegerFromString(warningFields[2], 0);
-	}
+}
 	std::string sound;
 	if (warningFields.size() > 1) {
 		sound = warningFields[1];

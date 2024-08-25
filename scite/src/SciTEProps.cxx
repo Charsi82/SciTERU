@@ -52,7 +52,7 @@ const GUI::gui_char menuAccessIndicator[] = GUI_TEXT("_");
 const GUI::gui_char menuAccessIndicator[] = GUI_TEXT("&");
 
 #ifdef RB_SD
-//#include "platform.h" //!-add-[StyleDefault] *disabled*
+//#include "platform.h" //!-removed-[StyleDefault]
 #define NOMINMAX
 #include <windows.h> //!-add-[StyleDefault]
 #endif // RB_SD
@@ -603,6 +603,8 @@ static const char *propertiesToForward[] = {
 	"lexer.haskell.allow.quotes",
 	"lexer.haskell.cpp",
 	"lexer.haskell.import.safe",
+	"lexer.html.allow.asp",
+	"lexer.html.allow.php",
 	"lexer.html.django",
 	"lexer.html.mako",
 	"lexer.json.allow.comments",
@@ -642,6 +644,8 @@ static const char *propertiesToForward[] = {
 	"lexer.verilog.update.preprocessor",
 	"lexer.visualprolog.backquoted.strings",
 	"lexer.visualprolog.verbatim.strings",
+	"lexer.xml.allow.asp",
+	"lexer.xml.allow.php",
 	"lexer.xml.allow.scripts",
 	"nsis.ignorecase",
 	"nsis.uservars",
@@ -1038,14 +1042,14 @@ void SciTEBase::ReadProperties() {
 	
 	std::string outputCaretLineBack = props.GetExpandedString("output.caret.line.back");
 	if (outputCaretLineBack.length()) {
-		wOutput.SetCaretLineVisible(true); // (SCI_SETCARETLINEVISIBLE, 1);
+		wOutput.SetCaretLineVisible(true);
 		wOutput.SetCaretLineBack(ColourFromString(outputCaretLineBack));		
 	}
 	else {
 		wOutput.SetCaretLineVisible(false);		
 	}
 	wOutput.SetCaretLineBackAlpha(
-		static_cast<SA::Alpha>(props.GetInt("output.caret.line.back.alpha", static_cast<int>(SA::Alpha::NoAlpha)))); //(SCI_SETCARETLINEBACKALPHA, props.GetInt("output.caret.line.back.alpha", SC_ALPHA_NOALPHA));
+		static_cast<SA::Alpha>(props.GetInt("output.caret.line.back.alpha", static_cast<int>(SA::Alpha::NoAlpha))));
 	//!-end-[output.caret]
 #endif
 

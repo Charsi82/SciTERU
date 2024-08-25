@@ -301,6 +301,7 @@ SciTEBase::SciTEBase(Extension *ext) : apis(true), pwFocussed(&wEditor), extende
 #ifdef RB_OnSendEditor
 	wEditor.pBase = this; //!-add-[OnSendEditor]
 #endif
+
 #ifdef RB_OMC
 	OnMenuCommandCallsCount = 0;	//!-add-[OnMenuCommand]
 #endif // RB_OMC
@@ -547,16 +548,28 @@ void SciTEBase::CheckAppearanceChanged() {
 // but we are normally interested in whether the edit or output pane was
 // most recently focused and should be used by menu commands.
 void SciTEBase::SetPaneFocus(bool editPane) noexcept {
-	pwFocussed = editPane ? &(reinterpret_cast<GUI::ScintillaWindow&>(wEditor)/*wEditor*/) : &wOutput;
+#ifdef RB_OnSendEditor
+	pwFocussed = editPane ? &(reinterpret_cast<GUI::ScintillaWindow&>(wEditor)) : &wOutput;
+#else
+	pwFocussed = editPane ? &wEditor : &wOutput;
+#endif
 }
 
 GUI::ScintillaWindow &SciTEBase::PaneFocused() noexcept {
+#ifdef RB_OnSendEditor
 	return wOutput.HasFocus() ? wOutput : reinterpret_cast<GUI::ScintillaWindow&>(wEditor);
+#else
+	return wOutput.HasFocus() ? wOutput : wEditor;
+#endif
 }
 
 GUI::ScintillaWindow &SciTEBase::PaneSource(int destination) noexcept {
 	if (destination == IDM_SRCWIN)
-		return reinterpret_cast<GUI::ScintillaWindow&>(wEditor)/*wEditor*/;
+#ifdef RB_OnSendEditor
+		return reinterpret_cast<GUI::ScintillaWindow&>(wEditor);
+#else	
+		return wEditor;
+#endif
 	else if (destination == IDM_RUNWIN)
 		return wOutput;
 	else
@@ -1228,7 +1241,7 @@ void SciTEBase::SelectionAdd(AddSelection add) {
 
 std::string SciTEBase::EncodeString(const std::string &s) {
 	return s;
-} 
+}
 
 static std::string UnSlashAsNeeded(const std::string &s, bool escapes, bool regularExpression) {
 	if (escapes) {
@@ -2088,7 +2101,7 @@ bool SciTEBase::StartAutoComplete() {
 						    calltipParametersStart.c_str(), autoCompleteIgnoreCase);
 		if (!words.empty()) {
 			std::string wordsUnique = EliminateDuplicateWords(words);
-			wEditor.AutoCSetSeparator(' ');		 wordsUnique += " point1";
+			wEditor.AutoCSetSeparator(' ');
 			wEditor.AutoCSetMaxHeight(autoCompleteVisibleItemCount);
 			wEditor.AutoCShow(root.length(), wordsUnique.c_str());
 		}
@@ -4640,10 +4653,7 @@ void SciTEBase::Notify(SCNotification *notification) {
 		//!-start-[Zoom]
 		if (extender && static_iOnSendEditorCallsCount < _MAX_SEND_RECURSIVE_CALL) {
 			static_iOnSendEditorCallsCount++;
-			//char zoom[10];
-			//sprintf(zoom, "%d", (int)wEditor.Call(SA::Message::GetZoom /*SCI_GETZOOM*/));
-			//extender->OnSendEditor(SA::Message::SetZoom /*SCI_SETZOOM*/, 0, zoom);
-			extender->OnSendEditor(SA::Message::SetZoom /*SCI_SETZOOM*/, 0, wEditor.Zoom());
+			extender->OnSendEditor(SA::Message::SetZoom, 0, wEditor.Zoom());
 			static_iOnSendEditorCallsCount--;
 		}
 		//!-end-[Zoom]
@@ -4724,12 +4734,10 @@ void SciTEBase::CheckMenus() {
 	//!-start-[LangMenuChecker]
 	static std::string last_lang = "";
 	if (language != last_lang) {
-		for (size_t i = 0; i < languageMenu.size(); i++) {
-			CheckAMenuItem(IDM_LANGUAGE + static_cast<int>(i), false);
-		}
 		for (size_t item = 0; item < languageMenu.size(); item++) {
 			if (languageMenu[item].menuItem[0] == '#') continue;
 			const int itemID = IDM_LANGUAGE + static_cast<int>(item);
+			CheckAMenuItem(itemID, false);
 			const std::string fn = "x." + languageMenu[item].extension;
 			if (language == props.GetNewExpandString("lexer.", fn)) {
 				CheckAMenuItem(itemID, true);

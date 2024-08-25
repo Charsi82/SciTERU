@@ -21,6 +21,7 @@ constexpr int IntFromTwoShorts(short a, short b) noexcept {
 #if defined (RB_SUBMENU) || defined (RB_ECM)
 //!-start-[ExtendedContextMenu]
 class MenuEx {
+	void* mid;
 public:
 	MenuEx(void* _id = 0) : mid(_id) {}
 	void* GetID() const { return mid; }
@@ -30,8 +31,6 @@ public:
 	void CreatePopUp(MenuEx* parentMenu);
 	void Destroy();
 	void Show(GUI::Point pt, GUI::Window& w);
-private:
-	void* mid;
 };
 //!-end-[ExtendedContextMenu]
 #endif // RB_SUBMENU || RB_ECM

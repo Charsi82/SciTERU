@@ -35,10 +35,6 @@ public:
 	virtual UniMode getEncoding() const noexcept = 0;
 
 	static std::unique_ptr<Reader> Allocate();
-#ifdef RB_UTF8AC
-	virtual void set_utf8_autocheck(bool) noexcept = 0;
-#endif // RB_UTF8AC
-
 };
 
 class Writer {

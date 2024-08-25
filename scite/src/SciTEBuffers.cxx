@@ -1130,8 +1130,7 @@ SciTEBase::SaveResult SciTEBase::SaveAllBuffers(bool alwaysYes) {
 				if (!Save()) {
 					choice = SaveResult::cancelled;
 				}
-			}
-			else {
+			} else {
 				choice = SaveIfUnsure(false);
 			}
 		}

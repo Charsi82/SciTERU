@@ -67,7 +67,7 @@ void FileLoader::Execute() noexcept {
 					umCodingCookie = UniMode::cookie;
 				}
 			}
-			convert->set_utf8_autocheck(umCodingCookie == UniMode::uni8Bit && check_utf8 == 1);
+			//convert->set_utf8_autocheck(umCodingCookie == UniMode::uni8Bit && check_utf8 == 1);
 			//!-end-[utf8.auto.check]
 #endif // RB_UTF8AC
 

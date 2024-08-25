@@ -1,7 +1,7 @@
 # SciTE session file
 
-position.left=444
-position.top=126
+position.left=305
+position.top=191
 position.width=1409
 position.height=832
 position.maximize=0
@@ -9,7 +9,7 @@ position.maximize=0
 toolbar.visible=1
 tabbar.visible=1
 statusbar.visible=1
-view.whitespace=1
+view.whitespace=0
 view.eol=0
 view.indentation.guides=1
 line.margin.visible=1
@@ -19,7 +19,7 @@ output.wrap=1
 magnification=0
 print.magnification=0
 sidebar.show=1
-sidebar.active.tab=2
+sidebar.active.tab=0
 sidebar.win=0
 output.code.page=0
 highlighting.identical.text=1

@@ -2623,6 +2623,7 @@ bool LuaExtension::OnUpdateUI() {
 bool LuaExtension::OnMarginClick() {
 	return CallNamedFunction("OnMarginClick");
 }
+
 #ifdef RB_ULID
 //!-start-[UserListItemID]
 bool LuaExtension::OnUserListSelection(int listType, const char* selection, Scintilla::Position id) {
@@ -2649,8 +2650,8 @@ bool LuaExtension::OnKey(int keyval, int modifiers, char ch) { //!-change-[OnKey
 			handled = call_function(luaState, 5);
 		} else {
 			lua_pop(luaState, 1);
-		}
-	}
+}
+}
 	return handled;
 }
 #else

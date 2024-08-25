@@ -510,18 +510,6 @@ val SCE_PROPS_SECTION=2
 val SCE_PROPS_ASSIGNMENT=3
 val SCE_PROPS_DEFVAL=4
 val SCE_PROPS_KEY=5
-
-#!-start-[PropsKeysSets]
-val SCE_PROPS_KEYSSET0=6
-val SCE_PROPS_KEYSSET1=7
-val SCE_PROPS_KEYSSET2=8
-val SCE_PROPS_KEYSSET3=9
-#!-end-[PropsKeysSets]
-
-#!-start-[PropsKeywords]
-val SCE_PROPS_KEYWORD=10
-#!-end-[PropsKeywords]
-
 # Lexical states for SCLEX_LATEX
 lex LaTeX=SCLEX_LATEX SCE_L_
 val SCE_L_DEFAULT=0
@@ -585,11 +573,6 @@ val SCE_ERR_TIDY=19
 val SCE_ERR_JAVA_STACK=20
 val SCE_ERR_VALUE=21
 val SCE_ERR_GCC_INCLUDED_FROM=22
-
-##!-start-[FindResultListStyle]
-val SCE_ERR_FIND_VALUE=30
-##!-end-[FindResultListStyle]
-
 val SCE_ERR_ESCSEQ=23
 val SCE_ERR_ESCSEQ_UNKNOWN=24
 val SCE_ERR_GCC_EXCERPT=25
@@ -621,13 +604,6 @@ val SCE_BAT_COMMAND=5
 val SCE_BAT_IDENTIFIER=6
 val SCE_BAT_OPERATOR=7
 val SCE_BAT_AFTER_LABEL=8
-
-##!-start-[BatchLexerImprovement]
-val SCE_BAT_ENVIRONMENT=9
-val SCE_BAT_EXPANSION=10
-val SCE_BAT_CLABEL=11
-##!-end-[BatchLexerImprovement]
-
 # Lexical states for SCLEX_TCMD
 lex TCMD=SCLEX_TCMD SCE_TCMD_
 val SCE_TCMD_DEFAULT=0
@@ -773,18 +749,6 @@ val SCE_NNCRONTAB_NUMBER=7
 val SCE_NNCRONTAB_STRING=8
 val SCE_NNCRONTAB_ENVIRONMENT=9
 val SCE_NNCRONTAB_IDENTIFIER=10
-
-#ifdef RB_FRIM
-#-start-[ForthImprovement]
-val SCE_NNCRONTAB_WORD1=11
-val SCE_NNCRONTAB_WORD2=12
-val SCE_NNCRONTAB_WORD3=13
-val SCE_NNCRONTAB_WORD4=14
-val SCE_NNCRONTAB_WORD5=15
-val SCE_NNCRONTAB_WORD6=16
-#-end-[ForthImprovement]
-#endif
-
 # Lexical states for SCLEX_FORTH (Forth Lexer)
 lex Forth=SCLEX_FORTH SCE_FORTH_
 val SCE_FORTH_DEFAULT=0
@@ -799,6 +763,46 @@ val SCE_FORTH_PREWORD2=8
 val SCE_FORTH_NUMBER=9
 val SCE_FORTH_STRING=10
 val SCE_FORTH_LOCALE=11
+
+#ifdef RB_PKS
+#!-start-[PropsKeysSets]
+val SCE_PROPS_KEYSSET0=6
+val SCE_PROPS_KEYSSET1=7
+val SCE_PROPS_KEYSSET2=8
+val SCE_PROPS_KEYSSET3=9
+#!-end-[PropsKeysSets]
+#endif
+
+#ifdef RB_PKW
+#!-start-[PropsKeywords]
+val SCE_PROPS_KEYWORD=10
+#!-end-[PropsKeywords]
+#endif
+
+#ifdef RB_FRLS
+##!-start-[FindResultListStyle]
+val SCE_ERR_FIND_VALUE=30
+##!-end-[FindResultListStyle]
+#endif
+
+#ifdef RB_BALI
+##!-start-[BatchLexerImprovement]
+val SCE_BAT_ENVIRONMENT=9
+val SCE_BAT_EXPANSION=10
+val SCE_BAT_CLABEL=11
+##!-end-[BatchLexerImprovement]
+#endif
+
+#ifdef RB_FRIM
+#-start-[ForthImprovement]
+val SCE_NNCRONTAB_WORD1=11
+val SCE_NNCRONTAB_WORD2=12
+val SCE_NNCRONTAB_WORD3=13
+val SCE_NNCRONTAB_WORD4=14
+val SCE_NNCRONTAB_WORD5=15
+val SCE_NNCRONTAB_WORD6=16
+#-end-[ForthImprovement]
+#endif
 
 #ifdef RB_FRIM
 #-start-[ForthImprovement]

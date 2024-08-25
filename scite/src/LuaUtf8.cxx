@@ -82,7 +82,7 @@ namespace {
 namespace {
 	int lua_string_from_utf8(lua_State* L) {
 		if (lua_gettop(L) != 2) luaL_error(L, "Wrong arguments count for string.from_utf8");
-		const char* s = luaL_checkstring(L, 1);
+		const std::string s = luaL_checkstring(L, 1);
 		int cp = 0;
 		if (!lua_isnumber(L, 2))
 			cp = GUI::CodePageFromName(lua_tostring(L, 2));
@@ -95,7 +95,7 @@ namespace {
 
 	int lua_string_to_utf8(lua_State* L) {
 		if (lua_gettop(L) != 2) luaL_error(L, "Wrong arguments count for string.to_utf8");
-		const char* s = luaL_checkstring(L, 1);
+		const std::string s = luaL_checkstring(L, 1);
 		int cp = 0;
 		if (!lua_isnumber(L, 2))
 			cp = GUI::CodePageFromName(lua_tostring(L, 2));
