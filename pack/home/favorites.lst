@@ -1,13 +1,3 @@
 return 
 {
-[1] =
-	{
-	[1] = "contentScript.js",
-	[2] = "C:\\Users\\User\\Desktop\\гид по скайриму\\contentScript.js",
-	},
-[2] =
-	{
-	[1] = "functions.rs",
-	[2] = "C:\\Users\\User\\Desktop\\rust_npp\\src\\functions.rs",
-	},
 }
