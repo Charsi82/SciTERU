@@ -344,13 +344,13 @@ void GetFullLine(std::string_view &data, std::string &lineBuffer) {
 				else if ((data.length() > 2) && ((ch == '\r') && (data[1] == '\n') && (data[2] == '\n' || data[2] == '\r')))
 					continuation = false;
 			}
-			else if ((ch == '\\') && (data.length()) && ((data[0] == '\r') || (data[0] == '\n'))) {	// РїРѕСЃР»Рµ \ СЃРєРёРїР°РµРј РїРµСЂРµРЅРѕСЃ СЃС‚СЂРѕРєРё
+			else if ((ch == '\\') && (data.length()) && ((data[0] == '\r') || (data[0] == '\n'))) {	// после \ скипаем перенос строки
 				const char next = data[0];
 				data.remove_prefix(1);
 				if ((data.length()) && (next == '\r') && (data[0] == '\n')) {
 					data.remove_prefix(1);
 				}
-				// РїСЂРѕРґРѕР»Р¶Р°РµРј РµСЃР»Рё СЃС‚СЂРѕРєР° РЅРµ РїСѓСЃС‚Р° Рё СЃР»РµРґСѓСЋС‰РёР№ СЃРёРјРІРѕР» РЅРµ РїРµСЂРµРІРѕРґ СЃС‚СЂРѕРєРё
+				// продолжаем если строка не пуста и следующий символ не перевод строки
 				continuation = data.length() && data[0] != '\n' && data[0] != '\r';
 			}
 			else {
@@ -360,8 +360,8 @@ void GetFullLine(std::string_view &data, std::string &lineBuffer) {
 		}
 	}
 #else
-	void GetFullLine(std::string_view& data, std::string& lineBuffer) {
-		lineBuffer.clear();
+void GetFullLine(std::string_view &data, std::string &lineBuffer) {
+	lineBuffer.clear();
 	while (!data.empty()) {
 		const char ch = data[0];
 		data.remove_prefix(1);

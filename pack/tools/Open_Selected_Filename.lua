@@ -115,8 +115,14 @@ local function OpenSelectedFilename(text, shift)
 	text = text:gsub('/', '\\')
 	local filename = GetOpenFilePath(text, shift) or text
 	if not (filename:find('^%a:\\') or filename:find('\\\\')) then filename = props['FileDir'] .. '\\' .. filename end
+	filename = filename:gsub("\\$", "", 1)
 	if shell.fileexists(filename) then
+		local dirlist = gui.files(filename, true)
+		if #dirlist==0 then
 		scite.Open(filename)
+		else
+			os.execute(string.format("explorer \"%s\"", filename:from_utf8(0)))
+		end
 	else
 		-- Создание нового файла
 		local alert = scite.GetTranslation('File') .. ' "' .. filename .. '" ' .. scite.GetTranslation('does not exist\nYou want to create a file with that name?')

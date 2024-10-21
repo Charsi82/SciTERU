@@ -4742,7 +4742,7 @@ void SciTEBase::CheckMenus() {
 			if (language == props.GetNewExpandString("lexer.", fn)) {
 				CheckAMenuItem(itemID, true);
 				last_lang = language;
-			}
+}
 		}
 	}
 	//!-end-[LangMenuChecker]
@@ -5512,10 +5512,8 @@ bool SciTEBase::ProcessCommandLine(const std::vector<GUI::gui_string> &args, int
 				InitialiseBuffers();
 				if (props.GetInt("save.recent"))
 					RestoreRecentMenu();
-#ifdef RB_RSOL
-				if (props.GetInt("buffers") && props.GetInt("save.session") && props.GetInt("restore.session.onload"))
+				if (props.GetInt("load.session.always") && props.GetInt("buffers") && props.GetInt("save.session") && props.GetInt("check.if.already.open"))
 					RestoreSession();
-#endif
 			}
 
 			if (!PreOpenCheck(args[i]))

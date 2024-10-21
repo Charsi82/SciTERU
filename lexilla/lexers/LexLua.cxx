@@ -647,4 +647,4 @@ void LexerLua::Fold(Sci_PositionU startPos_, Sci_Position length, int initStyle,
 
 }
 
-LexerModule lmLua(SCLEX_LUA, LexerLua::LexerFactoryLua, "lua", luaWordListDesc);
+extern const LexerModule lmLua(SCLEX_LUA, LexerLua::LexerFactoryLua, "lua", luaWordListDesc);

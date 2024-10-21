@@ -334,8 +334,8 @@ static const char * const cronWordListDesc[] = {
 };
 
 #ifdef RB_FRIM
-LexerModule lmNncrontab(SCLEX_NNCRONTAB, ColouriseNncrontabDoc, "nncrontab", FoldNncrontabDoc, cronWordListDesc); //!-change-[ForthImprovement]
+extern const LexerModule lmNncrontab(SCLEX_NNCRONTAB, ColouriseNncrontabDoc, "nncrontab", FoldNncrontabDoc, cronWordListDesc); //!-change-[ForthImprovement]
 #else
-LexerModule lmNncrontab(SCLEX_NNCRONTAB, ColouriseNncrontabDoc, "nncrontab", 0, cronWordListDesc);
+extern const LexerModule lmNncrontab(SCLEX_NNCRONTAB, ColouriseNncrontabDoc, "nncrontab", 0, cronWordListDesc);
 #endif // RB_FRIM
 

@@ -2,8 +2,8 @@
 /** @file LexProps.cxx
  ** Lexer for properties files.
  **/
- // Copyright 1998-2001 by Neil Hodgson <neilh@scintilla.org>
- // The License.txt file describes the conditions under which this software may be distributed.
+// Copyright 1998-2001 by Neil Hodgson <neilh@scintilla.org>
+// The License.txt file describes the conditions under which this software may be distributed.
 
 #include <cstdlib>
 #include <cassert>
@@ -26,14 +26,14 @@ using namespace Lexilla;
 
 namespace {
 
-	bool AtEOL(Accessor& styler, Sci_PositionU i) {
-		return (styler[i] == '\n') ||
-			((styler[i] == '\r') && (styler.SafeGetCharAt(i + 1) != '\n'));
-	}
+bool AtEOL(Accessor &styler, Sci_PositionU i) {
+	return (styler[i] == '\n') ||
+	       ((styler[i] == '\r') && (styler.SafeGetCharAt(i + 1) != '\n'));
+}
 
-	constexpr bool isAssignChar(char ch) noexcept {
-		return (ch == '=') || (ch == ':');
-	}
+constexpr bool isAssignChar(char ch) noexcept {
+	return (ch == '=') || (ch == ':');
+}
 
 #ifdef RB_PKW
 	//!-start-[PropsKeywords]
@@ -46,57 +46,56 @@ namespace {
 #ifdef RB_PCF
 	char ColourisePropsLine(
 #else
-	void ColourisePropsLine(
+void ColourisePropsLine(
 #endif // RB_PCF
 
 #ifdef RB_PKS
 		char* lineBuffer, //!- const removed [PropsKeysSets]
 #else
-		const char* lineBuffer,
+	const char *lineBuffer,
 #endif
-		Sci_PositionU lengthLine,
-		Sci_PositionU startLine,
-		Sci_PositionU endPos,
+	Sci_PositionU lengthLine,
+	Sci_PositionU startLine,
+	Sci_PositionU endPos,
 #ifdef RB_PKS
 		WordList* keywordlists[], //!-add-[PropsKeysSets]
 #endif
-		Accessor& styler,
-		bool allowInitialSpaces) {
+	Accessor &styler,
+	bool allowInitialSpaces) {
 
-		Sci_PositionU i = 0;
-		if (allowInitialSpaces) {
-			while ((i < lengthLine) && isspacechar(lineBuffer[i]))	// Skip initial spaces
-				i++;
-		}
-		else {
-			if (isspacechar(lineBuffer[i])) // don't allow initial spaces
-				i = lengthLine;
-		}
+	Sci_PositionU i = 0;
+	if (allowInitialSpaces) {
+		while ((i < lengthLine) && isspacechar(lineBuffer[i]))	// Skip initial spaces
+			i++;
+	} else {
+		if (isspacechar(lineBuffer[i])) // don't allow initial spaces
+			i = lengthLine;
+	}
 
-		if (i < lengthLine) {
+	if (i < lengthLine) {
 #ifdef RB_PCF
 			if ((lineBuffer[i] == '#') && (lineBuffer[i + 1] == ' ' || lineBuffer[i + 1] == '#' || lineBuffer[i + 1] == '~')
 				|| (lineBuffer[i] == '!'
 					|| lineBuffer[i] == ';')) {
 #else
-			if (lineBuffer[i] == '#' || lineBuffer[i] == '!' || lineBuffer[i] == ';') {
+		if (lineBuffer[i] == '#' || lineBuffer[i] == '!' || lineBuffer[i] == ';') {
 #endif
-				styler.ColourTo(endPos, SCE_PROPS_COMMENT);
+			styler.ColourTo(endPos, SCE_PROPS_COMMENT);
 #ifdef RB_PCF
 				return SCE_PROPS_COMMENT; //!-add-[PropsColouriseFix]
 #endif // RB_PCF
 			}
 			else if (lineBuffer[i] == '[') {
-				styler.ColourTo(endPos, SCE_PROPS_SECTION);
+			styler.ColourTo(endPos, SCE_PROPS_SECTION);
 #ifdef RB_PCF
 				return SCE_PROPS_SECTION; //!-add-[PropsColouriseFix]
 #endif // RB_PCF
 			}
 			else if (lineBuffer[i] == '@') {
-				styler.ColourTo(startLine + i, SCE_PROPS_DEFVAL);
-				if (isAssignChar(lineBuffer[i++]))
-					styler.ColourTo(startLine + i, SCE_PROPS_ASSIGNMENT);
-				styler.ColourTo(endPos, SCE_PROPS_DEFAULT);
+			styler.ColourTo(startLine + i, SCE_PROPS_DEFVAL);
+			if (isAssignChar(lineBuffer[i++]))
+				styler.ColourTo(startLine + i, SCE_PROPS_ASSIGNMENT);
+			styler.ColourTo(endPos, SCE_PROPS_DEFAULT);
 			}
 #ifdef RB_PKW
 			//!-start-[PropsKeywords]
@@ -116,10 +115,10 @@ namespace {
 #endif // RB_PKW
 
 			else {
-				// Search for the '=' character
-				while ((i < lengthLine) && !isAssignChar(lineBuffer[i]))
-					i++;
-				if ((i < lengthLine) && isAssignChar(lineBuffer[i])) {
+			// Search for the '=' character
+			while ((i < lengthLine) && !isAssignChar(lineBuffer[i]))
+				i++;
+			if ((i < lengthLine) && isAssignChar(lineBuffer[i])) {
 #ifdef RB_PKS
 					//!-start-[PropsKeysSets]
 					if (i > 0) {
@@ -150,38 +149,38 @@ namespace {
 					}
 					//!-end-[PropsKeysSets]
 #else
-					styler.ColourTo(startLine + i - 1, SCE_PROPS_KEY);
+				styler.ColourTo(startLine + i - 1, SCE_PROPS_KEY);
 #endif
-					styler.ColourTo(startLine + i, SCE_PROPS_ASSIGNMENT);
-					styler.ColourTo(endPos, SCE_PROPS_DEFAULT);
-				} else {
-					styler.ColourTo(endPos, SCE_PROPS_DEFAULT);
-				}
+				styler.ColourTo(startLine + i, SCE_PROPS_ASSIGNMENT);
+				styler.ColourTo(endPos, SCE_PROPS_DEFAULT);
+			} else {
+				styler.ColourTo(endPos, SCE_PROPS_DEFAULT);
 			}
-		} else {
-			styler.ColourTo(endPos, SCE_PROPS_DEFAULT);
 		}
+	} else {
+		styler.ColourTo(endPos, SCE_PROPS_DEFAULT);
+	}
 #ifdef RB_PCF
 		return SCE_PROPS_DEFAULT; //!-add-[PropsColouriseFix]
 #endif // RB_PCF
 
-	}
+}
 
 #ifdef RB_PKS
 	void ColourisePropsDoc(Sci_PositionU startPos, Sci_Position length, int, WordList * keywordlists[], Accessor & styler) {
 #else
-	void ColourisePropsDoc(Sci_PositionU startPos, Sci_Position length, int, WordList * [], Accessor & styler) {
+	void ColourisePropsDoc(Sci_PositionU startPos, Sci_Position length, int, WordList *[], Accessor &styler) {
 #endif // RB_PKS
-		std::string lineBuffer;
-		styler.StartAt(startPos);
-		styler.StartSegment(startPos);
-		Sci_PositionU startLine = startPos;
+	std::string lineBuffer;
+	styler.StartAt(startPos);
+	styler.StartSegment(startPos);
+	Sci_PositionU startLine = startPos;
 
-		// property lexer.props.allow.initial.spaces
-		//	For properties files, set to 0 to style all lines that start with whitespace in the default style.
-		//	This is not suitable for SciTE .properties files which use indentation for flow control but
-		//	can be used for RFC2822 text where indentation is used for continuation lines.
-		const bool allowInitialSpaces = styler.GetPropertyInt("lexer.props.allow.initial.spaces", 1) != 0;
+	// property lexer.props.allow.initial.spaces
+	//	For properties files, set to 0 to style all lines that start with whitespace in the default style.
+	//	This is not suitable for SciTE .properties files which use indentation for flow control but
+	//	can be used for RFC2822 text where indentation is used for continuation lines.
+	const bool allowInitialSpaces = styler.GetPropertyInt("lexer.props.allow.initial.spaces", 1) != 0;
 
 #ifdef RB_PCF
 		//!-start-[PropsColouriseFix]
@@ -193,10 +192,10 @@ namespace {
 		//!-end-[PropsColouriseFix]
 #endif // RB_PCF
 
-		for (Sci_PositionU i = startPos; i < startPos + length; i++) {
-			lineBuffer.push_back(styler[i]);
-			if (AtEOL(styler, i)) {
-				// End of line (or of line buffer) met, colourise it
+	for (Sci_PositionU i = startPos; i < startPos + length; i++) {
+		lineBuffer.push_back(styler[i]);
+		if (AtEOL(styler, i)) {
+			// End of line (or of line buffer) met, colourise it
 #ifdef RB_PCF
 				Sci_PositionU start = lineBuffer.find_first_of("#;!");
 				bool bfindcomment = start != std::string::npos;
@@ -226,15 +225,15 @@ namespace {
 			//else
 				ColourisePropsLine(lineBuffer.data(), lineBuffer.length(), startLine, i, keywordlists, styler, allowInitialSpaces);
 #else
-				ColourisePropsLine(lineBuffer.c_str(), lineBuffer.length(), startLine, i, styler, allowInitialSpaces);
+			ColourisePropsLine(lineBuffer.c_str(), lineBuffer.length(), startLine, i, styler, allowInitialSpaces);
 #endif // RB_PKS
 
 #endif
-				lineBuffer.clear();
-				startLine = i + 1;
-			}
+			lineBuffer.clear();
+			startLine = i + 1;
 		}
-		if (lineBuffer.length() > 0) {	// Last line does not have ending characters
+	}
+	if (lineBuffer.length() > 0) {	// Last line does not have ending characters
 #ifdef RB_PCF
 			//!-start-[PropsColouriseFix]
 			if (continuation)
@@ -245,70 +244,69 @@ namespace {
 #ifdef RB_PKS
 				ColourisePropsLine(lineBuffer.data(), lineBuffer.length(), startLine, startPos + length - 1, keywordlists, styler, allowInitialSpaces);
 #else
-				ColourisePropsLine(lineBuffer.c_str(), lineBuffer.length(), startLine, startPos + length - 1, styler, allowInitialSpaces);
+		ColourisePropsLine(lineBuffer.c_str(), lineBuffer.length(), startLine, startPos + length - 1, styler, allowInitialSpaces);
 #endif // RB_PKS
-		}
 	}
+}
 
-	// adaption by ksc, using the "} else {" trick of 1.53
-	// 030721
-	void FoldPropsDoc(Sci_PositionU startPos, Sci_Position length, int, WordList * [], Accessor & styler) {
-		const bool foldCompact = styler.GetPropertyInt("fold.compact", 1) != 0;
+// adaption by ksc, using the "} else {" trick of 1.53
+// 030721
+void FoldPropsDoc(Sci_PositionU startPos, Sci_Position length, int, WordList *[], Accessor &styler) {
+	const bool foldCompact = styler.GetPropertyInt("fold.compact", 1) != 0;
 
-		const Sci_PositionU endPos = startPos + length;
-		int visibleChars = 0;
-		Sci_Position lineCurrent = styler.GetLine(startPos);
+	const Sci_PositionU endPos = startPos + length;
+	int visibleChars = 0;
+	Sci_Position lineCurrent = styler.GetLine(startPos);
 
-		char chNext = styler[startPos];
-		bool headerPoint = false;
-		int levelPrevious = (lineCurrent > 0) ? styler.LevelAt(lineCurrent - 1) : SC_FOLDLEVELBASE;
+	char chNext = styler[startPos];
+	bool headerPoint = false;
+	int levelPrevious = (lineCurrent > 0) ? styler.LevelAt(lineCurrent - 1) : SC_FOLDLEVELBASE;
 
-		for (Sci_PositionU i = startPos; i < endPos; i++) {
-			const char ch = chNext;
-			chNext = styler[i + 1];
+	for (Sci_PositionU i = startPos; i < endPos; i++) {
+		const char ch = chNext;
+		chNext = styler[i+1];
 
-			const int style = styler.StyleIndexAt(i);
-			const bool atEOL = (ch == '\r' && chNext != '\n') || (ch == '\n');
+		const int style = styler.StyleIndexAt(i);
+		const bool atEOL = (ch == '\r' && chNext != '\n') || (ch == '\n');
 
-			if (style == SCE_PROPS_SECTION) {
-				headerPoint = true;
+		if (style == SCE_PROPS_SECTION) {
+			headerPoint = true;
+		}
+
+		if (atEOL) {
+			int lev = levelPrevious & SC_FOLDLEVELNUMBERMASK;
+			if (headerPoint) {
+				lev = SC_FOLDLEVELBASE | SC_FOLDLEVELHEADERFLAG;
+				if (levelPrevious & SC_FOLDLEVELHEADERFLAG) {
+					// previous section is empty
+					styler.SetLevel(lineCurrent - 1, SC_FOLDLEVELBASE);
+				}
+			} else if (levelPrevious & SC_FOLDLEVELHEADERFLAG) {
+				lev += 1;
 			}
 
-			if (atEOL) {
-				int lev = levelPrevious & SC_FOLDLEVELNUMBERMASK;
-				if (headerPoint) {
-					lev = SC_FOLDLEVELBASE | SC_FOLDLEVELHEADERFLAG;
-					if (levelPrevious & SC_FOLDLEVELHEADERFLAG) {
-						// previous section is empty
-						styler.SetLevel(lineCurrent - 1, SC_FOLDLEVELBASE);
-					}
-				}
-				else if (levelPrevious & SC_FOLDLEVELHEADERFLAG) {
-					lev += 1;
-				}
-
-				if (visibleChars == 0 && foldCompact)
-					lev |= SC_FOLDLEVELWHITEFLAG;
-				if (lev != styler.LevelAt(lineCurrent)) {
-					styler.SetLevel(lineCurrent, lev);
-				}
-
-				lineCurrent++;
-				visibleChars = 0;
-				headerPoint = false;
-				levelPrevious = lev;
+			if (visibleChars == 0 && foldCompact)
+				lev |= SC_FOLDLEVELWHITEFLAG;
+			if (lev != styler.LevelAt(lineCurrent)) {
+				styler.SetLevel(lineCurrent, lev);
 			}
-			if (!isspacechar(ch))
-				visibleChars++;
-		}
 
-		int level = levelPrevious & SC_FOLDLEVELNUMBERMASK;
-		if (levelPrevious & SC_FOLDLEVELHEADERFLAG) {
-			level += 1;
+			lineCurrent++;
+			visibleChars = 0;
+			headerPoint = false;
+			levelPrevious = lev;
 		}
-		const int flagsNext = styler.LevelAt(lineCurrent);
-		styler.SetLevel(lineCurrent, level | (flagsNext & ~SC_FOLDLEVELNUMBERMASK));
+		if (!isspacechar(ch))
+			visibleChars++;
 	}
+
+	int level = levelPrevious & SC_FOLDLEVELNUMBERMASK;
+	if (levelPrevious & SC_FOLDLEVELHEADERFLAG) {
+		level += 1;
+	}
+	const int flagsNext = styler.LevelAt(lineCurrent);
+	styler.SetLevel(lineCurrent, level | (flagsNext & ~SC_FOLDLEVELNUMBERMASK));
+}
 
 #ifdef RB_PKS
 	//!-start-[PropsKeysSets]
@@ -321,15 +319,15 @@ namespace {
 	};
 	//!-end-[PropsKeysSets]
 #else
-	const char* const emptyWordListDesc[] = {
-		nullptr
-	};
+const char *const emptyWordListDesc[] = {
+	nullptr
+};
 #endif // RB_PKS
 
 }
 
 #ifdef RB_PKS
-LexerModule lmProps(SCLEX_PROPERTIES, ColourisePropsDoc, "props", FoldPropsDoc, propsWordListDesc);
+extern const LexerModule lmProps(SCLEX_PROPERTIES, ColourisePropsDoc, "props", FoldPropsDoc, propsWordListDesc);
 #else
-LexerModule lmProps(SCLEX_PROPERTIES, ColourisePropsDoc, "props", FoldPropsDoc, emptyWordListDesc);
+extern const LexerModule lmProps(SCLEX_PROPERTIES, ColourisePropsDoc, "props", FoldPropsDoc, emptyWordListDesc);
 #endif // RB_PKS

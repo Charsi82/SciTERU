@@ -215,6 +215,8 @@ public:
 	void StyleSetHotSpot(int style, bool hotspot);
 	void StyleSetCheckMonospaced(int style, bool checkMonospaced);
 	bool StyleGetCheckMonospaced(int style);
+	void StyleSetStretch(int style, Scintilla::FontStretch stretch);
+	Scintilla::FontStretch StyleGetStretch(int style);
 	void StyleSetInvisibleRepresentation(int style, const char *representation);
 	int StyleGetInvisibleRepresentation(int style, char *representation);
 	std::string StyleGetInvisibleRepresentation(int style);
@@ -251,6 +253,7 @@ public:
 	int CharacterCategoryOptimization();
 	void BeginUndoAction();
 	void EndUndoAction();
+	int UndoSequence();
 	int UndoActions();
 	void SetUndoSavePoint(int action);
 	int UndoSavePoint();
@@ -545,7 +548,9 @@ public:
 	void Cancel();
 	void DeleteBack();
 	void Tab();
+	void LineIndent();
 	void BackTab();
+	void LineDedent();
 	void NewLine();
 	void FormFeed();
 	void VCHome();
@@ -732,6 +737,9 @@ public:
 	int LayoutThreads();
 	void CopyAllowLine();
 	void CutAllowLine();
+	void SetCopySeparator(const char *separator);
+	int CopySeparator(char *separator);
+	std::string CopySeparator();
 	void *CharacterPointer();
 	void *RangePointer(Position start, Position lengthRange);
 	Position GapPosition();

@@ -904,7 +904,7 @@ const char *const batchWordListDesc[] = {
 }
 
 #ifdef RB_BALI
-LexerModule lmBatch(SCLEX_BATCH, ColouriseBatchDoc, "batch", FoldBatchDoc, batchWordListDesc); //!-change-[BatchLexerImprovement]
+extern const LexerModule lmBatch(SCLEX_BATCH, ColouriseBatchDoc, "batch", FoldBatchDoc, batchWordListDesc); //!-change-[BatchLexerImprovement]
 #else
-LexerModule lmBatch(SCLEX_BATCH, ColouriseBatchDoc, "batch", nullptr, batchWordListDesc);
+extern const LexerModule lmBatch(SCLEX_BATCH, ColouriseBatchDoc, "batch", nullptr, batchWordListDesc);
 #endif // RB_BALI

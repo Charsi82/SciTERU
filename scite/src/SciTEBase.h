@@ -1102,8 +1102,8 @@ public:
 	static SciTEBase* GetApplicationInstance();
 	static PropSetFile* GetProps() {
 		SciTEBase* app = GetApplicationInstance();
-		if (app != NULL) return &(app->props);
-		return NULL;
+		if (app) return &(app->props);
+		return nullptr;
 	}
 	//!-end-[GetApplicationProps]
 #endif

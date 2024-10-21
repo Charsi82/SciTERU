@@ -8,9 +8,12 @@
 #include "SciTE.h"
 
 SciTE ICON SciBall.ico
+
+#ifdef RB_BUILD
 SciTEfile ICON "SciTE-file.ico" //!-add-[NewIcons]
 SciTEses ICON "SciTE-ses.ico" //!-add-[NewIcons]
 SciTExmas ICON "SciTExmas.ico" //!-add-[NewIcons]
+#endif
 
 1 RT_MANIFEST SciTE.exe.manifest
 

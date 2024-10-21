@@ -351,7 +351,8 @@ int StyleFromSequence(const char *seq) noexcept {
 //!-start-[FindResultListStyle]
 // Find part of the string lineBuffer beetwen substrings beginT and endT
 // write results substring to the findValue
-static bool GetPartOf(const char* lineBuffer,
+namespace {
+bool GetPartOf(const char* lineBuffer,
 	const char* beginT, const char* endT, char* findValue, size_t maxLen) {
 	if (strstart(lineBuffer, beginT)) {
 		const char* buff = lineBuffer + strlen(beginT);
@@ -368,7 +369,7 @@ static bool GetPartOf(const char* lineBuffer,
 	return false;
 }
 
-static void ColouriseFindListLine(
+void ColouriseFindListLine(
 	const char* lineBuffer,
 	Sci_PositionU lengthLine,
 	Sci_PositionU startPos,
@@ -388,6 +389,7 @@ static void ColouriseFindListLine(
 		}
 	}
 	styler.ColourTo(endPos, SCE_ERR_VALUE);
+}
 }
 //!-end-[FindResultListStyle]
 #endif // RB_FRLS
@@ -491,7 +493,7 @@ void ColouriseErrorListDoc(Sci_PositionU startPos, Sci_Position length, int, Wor
 	//	line with style 21 used for the rest of the line.
 	//	This allows matched text to be more easily distinguished from its location.
 #ifdef RB_FRLS //!-add-[FindResultListStyle]
-	bool valueSeparate = styler.GetPropertyInt("lexer.errorlist.value.separate", 1) > 0;
+	const bool valueSeparate = styler.GetPropertyInt("lexer.errorlist.value.separate", 1) > 0;
 	const char* findTitleB = styler.pprops->Get("lexer.errorlist.findtitle.begin");
 	const char* findTitleE = styler.pprops->Get("lexer.errorlist.findtitle.end");
 #else
@@ -529,4 +531,4 @@ const char *const emptyWordListDesc[] = {
 
 }
 
-LexerModule lmErrorList(SCLEX_ERRORLIST, ColouriseErrorListDoc, "errorlist", nullptr, emptyWordListDesc);
+extern const LexerModule lmErrorList(SCLEX_ERRORLIST, ColouriseErrorListDoc, "errorlist", nullptr, emptyWordListDesc);

@@ -91,9 +91,11 @@
 	<p>editor:<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_CLEAR'>Clear</a>()<span class="comment"> -- Очистить выделение.</span></p>
 	<p>bool editor:<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_CANPASTE'>CanPaste</a>()<span class="comment"> -- Удастся ли вставить?</span></p>
 	<p>editor:<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_COPYALLOWLINE'>CopyAllowLine</a>()<span class="comment"> -- Копировать выделение, если выделение пустое, скопировать строку с кареткой</span></p>
+	<p>editor:<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_CUTALLOWLINE'>CutAllowLine</a>()<span class="comment"> -- Вырезать выделение, если выделение пустое, вырезать строку с кареткой</span></p>
 	<p>editor:<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_COPYRANGE'>CopyRange</a>(position start, position end)<span class="comment"> -- Копирует диапазон текста в буфер обмена. Позиции вырезаются в документе.</span></p>
 	<p>editor:<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_COPYTEXT'>CopyText</a>(string text)<span class="comment"> -- Скопировать text в буфер обмена.</span></p>
 	<p>bool editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_SETPASTECONVERTENDINGS'>PasteConvertEndings</a><span class="comment"> -- Включить/отключить преобразование при вставке для концов строк</span></p>
+	<p>bool editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_SETCOPYSEPARATOR'>CopySeparator</a><span class="comment"> -- Установить строку для разделения частей при копировании множественного выделения.</span></p>
 	<p>editor:<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_REPLACERECTANGULAR'>ReplaceRectangular</a>(string text)<span class="comment"> -- Заменяет выделение текстом, как прямоугольную вставку.</span></p>
 	<h2>Обработка ошибок</h2>
 	<p>int editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_SETSTATUS'>Status</a><span class="comment"> -- Изменить статус ошибки - 0 = OK.</span></p>
@@ -106,6 +108,7 @@
 	<p>bool editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_SETUNDOCOLLECTION'>UndoCollection</a><span class="comment"> -- Включить историю отмен.</span></p>
 	<p>editor:<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_BEGINUNDOACTION'>BeginUndoAction</a>()<span class="comment"> --Начать последовательность действий, которые отменяются и повторяются как единое целое. Может быть вложенным.</span></p>
 	<p>editor:<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_ENDUNDOACTION'>EndUndoAction</a>()<span class="comment"> -- Завершить последовательность действий, которые отменяются и повторяются как единое целое.</span></p>
+	<p>int editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_GETUNDOSEQUENCE'>UndoSequence</a>()<span class="comment"> Только для чтения</span></p>
 	<p>editor:<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_ADDUNDOACTION'>AddUndoAction</a>(int token, int flags)<span class="comment"> -- Добавить действие контейнера в стек отмены</span></p>
 	<h2>История изменений</h2>
 	<p>int editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_SETCHANGEHISTORY'>ChangeHistory</a><span class="comment"> -- Включить или отключить историю изменений.</span></p>
@@ -258,6 +261,7 @@
 	<p>int editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_STYLESETSIZEFRACTIONAL'>StyleSizeFractional</a>[int style]<span class="comment"> -- Set the size of characters of a style. Size is in points multiplied by 100.</span></p>
 	<p>bool editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_STYLESETBOLD'>StyleBold</a>[int style]<span class="comment"> -- Set a style to be bold or not.</span></p>
 	<p>int editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_STYLESETWEIGHT'>StyleWeight</a>[int style]<span class="comment"> -- Set the weight of characters of a style.</span></p>
+	<p>int editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_STYLESETSTRETCH'>StyleStretch</a>[int style]<span class="comment"> -- Set the stretch of characters of a style.</span></p>
 	<p>bool editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_STYLESETITALIC'>StyleItalic</a>[int style]<span class="comment"> -- Set a style to be italic or not.</span></p>
 	<p>bool editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_STYLESETUNDERLINE'>StyleUnderline</a>[int style]<span class="comment"> -- Set a style to be underlined or not.</span></p>
 	<p>colour editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_STYLESETFORE'>StyleFore</a>[int style]<span class="comment"> -- Set the foreground colour of a style.</span></p>
@@ -450,6 +454,7 @@
 	<p>int editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_AUTOCSETTYPESEPARATOR'>AutoCTypeSeparator</a><span class="comment"> -- Change the type-separator character in the string setting up an auto-completion list. Default is '?' but can be changed if items contain '?'.</span></p>
 	<p>int editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_AUTOCSETMAXHEIGHT'>AutoCMaxHeight</a><span class="comment"> -- Set the maximum height, in rows, of auto-completion and user lists. The default is 5 rows.</span></p>
 	<p>int editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_AUTOCSETMAXWIDTH'>AutoCMaxWidth</a><span class="comment"> -- Set the maximum width, in characters, of auto-completion and user lists. Set to 0 to autosize to fit longest item, which is the default.</span></p>
+	<p>int editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_AUTOCSETSTYLE'>AutoCStyle</a><span class="comment"> -- Set the style number used for auto-completion and user lists fonts.</span></p>
 	<h2>Пользовательский список автоподстановки</h2>
 	<p>editor:<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_USERLISTSHOW'>UserListShow</a>(int listType, string itemList)<span class="comment"> -- Отображает список строк и посылает уведомление, когда пользователь сделает выбор.</span></p>
 	<h2>Подсказки</h2>

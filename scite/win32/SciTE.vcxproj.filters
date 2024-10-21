@@ -542,6 +542,7 @@
     </ClCompile>
     <ClCompile Include="..\..\lexilla\lexlib\InList.cxx" />
     <ClCompile Include="..\..\scintilla\src\UndoHistory.cxx" />
+    <ClCompile Include="..\..\lexilla\lexers\LexTOML.cxx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\Cookie.h" />
