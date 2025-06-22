@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <ctime>
 
+#include <compare>
 #include <tuple>
 #include <string>
 #include <string_view>
@@ -1189,7 +1190,7 @@ bool CallNamedFunction(const char *name, const char *arg) {
 	return handled;
 }
 
-bool CallNamedFunction(const char *name, lua_Integer numberArg, const char *stringArg) {
+bool CallNamedFunction(const char *name, intptr_t numberArg, const char *stringArg) {
 	bool handled = false;
 	if (luaState) {
 		if (lua_getglobal(luaState, name) != LUA_TNIL) {
@@ -2524,6 +2525,7 @@ bool LuaExtension::OnStyle(SA::Position startPos, SA::Position lengthDoc, int in
 	return handled;
 }
 
+#ifdef RB_ODBCLK
 namespace {
 
 	constexpr bool CheckModifiers(int modifiers, SA::KeyMod mod) noexcept {
@@ -2532,7 +2534,6 @@ namespace {
 
 }
 
-#ifdef RB_ODBCLK
 //!-start-[OnDoubleClick]
 bool LuaExtension::OnDoubleClick(int modifiers) {
 	bool handled = false;
@@ -2635,6 +2636,16 @@ bool LuaExtension::OnUserListSelection(int listType, const char *selection) {
 	return CallNamedFunction("OnUserListSelection", listType, selection);
 }
 #endif // RB_ULID
+
+#ifndef RB_ODBCLK
+namespace {
+
+constexpr bool CheckModifiers(int modifiers, SA::KeyMod mod) noexcept {
+	return (static_cast<int>(mod) & modifiers) != 0;
+}
+
+}
+#endif // RB_ODBCLK
 
 #ifdef RB_ONKEY
 bool LuaExtension::OnKey(int keyval, int modifiers, char ch) { //!-change-[OnKey]

@@ -1,5 +1,5 @@
 echo off
-del /q /s *.bak *.log *.pdb *.lib *.bsc *.obj *.iobj *.ipdb *.tlog *.recipe *.idb *.ilk *.lastbuildstate *.exp
+del /q /s *.bak *.log *.pdb *.bsc *.obj *.iobj *.ipdb *.tlog *.recipe *.idb *.ilk *.lastbuildstate *.exp
 setlocal
 set fpath=%~dps0
 

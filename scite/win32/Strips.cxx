@@ -39,8 +39,7 @@ GUI::gui_string ClassNameOfWindow(HWND hWnd) {
 	GUI::gui_char className[maxClassNameLength];
 	if (::GetClassNameW(hWnd, className, maxClassNameLength))
 		return GUI::gui_string(className);
-	else
-		return GUI::gui_string();
+	return {};
 }
 
 void ComboBoxAppend(HWND hWnd, const GUI::gui_string &gs) noexcept {
@@ -159,9 +158,8 @@ LRESULT PASCAL BaseWin::StWndProc(
 	// base will be zero if WM_CREATE not seen yet
 	if (base) {
 		return base->WndProc(iMessage, wParam, lParam);
-	} else {
-		return ::DefWindowProc(hWnd, iMessage, wParam, lParam);
 	}
+	return ::DefWindowProc(hWnd, iMessage, wParam, lParam);
 }
 
 namespace {
@@ -185,7 +183,7 @@ std::vector<Interval> Distribute(GUI::Rectangle rcArea, int gap, std::initialize
 	int position = rcArea.left;
 	for (const int width : widths) {
 		const int widthElement = width ? width : resizerWidth;
-		positions.push_back(Interval(position, position + widthElement));
+		positions.emplace_back(position, position + widthElement);
 		position += widthElement + gap;
 	}
 	return positions;
@@ -198,9 +196,11 @@ void SetWindowPosition(GUI::Window &w, Interval intervalHorizontal, Interval ver
 }
 
 bool MatchAccessKey(const std::string &caption, int key) noexcept {
-	for (size_t i = 0; i < caption.length() - 1; i++) {
-		if ((caption[i] == '&') && (MakeUpperCase(caption[i + 1]) == key)) {
-			return true;
+	if (!caption.empty()) {
+		for (size_t i = 0; i < caption.length() - 1; i++) {
+			if ((caption[i] == '&') && (MakeUpperCase(caption[i + 1]) == key)) {
+				return true;
+			}
 		}
 	}
 	return false;
@@ -238,6 +238,10 @@ bool HideKeyboardCues() noexcept {
 	return !b;
 }
 
+void UpdateUIState(HWND hwnd, int action) noexcept {
+	::SendMessageW(hwnd, WM_UPDATEUISTATE, MAKEWPARAM(UISF_HIDEACCEL | UISF_HIDEFOCUS, action), 0);
+}
+
 const char *textFindPrompt = "Fi&nd:";
 const char *textReplacePrompt = "Rep&lace:";
 const char *textFindNext = "&Find Next";
@@ -267,7 +271,7 @@ GUI::Window Strip::CreateText(const char *text) {
 	GUI::gui_string localised = localiser->Text(text);
 	const int width = WidthText(fontText, localised) + 4;
 	GUI::Window w;
-	w.SetID(::CreateWindowEx(0, TEXT("Static"), localised.c_str(),
+	w.SetID(::CreateWindowExW(0, WC_STATICW, localised.c_str(),
 				 WS_CHILD | WS_CLIPSIBLINGS | SS_RIGHT,
 				 2, 2, width, 21,
 				 Hwnd(), HmenuID(0), ::ApplicationInstance(), nullptr));
@@ -307,7 +311,7 @@ GUI::Window Strip::CreateButton(const char *text, size_t ident, bool check) {
 		width = bmpDimension + 3 * 2;
 	}
 	GUI::Window w;
-	w.SetID(::CreateWindowEx(0, TEXT("Button"), localised.c_str(),
+	w.SetID(::CreateWindowExW(0, WC_BUTTONW, localised.c_str(),
 				 WS_CHILD | WS_TABSTOP | WS_CLIPSIBLINGS |
 				 (check ? (BS_AUTOCHECKBOX | BS_PUSHLIKE | BS_BITMAP) : BS_PUSHBUTTON),
 				 2, 2, width, height,
@@ -391,12 +395,12 @@ void Strip::Creation() {
 	SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(ncm), &ncm, FALSE);
 	fontText = ::CreateFontIndirect(&ncm.lfMessageFont);
 
-	wToolTip = ::CreateWindowEx(0,
+	wToolTip = ::CreateWindowExW(0,
 				    TOOLTIPS_CLASSW, nullptr,
 				    WS_POPUP | TTS_ALWAYSTIP,
 				    CW_USEDEFAULT, CW_USEDEFAULT,
 				    CW_USEDEFAULT, CW_USEDEFAULT,
-				    Hwnd(), NULL, ::ApplicationInstance(), nullptr);
+				    Hwnd(), {}, ::ApplicationInstance(), nullptr);
 
 	SetTheme();
 }
@@ -421,11 +425,11 @@ bool Strip::KeyDown(WPARAM key) {
 		return false;
 	switch (key) {
 	case VK_MENU:
-		::SendMessage(Hwnd(), WM_UPDATEUISTATE, (UISF_HIDEACCEL|UISF_HIDEFOCUS) << 16 | UIS_CLEAR, 0);
+		UpdateUIState(Hwnd(), UIS_CLEAR);
 		return false;
 	case VK_TAB:
 		if (IsChild(Hwnd(), ::GetFocus())) {
-			::SendMessage(Hwnd(), WM_UPDATEUISTATE, (UISF_HIDEACCEL|UISF_HIDEFOCUS) << 16 | UIS_CLEAR, 0);
+			UpdateUIState(Hwnd(), UIS_CLEAR);
 			Tab(!IsKeyDown(VK_SHIFT));
 			return true;
 		} else {
@@ -439,10 +443,10 @@ bool Strip::KeyDown(WPARAM key) {
 			HWND wChild = GetFirstChild(Hwnd());
 			while (wChild) {
 				const GUI::gui_string className = ClassNameOfWindow(wChild);
-				if ((className == TEXT("Button")) || (className == TEXT("Static"))) {
+				if ((className == WC_BUTTONW) || (className == WC_STATICW)) {
 					const std::string caption = GUI::UTF8FromString(TextOfWindow(wChild));
 					if (MatchAccessKey(caption, static_cast<int>(key))) {
-						if (className == TEXT("Button")) {
+						if (className == WC_BUTTONW) {
 							::SendMessage(wChild, BM_CLICK, 0, 0);
 						} else {	// Static caption
 							wChild = GetNextSibling(wChild);
@@ -512,9 +516,8 @@ GUI::Rectangle Strip::CloseArea() {
 		rcClose.top += space;
 		rcClose.bottom = rcClose.top + closeSize.cy;
 		return rcClose;
-	} else {
-		return GUI::Rectangle(-1, -1, -1, -1);
 	}
+	return GUI::Rectangle(-1, -1, -1, -1);
 }
 
 GUI::Rectangle Strip::LineArea(int line) {
@@ -579,23 +582,21 @@ void Strip::SetTheme() noexcept {
 #ifdef THEME_AVAILABLE
 	if (hTheme)
 		::CloseThemeData(hTheme);
-	scale = 96;
+	scale = USER_DEFAULT_SCREEN_DPI;
 	hTheme = ::OpenThemeData(Hwnd(), TEXT("Window"));
 	if (hTheme) {
 		HDC hdc = ::GetDC(Hwnd());
 		scale = ::GetDeviceCaps(hdc, LOGPIXELSX);
 		::ReleaseDC(Hwnd(), hdc);
-		space = scale * 2 / 96;
-		const HRESULT hr = ::GetThemePartSize(hTheme, NULL, WP_SMALLCLOSEBUTTON, CBS_NORMAL,
+		space = scale * 2 / USER_DEFAULT_SCREEN_DPI;
+		const HRESULT hr = ::GetThemePartSize(hTheme, {}, WP_SMALLCLOSEBUTTON, CBS_NORMAL,
 						      nullptr, TS_TRUE, &closeSize);
-		//HRESULT hr = ::GetThemePartSize(hTheme, NULL, WP_MDICLOSEBUTTON, CBS_NORMAL,
-		//	NULL, TS_TRUE, &closeSize);
 		if (!SUCCEEDED(hr)) {
 			closeSize.cx = 11;
 			closeSize.cy = 11;
 		}
-		closeSize.cx = closeSize.cx * scale / 96;
-		closeSize.cy = closeSize.cy * scale / 96;
+		closeSize.cx = closeSize.cx * scale / USER_DEFAULT_SCREEN_DPI;
+		closeSize.cy = closeSize.cy * scale / USER_DEFAULT_SCREEN_DPI;
 	}
 #endif
 }
@@ -698,12 +699,11 @@ LRESULT Strip::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) {
 	case WM_SETCURSOR: {
 			HWND hWnd = reinterpret_cast<HWND>(wParam);
 			const GUI::gui_string className = ClassNameOfWindow(hWnd);
-			if (className == TEXT("Edit") || className == TEXT("ComboBox")) {
+			if (className == WC_EDITW || className == WC_COMBOBOXW) {
 				return ::DefWindowProc(Hwnd(), iMessage, wParam, lParam);
-			} else {
-				::SetCursor(::LoadCursor(NULL, IDC_ARROW));
-				return 0;
 			}
+			::SetCursor(::LoadCursor({}, IDC_ARROW));
+			return 0;
 		}
 
 	case WM_SIZE:
@@ -712,7 +712,7 @@ LRESULT Strip::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) {
 
 	case WM_WINDOWPOSCHANGED:
 		if ((reinterpret_cast<WINDOWPOS *>(lParam)->flags & SWP_SHOWWINDOW) && HideKeyboardCues())
-			::SendMessage(Hwnd(), WM_UPDATEUISTATE, (UISF_HIDEACCEL|UISF_HIDEFOCUS) << 16 | UIS_SET, 0);
+			UpdateUIState(Hwnd(), UIS_SET);
 		return ::DefWindowProc(Hwnd(), iMessage, wParam, lParam);
 
 	case WM_PAINT: {
@@ -818,14 +818,14 @@ void BackgroundStrip::Creation() {
 	Strip::Creation();
 	lineHeight = SizeText(fontText, GUI_TEXT("\u00C5Ay")).cy + space * 2 + 1;
 
-	wExplanation = ::CreateWindowEx(0, TEXT("Static"), TEXT(""),
+	wExplanation = ::CreateWindowExW(0, WC_STATICW, TEXT(""),
 					WS_CHILD | WS_CLIPSIBLINGS,
 					2, 2, 100, 21,
 					Hwnd(), HmenuID(0), ::ApplicationInstance(), nullptr);
 	wExplanation.Show();
 	SetFontHandle(wExplanation, fontText);
 
-	wProgress = ::CreateWindowEx(0, PROGRESS_CLASS, TEXT(""),
+	wProgress = ::CreateWindowExW(0, PROGRESS_CLASS, TEXT(""),
 				     WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE,
 				     2, 2, 100, 21,
 				     Hwnd(), HmenuID(0), ::ApplicationInstance(), nullptr);
@@ -925,7 +925,7 @@ void SearchStrip::Creation() {
 
 	wStaticFind = CreateText(textFindPrompt);
 
-	wText = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), TEXT(""),
+	wText = CreateWindowExW(WS_EX_CLIENTEDGE, WC_EDITW, TEXT(""),
 			       WS_CHILD | WS_TABSTOP | WS_CLIPSIBLINGS | ES_AUTOHSCROLL,
 			       50, 2, 300, 21,
 			       Hwnd(), HmenuID(IDC_INCFINDTEXT), ::ApplicationInstance(), nullptr);
@@ -1071,7 +1071,7 @@ void FindReplaceStrip::NextIncremental(ChangingSource source) {
 	}
 	if ((incrementalBehaviour == IncrementalBehaviour::simple) && !pSearcher->filterState)
 		return;
-	if (pSearcher->findWhat.length()) {
+	if (!pSearcher->findWhat.empty()) {
 		pSearcher->MoveBack();
 	}
 
@@ -1117,7 +1117,7 @@ void FindStrip::Creation() {
 
 	wStaticFind = CreateText(textFindPrompt);
 
-	wText = CreateWindowEx(0, TEXT("ComboBox"), TEXT(""),
+	wText = ::CreateWindowExW(0, WC_COMBOBOXW, TEXT(""),
 			       WS_CHILD | WS_TABSTOP | WS_CLIPSIBLINGS | CBS_DROPDOWN | CBS_AUTOHSCROLL,
 			       50, 2, 300, 80,
 			       Hwnd(), HmenuID(IDFINDWHAT), ::ApplicationInstance(), nullptr);
@@ -1292,7 +1292,7 @@ void ReplaceStrip::Creation() {
 
 	wStaticFind = CreateText(textFindPrompt);
 
-	wText = CreateWindowEx(0, TEXT("ComboBox"), TEXT(""),
+	wText = ::CreateWindowExW(0, WC_COMBOBOXW, TEXT(""),
 			       WS_CHILD | WS_TABSTOP | WS_CLIPSIBLINGS | CBS_DROPDOWN | CBS_AUTOHSCROLL,
 			       50, 2, 300, 80,
 			       Hwnd(), HmenuID(IDFINDWHAT), ::ApplicationInstance(), nullptr);
@@ -1304,7 +1304,7 @@ void ReplaceStrip::Creation() {
 
 	wStaticReplace = CreateText(textReplacePrompt);
 
-	wReplace = CreateWindowEx(0, TEXT("ComboBox"), TEXT(""),
+	wReplace = ::CreateWindowExW(0, WC_COMBOBOXW, TEXT(""),
 				  WS_CHILD | WS_TABSTOP | CBS_DROPDOWN | CBS_AUTOHSCROLL,
 				  50, 2, 300, 80,
 				  Hwnd(), HmenuID(IDREPLACEWITH), ::ApplicationInstance(), nullptr);
@@ -1555,7 +1555,7 @@ void FilterStrip::Creation() {
 
 	wStaticFind = CreateText(textFilterPrompt);
 
-	wText = CreateWindowEx(0, TEXT("ComboBox"), TEXT(""),
+	wText = ::CreateWindowExW(0, WC_COMBOBOXW, TEXT(""),
 		WS_CHILD | WS_TABSTOP | WS_CLIPSIBLINGS | CBS_DROPDOWN | CBS_AUTOHSCROLL,
 		50, 2, 300, 80,
 		Hwnd(), HmenuID(IDFINDWHAT), ::ApplicationInstance(), nullptr);
@@ -1703,10 +1703,10 @@ void FilterStrip::Close() {
 void UserStrip::Creation() {
 	Strip::Creation();
 	// Combo boxes automatically size to a reasonable height so create a temporary and measure
-	HWND wComboTest = ::CreateWindowEx(0, TEXT("ComboBox"), TEXT("Aby"),
+	HWND wComboTest = ::CreateWindowExW(0, WC_COMBOBOXW, TEXT("Aby"),
 					   WS_CHILD | WS_TABSTOP | WS_CLIPSIBLINGS | CBS_DROPDOWN | CBS_AUTOHSCROLL,
 					   50, 2, 300, 80,
-					   Hwnd(), 0, ::ApplicationInstance(), nullptr);
+					   Hwnd(), {}, ::ApplicationInstance(), nullptr);
 	SetWindowFont(wComboTest, fontText, 0);
 	RECT rc;
 	::GetWindowRect(wComboTest, &rc);
@@ -1910,7 +1910,7 @@ void UserStrip::SetDescription(const char *description) {
 			case UserControl::ucEdit:
 				ctl.widthDesired = 100;
 				ctl.fixedWidth = false;
-				ctl.w = ::CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("Edit"), ctl.text.c_str(),
+				ctl.w = ::CreateWindowExW(WS_EX_CLIENTEDGE, WC_EDITW, ctl.text.c_str(),
 							 WS_CHILD | WS_TABSTOP | WS_CLIPSIBLINGS | ES_AUTOHSCROLL,
 							 left, top, ctl.widthDesired, lineHeight - 3,
 							 Hwnd(), HmenuID(controlID), ::ApplicationInstance(), nullptr);
@@ -1919,7 +1919,7 @@ void UserStrip::SetDescription(const char *description) {
 			case UserControl::ucCombo:
 				ctl.widthDesired = 100;
 				ctl.fixedWidth = false;
-				ctl.w = ::CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("ComboBox"), ctl.text.c_str(),
+				ctl.w = ::CreateWindowExW(WS_EX_CLIENTEDGE, WC_COMBOBOXW, ctl.text.c_str(),
 							 WS_CHILD | WS_TABSTOP | WS_CLIPSIBLINGS | CBS_DROPDOWN | CBS_AUTOHSCROLL | WS_VSCROLL,
 							 left, top, ctl.widthDesired, 180,
 							 Hwnd(), HmenuID(controlID), ::ApplicationInstance(), nullptr);
@@ -1930,7 +1930,7 @@ void UserStrip::SetDescription(const char *description) {
 				ctl.widthDesired = WidthText(fontText, ctl.text) +
 						   2 * ::GetSystemMetrics(SM_CXEDGE) +
 						   2 * WidthText(fontText, GUI_TEXT(" "));
-				ctl.w = ::CreateWindowEx(0, TEXT("Button"), ctl.text.c_str(),
+				ctl.w = ::CreateWindowExW(0, WC_BUTTONW, ctl.text.c_str(),
 							 WS_CHILD | WS_TABSTOP | WS_CLIPSIBLINGS |
 							 ((ctl.controlType == UserControl::ucDefaultButton) ? BS_DEFPUSHBUTTON : BS_PUSHBUTTON),
 							 left, top, ctl.widthDesired, lineHeight-1,
@@ -1955,7 +1955,7 @@ void UserStrip::SetDescription(const char *description) {
 
 			default:
 				ctl.widthDesired = WidthText(fontText, ctl.text);
-				ctl.w = ::CreateWindowEx(0, TEXT("Static"), ctl.text.c_str(),
+				ctl.w = ::CreateWindowExW(0, WC_STATICW, ctl.text.c_str(),
 							 WS_CHILD | WS_CLIPSIBLINGS | ES_RIGHT,
 							 left, top, ctl.widthDesired, lineHeight - 5,
 							 Hwnd(), HmenuID(controlID), ::ApplicationInstance(), nullptr);

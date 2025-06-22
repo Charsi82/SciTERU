@@ -21,24 +21,34 @@
 
 #include "GUI.h"
 #include "StringHelpers.h"
+#include "UnicodeConstants.h"
 
-bool StartsWith(std::wstring_view s, std::wstring_view start) {
-	return (s.size() >= start.size()) &&
-	       (std::equal(s.begin(), s.begin() + start.size(), start.begin()));
+namespace {
+
+/**
+ * Is the character an octal digit?
+ */
+constexpr bool IsOctalDigit(char ch) noexcept {
+	return ch >= '0' && ch <= '7';
 }
 
-bool StartsWith(std::string_view s, std::string_view start) {
-	return (s.size() >= start.size()) &&
-	       (std::equal(s.begin(), s.begin() + start.size(), start.begin()));
-}
+constexpr int octalBase = 8;
+constexpr int decimalBase = 10;
 
-bool EndsWith(std::wstring_view s, std::wstring_view end) {
-	return (s.size() >= end.size()) &&
-	       (std::equal(s.begin() + s.size() - end.size(), s.end(), end.begin()));
 }
 
 bool Contains(std::string const &s, char ch) noexcept {
 	return s.find(ch) != std::string::npos;
+}
+
+bool isprefix(const char *target, const char *prefix) noexcept {
+	while (*target && *prefix) {
+		if (*target != *prefix)
+			return false;
+		target++;
+		prefix++;
+	}
+	return !*prefix;
 }
 
 int Substitute(std::wstring &s, std::wstring_view sFind, std::wstring_view sReplace) {
@@ -76,13 +86,23 @@ bool RemoveStringOnce(std::string &s, const char *marker) {
 	return false;
 }
 
+void Trim(std::string &s) {
+	size_t prefixLength = 0;
+	while (prefixLength < s.length() && IsSpaceOrTab(s[prefixLength])) {
+		prefixLength++;
+	}
+	s.erase(0, prefixLength);
+	while (!s.empty() && IsSpaceOrTab(s.back())) {
+		s.pop_back();
+	}
+}
+
 // Remove terminating \r, \n, or \r\n when present.
 void StripEOL(std::string &s) {
-	const size_t length = s.length();
-	if (length >= 2 && (s[length - 2] == '\r' && s[length - 1] == '\n')) {
-		s.erase(length - 2);
-	} else if (length >= 1 && (s[length - 1] == '\r' || s[length - 1] == '\n')) {
-		s.erase(length - 1);
+	if (s.ends_with("\r\n")) {
+		s.erase(s.length() - 2);
+	} else if (s.ends_with('\r') || s.ends_with('\n')) {
+		s.erase(s.length() - 1);
 	}
 }
 
@@ -95,14 +115,15 @@ std::string StdStringFromSizeT(size_t i) {
 }
 
 std::string StdStringFromDouble(double d, int precision) {
-	char number[32];
+	constexpr size_t maxDigits = 32;
+	char number[maxDigits]{};
 	snprintf(number, std::size(number), "%.*f", precision, d);
-	return std::string(number);
+	return { number };
 }
 
 int IntegerFromString(const std::string &val, int defaultValue) {
 	try {
-		if (val.length()) {
+		if (!val.empty()) {
 			return std::stoi(val);
 		}
 	} catch (std::logic_error &) {
@@ -113,7 +134,7 @@ int IntegerFromString(const std::string &val, int defaultValue) {
 
 intptr_t IntPtrFromString(const std::string &val, intptr_t defaultValue) {
 	try {
-		if (val.length()) {
+		if (!val.empty()) {
 			return static_cast<intptr_t>(std::stoll(val));
 		}
 	} catch (std::logic_error &) {
@@ -124,7 +145,7 @@ intptr_t IntPtrFromString(const std::string &val, intptr_t defaultValue) {
 
 long long LongLongFromString(const std::string &val, long long defaultValue) {
 	try {
-		if (val.length()) {
+		if (!val.empty()) {
 			return std::stoll(val);
 		}
 	} catch (std::logic_error &) {
@@ -133,12 +154,61 @@ long long LongLongFromString(const std::string &val, long long defaultValue) {
 	return defaultValue;
 }
 
-void LowerCaseAZ(std::string &s) {
-	std::transform(s.begin(), s.end(), s.begin(), MakeLowerCase);
+int IntFromString(std::u32string_view s) noexcept {
+	if (s.empty()) {
+		return 0;
+	}
+	const bool negate = s.front() == '-';
+	if (negate) {
+		s.remove_prefix(1);
+	}
+	int value = 0;
+	while (!s.empty()) {
+		value = value * decimalBase + s.front() - '0';
+		s.remove_prefix(1);
+	}
+	return negate ? -value : value;
 }
 
 intptr_t IntegerFromText(const char *s) noexcept {
 	return static_cast<intptr_t>(atoll(s));
+}
+
+unsigned int IntFromHexDigit(int ch) noexcept {
+	if ((ch >= '0') && (ch <= '9')) {
+		return ch - '0';
+	} else if (ch >= 'A' && ch <= 'F') {
+		return ch - 'A' + decimalBase;
+	} else if (ch >= 'a' && ch <= 'f') {
+		return ch - 'a' + decimalBase;
+	} else {
+		return 0;
+	}
+}
+
+bool AllBytesHex(std::string_view hexBytes) noexcept {
+	for (const char ch : hexBytes) {
+		if (!IsAHexDigit(ch)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+int IntFromHexByte(std::string_view hexByte) noexcept {
+	if (hexByte.length() >= 2) {
+		return (IntFromHexDigit(hexByte[0]) * hexBase) + IntFromHexDigit(hexByte[1]);
+	}
+	return 0;
+}
+
+unsigned int IntFromHexBytes(std::string_view hexBytes) noexcept {
+	unsigned int val = 0;
+	while (!hexBytes.empty()) {
+		val = val * hexBase + IntFromHexDigit(hexBytes[0]);
+		hexBytes.remove_prefix(1);
+	}
+	return val;
 }
 
 std::set<std::string> SetFromString(std::string_view text, char separator) {
@@ -189,31 +259,15 @@ bool EqualCaseInsensitive(std::string_view a, std::string_view b) noexcept {
 	return true;
 }
 
-bool isprefix(const char *target, const char *prefix) noexcept {
-	while (*target && *prefix) {
-		if (*target != *prefix)
-			return false;
-		target++;
-		prefix++;
-	}
-	if (*prefix)
-		return false;
-	else
-		return true;
+void LowerCaseAZ(std::string &s) {
+	std::transform(s.begin(), s.end(), s.begin(), MakeLowerCase);
 }
 
 std::u32string UTF32FromUTF8(std::string_view s) {
 	std::u32string ret;
 	while (!s.empty()) {
 		const unsigned char uc = static_cast<unsigned char>(s.front());
-		size_t lenChar = 1;
-		if (uc >= 0x80 + 0x40 + 0x20 + 0x10) {
-			lenChar = 4;
-		} else if (uc >= 0x80 + 0x40 + 0x20) {
-			lenChar = 3;
-		} else if (uc >= 0x80 + 0x40) {
-			lenChar = 2;
-		}
+		const size_t lenChar = LengthFromLeadByte(uc);
 		if (lenChar > s.length()) {
 			// Character fragment
 			for (size_t i = 0; i < s.length(); i++) {
@@ -228,60 +282,98 @@ std::u32string UTF32FromUTF8(std::string_view s) {
 	return ret;
 }
 
-unsigned int UTF32Character(const char *utf8) noexcept {
+unsigned int UTF32Character(std::string_view utf8) noexcept {
 	unsigned char ch = utf8[0];
-	unsigned int u32Char;
-	if (ch < 0x80) {
+	const size_t lenChar = LengthFromLeadByte(ch);
+	if (lenChar > utf8.length()) {
+		// Failure with character fragment at end
+		return 0;
+	}
+	unsigned int u32Char = 0;
+	switch (lenChar) {
+	case 1:
 		u32Char = ch;
-	} else if (ch < 0x80 + 0x40 + 0x20) {
-		u32Char = (ch & 0x1F) << 6;
+		break;
+
+	case 2:
+		u32Char = (ch & leadBits2) << shiftByte2;
 		ch = utf8[1];
-		u32Char += ch & 0x7F;
-	} else if (ch < 0x80 + 0x40 + 0x20 + 0x10) {
-		u32Char = (ch & 0xF) << 12;
+		u32Char += TrailByteValue(ch);
+		break;
+
+	case 3:
+		u32Char = (ch & leadBits3) << shiftByte3;
 		ch = utf8[1];
-		u32Char += (ch & 0x7F) << 6;
+		u32Char += TrailByteValue(ch) << shiftByte2;
 		ch = utf8[2];
-		u32Char += ch & 0x7F;
-	} else {
-		u32Char = (ch & 0x7) << 18;
+		u32Char += TrailByteValue(ch);
+		break;
+
+	case 4:
+		u32Char = (ch & leadBits4) << shiftByte4;
 		ch = utf8[1];
-		u32Char += (ch & 0x3F) << 12;
+		u32Char += TrailByteValue(ch) << shiftByte3;
 		ch = utf8[2];
-		u32Char += (ch & 0x3F) << 6;
+		u32Char += TrailByteValue(ch) << shiftByte2;
 		ch = utf8[3];
-		u32Char += ch & 0x3F;
+		u32Char += TrailByteValue(ch);
+		break;
+
+	default:
+		// Impossible as LengthFromLeadByte can only return 1..4
+		break;
 	}
 	return u32Char;
 }
 
-namespace {
-
-// Helper for UTF8FromUTF32 processes 6 bits of input and isolates bit twiddling and cast.
-constexpr char SixBits(unsigned int uch, unsigned int shift, unsigned int mark=0x80) noexcept {
-	return static_cast<char>(mark | ((uch >> (shift * 6)) & 0b111111));
-}
-
-}
-
 std::string UTF8FromUTF32(unsigned int uch) {
 	std::string result;
-	if (uch < 0x80) {
+	if (uch < first2Byte) {
 		result.push_back(static_cast<char>(uch));
-	} else if (uch < 0x800) {
-		result.push_back(SixBits(uch, 1, 0xC0));
+	} else if (uch < first3Byte) {
+		result.push_back(SixBits(uch, 1, leadByte2));
 		result.push_back(SixBits(uch, 0));
-	} else if (uch < 0x10000) {
-		result.push_back(SixBits(uch, 2, 0xE0));
+	} else if (uch < first4Byte) {
+		result.push_back(SixBits(uch, 2, leadByte3));
 		result.push_back(SixBits(uch, 1));
 		result.push_back(SixBits(uch, 0));
 	} else {
-		result.push_back(SixBits(uch, 3, 0xF0));
+		result.push_back(SixBits(uch, 3, leadByte4));
 		result.push_back(SixBits(uch, 2));
 		result.push_back(SixBits(uch, 1));
 		result.push_back(SixBits(uch, 0));
 	}
 	return result;
+}
+
+bool IsDBCSLeadByte(int codePage, char ch) noexcept {
+	// Byte ranges found in Wikipedia articles with relevant search strings in each case
+	const unsigned char uch = ch;
+	switch (codePage) {
+	case 932:
+		// Shift_jis
+		return ((uch >= 0x81) && (uch <= 0x9F)) ||
+			((uch >= 0xE0) && (uch <= 0xFC));
+		// Lead bytes F0 to FC may be a Microsoft addition.
+	case 936:
+		// GBK
+		return (uch >= 0x81) && (uch <= 0xFE);
+	case 949:
+		// Korean Wansung KS C-5601-1987
+		return (uch >= 0x81) && (uch <= 0xFE);
+	case 950:
+		// Big5
+		return (uch >= 0x81) && (uch <= 0xFE);
+	case 1361:
+		// Korean Johab KS C-5601-1992
+		return
+			((uch >= 0x84) && (uch <= 0xD3)) ||
+			((uch >= 0xD8) && (uch <= 0xDE)) ||
+			((uch >= 0xE0) && (uch <= 0xF9));
+	default:
+		break;
+	}
+	return false;
 }
 
 /**
@@ -323,179 +415,113 @@ std::string Slash(const std::string &s, bool quoteQuotes) {
 }
 
 /**
- * Is the character an octal digit?
- */
-static constexpr bool IsOctalDigit(char ch) noexcept {
-	return ch >= '0' && ch <= '7';
-}
-
-/**
- * If the character is an hexa digit, get its value.
- */
-static int GetHexaDigit(char ch) noexcept {
-	if (ch >= '0' && ch <= '9') {
-		return ch - '0';
-	}
-	if (ch >= 'A' && ch <= 'F') {
-		return ch - 'A' + 10;
-	}
-	if (ch >= 'a' && ch <= 'f') {
-		return ch - 'a' + 10;
-	}
-	return -1;
-}
-
-/**
- * Convert C style \a, \b, \f, \n, \r, \t, \v, \ooo and \xhh into their indicated characters.
- * Result length is always less than or equal to input length.
- */
-size_t UnSlash(char *s) noexcept {
-	const char *sStart = s;
-	char *o = s;
-
-	while (*s) {
-		if (*s == '\\') {
-			s++;
-			if (*s == 'a') {
-				*o = '\a';
-			} else if (*s == 'b') {
-				*o = '\b';
-			} else if (*s == 'f') {
-				*o = '\f';
-			} else if (*s == 'n') {
-				*o = '\n';
-			} else if (*s == 'r') {
-				*o = '\r';
-			} else if (*s == 't') {
-				*o = '\t';
-			} else if (*s == 'v') {
-				*o = '\v';
-			} else if (IsOctalDigit(*s)) {
-				int val = *s - '0';
-				if (IsOctalDigit(*(s + 1))) {
-					s++;
-					val *= 8;
-					val += *s - '0';
-					if (IsOctalDigit(*(s + 1))) {
-						s++;
-						val *= 8;
-						val += *s - '0';
-					}
-				}
-				*o = static_cast<char>(val);
-			} else if (*s == 'x') {
-				s++;
-				int val = 0;
-				int ghd = GetHexaDigit(*s);
-				if (ghd >= 0) {
-					s++;
-					val = ghd;
-					ghd = GetHexaDigit(*s);
-					if (ghd >= 0) {
-						s++;
-						val *= 16;
-						val += ghd;
-					}
-				}
-				*o = static_cast<char>(val);
-			} else {
-				*o = *s;
-			}
-		} else {
-			*o = *s;
-		}
-		o++;
-		if (*s) {
-			s++;
-		}
-	}
-	*o = '\0';
-	return o - sStart;
-}
-
-std::string UnSlashString(std::string_view sv) {
-	std::string sCopy(sv);
-	const size_t len = UnSlash(&sCopy[0]);
-	return sCopy.substr(0, len);
-}
-
-/**
  * Convert C style \0oo into their indicated characters.
  * This is used to get control characters into the regular expression engine.
  * Result length is always less than or equal to input length.
  */
-static size_t UnSlashLowOctal(char *s) noexcept {
-	const char *sStart = s;
-	char *o = s;
-	while (*s) {
-		if ((s[0] == '\\') && (s[1] == '0') && IsOctalDigit(s[2]) && IsOctalDigit(s[3])) {
-			*o = static_cast<char>(8 * (s[2] - '0') + (s[3] - '0'));
-			s += 3;
-		} else {
-			*o = *s;
-		}
-		o++;
-		if (*s)
-			s++;
-	}
-	*o = '\0';
-	return o - sStart;
-}
-
 std::string UnSlashLowOctalString(std::string_view sv) {
-	std::string sCopy(sv);
-	const size_t len = UnSlashLowOctal(&sCopy[0]);
-	return sCopy.substr(0, len);
-}
-
-unsigned int IntFromHexDigit(int ch) noexcept {
-	if ((ch >= '0') && (ch <= '9')) {
-		return ch - '0';
-	} else if (ch >= 'A' && ch <= 'F') {
-		return ch - 'A' + 10;
-	} else if (ch >= 'a' && ch <= 'f') {
-		return ch - 'a' + 10;
-	} else {
-		return 0;
-	}
-}
-
-bool AllBytesHex(std::string_view hexBytes) noexcept {
-	for (const char ch : hexBytes) {
-		if (!IsAHexDigit(ch)) {
-			return false;
+	std::string result;
+	while (!sv.empty()) {
+		if ((sv.front() == '\\') && (sv.length() > 3) && (sv[1] == '0') && IsOctalDigit(sv[2]) && IsOctalDigit(sv[3])) {
+			result.push_back(static_cast<char>((octalBase * (sv[2] - '0')) + (sv[3] - '0')));
+			sv.remove_prefix(3);
+		} else {
+			result.push_back(sv.front());
 		}
+		sv.remove_prefix(1);
 	}
-	return true;
+	return result;
 }
 
-unsigned int IntFromHexBytes(std::string_view hexBytes) noexcept {
-	unsigned int val = 0;
-	while (!hexBytes.empty()) {
-		val = val * 16 + IntFromHexDigit(hexBytes[0]);
-		hexBytes.remove_prefix(1);
+/**
+ * Convert C style \a, \b, \f, \n, \r, \t, \v, \ooo and \xhh into their indicated characters.
+ */
+std::string UnSlashString(std::string_view sv) {
+	std::string result;
+
+	while (!sv.empty()) {
+		if (sv.front() == '\\') {
+			sv.remove_prefix(1);
+			if (sv.empty()) {
+				result.push_back('\\');
+				break;
+			}
+			const char after = sv.front();
+			char ch = after;
+			if (after == 'a') {
+				ch = '\a';
+			} else if (after == 'b') {
+				ch = '\b';
+			} else if (after == 'f') {
+				ch = '\f';
+			} else if (after == 'n') {
+				ch = '\n';
+			} else if (after == 'r') {
+				ch = '\r';
+			} else if (after == 't') {
+				ch = '\t';
+			} else if (after == 'v') {
+				ch = '\v';
+			} else if (IsOctalDigit(after)) {
+				int val = after - '0';
+				if ((sv.length() > 1) && IsOctalDigit(sv[1])) {
+					sv.remove_prefix(1);
+					val *= octalBase;
+					val += sv.front() - '0';
+					if ((sv.length() > 1) && IsOctalDigit(sv[1])) {
+						sv.remove_prefix(1);
+						val *= octalBase;
+						val += sv.front() - '0';
+					}
+				}
+				ch = static_cast<char>(val);
+			} else if (after == 'x') {
+				int val = 0;
+				if ((sv.length() > 1) && IsAHexDigit(sv[1])) {
+					sv.remove_prefix(1);
+					val = IntFromHexDigit(sv.front());
+					if ((sv.length() > 1) && IsAHexDigit(sv[1])) {
+						sv.remove_prefix(1);
+						val *= hexBase;
+						val += IntFromHexDigit(sv.front());
+					}
+				}
+				ch = static_cast<char>(val);
+			}
+			result.push_back(ch);
+		} else {
+			result.push_back(sv.front());
+		}
+		sv.remove_prefix(1);
 	}
-	return val;
+	return result;
 }
 
 std::string UnicodeUnEscape(std::string_view s) {
+	constexpr size_t lengthPrefix = 2;
+	constexpr size_t hexShort = 2;
+	constexpr size_t hexMedium = 4;
+	constexpr size_t hexLong = 8;
 	// Leave invalid escapes as they are.
 	std::string result;
 	while (!s.empty()) {
-		if (s.length() > 2 && s[0] == '\\') {
-			unsigned int val = 0;
-			if (s[1] == 'x' && s.length() >= 4 && AllBytesHex(s.substr(2, 2))) {
+		if (s.length() > lengthPrefix && s[0] == '\\') {
+			size_t lengthDigits = 0;
+			if (s[1] == 'x') {
 				// \xAB
-				val = IntFromHexBytes(s.substr(2,2));
-				s.remove_prefix(4);
-			}  else if (s[1] == 'u' && s.length() >= 6 && AllBytesHex(s.substr(2, 4))) {
+				lengthDigits = hexShort;
+			} else if (s[1] == 'u') {
 				// \uABCD
-				val = IntFromHexBytes(s.substr(2, 4));
-				s.remove_prefix(6);
-			}  else if (s[1] == 'U' && s.length() >= 10 && AllBytesHex(s.substr(2, 8))) {
+				lengthDigits = hexMedium;
+			} else if (s[1] == 'U') {
 				// \UABCDDEF9
-				val = IntFromHexBytes(s.substr(2, 8));
-				s.remove_prefix(10);
+				lengthDigits = hexLong;
+			}
+			const size_t lengthEscape = lengthPrefix + lengthDigits;
+			unsigned int val = 0;
+			if (lengthDigits && (s.length() >= lengthEscape) && AllBytesHex(s.substr(lengthPrefix, lengthDigits))) {
+				val = IntFromHexBytes(s.substr(lengthPrefix, lengthDigits));
+				s.remove_prefix(lengthEscape);
 			} else {
 				val = '\\';
 				s.remove_prefix(1);
@@ -513,7 +539,7 @@ ComboMemory::ComboMemory(size_t sz_) : sz(sz_) {
 }
 
 void ComboMemory::Insert(std::string_view item) {
-	std::vector<std::string>::iterator match = std::find(entries.begin(), entries.end(), item);
+	std::vector<std::string>::iterator match = std::ranges::find(entries, item);
 	if (match != entries.end()) {
 		entries.erase(match);
 	}
@@ -529,7 +555,7 @@ void ComboMemory::Insert(std::string_view item) {
 void ComboMemory::InsertDeletePrefix(std::string_view item) {
 	if (!entries.empty()) {
 		const std::string_view svFront = entries.front();
-		if (StartsWith(item, svFront) || StartsWith(svFront, item)) {
+		if (item.starts_with(svFront) || svFront.starts_with(item)) {
 			entries.erase(entries.begin());
 		}
 	}
@@ -547,7 +573,7 @@ bool ComboMemory::Present(const std::string_view sv) const noexcept {
 
 void ComboMemory::Append(std::string_view item) {
 	if (!Present(item) && entries.size() < sz) {
-		entries.push_back(std::string(item));
+		entries.emplace_back(item);
 	}
 }
 

@@ -10,6 +10,13 @@
 
 namespace {
 
+GUI::gui_string HexStringFromInteger(long i) {
+	constexpr size_t maxDigits = 32;
+	char number[maxDigits]{};
+	std::to_chars(number, number + maxDigits, i, hexBase);
+	return GUI::StringFromUTF8(number);
+}
+
 /**
  * Flash the given window for the asked @a duration to visually warn the user.
  */
@@ -52,7 +59,7 @@ void PlayThisSound(
 			using MMFn = BOOL(WINAPI *)(LPCSTR, HMODULE, DWORD);
 			MMFn fnMM = DLLFunction<MMFn>(hMM, "PlaySoundA");
 			if (fnMM) {
-				bPlayOK = fnMM(sound, NULL, SND_ASYNC | SND_FILENAME);
+				bPlayOK = fnMM(sound, {}, SND_ASYNC | SND_FILENAME);
 			}
 		}
 	}
@@ -84,6 +91,7 @@ SciTEWin *Caller(HWND hDlg, UINT message, LPARAM lParam) noexcept {
 }
 
 #ifdef RB_WRNM  //!-[WarningMessage]
+
 void SciTEWin::WarnUser(int warnID, const char* msg /* = NULL */, bool isCanBeAlerted /* = true */) { //!-change-[WarningMessage]
 
 	std::string warning;
@@ -151,9 +159,10 @@ void SciTEWin::WarnUser(int warnID, const char* msg /* = NULL */, bool isCanBeAl
 }
 
 #else //!-else-[WarningMessage]
-void SciTEWin::WarnUser(int warnID) {
 
+void SciTEWin::WarnUser(int warnID) {
 	std::string warning;
+
 	switch (warnID) {
 	case warnFindWrapped:
 		warning = props.GetString("warning.findwrapped");
@@ -197,8 +206,8 @@ void SciTEWin::WarnUser(int warnID) {
 	}
 	PlayThisSound(sound.c_str(), duration, hMM);
 }
-#endif //RB_WRNM
 
+#endif //RB_WRNM
 bool SciTEWin::DialogHandled(GUI::WindowID id, MSG *pmsg) noexcept {
 	if (id) {
 		if (::IsDialogMessageW(static_cast<HWND>(id), pmsg))
@@ -278,7 +287,7 @@ GUI::gui_string SciTEWin::DialogFilterFromProperty(const GUI::gui_string &filter
 	if (filterProperty.length()) {
 		const std::vector<GUI::gui_string> filters = StringSplit(filterProperty, GUI_TEXT('|'));
 		for (size_t i = 0; i < filters.size()-1; i+=2) {
-			if (!StartsWith(filters[i], GUI_TEXT("#"))) {
+			if (!filters[i].starts_with(GUI_TEXT("#"))) {
 				const GUI::gui_string localised = localiser.Text(GUI::UTF8FromString(filters[i]), false);
 				if (localised.size()) {
 					transformed.push_back(localised);
@@ -301,7 +310,7 @@ GUI::gui_string SciTEWin::DialogFilterFromProperty(const GUI::gui_string &filter
 void SciTEWin::CheckCommonDialogError() {
 	const DWORD errorNumber = ::CommDlgExtendedError();
 	if (errorNumber) {
-		GUI::gui_string sError = GUI::HexStringFromInteger(errorNumber);
+		GUI::gui_string sError = HexStringFromInteger(errorNumber);
 		GUI::gui_string msg = LocaliseMessage("Common dialog error 0x^0.", sError.c_str());
 		WindowMessageBox(wSciTE, msg);
 	}
@@ -313,7 +322,7 @@ bool SciTEWin::OpenDialog(const FilePath &directory, const GUI::gui_string &file
 	DWORD filterDefault = 1;
 	std::vector<GUI::gui_string> filters = StringSplit(GUI::gui_string(filesFilter), L'|');
 	if (!openFilterDefault.empty()) {
-		std::vector<GUI::gui_string>::iterator itFilter = std::find(filters.begin(), filters.end(), openFilterDefault);
+		std::vector<GUI::gui_string>::iterator itFilter = std::ranges::find(filters, openFilterDefault);
 		if (itFilter != filters.end()) {
 			filterDefault = static_cast<DWORD>(std::distance(filters.begin(), itFilter)) / 2 + 1;
 		}
@@ -508,11 +517,15 @@ void SciTEWin::SaveSessionDialog() {
 	}
 }
 
-static void DeleteFontObject(HFONT &font) noexcept {
+namespace {
+
+void DeleteFontObject(HFONT &font) noexcept {
 	if (font) {
 		::DeleteObject(font);
 		font = {};
 	}
+}
+
 }
 
 /**
@@ -900,7 +913,9 @@ public:
 
 };
 
-static void FillComboFromProps(HWND combo, const PropSetFile &props) {
+namespace {
+
+void FillComboFromProps(HWND combo, const PropSetFile &props) {
 	const char *key = nullptr;
 	const char *val = nullptr;
 	if (props.GetFirst(key, val)) {
@@ -915,6 +930,8 @@ static void FillComboFromProps(HWND combo, const PropSetFile &props) {
 		::RedrawWindow(combo, nullptr, {},
 			RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);
 	}
+}
+
 }
 
 void SciTEWin::UserStripShow(const char *description) {
@@ -1262,11 +1279,15 @@ void SciTEWin::Find() {
 // Set a call back with the handle after init to set the path.
 // http://msdn.microsoft.com/library/default.asp?url=/library/en-us/shellcc/platform/shell/reference/callbackfunctions/browsecallbackproc.asp
 
-static int __stdcall BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM, LPARAM pData) {
+namespace {
+
+int __stdcall BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM, LPARAM pData) {
 	if (uMsg == BFFM_INITIALIZED) {
 		SendMessage(hwnd, BFFM_SETSELECTION, TRUE, pData);
 	}
 	return 0;
+}
+
 }
 
 void SciTEWin::PerformGrep() {
@@ -1411,7 +1432,7 @@ BOOL SciTEWin::GrepMessage(HWND hDlg, UINT message, WPARAM wParam) {
 				info.ulFlags = 0;
 				info.lpfn = BrowseCallbackProc;
 				GUI::gui_string directory = dlg.ItemTextG(IDDIRECTORY);
-				if (!EndsWith(directory, pathSepString)) {
+				if (!directory.ends_with(pathSepString)) {
 					directory += pathSepString;
 				}
 				info.lParam = reinterpret_cast<LPARAM>(directory.c_str());
@@ -1766,7 +1787,7 @@ bool SciTEWin::ParametersDialog(bool modal) {
 	modalParameters = modal;
 	if (modal) {
 		success = DoDialog(TEXT("PARAMETERS"), ParametersDlg) == IDOK;
-		wParameters = NULL;
+		wParameters = nullptr;
 	} else {
 		CreateParameterisedDialog(TEXT("PARAMETERSNONMODAL"), ParametersDlg);
 		wParameters.Show();

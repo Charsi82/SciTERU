@@ -20,7 +20,7 @@ void SciTEWin::SetFileProperties(
 
 	constexpr int TEMP_LEN = 100;
 	wchar_t temp[TEMP_LEN] = L"";
-	HANDLE hf = ::CreateFileW(filePath.AsInternal(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE hf = ::CreateFileW(filePath.AsInternal(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, {});
 	if (hf != INVALID_HANDLE_VALUE) {
 		FILETIME ft = FILETIME();
 		::GetFileTime(hf, nullptr, nullptr, &ft);
@@ -83,9 +83,9 @@ void SciTEWin::UpdateTabs(const std::vector<GUI::gui_string> &tabNames) {
 	// Synchronize the tab control titles with those passed in.
 
 	// Find the first element that differs between the two vectors.
-	const auto [misNames, misNamesCurrent] = std::mismatch(
-		tabNames.begin(), tabNames.end(),
-		tabNamesCurrent.begin(), tabNamesCurrent.end());
+	const auto [misNames, misNamesCurrent] = std::ranges::mismatch(
+		tabNames,
+		tabNamesCurrent);
 	size_t tabChange = std::distance(tabNames.begin(), misNames);
 
 	if (tabNames.size() == tabNamesCurrent.size() && tabNames.size() == tabChange) {
@@ -549,14 +549,14 @@ void SciTEWin::SizeSubWindows() {
 			const GUI::Rectangle rcToSet(rcClient.left, yPos, rcClient.right, yPos + band.height);
 			if (hdwp)
 				hdwp = ::DeferWindowPos(hdwp, HwndOf(band.win),
-							0, rcToSet.left, rcToSet.top, rcToSet.Width(), rcToSet.Height(),
+							{}, rcToSet.left, rcToSet.top, rcToSet.Width(), rcToSet.Height(),
 							SWP_NOZORDER|SWP_NOACTIVATE|SWP_SHOWWINDOW);
 			yPos += band.height;
 		} else {
 			const GUI::Rectangle rcToSet(rcClient.left, rcClient.top - 41, rcClient.Width(), rcClient.top - 40);
 			if (hdwp)
 				hdwp = ::DeferWindowPos(hdwp, HwndOf(band.win),
-							0, rcToSet.left, rcToSet.top, rcToSet.Width(), rcToSet.Height(),
+							{}, rcToSet.left, rcToSet.top, rcToSet.Width(), rcToSet.Height(),
 							SWP_NOZORDER|SWP_NOACTIVATE|SWP_HIDEWINDOW);
 		}
 	}
@@ -586,7 +586,7 @@ void SciTEWin::SetMenuItem(int menuNumber, int position, int itemID,
 #ifdef RB_UserPropertiesFilesSubmenu
 //!-start-[UserPropertiesFilesSubmenu]
 	if ((menuNumber == menuOptions) && (position >= IMPORT_START)) {
-		if (props.GetExpandedString("ext.lua.startup.script").length())
+		if (!props.GetExpandedString("ext.lua.startup.script").empty())
 			hmenu = ::GetSubMenu(hmenu, IMPORT_START);
 		else
 			hmenu = ::GetSubMenu(hmenu, IMPORT_START - 1);
@@ -738,7 +738,7 @@ void SciTEWin::LocaliseMenu(HMENU hmenu) {
 							text += accel;
 						}
 						text.append(1, 0);
-						mii.dwTypeData = &text[0];
+						mii.dwTypeData = text.data();
 						::SetMenuItemInfoW(hmenu, i, TRUE, &mii);
 					}
 				}
@@ -768,13 +768,15 @@ void SciTEWin::LocaliseDialog(HWND wDialog) {
 	}
 }
 
+namespace {
+
 #ifndef RB_UT
 struct BarButton {
 	int id;
 	int cmd;
 };
 
-static BarButton bbs[] = {
+BarButton bbs[] = {
 	{ -1,           0 },
 	{ STD_FILENEW,  IDM_NEW },
 	{ STD_FILEOPEN, IDM_OPEN },
@@ -796,8 +798,8 @@ static BarButton bbs[] = {
 };
 #endif
 
-static WNDPROC stDefaultTabProc = nullptr;
-static LRESULT PASCAL TabWndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam) {
+WNDPROC stDefaultTabProc = nullptr;
+LRESULT PASCAL TabWndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam) {
 
 	static bool bDragBegin = false;
 	static int iDraggingTab = -1;
@@ -869,7 +871,7 @@ static LRESULT PASCAL TabWndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM
 			if (bDragBegin) {
 				if (hwndLastFocus) ::SetFocus(hwndLastFocus);
 				::ReleaseCapture();
-				::SetCursor(::LoadCursor(NULL, IDC_ARROW));
+				::SetCursor(::LoadCursor({}, IDC_ARROW));
 				bDragBegin = false;
 				const GUI::Point pt = PointFromLong(lParam);
 				const int tab = TabAtPoint(hWnd, pt);
@@ -889,7 +891,7 @@ static LRESULT PASCAL TabWndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM
 				if (bDragBegin) {
 					if (hwndLastFocus) ::SetFocus(hwndLastFocus);
 					::ReleaseCapture();
-					::SetCursor(::LoadCursor(NULL, IDC_ARROW));
+					::SetCursor(::LoadCursor({}, IDC_ARROW));
 					bDragBegin = false;
 					iDraggingTab = -1;
 					iLastClickTab = -1;
@@ -924,7 +926,7 @@ static LRESULT PASCAL TabWndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM
 									       MAKEINTRESOURCE(IDC_DRAGDROP));
 						if (hcursor) ::SetCursor(hcursor);
 					} else {
-						::SetCursor(::LoadCursor(NULL, IDC_NO));
+						::SetCursor(::LoadCursor({}, IDC_NO));
 					}
 				}
 			}
@@ -1011,6 +1013,8 @@ static LRESULT PASCAL TabWndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM
 	return retResult;
 }
 
+}
+
 void SciTEWin::CreateStrip(LPCWSTR stripName, LPVOID lpParam) {
 	const HWND hwnd = ::CreateWindowExW(
 		0,
@@ -1032,26 +1036,28 @@ void SciTEWin::CreateStrip(LPCWSTR stripName, LPVOID lpParam) {
  */
 void SciTEWin::Creation() {
 
-	wContent = ::CreateWindowEx(
+	constexpr int widthWindow = 100;	// Temporary until stretched to fit
+
+	wContent = ::CreateWindowExW(
 			   flatterUI ? 0 : WS_EX_CLIENTEDGE,
 			   classNameInternal,
 			   TEXT("Source"),
 			   WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
 			   0, 0,
-			   100, 100,
+			   widthWindow, 100,
 			   MainHWND(),
 			   HmenuID(2000),
 			   hInstance,
 			   &contents);
 	wContent.Show();
 
-	wEditor.SetScintilla(::CreateWindowEx(
+	wEditor.SetScintilla(::CreateWindowExW(
 				     0,
 				     TEXT("Scintilla"),
 				     TEXT("Source"),
 				     WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
 				     0, 0,
-				     100, 100,
+				     widthWindow, 100,
 				     HwndOf(wContent),
 				     HmenuID(IDM_SRCWIN),
 				     hInstance,
@@ -1063,13 +1069,13 @@ void SciTEWin::Creation() {
 	wEditor.SetCommandEvents(false);
 	WindowSetFocus(wEditor);
 
-	wOutput.SetScintilla(::CreateWindowEx(
+	wOutput.SetScintilla(::CreateWindowExW(
 				     0,
 				     TEXT("Scintilla"),
 				     TEXT("Run"),
 				     WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
 				     0, 0,
-				     100, 100,
+				     widthWindow, 100,
 				     HwndOf(wContent),
 				     HmenuID(IDM_RUNWIN),
 				     hInstance,
@@ -1084,14 +1090,14 @@ void SciTEWin::Creation() {
 	wOutput.UsePopUp(SA::PopUp::Never);
 	::DragAcceptFiles(MainHWND(), true);
 
-	HWND hwndToolBar = ::CreateWindowEx(
+	HWND hwndToolBar = ::CreateWindowExW(
 				   0,
 				   TOOLBARCLASSNAME,
 				   TEXT(""),
 				   WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS |
 				   TBSTYLE_FLAT | TBSTYLE_TOOLTIPS | CCS_NORESIZE,
 				   0, 0,
-				   100, tbLarge ? heightToolsBig : heightTools,
+				   widthWindow, tbLarge ? heightToolsBig : heightTools,
 				   MainHWND(),
 				   HmenuID(IDM_TOOLWIN),
 				   hInstance,
@@ -1140,7 +1146,7 @@ void SciTEWin::Creation() {
 	InitCommonControlsEx(&icce);
 
 	WNDCLASS wndClass = {};
-	if (::GetClassInfo(NULL, WC_TABCONTROL, &wndClass) == 0)
+	if (::GetClassInfo({}, WC_TABCONTROL, &wndClass) == 0)
 		exit(FALSE);
 	stDefaultTabProc = wndClass.lpfnWndProc;
 	wndClass.lpfnWndProc = TabWndProc;
@@ -1150,14 +1156,14 @@ void SciTEWin::Creation() {
 	if (RegisterClass(&wndClass) == 0)
 		exit(FALSE);
 
-	wTabBar = ::CreateWindowEx(
+	wTabBar = ::CreateWindowExW(
 			  0,
 			  TEXT("SciTeTabCtrl"),
 			  TEXT("Tab"),
 			  WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS |
 			  TCS_FOCUSNEVER | TCS_TOOLTIPS,
 			  0, 0,
-			  100, heightTab,
+			  widthWindow, heightTab,
 			  MainHWND(),
 			  HmenuID(IDM_TABWIN),
 			  hInstance,
@@ -1181,13 +1187,13 @@ void SciTEWin::Creation() {
 	CreateStrip(L"ReplaceStrip", &replaceStrip);
 	CreateStrip(L"FilterStrip", &filterStrip);
 
-	wStatusBar = ::CreateWindowEx(
+	wStatusBar = ::CreateWindowExW(
 			     0,
 			     STATUSCLASSNAME,
 			     TEXT(""),
 			     WS_CHILD | WS_CLIPSIBLINGS,
 			     0, 0,
-			     100, heightStatus,
+			     widthWindow, heightStatus,
 			     MainHWND(),
 			     HmenuID(IDM_STATUSWIN),
 			     hInstance,
@@ -1200,16 +1206,16 @@ void SciTEWin::Creation() {
 		      SB_SETPARTS, 1,
 		      reinterpret_cast<LPARAM>(widths));
 
-	bands.push_back(Band(true, tbLarge ? heightToolsBig : heightTools, false, wToolBar));
-	bands.push_back(Band(true, heightTab, false, wTabBar));
-	bands.push_back(Band(true, 100, true, wContent));
-	bands.push_back(Band(true, userStrip.Height(), false, userStrip));
-	bands.push_back(Band(true, backgroundStrip.Height(), false, backgroundStrip));
-	bands.push_back(Band(true, searchStrip.Height(), false, searchStrip));
-	bands.push_back(Band(true, findStrip.Height(), false, findStrip));
-	bands.push_back(Band(true, replaceStrip.Height(), false, replaceStrip));
-	bands.push_back(Band(true, filterStrip.Height(), false, filterStrip));
-	bands.push_back(Band(true, heightStatus, false, wStatusBar));
+	bands.emplace_back(true, tbLarge ? heightToolsBig : heightTools, false, wToolBar);
+	bands.emplace_back(true, heightTab, false, wTabBar);
+	bands.emplace_back(true, 100, true, wContent);
+	bands.emplace_back(true, userStrip.Height(), false, userStrip);
+	bands.emplace_back(true, backgroundStrip.Height(), false, backgroundStrip);
+	bands.emplace_back(true, searchStrip.Height(), false, searchStrip);
+	bands.emplace_back(true, findStrip.Height(), false, findStrip);
+	bands.emplace_back(true, replaceStrip.Height(), false, replaceStrip);
+	bands.emplace_back(true, filterStrip.Height(), false, filterStrip);
+	bands.emplace_back(true, heightStatus, false, wStatusBar);
 
 #ifndef NO_LUA
 	if (props.GetExpandedString("ext.lua.startup.script").length() == 0)

@@ -6,8 +6,8 @@
 #   endif
 #endif
 
-#include <string.h>
-#include "luaargs.h"
+#include <string>
+#include "luaargs.hpp"
 
 //------------------------------------------------------------------------------
 template<class T>

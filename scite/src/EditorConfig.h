@@ -10,13 +10,15 @@
 
 class FilePath;
 
+using StringMap = std::map<std::string, std::string>;
+
 class IEditorConfig {
 public:
 	virtual ~IEditorConfig() = default;
 	virtual void ReadFromDirectory(const FilePath &dirStart) = 0;
-	virtual std::map<std::string, std::string> MapFromAbsolutePath(const FilePath &absolutePath) const = 0;
+	[[nodiscard]] virtual StringMap MapFromAbsolutePath(const FilePath &absolutePath) const = 0;
 	virtual void Clear() = 0;
-	static std::unique_ptr<IEditorConfig> Create();
+	[[nodiscard]] static std::unique_ptr<IEditorConfig> Create();
 };
 
 #endif

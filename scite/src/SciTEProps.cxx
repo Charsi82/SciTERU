@@ -14,6 +14,7 @@
 #include <clocale>
 
 #include <stdexcept>
+#include <compare>
 #include <tuple>
 #include <string>
 #include <string_view>
@@ -339,7 +340,7 @@ void SciTEBase::SetOneStyle(GUI::ScintillaWindow &win, int style, std::string_vi
 		win.StyleSetFont(style, sd.font.c_str());
 		bool inMonospacedList = !monospacedList.empty() && (monospacedList.back() == "*");
 		if (!inMonospacedList) {
-			inMonospacedList = std::find(monospacedList.begin(), monospacedList.end(), sd.font) != monospacedList.end();
+			inMonospacedList = std::ranges::find(monospacedList, sd.font) != monospacedList.end();
 		}
 		win.StyleSetCheckMonospaced(style, inMonospacedList);
 	}
@@ -478,17 +479,19 @@ std::string SciTEBase::FindLanguageProperty(const char *pattern, const char *def
 	std::string key = pattern;
 	Substitute(key, "*", language);
 	std::string ret = props.GetExpandedString(key);
-	if (ret == "")
+	if (ret.empty())
 		ret = props.GetExpandedString(pattern);
-	if (ret == "")
+	if (ret.empty())
 		ret = defaultValue;
 	return ret;
 }
 
+namespace {
+
 /**
  * A list of all the properties that should be forwarded to Scintilla lexers.
  */
-static const char *propertiesToForward[] = {
+const char *propertiesToForward[] = {
 	"fold.scintillua.by.indentation",
 	"fold.scintillua.line.groups",
 	"fold.scintillua.on.zero.sum.lines",
@@ -662,7 +665,7 @@ static const char *propertiesToForward[] = {
 };
 
 /* XPM */
-static const char *bookmarkBluegem[] = {
+const char *bookmarkBluegem[] = {
 /* width height num_colors chars_per_pixel */
 "    15    15      64            1",
 /* colors */
@@ -747,6 +750,8 @@ static const char *bookmarkBluegem[] = {
 "  cG3l2z2l3Gc  ",
 "    1GdddG1    "
 };
+
+}
 
 std::string SciTEBase::GetFileNameProperty(const char *name) {
 	std::string namePlusDot = name;
@@ -841,7 +846,7 @@ void SciTEBase::ReadProperties() {
 	}
 	const std::string languageCurrent = wEditor.LexerLanguage();
 	if (language != languageCurrent) {
-		if (StartsWith(language, "script_")) {
+		if (language.starts_with("script_")) {
 			wEditor.SetILexer(nullptr);
 		} else {
 			Scintilla::ILexer5 *plexer = Lexilla::MakeLexer(language);
@@ -1205,25 +1210,14 @@ void SciTEBase::ReadProperties() {
 
 	calltipEndDefinition = FindLanguageProperty("calltip.*.end.definition");
 
-	autoCompleteStartCharacters = props.GetExpandedString(
-		Join("autocomplete.", language, ".start.characters"));
-	if (autoCompleteStartCharacters == "")
-		autoCompleteStartCharacters = props.GetExpandedString("autocomplete.*.start.characters");
+	autoCompleteStartCharacters = FindLanguageProperty("autocomplete.*.start.characters");
 	// "" is a quite reasonable value for this setting
 
-	autoCompleteFillUpCharacters = props.GetExpandedString(
-		Join("autocomplete.", language, ".fillups"));
-	if (autoCompleteFillUpCharacters == "")
-		autoCompleteFillUpCharacters =
-			props.GetExpandedString("autocomplete.*.fillups");
+	autoCompleteFillUpCharacters = FindLanguageProperty("autocomplete.*.fillups");
 	wEditor.AutoCSetFillUps(autoCompleteFillUpCharacters.c_str());
 
-	autoCompleteTypeSeparator = props.GetExpandedString(
-		Join("autocomplete.", language, ".typesep"));
-	if (autoCompleteTypeSeparator == "")
-		autoCompleteTypeSeparator =
-			props.GetExpandedString("autocomplete.*.typesep");
-	if (autoCompleteTypeSeparator.length()) {
+	autoCompleteTypeSeparator = FindLanguageProperty("autocomplete.*.typesep");
+	if (!autoCompleteTypeSeparator.empty()) {
 		wEditor.AutoCSetTypeSeparator(
 			static_cast<unsigned char>(autoCompleteTypeSeparator[0]));
 	}
@@ -1446,6 +1440,11 @@ void SciTEBase::ReadProperties() {
 		// doesn't seem to fire as an event of its own; just modifies the
 		// insert and delete events.
 	}
+
+	const SA::UndoSelectionHistoryOption undoSelectionHistory = static_cast<SA::UndoSelectionHistoryOption>(
+		props.GetInt("undo.selection.history", 1));
+	wEditor.SetUndoSelectionHistory(undoSelectionHistory);
+	wOutput.SetUndoSelectionHistory(undoSelectionHistory);
 
 	// Create a margin column for the folding symbols
 	wEditor.SetMarginTypeN(2, SA::MarginType::Symbol);
@@ -1798,10 +1797,8 @@ void SciTEBase::ReadFontProperties() {
 	const std::string monospaceFonts = props.GetExpandedString("font.monospaced.list");
 	monospacedList = StringSplit(monospaceFonts, ';');
 
-	const char *languageName = language.c_str();
-
-	if (StartsWith(languageName, "scintillua.") && language.length() < 240) {
-		SetScintilluaStyles(wEditor, props, languageName);
+	if (language.starts_with("scintillua.") && language.length() < 240) {
+		SetScintilluaStyles(wEditor, props, language.c_str());
 	}
 
 	// Set styles
@@ -1842,13 +1839,13 @@ void SciTEBase::ReadFontProperties() {
 	SetOneStyle(wEditor, StyleDefault, sval);
 	SetOneStyle(wOutput, StyleDefault, sval);
 
-	sval = props.GetExpandedString(StyleName(languageName, StyleDefault));
+	sval = props.GetExpandedString(StyleName(language, StyleDefault));
 	SetOneStyle(wEditor, StyleDefault, sval);
 
 	wEditor.StyleClearAll();
 
 	SetStyleFor(wEditor, "*");
-	SetStyleFor(wEditor, languageName);
+	SetStyleFor(wEditor, language.c_str());
 	if (props.GetInt("error.inline")) {
 		wEditor.ReleaseAllExtendedStyles();
 		diagnosticStyleStart = wEditor.AllocateExtendedStyles(diagnosticStyles);
@@ -2013,7 +2010,7 @@ void SciTEBase::ReadPropertiesInitial() {
 	wOutput.SetWrapMode(wrapOutput ? wrapStyle : SA::Wrap::None);
 
 	std::string menuLanguageProp = props.GetExpandedString("menu.language");
-	std::replace(menuLanguageProp.begin(), menuLanguageProp.end(), '|', '\0');
+	std::ranges::replace(menuLanguageProp, '|', '\0');
 	const char *sMenuLanguage = menuLanguageProp.c_str();
 	while (*sMenuLanguage) {
 		LanguageMenuItem lmi;
@@ -2029,9 +2026,9 @@ void SciTEBase::ReadPropertiesInitial() {
 
 	// load the user defined short cut props
 	std::string shortCutProp = props.GetNewExpandString("user.shortcuts");
-	if (shortCutProp.length()) {
-		const size_t pipes = std::count(shortCutProp.begin(), shortCutProp.end(), '|');
-		std::replace(shortCutProp.begin(), shortCutProp.end(), '|', '\0');
+	if (!shortCutProp.empty()) {
+		const size_t pipes = std::ranges::count(shortCutProp, '|');
+		std::ranges::replace(shortCutProp, '|', '\0');
 		const char *sShortCutProp = shortCutProp.c_str();
 		for (size_t item = 0; item < pipes/2; item++) {
 			ShortcutItem sci;

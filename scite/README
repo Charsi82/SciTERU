@@ -7,7 +7,7 @@ See lexilla/README for information on building Lexilla.
 
 *** GTK+/Linux version ***
 
-You must first have GTK+ 2.24 or later and GCC (7.1 or better) installed.
+You must first have GTK+ 2.24 or later and GCC (9.1 or better) installed.
 Clang may be used by adding CLANG=1 to the make command line.
 Other C++ compilers may work but may require tweaking the make file.
 Either GTK+ 2.x or 3.x may be used with 2.x the default and 3.x
@@ -43,9 +43,9 @@ The current make file supports static and dynamic linking between SciTE, Scintil
 
 *** Windows version ***
 
-A C++ 17 compiler is required.
-Visual Studio 2019 is the development system used for most development
-although Mingw-w64 9.2 is also supported.
+A C++ 20 compiler is required.
+Visual Studio 2022 is the development system used for most development
+although Mingw-w64 13.2 is also supported.
 
 To build Scintilla, make in the scintilla/win32 directory
 		cd scintilla\win32

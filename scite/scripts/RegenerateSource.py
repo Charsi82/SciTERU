@@ -200,7 +200,7 @@ def UpdateHistory(pathHistory, credits):
     ReplaceREInFile(pathHistory, r"<table>[^\0]*</table>", insertion)
 
 def ExtractItems(pathHistory):
-    markStart = "<h2>Releases</h2>"
+    markStart = '<h2 id="Releases">'
     markEnd = "scite446.zip"
     items = []
     with pathHistory.open(encoding='utf-8') as history:

@@ -33,7 +33,7 @@ public:
 	int right;
 	int bottom;
 
-	explicit constexpr Rectangle(int left_=0, int top_=0, int right_=0, int bottom_ = 0) noexcept :
+	explicit constexpr Rectangle(int left_=0, int top_=0, int right_=0, int bottom_=0) noexcept :
 		left(left_), top(top_), right(right_), bottom(bottom_) {
 	}
 	bool Contains(Point pt) const noexcept {
@@ -42,21 +42,16 @@ public:
 	}
 	int Width() const noexcept { return right - left; }
 	int Height() const noexcept { return bottom - top; }
-	bool operator==(const Rectangle &other) const noexcept {
-		return (left == other.left) &&
-		       (top == other.top) &&
-		       (right == other.right) &&
-		       (bottom == other.bottom);
-	}
+	constexpr bool operator==(const Rectangle &other) const noexcept = default;
 };
 
 #if defined(GTK) || defined(__APPLE__)
 
 // On GTK and macOS use UTF-8 char strings
 
-typedef char gui_char;
-typedef std::string gui_string;
-typedef std::string_view gui_string_view;
+using gui_char = char;
+using gui_string = std::string;
+using gui_string_view = std::string_view;
 
 #define GUI_TEXT(q) q
 
@@ -64,9 +59,9 @@ typedef std::string_view gui_string_view;
 
 // On Win32 use UTF-16 wide char strings
 
-typedef wchar_t gui_char;
-typedef std::wstring gui_string;
-typedef std::wstring_view gui_string_view;
+using gui_char = wchar_t;
+using gui_string = std::wstring;
+using gui_string_view = std::wstring_view;
 
 #define GUI_TEXT(q) L##q
 
@@ -78,7 +73,6 @@ gui_string StringFromUTF8(std::string_view sv);
 std::string UTF8FromString(gui_string_view sv);
 gui_string StringFromInteger(long i);
 gui_string StringFromLongLong(long long i);
-gui_string HexStringFromInteger(long i);
 
 std::string LowerCaseUTF8(std::string_view sv);
 
@@ -92,7 +86,7 @@ std::string UpperCaseUTF8(std::string_view sv);
 //!-end-[FixEncoding]
 #endif
 
-typedef void *WindowID;
+using WindowID = void *;
 class Window {
 protected:
 	WindowID wid {};
@@ -129,7 +123,7 @@ public:
 	void SetRedraw(bool redraw);
 };
 
-typedef void *MenuID;
+using MenuID = void *;
 class Menu {
 	MenuID mid {};
 public:
@@ -173,8 +167,6 @@ public:
 	// Send is the basic method and can be used between threads on Win32
 	intptr_t Send(unsigned int msg, uintptr_t wParam=0, intptr_t lParam=0);
 };
-
-bool IsDBCSLeadByte(int codePage, char ch);
 
 void SleepMilliseconds(int sleepTime);
 

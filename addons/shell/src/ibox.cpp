@@ -1,5 +1,5 @@
 #include "resource.h"
-#include "luaargs.h"
+#include "luaargs.hpp"
 #include "utf.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>

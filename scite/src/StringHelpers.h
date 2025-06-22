@@ -8,10 +8,12 @@
 #ifndef STRINGHELPERS_H
 #define STRINGHELPERS_H
 
-bool StartsWith(std::wstring_view s, std::wstring_view start);
-bool StartsWith(std::string_view s, std::string_view start);
-bool EndsWith(std::wstring_view s, std::wstring_view end);
+// String contain checks
+
 bool Contains(std::string const &s, char ch) noexcept;
+bool isprefix(const char *target, const char *prefix) noexcept;
+
+// Modifications: substitution, remove, trim
 
 // Substitute is duplicated instead of templated as it was ambiguous when implemented as a template.
 int Substitute(std::wstring &s, std::wstring_view sFind, std::wstring_view sReplace);
@@ -23,7 +25,10 @@ int Remove(T &s, const T &sFind) {
 }
 
 bool RemoveStringOnce(std::string &s, const char *marker);
+void Trim(std::string &s);
 void StripEOL(std::string &s);
+
+// String to/from number conversions
 
 std::string StdStringFromInteger(int i);
 std::string StdStringFromSizeT(size_t i);
@@ -32,10 +37,17 @@ std::string StdStringFromDouble(double d, int precision);
 int IntegerFromString(const std::string &val, int defaultValue);
 intptr_t IntPtrFromString(const std::string &val, intptr_t defaultValue);
 long long LongLongFromString(const std::string &val, long long defaultValue);
+int IntFromString(std::u32string_view s) noexcept;
+intptr_t IntegerFromText(const char *s) noexcept;
 
-// Basic case lowering that converts A-Z to a-z.
-// Does not handle non-ASCII characters.
-void LowerCaseAZ(std::string &s);
+constexpr int hexBase = 16;
+
+unsigned int IntFromHexDigit(int ch) noexcept;
+bool AllBytesHex(std::string_view hexBytes) noexcept;
+int IntFromHexByte(std::string_view hexByte) noexcept;
+unsigned int IntFromHexBytes(std::string_view hexBytes) noexcept;
+
+// Character type tests
 
 constexpr char MakeUpperCase(char ch) noexcept {
 	if (ch < 'a' || ch > 'z')
@@ -64,6 +76,10 @@ constexpr bool IsSpaceOrTab(int ch) noexcept {
 	return (ch == ' ') || (ch == '\t');
 }
 
+constexpr bool IsEOLCharacter(int ch) noexcept {
+	return ch == '\r' || ch == '\n';
+}
+
 constexpr bool IsADigit(int ch) noexcept {
 	return (ch >= '0') && (ch <= '9');
 }
@@ -90,7 +106,7 @@ constexpr bool IsAlphaNumeric(int ch) noexcept {
 		((ch >= 'A') && (ch <= 'Z'));
 }
 
-intptr_t IntegerFromText(const char *s) noexcept;
+// Splitting strings into vectors, sets, and pairs
 
 // StringSplit can be expanded over std::string or GUI::gui_string
 template <typename T>
@@ -112,7 +128,7 @@ inline std::vector<GUI::gui_string> ListFromString(const GUI::gui_string &args) 
 
 std::set<std::string> SetFromString(std::string_view text, char separator);
 
-typedef std::tuple<std::string_view, std::string_view> ViewPair;
+using ViewPair = std::tuple<std::string_view, std::string_view>;
 
 // Split view around first separator returning the portion before and after the separator.
 // If the separator is not present then return whole view and an empty view.
@@ -137,25 +153,33 @@ void StringCopy(T(&dest)[count], const T *source) noexcept {
 	dest[count-1] = 0;
 }
 
+// Case insensitive comparison
+
 int CompareNoCase(const char *a, const char *b) noexcept;
 bool EqualCaseInsensitive(const char *a, const char *b) noexcept;
 bool EqualCaseInsensitive(std::string_view a, std::string_view b) noexcept;
-bool isprefix(const char *target, const char *prefix) noexcept;
+
+// Basic case lowering that converts A-Z to a-z.
+// Does not handle non-ASCII characters.
+void LowerCaseAZ(std::string &s);
 
 constexpr const char *UTF8BOM = "\xef\xbb\xbf";
 
+// Unicode conversions
+
 std::u32string UTF32FromUTF8(std::string_view s);
-unsigned int UTF32Character(const char *utf8) noexcept;
+unsigned int UTF32Character(std::string_view utf8) noexcept;
 std::string UTF8FromUTF32(unsigned int uch);
 
-std::string Slash(const std::string &s, bool quoteQuotes);
-size_t UnSlash(char *s) noexcept;
-std::string UnSlashString(std::string_view sv);
-std::string UnSlashLowOctalString(std::string_view sv);
+// DBCS
 
-unsigned int IntFromHexDigit(int ch) noexcept;
-bool AllBytesHex(std::string_view hexBytes) noexcept;
-unsigned int IntFromHexBytes(std::string_view hexBytes) noexcept;
+bool IsDBCSLeadByte(int codePage, char ch) noexcept;
+
+// Escape processing
+
+std::string Slash(const std::string &s, bool quoteQuotes);
+std::string UnSlashLowOctalString(std::string_view sv);
+std::string UnSlashString(std::string_view sv);
 std::string UnicodeUnEscape(std::string_view s);
 
 class ILocalize {

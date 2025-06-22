@@ -8,6 +8,8 @@
 #ifndef STRINGLIST_H
 #define STRINGLIST_H
 
+using StringVector = std::vector<std::string>;
+
 class StringList {
 	// Text pointed into by words and wordsNoCase
 	std::string listText;
@@ -31,7 +33,7 @@ public:
 	void Set(const std::vector<char> &data);
 	std::string GetNearestWord(const char *wordStart, size_t searchLen,
 				   bool ignoreCase, const std::string &wordCharacters, ptrdiff_t wordIndex);
-	std::string GetNearestWords(const char *wordStart, size_t searchLen,
+	StringVector GetNearestWords(const char *wordStart, size_t searchLen,
 				    bool ignoreCase, char otherSeparator='\0', bool exactLen=false);
 };
 
@@ -47,7 +49,7 @@ public:
 		return minWordLength;
 	}
 	bool Add(const std::string& word);
-	std::string Get() const;
+	std::string Sorted(bool ignoreCase) const;
 };
 
 #endif

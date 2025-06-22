@@ -110,6 +110,7 @@
 	<p>editor:<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_ENDUNDOACTION'>EndUndoAction</a>()<span class="comment"> -- Завершить последовательность действий, которые отменяются и повторяются как единое целое.</span></p>
 	<p>int editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_GETUNDOSEQUENCE'>UndoSequence</a>()<span class="comment"> Только для чтения</span></p>
 	<p>editor:<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_ADDUNDOACTION'>AddUndoAction</a>(int token, int flags)<span class="comment"> -- Добавить действие контейнера в стек отмены</span></p>
+	<p>int editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_SETUNDOSELECTIONHISTORY'>UndoSelectionHistory</a><span class="comment"> -- Включить или выключить историю отмены выделения.</span></p>
 	<h2>История изменений</h2>
 	<p>int editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_SETCHANGEHISTORY'>ChangeHistory</a><span class="comment"> -- Включить или отключить историю изменений.</span></p>
 	<h2>Выделение и информация</h2>
@@ -192,6 +193,7 @@
 	<p>position editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_SETRECTANGULARSELECTIONCARETVIRTUALSPACE'>RectangularSelectionCaretVirtualSpace</a><span class="comment"> -- Set the virtual space of the caret of the rectangular selection.</span></p>
 	<p>position editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_SETRECTANGULARSELECTIONANCHOR'>RectangularSelectionAnchor</a><span class="comment"> -- Set the anchor position of the rectangular selection.</span></p>
 	<p>position editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_SETRECTANGULARSELECTIONANCHORVIRTUALSPACE'>RectangularSelectionAnchorVirtualSpace</a><span class="comment"> -- Set the virtual space of the anchor of the rectangular selection.</span></p>
+	<p>string editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_SETSELECTIONSERIALIZED'>SelectionSerialized</a><span class="comment"> -- Set selection from serialized form.</span></p>
 	<p>int editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_SETADDITIONALSELALPHA'>AdditionalSelAlpha</a><span class="comment"> -- Set the alpha of the selection.</span></p>
 	<p>colour editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_SETADDITIONALSELFORE'>AdditionalSelFore</a> write-only<span class="comment"> -- Set the foreground colour of additional selections. Must have previously called SetSelFore with non-zero first argument for this to have an effect.</span></p>
 	<p>colour editor.<a href='https://www.scintilla.org/ScintillaDoc.html#SCI_SETADDITIONALSELBACK'>AdditionalSelBack</a> write-only<span class="comment"> -- Set the background colour of additional selections. Must have previously called SetSelBack with non-zero first argument for this to have an effect.</span></p>

@@ -7,6 +7,7 @@
 // The License.txt file describes the conditions under which this software may be distributed.
 
 #include <cstdlib>
+#include <cstdint>
 #include <cstdio>
 #include <ctime>
 
@@ -29,7 +30,9 @@ enum { SURROGATE_LEAD_FIRST = 0xD800 };
 enum { SURROGATE_TRAIL_FIRST = 0xDC00 };
 enum { SURROGATE_TRAIL_LAST = 0xDFFF };
 
-static unsigned int UTF8Length(const wchar_t *uptr, size_t tlen) noexcept {
+namespace {
+
+unsigned int UTF8Length(const wchar_t *uptr, size_t tlen) noexcept {
 	unsigned int len = 0;
 	for (size_t i = 0; i < tlen && uptr[i];) {
 		const unsigned int uch = uptr[i];
@@ -38,7 +41,7 @@ static unsigned int UTF8Length(const wchar_t *uptr, size_t tlen) noexcept {
 		} else if (uch < 0x800) {
 			len += 2;
 		} else if ((uch >= SURROGATE_LEAD_FIRST) &&
-				(uch <= SURROGATE_TRAIL_LAST)) {
+			(uch <= SURROGATE_TRAIL_LAST)) {
 			len += 4;
 			i++;
 		} else {
@@ -49,7 +52,7 @@ static unsigned int UTF8Length(const wchar_t *uptr, size_t tlen) noexcept {
 	return len;
 }
 
-static void UTF8FromUTF16(const wchar_t *uptr, size_t tlen, char *putf) noexcept {
+void UTF8FromUTF16(const wchar_t *uptr, size_t tlen, char *putf) noexcept {
 	int k = 0;
 	for (size_t i = 0; i < tlen && uptr[i];) {
 		const unsigned int uch = uptr[i];
@@ -59,7 +62,7 @@ static void UTF8FromUTF16(const wchar_t *uptr, size_t tlen, char *putf) noexcept
 			putf[k++] = static_cast<char>(0xC0 | (uch >> 6));
 			putf[k++] = static_cast<char>(0x80 | (uch & 0x3f));
 		} else if ((uch >= SURROGATE_LEAD_FIRST) &&
-				(uch <= SURROGATE_TRAIL_LAST)) {
+			(uch <= SURROGATE_TRAIL_LAST)) {
 			// Half a surrogate pair
 			i++;
 			const unsigned int xch = 0x10000 + ((uch & 0x3ff) << 10) + (uptr[i] & 0x3ff);
@@ -76,10 +79,10 @@ static void UTF8FromUTF16(const wchar_t *uptr, size_t tlen, char *putf) noexcept
 	}
 }
 
-static size_t UTF16Length(const char *s, size_t len) noexcept {
+size_t UTF16Length(const char *s, size_t len) noexcept {
 	size_t ulen = 0;
 	size_t charLen;
-	for (size_t i=0; i<len;) {
+	for (size_t i = 0; i < len;) {
 		const unsigned char ch = static_cast<unsigned char>(s[i]);
 		if (ch < 0x80) {
 			charLen = 1;
@@ -97,11 +100,12 @@ static size_t UTF16Length(const char *s, size_t len) noexcept {
 	return ulen;
 }
 
-static size_t UTF16FromUTF8(const char *s, size_t len, gui_char *tbuf, size_t tlen) noexcept {
-	size_t ui=0;
-	const unsigned char *us = reinterpret_cast<const unsigned char *>(s);
-	size_t i=0;
-	while ((i<len) && (ui<tlen)) {
+size_t UTF16FromUTF8(std::string_view s, gui_char *tbuf, size_t tlen) noexcept {
+	size_t ui = 0;
+	const unsigned char *us = reinterpret_cast<const unsigned char *>(s.data());
+	size_t len = s.size();
+	size_t i = 0;
+	while ((i < len) && (ui < tlen)) {
 		unsigned char ch = us[i++];
 		if (ch < 0x80) {
 			tbuf[ui] = ch;
@@ -133,42 +137,41 @@ static size_t UTF16FromUTF8(const char *s, size_t len, gui_char *tbuf, size_t tl
 	return ui;
 }
 
+}
+
 gui_string StringFromUTF8(const char *s) {
 	if (!s || !*s) {
-		return gui_string();
+		return {};
 	}
-	const size_t sLen = strlen(s);
-	const size_t wideLen = UTF16Length(s, sLen);
+	const size_t wideLen = UTF16Length(s, strlen(s));
 	gui_string us(wideLen, 0);
-	UTF16FromUTF8(s, sLen, us.data(), wideLen);
+	UTF16FromUTF8(s, us.data(), wideLen);
 	return us;
 }
 
 gui_string StringFromUTF8(const std::string &s) {
 	if (s.empty()) {
-		return gui_string();
+		return {};
 	}
-	const size_t sLen = s.length();
-	const size_t wideLen = UTF16Length(s.c_str(), sLen);
+	const size_t wideLen = UTF16Length(s.c_str(), s.length());
 	gui_string us(wideLen, 0);
-	UTF16FromUTF8(s.c_str(), sLen, us.data(), wideLen);
+	UTF16FromUTF8(s, us.data(), wideLen);
 	return us;
 }
 
 gui_string StringFromUTF8(std::string_view sv) {
 	if (sv.empty()) {
-		return gui_string();
+		return {};
 	}
-	const size_t sLen = sv.length();
-	const size_t wideLen = UTF16Length(sv.data(), sLen);
+	const size_t wideLen = UTF16Length(sv.data(), sv.length());
 	gui_string us(wideLen, 0);
-	UTF16FromUTF8(sv.data(), sLen, us.data(), wideLen);
+	UTF16FromUTF8(sv, us.data(), wideLen);
 	return us;
 }
 
 std::string UTF8FromString(gui_string_view sv) {
 	if (sv.empty()) {
-		return std::string();
+		return {};
 	}
 	const size_t sLen = sv.size();
 	const size_t narrowLen = UTF8Length(sv.data(), sLen);
@@ -300,7 +303,7 @@ gui_string HexStringFromInteger(long i) {
 
 std::string LowerCaseUTF8(std::string_view sv) {
 	if (sv.empty()) {
-		return std::string();
+		return {};
 	}
 	const std::string s(sv);
 	const gui_string gs = StringFromUTF8(s);
@@ -328,14 +331,14 @@ Rectangle Window::GetPosition() {
 
 void Window::SetPosition(Rectangle rc) {
 	::SetWindowPos(static_cast<HWND>(wid),
-		       0, rc.left, rc.top, rc.Width(), rc.Height(), SWP_NOZORDER|SWP_NOACTIVATE);
+		       {}, rc.left, rc.top, rc.Width(), rc.Height(), SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
 Rectangle Window::GetClientPosition() {
-	RECT rc= {0, 0, 0, 0};
+	RECT rc {};
 	if (wid)
 		::GetClientRect(static_cast<HWND>(wid), &rc);
-	return  Rectangle(rc.left, rc.top, rc.right, rc.bottom);
+	return Rectangle(rc.left, rc.top, rc.right, rc.bottom);
 }
 
 void Window::Show(bool show) {
@@ -381,15 +384,6 @@ void Menu::Show(Point pt, Window &w) {
 
 intptr_t ScintillaPrimitive::Send(unsigned int msg, uintptr_t wParam, intptr_t lParam) {
 	return ::SendMessage(static_cast<HWND>(GetID()), msg, wParam, lParam);
-}
-
-bool IsDBCSLeadByte(int codePage, char ch) {
-	if (Scintilla::CpUtf8 == codePage)
-		// For lexing, all characters >= 0x80 are treated the
-		// same so none is considered a lead byte.
-		return false;
-	else
-		return ::IsDBCSLeadByteEx(codePage, ch) != 0;
 }
 
 void SleepMilliseconds(int sleepTime) {

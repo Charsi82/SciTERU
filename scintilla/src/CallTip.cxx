@@ -7,6 +7,7 @@
 
 #include <cstddef>
 #include <cstdlib>
+#include <cstdint>
 #include <cassert>
 #include <cstring>
 #include <cstdio>
@@ -94,9 +95,8 @@ int CallTip::NextTabPos(int x) const noexcept {
 		x -= insetX;                // position relative to text
 		x = (x + tabSize) / tabSize;  // tab "number"
 		return tabSize*x + insetX;  // position of next tab
-	} else {
-		return x + 1;                 // arbitrary
 	}
+	return x + 1;                 // arbitrary
 }
 
 namespace {

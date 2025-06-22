@@ -116,11 +116,11 @@ public:
 	bool MatchIgnoreCase(Sci_Position pos, const char *s);
 
 	// Get first len - 1 characters in range [startPos_, endPos_).
-	void GetRange(Sci_PositionU startPos_, Sci_PositionU endPos_, char *s, Sci_PositionU len);
-	void GetRangeLowered(Sci_PositionU startPos_, Sci_PositionU endPos_, char *s, Sci_PositionU len);
+	void GetRange(Sci_PositionU startPos_, Sci_PositionU endPos_, char *s, Sci_PositionU len) const;
+	void GetRangeLowered(Sci_PositionU startPos_, Sci_PositionU endPos_, char *s, Sci_PositionU len) const;
 	// Get all characters in range [startPos_, endPos_).
-	std::string GetRange(Sci_PositionU startPos_, Sci_PositionU endPos_);
-	std::string GetRangeLowered(Sci_PositionU startPos_, Sci_PositionU endPos_);
+	std::string GetRange(Sci_PositionU startPos_, Sci_PositionU endPos_) const;
+	std::string GetRangeLowered(Sci_PositionU startPos_, Sci_PositionU endPos_) const;
 
 	char StyleAt(Sci_Position position) const {
 		return pAccess->StyleAt(position);
@@ -205,6 +205,8 @@ public:
 	void SetLevel(Sci_Position line, int level) {
 		pAccess->SetLevel(line, level);
 	}
+	// Avoids some overhead when level same as before 
+	void SetLevelIfDifferent(Sci_Position line, int level);
 	void IndicatorFill(Sci_Position start, Sci_Position end, int indicator, int value) {
 		pAccess->DecorationSetCurrentIndicator(indicator);
 		pAccess->DecorationFillRange(start, value, end - start);
@@ -221,6 +223,21 @@ struct LexicalClass {
 	const char *tags;
 	const char *description;
 };
+
+// Fold level setting
+
+constexpr int FoldLevelShift = 16;
+constexpr int FoldLevelStart(int levelPrevious) noexcept {
+	return levelPrevious >> FoldLevelShift;
+}
+constexpr int FoldLevelForCurrentNext(int levelCurrent, int levelNext) noexcept {
+	return levelCurrent | levelNext << FoldLevelShift;
+}
+// Where lexer uses current/next but only has one value, commonly at end of range
+constexpr int FoldLevelForCurrent(int levelCurrent) noexcept {
+	return FoldLevelForCurrentNext(levelCurrent, levelCurrent);
+}
+int FoldLevelFlags(int levelLine, int levelNext, bool white, bool headerPermitted=true) noexcept;
 
 }
 

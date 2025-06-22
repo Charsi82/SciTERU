@@ -11,12 +11,13 @@
 extern const GUI::gui_char pathSepString[];
 extern const GUI::gui_char listSepString[];
 extern const GUI::gui_char configFileVisibilityString[];
-extern const GUI::gui_char fileRead[];
-extern const GUI::gui_char fileWrite[];
+
+constexpr const GUI::gui_char *fileRead = GUI_TEXT("rb");
+constexpr const GUI::gui_char *fileWrite = GUI_TEXT("wb");
 
 class FilePath;
 
-typedef std::vector<FilePath> FilePathSet;
+using FilePathSet = std::vector<FilePath>;
 
 struct FileCloser {
 	// Called by unique_ptr to close the file
@@ -34,8 +35,8 @@ class FilePath {
 public:
 	FilePath() noexcept;
 	FilePath(const GUI::gui_char *fileName_);
-	FilePath(const GUI::gui_string_view fileName_);
-	FilePath(const GUI::gui_string &fileName_);
+	FilePath(GUI::gui_string_view fileName_);
+	FilePath(GUI::gui_string fileName_) noexcept;
 	FilePath(FilePath const &directory, FilePath const &name);
 	FilePath(FilePath const &) = default;
 	FilePath(FilePath &&) noexcept = default;
@@ -49,13 +50,13 @@ public:
 	void SetDirectory(FilePath const &directory);
 	virtual void Init() noexcept;
 	[[nodiscard]]bool SameNameAs(const FilePath &other) const noexcept;
-	bool operator==(const FilePath &other) const noexcept;
-	bool operator<(const FilePath &other) const noexcept;
+	bool operator==(const FilePath &other) const noexcept = default;
+	std::weak_ordering operator<=>(const FilePath &other) const noexcept;
 	bool IsSet() const noexcept;
 	bool IsUntitled() const noexcept;
 	bool IsAbsolute() const noexcept;
 	bool IsRoot() const noexcept;
-	static int RootLength() noexcept;
+	static size_t RootLength() noexcept;
 	const GUI::gui_char *AsInternal() const noexcept;
 	std::string AsUTF8() const;
 	FilePath Name() const;

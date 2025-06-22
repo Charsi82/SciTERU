@@ -15,10 +15,12 @@
 #include <cstdio>
 #include <cstdarg>
 
+#include <compare>
 #include <tuple>
 #include <string>
 #include <string_view>
 #include <vector>
+#include <array>
 #include <deque>
 #include <map>
 #include <set>
@@ -449,10 +451,6 @@ public:
 
 	std::string EncodeString(const std::string &s) override;
 	std::string GetRangeInUIEncoding(GUI::ScintillaWindow &win, SA::Span span) override;
-
-	HACCEL GetAcceleratorTable() noexcept {
-		return hAccTable;
-	}
 
 	uintptr_t GetInstance() override;
 	static void Register(HINSTANCE hInstance_) noexcept;

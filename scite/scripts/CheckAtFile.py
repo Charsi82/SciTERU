@@ -21,7 +21,8 @@ for base in ["scintilla", "lexilla", "scite"]:
 		if src.suffix in [".cxx", ".h", ".mm", ".m", ".cpp", ".c"]:
 			if not src.name.startswith("moc_") and \
 				not src.name.startswith("scintilla-marshal") and \
-				"cov-int" not in src.parts:
+				"cov-int" not in src.parts and \
+				".hg" not in src.parts:
 				srcPaths.append(src)
 
 #~ for p in srcPaths:

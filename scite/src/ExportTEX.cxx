@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <ctime>
 
+#include <compare>
 #include <tuple>
 #include <string>
 #include <string_view>
@@ -53,7 +54,9 @@
 
 //---------- Save to TeX ----------
 
-static char *getTexRGB(char *texcolor, size_t count, const char *stylecolor) noexcept {
+namespace {
+
+char *getTexRGB(char *texcolor, size_t count, const char *stylecolor) noexcept {
 	//texcolor[rgb]{0,0.5,0}{....}
 	const double rf = IntFromHexByte(stylecolor + 1) / 256.0;
 	const double gf = IntFromHexByte(stylecolor + 3) / 256.0;
@@ -67,7 +70,7 @@ static char *getTexRGB(char *texcolor, size_t count, const char *stylecolor) noe
 }
 
 #define CHARZ ('z' - 'b')
-static char *texStyle(int style) noexcept {
+char *texStyle(int style) noexcept {
 	static char buf[10];
 	int i = 0;
 	do {
@@ -78,7 +81,7 @@ static char *texStyle(int style) noexcept {
 	return buf;
 }
 
-static void defineTexStyle(const StyleDefinition &style, FILE *fp, int istyle) {
+void defineTexStyle(const StyleDefinition &style, FILE *fp, int istyle) {
 	int closing_brackets = 2;
 	char rgb[200] = "";
 	fprintf(fp, "\\newcommand{\\scite%s}[1]{\\noindent{\\ttfamily{", texStyle(istyle));
@@ -103,6 +106,8 @@ static void defineTexStyle(const StyleDefinition &style, FILE *fp, int istyle) {
 		fputc('}', fp);
 	}
 	fputc('\n', fp);
+}
+
 }
 
 void SciTEBase::SaveToTEX(const FilePath &saveName) {

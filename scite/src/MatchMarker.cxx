@@ -5,6 +5,8 @@
 // Copyright 1998-2011 by Neil Hodgson <neilh@scintilla.org>
 // The License.txt file describes the conditions under which this software may be distributed.
 
+#include <cstdint>
+
 #include <string>
 #include <string_view>
 #include <vector>
@@ -21,6 +23,13 @@
 #include "MatchMarker.h"
 
 namespace SA = Scintilla;
+
+namespace {
+
+// Limit the search duration to 250 ms. Avoid to freeze editor for huge lines.
+constexpr double maxDuration = 0.25;
+
+}
 
 std::vector<LineRange> LinesBreak(SA::ScintillaCall *pSci) {
 	std::vector<LineRange> lineRanges;
@@ -89,11 +98,13 @@ void MatchMarker::Continue() {
 	//Monitor the amount of time took by the search.
 	GUI::ElapsedTime searchElapsedTime;
 
+	SA::Position matchPrevious = SA::InvalidPosition;
+
 	// Find the first occurrence of word.
 	SA::Span rangeFound = pSci->SpanSearchInTarget(textMatch);
-	while (rangeFound.start >= 0) {
-		// Limit the search duration to 250 ms. Avoid to freeze editor for huge lines.
-		if (searchElapsedTime.Duration() > 0.25) {
+	while ((rangeFound.start >= 0) && (rangeFound.start != matchPrevious)) {
+		matchPrevious = rangeFound.start;
+		if (searchElapsedTime.Duration() > maxDuration) {
 			// Clear all indicators because timer has expired.
 			pSci->IndicatorClearRange(0, pSci->Length());
 			lineRanges.clear();

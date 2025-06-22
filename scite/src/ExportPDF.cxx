@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <ctime>
 
+#include <compare>
 #include <tuple>
 #include <string>
 #include <string_view>
@@ -498,6 +499,9 @@ void SciTEBase::SaveToPDF(const FilePath &saveName) {
 		}
 	}
 	// patch in default foregrounds
+	if (pr.style[StyleDefault].fore.empty()) {
+		pr.style[StyleDefault].fore = "0 0 0 ";
+	}
 	for (int j = 0; j <= StyleMax; j++) {
 		if (pr.style[j].fore.empty()) {
 			pr.style[j].fore = pr.style[StyleDefault].fore;

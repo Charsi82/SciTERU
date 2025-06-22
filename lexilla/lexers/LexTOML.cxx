@@ -163,6 +163,10 @@ void ColouriseTOMLDoc(Sci_PositionU startPos, Sci_Position lengthDoc, int initSt
 	TOMLKeyState keyState = TOMLKeyState::Unquoted;
 	EscapeSequence escSeq;
 
+	if (initStyle == SCE_TOML_STRINGEOL) {
+		initStyle = SCE_TOML_DEFAULT;
+	}
+
 	StyleContext sc(startPos, lengthDoc, initStyle, styler);
 	if (sc.currentLine > 0) {
 		const int lineState = styler.GetLineState(sc.currentLine - 1);
@@ -259,12 +263,9 @@ void ColouriseTOMLDoc(Sci_PositionU startPos, Sci_Position lengthDoc, int initSt
 						}
 					} else if (sc.state == SCE_TOML_KEY && !IsTOMLUnquotedKey(sc.ch)) {
 						const int chNext = GetLineNextChar(sc);
-						if (chNext == '=') {
+						if (chNext == '=' || (chNext != '.' && chPrevNonWhite != '.')) {
 							keyState = TOMLKeyState::End;
 							sc.SetState(SCE_TOML_DEFAULT);
-						} else if (chNext != '.' && chPrevNonWhite != '.') {
-							sc.ChangeState(SCE_TOML_ERROR);
-							continue;
 						}
 					}
 				}
@@ -277,6 +278,8 @@ void ColouriseTOMLDoc(Sci_PositionU startPos, Sci_Position lengthDoc, int initSt
 		case SCE_TOML_TRIPLE_STRING_DQ:
 			if (sc.atLineStart && !IsTripleString(sc.state)) {
 				sc.SetState(SCE_TOML_DEFAULT);
+			} else if (sc.atLineEnd && !IsTripleString(sc.state)) {
+				sc.ChangeState(SCE_TOML_STRINGEOL);
 			} else if (sc.ch == '\\' && IsDoubleQuoted(sc.state)) {
 				if (escSeq.resetEscapeState(sc.state, sc.chNext)) {
 					sc.SetState(SCE_TOML_ESCAPECHAR);
@@ -292,6 +295,12 @@ void ColouriseTOMLDoc(Sci_PositionU startPos, Sci_Position lengthDoc, int initSt
 					keyState = TOMLKeyState::Unquoted;
 					continue;
 				}
+				sc.SetState(SCE_TOML_DEFAULT);
+			}
+			break;
+
+		case SCE_TOML_STRINGEOL:
+			if (sc.atLineStart) {
 				sc.SetState(SCE_TOML_DEFAULT);
 			}
 			break;

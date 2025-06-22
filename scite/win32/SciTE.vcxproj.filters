@@ -542,7 +542,24 @@
     </ClCompile>
     <ClCompile Include="..\..\lexilla\lexlib\InList.cxx" />
     <ClCompile Include="..\..\scintilla\src\UndoHistory.cxx" />
-    <ClCompile Include="..\..\lexilla\lexers\LexTOML.cxx" />
+    <ClCompile Include="..\..\lexilla\lexers\LexZig.cxx">
+      <Filter>lexers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lexilla\lexers\LexTroff.cxx">
+      <Filter>lexers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lexilla\lexers\LexTOML.cxx">
+      <Filter>lexers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lexilla\lexers\LexNix.cxx">
+      <Filter>lexers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lexilla\lexers\LexDart.cxx">
+      <Filter>lexers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\scintilla\win32\ListBox.cxx" />
+    <ClCompile Include="..\..\scintilla\win32\SurfaceGDI.cxx" />
+    <ClCompile Include="..\..\scintilla\win32\SurfaceD2D.cxx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\Cookie.h" />
@@ -789,6 +806,10 @@
     </ClInclude>
     <ClInclude Include="..\..\lexilla\lexlib\InList.h" />
     <ClInclude Include="..\..\scintilla\src\UndoHistory.h" />
+    <ClInclude Include="..\..\scintilla\win32\ListBox.h" />
+    <ClInclude Include="..\..\scintilla\win32\SurfaceD2D.h" />
+    <ClInclude Include="..\..\scintilla\win32\SurfaceGDI.h" />
+    <ClInclude Include="..\src\UnicodeConstants.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\win32\SciTERes.rc" />

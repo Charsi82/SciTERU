@@ -58,12 +58,23 @@ struct SelectedRange {
 	}
 };
 
+// Store the scroll position as a document line + first visible sub-line within that line.
+// This allows more stable restoration of viewed text with wrapping.
+struct ScrollDocWithOffset {
+	Scintilla::Line lineDoc = 0;
+	Scintilla::Line subLine = 0;
+};
+
 struct FilePosition {
 	SelectedRange selection;
-	SA::Line scrollPosition = 0;
+	ScrollDocWithOffset scrollPosition;
+	std::string selectionDetails;
 	FilePosition() = default;
-	FilePosition(SelectedRange selection_, SA::Line scrollPosition_) noexcept :
+	FilePosition(SelectedRange selection_, ScrollDocWithOffset scrollPosition_) noexcept :
 		selection(selection_), scrollPosition(scrollPosition_) {
+	}
+	FilePosition(SelectedRange selection_, ScrollDocWithOffset scrollPosition_, std::string_view details) :
+		selection(selection_), scrollPosition(scrollPosition_), selectionDetails(details) {
 	}
 };
 
@@ -298,11 +309,9 @@ class IEditorConfig;
 struct SCNotification;
 
 struct SystemAppearance {
-	bool dark;
-	bool highContrast;
-	bool operator==(const SystemAppearance &other) const noexcept {
-		return dark == other.dark && highContrast == other.highContrast;
-	}
+	bool dark = false;
+	bool highContrast = false;
+	constexpr bool operator==(const SystemAppearance &other) const noexcept = default;
 };
 
 // Titles appear different in menus and tabs
@@ -321,6 +330,19 @@ enum class GrepFlags {
 constexpr GrepFlags operator|(GrepFlags a, GrepFlags b) noexcept {
 	return static_cast<GrepFlags>(static_cast<int>(a) | static_cast<int>(b));
 }
+
+class UndoBlock {
+	Scintilla::ScintillaCall &sci;
+	bool began = false;
+public:
+	explicit UndoBlock(Scintilla::ScintillaCall &sci_, bool groupNeeded=true);
+	// Deleted so UndoBlock objects can not be copied.
+	UndoBlock(const UndoBlock &) = delete;
+	UndoBlock(UndoBlock &&) = delete;
+	UndoBlock &operator=(const UndoBlock &) = delete;
+	UndoBlock &operator=(UndoBlock &&) = delete;
+	~UndoBlock() noexcept;
+};
 
 class SciTEBase : public ExtensionAPI, public Searcher, public WorkerListener {
 protected:
@@ -741,7 +763,7 @@ protected:
 	static void DropSelectionAt(GUI::ScintillaWindow &win, int selection);
 	virtual std::string GetRangeInUIEncoding(GUI::ScintillaWindow &win, SA::Span span);
 	static std::string GetLine(GUI::ScintillaWindow &win, SA::Line line);
-	void RangeExtend(GUI::ScintillaWindow &wCurrent, SA::Span &range,
+	void RangeExtend(GUI::ScintillaWindow &wCurrent, SA::Span &span,
 			 bool (SciTEBase::*ischarforsel)(char ch));
 	std::string RangeExtendAndGrab(GUI::ScintillaWindow &wCurrent, SA::Span &span,
 				       bool (SciTEBase::*ischarforsel)(char ch), bool stripEol = true);
@@ -761,7 +783,7 @@ protected:
 		yes,
 		no
 	};
-	typedef int MessageBoxStyle;
+	using MessageBoxStyle = int;
 	enum {
 		// Same as Win32 MB_*
 		mbsOK = 0,
@@ -774,7 +796,7 @@ protected:
 	void FailedSaveMessageBox(const FilePath &filePathSaving);
 	virtual void FindMessageBox(const std::string &msg, const std::string *findItem = nullptr) = 0;
 	bool FindReplaceAdvanced() const;
-	SA::Position FindInTarget(const std::string &findWhatText, SA::Span range);
+	SA::Position FindInTarget(const std::string &findWhatText, SA::Span range, bool notEmptyAtStartRegEx);
 	// Implement Searcher
 	void SetFindText(std::string_view sFind) override;
 	void SetFind(std::string_view sFind) override;
@@ -824,11 +846,10 @@ protected:
 #endif // RB_GMI
 
 	virtual bool StartCallTip();
-	std::string GetNearestWords(const char *wordStart, size_t searchLen,
+	StringVector GetNearestWords(const char *wordStart, size_t searchLen,
 				    const char *separators, bool ignoreCase=false, bool exactLen=false);
 	virtual void FillFunctionDefinition(SA::Position pos = -1);
 	void ContinueCallTip();
-	std::string EliminateDuplicateWords(const std::string &words);
 	virtual bool StartAutoComplete();
 	virtual bool StartAutoCompleteWord(bool onlyOneWord);
 	virtual bool StartExpandAbbreviation();
@@ -859,7 +880,7 @@ protected:
 	SA::Position GetLineLength(SA::Line line);
 	SA::Line GetCurrentLineNumber();
 	SA::Position GetCurrentColumnNumber();
-	SA::Line GetCurrentScrollPosition();
+	ScrollDocWithOffset GetCurrentScrollPosition();
 	virtual void AddCommand(std::string_view cmd, std::string_view dir,
 				JobSubsystem jobType, std::string_view input = "",
 				int flags = 0);

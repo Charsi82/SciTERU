@@ -7,6 +7,7 @@
 
 #include <cassert>
 
+#include <compare>
 #include <tuple>
 #include <string>
 #include <string_view>
@@ -22,26 +23,6 @@
 #include "StringHelpers.h"
 #include "FilePath.h"
 #include "PathMatch.h"
-
-namespace {
-
-int IntFromString(std::u32string_view s) noexcept {
-	if (s.empty()) {
-		return 0;
-	}
-	const bool negate = s.front() == '-';
-	if (negate) {
-		s.remove_prefix(1);
-	}
-	int value = 0;
-	while (!s.empty()) {
-		value = value * 10 + s.front() - '0';
-		s.remove_prefix(1);
-	}
-	return negate ? -value : value;
-}
-
-}
 
 bool PatternMatch(std::u32string_view pattern, std::u32string_view text) noexcept {
 	if (pattern == text) {
@@ -214,7 +195,7 @@ bool PatternMatch(std::u32string_view pattern, std::u32string_view text) noexcep
 
 namespace {
 
-static void TestPatternMatch() {
+void TestPatternMatch() {
 	static bool done = false;
 	if (done) {
 		return;
@@ -316,7 +297,7 @@ bool PathMatch(std::string pattern, std::string relPath) {
 	}
 #if defined(_WIN32)
 	// Convert Windows path separators to Unix
-	std::replace(relPath.begin(), relPath.end(), '\\', '/');
+	std::ranges::replace(relPath, '\\', '/');
 #endif
 	if (!FilePath::CaseSensitive()) {
 		pattern = GUI::LowerCaseUTF8(pattern);

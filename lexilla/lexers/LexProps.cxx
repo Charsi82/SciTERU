@@ -84,20 +84,19 @@ void ColourisePropsLine(
 #ifdef RB_PCF
 				return SCE_PROPS_COMMENT; //!-add-[PropsColouriseFix]
 #endif // RB_PCF
-			}
-			else if (lineBuffer[i] == '[') {
+		} else if (lineBuffer[i] == '[') {
 			styler.ColourTo(endPos, SCE_PROPS_SECTION);
 #ifdef RB_PCF
 				return SCE_PROPS_SECTION; //!-add-[PropsColouriseFix]
 #endif // RB_PCF
-			}
-			else if (lineBuffer[i] == '@') {
+		} else if (lineBuffer[i] == '@') {
 			styler.ColourTo(startLine + i, SCE_PROPS_DEFVAL);
 			if (isAssignChar(lineBuffer[i++]))
 				styler.ColourTo(startLine + i, SCE_PROPS_ASSIGNMENT);
 			styler.ColourTo(endPos, SCE_PROPS_DEFAULT);
-			}
+			
 #ifdef RB_PKW
+			}
 			//!-start-[PropsKeywords]
 			else if (isprefix(lineBuffer, "import ")) {
 				styler.ColourTo(startLine + 6, SCE_PROPS_KEYWORD);
@@ -110,11 +109,10 @@ void ColourisePropsLine(
 			else if (isprefix(lineBuffer, "match ")) {
 				styler.ColourTo(startLine + 5, SCE_PROPS_KEYWORD);
 				styler.ColourTo(endPos, SCE_PROPS_DEFAULT);
-			}
 			//!-end-[PropsKeywords]
 #endif // RB_PKW
 
-			else {
+			} else {
 			// Search for the '=' character
 			while ((i < lengthLine) && !isAssignChar(lineBuffer[i]))
 				i++;
@@ -169,7 +167,7 @@ void ColourisePropsLine(
 #ifdef RB_PKS
 	void ColourisePropsDoc(Sci_PositionU startPos, Sci_Position length, int, WordList * keywordlists[], Accessor & styler) {
 #else
-	void ColourisePropsDoc(Sci_PositionU startPos, Sci_Position length, int, WordList *[], Accessor &styler) {
+void ColourisePropsDoc(Sci_PositionU startPos, Sci_Position length, int, WordList *[], Accessor &styler) {
 #endif // RB_PKS
 	std::string lineBuffer;
 	styler.StartAt(startPos);

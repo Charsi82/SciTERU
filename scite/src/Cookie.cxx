@@ -22,13 +22,13 @@
 
 std::string_view ExtractLine(std::string_view sv) noexcept {
 	std::string_view remainder = sv;
-	while ((remainder.length() > 0) && (remainder[0] != '\r') && (remainder[0] != '\n')) {
+	while (!remainder.empty() && !IsEOLCharacter(remainder[0])) {
 		remainder.remove_prefix(1);
 	}
-	if ((remainder.length() > 1) && (remainder[0] == '\r') && (remainder[1] == '\n')) {
+	if (remainder.starts_with("\r\n")) {
 		remainder.remove_prefix(1);
 	}
-	if (remainder.length() > 0) {
+	if (!remainder.empty()) {
 		remainder.remove_prefix(1);
 	}
 	sv.remove_suffix(remainder.length());
@@ -54,12 +54,12 @@ UniMode CookieValue(std::string_view s) noexcept {
 	const size_t posCoding = s.find(codingCookie);
 	if (posCoding != std::string_view::npos) {
 		s.remove_prefix(posCoding + codingCookie.length());
-		if ((s.length() > 0) && ((s[0] == ':') || (s[0] == '='))) {
+		if (!s.empty() && ((s[0] == ':') || (s[0] == '='))) {
 			s.remove_prefix(1);
-			if ((s.length() > 0) && ((s[0] == '\"') || (s[0] == '\''))) {
+			if (!s.empty() && ((s[0] == '\"') || (s[0] == '\''))) {
 				s.remove_prefix(1);
 			}
-			while ((s.length() > 0) && (isSpaceChar(s[0]))) {
+			while (!s.empty() && (isSpaceChar(s[0]))) {
 				s.remove_prefix(1);
 			}
 			size_t endCoding = 0;

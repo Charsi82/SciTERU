@@ -13,6 +13,7 @@
 #include <cstdarg>
 #include <ctime>
 
+#include <compare>
 #include <tuple>
 #include <string>
 #include <string_view>
@@ -36,24 +37,29 @@
 #include "JobQueue.h"
 
 JobSubsystem SubsystemFromChar(char c) noexcept {
-	if (c == '1')
+	switch (c) {
+	case '1':
 		return JobSubsystem::gui;
-	else if (c == '2')
+	case '2':
 		return JobSubsystem::shell;
-	else if (c == '3')
+	case '3':
 		return JobSubsystem::extension;
-	else if (c == '4')
+	case '4':
 		return JobSubsystem::help;
-	else if (c == '5')
+	case '5':
 		return JobSubsystem::otherHelp;
-	else if (c == '7')
+	case '6':
+		return JobSubsystem::grep;
+	case '7':
 		return JobSubsystem::immediate;
-	return JobSubsystem::cli;
+	default:
+		return JobSubsystem::cli;
+	}
 }
 
 namespace {
 
-void SetOptionFromValidString(bool &option, const std::string &s) {
+void SetOptionFromValidString(bool &option, const std::string &s) noexcept {
 	if (s.empty() || s[0] == '1' || s == "yes")
 		option = true;
 	else if (s[0] == '0' || s == "no")
@@ -72,13 +78,13 @@ JobMode::JobMode(const PropSetFile &props, int item, std::string_view fileNameEx
 	std::string propName = std::string("command.mode.") + itemSuffix;
 	std::string modeVal(props.GetNewExpandString(propName, fileNameExt));
 
-	modeVal.erase(std::remove(modeVal.begin(), modeVal.end(), ' '), modeVal.end());
+	std::erase(modeVal, ' ');
 	std::vector<std::string> modes = StringSplit(modeVal, ',');
 	for (const std::string &mode : modes) {
 
 		std::vector<std::string> optValue = StringSplit(mode, ':');
 
-		if (optValue.size() == 0) {
+		if (optValue.empty()) {
 			continue;
 		}
 
@@ -164,26 +170,26 @@ JobMode::JobMode(const PropSetFile &props, int item, std::string_view fileNameEx
 
 	propName = "command.is.filter.";
 	propName += itemSuffix;
-	if (props.GetWild(propName, fileNameExt).length())
+	if (!props.GetWild(propName, fileNameExt).empty())
 		isFilter = (props.GetNewExpandString(propName, fileNameExt) == "1");
 
 	propName = "command.subsystem.";
 	propName += itemSuffix;
-	if (props.GetWild(propName, fileNameExt).length()) {
+	if (!props.GetWild(propName, fileNameExt).empty()) {
 		std::string subsystemVal = props.GetNewExpandString(propName, fileNameExt);
 		jobType = SubsystemFromChar(subsystemVal[0]);
 	}
 
 	propName = "command.input.";
 	propName += itemSuffix;
-	if (props.GetWild(propName, fileNameExt).length()) {
+	if (!props.GetWild(propName, fileNameExt).empty()) {
 		input = props.GetNewExpandString(propName, fileNameExt);
 		flags |= jobHasInput;
 	}
 
 	propName = "command.quiet.";
 	propName += itemSuffix;
-	if (props.GetWild(propName, fileNameExt).length())
+	if (!props.GetWild(propName, fileNameExt).empty())
 		quiet = props.GetNewExpandString(propName, fileNameExt) == "1";
 	if (quiet)
 		flags |= jobQuiet;
@@ -208,8 +214,8 @@ Job::Job() noexcept : jobType(JobSubsystem::cli), flags(0) {
 	Clear();
 }
 
-Job::Job(std::string_view command_, const FilePath &directory_, JobSubsystem jobType_, std::string_view input_, int flags_)
-	: command(command_), directory(directory_), jobType(jobType_), input(input_), flags(flags_) {
+Job::Job(std::string_view command_, FilePath directory_, JobSubsystem jobType_, std::string_view input_, int flags_)
+	: command(std::move(command_)), directory(std::move(directory_)), jobType(jobType_), input(input_), flags(flags_) {
 }
 
 void Job::Clear() noexcept {
@@ -232,8 +238,7 @@ JobQueue::JobQueue() : jobQueue(commandMax) {
 	timeCommands = false;
 }
 
-JobQueue::~JobQueue() {
-}
+JobQueue::~JobQueue() = default;
 
 bool JobQueue::TimeCommands() const noexcept {
 	return timeCommands;
@@ -278,7 +283,7 @@ void JobQueue::ClearJobs() noexcept {
 }
 
 void JobQueue::AddCommand(std::string_view command, const FilePath &directory, JobSubsystem jobType, std::string_view input, int flags) {
-	if ((commandCurrent < commandMax) && (command.length())) {
+	if ((commandCurrent < commandMax) && (!command.empty())) {
 		if (commandCurrent == 0)
 			jobUsesOutputPane = false;
 		jobQueue[commandCurrent] = Job(command, directory, jobType, input, flags);

@@ -580,7 +580,8 @@ SciTEProps.o: \
 StringHelpers.o: \
 	../src/StringHelpers.cxx \
 	../src/GUI.h \
-	../src/StringHelpers.h
+	../src/StringHelpers.h \
+	../src/UnicodeConstants.h
 StringList.o: \
 	../src/StringList.cxx \
 	../src/GUI.h \
@@ -598,6 +599,7 @@ StyleWriter.o: \
 	../../scintilla/include/ScintillaCall.h \
 	../../scintilla/include/ScintillaStructures.h \
 	../src/GUI.h \
+	../src/StringHelpers.h \
 	../src/StyleWriter.h
 Utf8_16.o: \
 	../src/Utf8_16.cxx \

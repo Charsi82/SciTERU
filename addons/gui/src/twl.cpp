@@ -523,7 +523,7 @@ int TWin::message(const wchar_t* msg, int type)
 	break;
 	}
 	const int retval = (type == MSG_QUERY) ? IDYES : IDOK;
-	return MessageBox(m_hwnd, msg, title, flags) == retval;
+	return MessageBox({}, msg, title, flags) == retval;
 }
 
 void TWin::on_top()  // *add 0.9.4
@@ -983,7 +983,7 @@ void RegisterEventWindow(HANDLE hIcon = NULL, HANDLE hCurs = NULL)
 	wndclass.cbWndExtra = sizeof(void*);
 	wndclass.hInstance = hInst;
 	wndclass.hIcon = hIcon ? hIcon : LoadIcon(NULL, IDI_APPLICATION);
-	wndclass.hCursor = hCurs ? hCurs : NULL;
+	wndclass.hCursor = hCurs;
 	wndclass.hbrBackground = NULL; //GetStockObject(LTGRAY_BRUSH);
 	wndclass.lpszMenuName = NULL;
 	wndclass.lpszClassName = EW_CLASSNAME;

@@ -2242,6 +2242,39 @@ class TestMultiSelection(unittest.TestCase):
 		self.assertEqual(self.ed.Contents(), b'a    1')
 		self.assertEqual(self.textOfSelection(0), b' ')
 
+	def testSelectionSerialization(self):
+		self.ed.SetContents(b"a")
+		self.ed.SetSelection(0, 1)
+		self.assertEqual(self.ed.GetSelectionSerialized(), b'1-0')
+		self.ed.SetSelection(1, 1)
+		self.assertEqual(self.ed.GetSelectionSerialized(), b'1')
+		self.ed.SetSelectionNAnchorVirtualSpace(0, 2)
+		self.ed.SetSelectionNCaretVirtualSpace(0, 3)
+		self.assertEqual(selectionRepresentation(self.ed, 0), "1+2v-1+3v")
+		self.assertEqual(self.textOfSelection(0), b'')
+		self.assertEqual(self.ed.GetSelectionSerialized(), b'1v2-1v3')
+		self.ed.SetSelectionSerialized(0, b'1-0')
+		self.assertEqual(self.ed.MainSelection, 0)
+		self.assertEqual(self.ed.Anchor, 1)
+		self.assertEqual(self.ed.CurrentPos, 0)
+		self.assertEqual(self.ed.GetSelectionNAnchor(0), 1)
+		self.assertEqual(self.ed.GetSelectionNCaret(0), 0)
+
+	def testSelectionSerializationOutOfBounds(self):
+		# Try setting selections that extend past document end through serialized form
+		# and check that the selection is limited to the document.
+		self.ed.SetContents(b"a")
+		self.ed.SetSelectionSerialized(0, b'200-0')
+		self.assertEqual(self.ed.GetSelectionSerialized(), b'1-0')
+		
+		# Retain virtual space
+		self.ed.SetSelectionSerialized(0, b'0v1-200')
+		self.assertEqual(self.ed.GetSelectionSerialized(), b'0v1-1')
+
+		# Drop identical ranges, but touching empty range survives
+		self.ed.SetSelectionSerialized(0, b'0-200,300-400,500-600')
+		self.assertEqual(self.ed.GetSelectionSerialized(), b'0-1,1')
+
 
 class TestModalSelection(unittest.TestCase):
 
@@ -3155,6 +3188,7 @@ class TestAutoComplete(unittest.TestCase):
 		self.assertEqual(self.ed.AutoCGetIgnoreCase(), 0)
 		self.assertEqual(self.ed.AutoCGetAutoHide(), 1)
 		self.assertEqual(self.ed.AutoCGetDropRestOfWord(), 0)
+		self.assertEqual(self.ed.AutoCGetImageScale(), 100)
 
 	def testChangeDefaults(self):
 		self.ed.AutoCSetSeparator(ord('-'))
@@ -3188,6 +3222,10 @@ class TestAutoComplete(unittest.TestCase):
 		self.ed.AutoCSetStyle(13)
 		self.assertEqual(self.ed.AutoCGetStyle(), 13)
 		self.ed.AutoCSetStyle(self.ed.STYLE_DEFAULT)
+
+		self.ed.AutoCSetImageScale(200)
+		self.assertEqual(self.ed.AutoCGetImageScale(), 200)
+		self.ed.AutoCSetImageScale(100)
 
 	def testAutoShow(self):
 		self.assertEqual(self.ed.AutoCActive(), 0)

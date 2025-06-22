@@ -16,6 +16,7 @@
 #include <cmath>
 
 #include <system_error>
+#include <compare>
 #include <tuple>
 #include <string>
 #include <string_view>
@@ -185,6 +186,24 @@ bool StyleAndWords::Includes(const std::string &value) const {
 	// Set of individual characters. Only one character allowed for now
 	const char ch = first[0];
 	return value.find(ch) != std::string::npos;
+}
+
+UndoBlock::UndoBlock(Scintilla::ScintillaCall &sci_, bool groupNeeded) : sci(sci_) {
+	if (groupNeeded) {
+		sci.BeginUndoAction();
+		// If exception thrown doesn't set began so end is not called
+		began = true;
+	}
+}
+
+UndoBlock::~UndoBlock() noexcept {
+	if (began) {
+		try {
+			sci.EndUndoAction();
+		} catch (...) {
+			// Must not throw from destructor so ignore exceptions
+		}
+	}
 }
 
 SciTEBase::SciTEBase(Extension *ext) : apis(true), pwFocussed(&wEditor), extender(ext) {
@@ -439,7 +458,7 @@ static bool isNotStringParams(unsigned int msg) {
 	case SCI_MARKERADD:
 	case SCI_MARKERDELETE:
 		return true;
-	}
+}
 	return false;
 }
 
@@ -663,7 +682,7 @@ std::string SciTEBase::GetCurrentLine() {
 	// Allocate buffer, including space for NUL
 	std::string text(len, '\0');
 	// And get the line
-	wEditor.GetCurLine(len, &text[0]);
+	wEditor.GetCurLine(len, text.data());
 	return text;
 }
 
@@ -788,8 +807,12 @@ bool SciTEBase::FindMatchingPreprocCondPosition(
 	return isInside;
 }
 
-static constexpr bool IsBrace(char ch) noexcept {
+namespace {
+
+constexpr bool IsBrace(char ch) noexcept {
 	return ch == '[' || ch == ']' || ch == '(' || ch == ')' || ch == '{' || ch == '}';
+}
+
 }
 
 /**
@@ -800,7 +823,7 @@ static constexpr bool IsBrace(char ch) noexcept {
 bool SciTEBase::FindMatchingBracePosition(bool editor, SA::Position &braceAtCaret, SA::Position &braceOpposite, bool sloppy) {
 	bool isInside = false;
 #ifdef RB_OnSendEditor
-	GUI::ScintillaWindow& win = editor ? reinterpret_cast<GUI::ScintillaWindow&>(wEditor) : wOutput; //!-change-[OnSendEditor]
+	GUI::ScintillaWindow &win = editor ? reinterpret_cast<GUI::ScintillaWindow&>(wEditor) : wOutput; //!-change-[OnSendEditor]
 #else
 	GUI::ScintillaWindow &win = editor ? wEditor : wOutput;
 #endif
@@ -875,7 +898,7 @@ void SciTEBase::BraceMatch(bool editor) {
 	SA::Position braceOpposite = -1;
 	FindMatchingBracePosition(editor, braceAtCaret, braceOpposite, bracesSloppy);
 #ifdef RB_OnSendEditor
-	GUI::ScintillaWindow& win = editor ? reinterpret_cast<GUI::ScintillaWindow&>(wEditor) : wOutput; //!-change-[OnSendEditor]
+	GUI::ScintillaWindow &win = editor ? reinterpret_cast<GUI::ScintillaWindow&>(wEditor) : wOutput; //!-change-[OnSendEditor]
 #else
 	GUI::ScintillaWindow &win = editor ? wEditor : wOutput;
 #endif
@@ -1243,19 +1266,25 @@ std::string SciTEBase::EncodeString(const std::string &s) {
 	return s;
 }
 
-static std::string UnSlashAsNeeded(const std::string &s, bool escapes, bool regularExpression) {
+namespace {
+
+constexpr int minimumSplit = 20;
+constexpr int baseSplitHorizontal = 300;
+constexpr int baseSplitVertical = 100;
+
+std::string UnSlashAsNeeded(const std::string &s, bool escapes, bool regularExpression) {
 	if (escapes) {
 		if (regularExpression) {
 			// For regular expressions, the only escape sequences allowed start with \0
 			// Other sequences, like \t, are handled by the RE engine.
 			return UnSlashLowOctalString(s);
-		} else {
-			// C style escapes allowed
-			return UnSlashString(s);
 		}
-	} else {
-		return s;
+		// C style escapes allowed
+		return UnSlashString(s);
 	}
+	return s;
+}
+
 }
 
 void SciTEBase::RemoveFindMarks() {
@@ -1385,9 +1414,28 @@ bool SciTEBase::FindReplaceAdvanced() const {
 	return props.GetInt("find.replace.advanced");
 }
 
-SA::Position SciTEBase::FindInTarget(const std::string &findWhatText, SA::Span range) {
+SA::Position SciTEBase::FindInTarget(const std::string &findWhatText, SA::Span range, bool notEmptyAtStartRegEx) {
 	wEditor.SetTarget(range);
 	SA::Position posFind = wEditor.SearchInTarget(findWhatText);
+	if (notEmptyAtStartRegEx) {
+		if ((posFind == range.start) && (wEditor.TargetEnd() == posFind)) {
+			if (range.start == range.end) {
+				return SA::InvalidPosition;
+			} else if (range.start < range.end) {
+				range.start = wEditor.PositionAfter(range.start);
+				if (range.start > range.end) {
+					return SA::InvalidPosition;
+				}
+			} else {
+				range.start = wEditor.PositionBefore(range.start);
+				if (range.start < range.end) {
+					return SA::InvalidPosition;
+				}
+			}
+			wEditor.SetTarget(range);
+			posFind = wEditor.SearchInTarget(findWhatText);
+		}
+	}
 	while (findInStyle && (posFind >= 0) && (findStyle != wEditor.UnsignedStyleAt(posFind))) {
 		if (range.start < range.end) {
 			wEditor.SetTarget(SA::Span(posFind + 1, range.end));
@@ -1454,15 +1502,17 @@ SA::Position SciTEBase::FindNext(bool reverseDirection, bool showWarnings, bool 
 		rangeSearch = SA::Span(rangeSelection.start, 0);
 	}
 
-	wEditor.SetSearchFlags(SearchFlags(allowRegExp && regExp));
-	SA::Position posFind = FindInTarget(findTarget, rangeSearch);
+	const bool performRegExp = regExp && allowRegExp;
+	wEditor.SetSearchFlags(SearchFlags(performRegExp));
+	const bool notEmptyAtStartRegEx = performRegExp && (rangeSelection.Length() == 0);
+	SA::Position posFind = FindInTarget(findTarget, rangeSearch, notEmptyAtStartRegEx);
 	if (posFind == -1 && wrapFind) {
 		// Failed to find in indicated direction
 		// so search from the beginning (forward) or from the end (reverse)
 		// unless wrapFind is false
 		const SA::Span rangeAll = reverseDirection ?
 					   SA::Span(lengthDoc, 0) : SA::Span(0, lengthDoc);
-		posFind = FindInTarget(findTarget, rangeAll);
+		posFind = FindInTarget(findTarget, rangeAll, false);
 		WarnUser(warnFindWrapped);
 	}
 	if (posFind < 0) {
@@ -1568,14 +1618,14 @@ intptr_t SciTEBase::DoReplaceAll(bool inSelection) {
 
 	const std::string replaceTarget = UnSlashAsNeeded(EncodeString(replaceWhat), unSlash, regExp);
 	wEditor.SetSearchFlags(SearchFlags(regExp));
-	SA::Position posFind = FindInTarget(findTarget, rangeSearch);
+	SA::Position posFind = FindInTarget(findTarget, rangeSearch, false);
 	if ((posFind >= 0) && (posFind <= rangeSearch.end)) {
 		SA::Position lastMatch = posFind;
 		intptr_t replacements = 0;
-		wEditor.BeginUndoAction();
+		UndoBlock ub(wEditor);
 		// Replacement loop
 		while (posFind >= 0) {
-			const SA::Position lenTarget = wEditor.TargetEnd() - wEditor.TargetStart();
+			const SA::Position lenTarget = wEditor.TargetEnd() - posFind;
 			if (inSelection && countSelections > 1) {
 				// We must check that the found target is entirely inside a selection
 				bool insideASelection = false;
@@ -1592,14 +1642,16 @@ intptr_t SciTEBase::DoReplaceAll(bool inSelection) {
 						// Run off the end of the document/selection with an empty match
 						posFind = -1;
 					} else {
-						posFind = FindInTarget(findTarget, SA::Span(lastMatch, rangeSearch.end));
+						posFind = FindInTarget(findTarget, SA::Span(lastMatch, rangeSearch.end), false);
 					}
 					continue;	// No replacement
 				}
 			}
 			SA::Position lenReplaced = replaceTarget.length();
+			bool notEmptyAtStartRegEx = false;
 			if (regExp) {
 				lenReplaced = wEditor.ReplaceTargetRE(replaceTarget);
+				notEmptyAtStartRegEx = lenTarget <= 0;
 			} else {
 				wEditor.ReplaceTarget(replaceTarget);
 			}
@@ -1608,14 +1660,11 @@ intptr_t SciTEBase::DoReplaceAll(bool inSelection) {
 			// For the special cases of start of line and end of line
 			// something better could be done but there are too many special cases
 			lastMatch = posFind + lenReplaced;
-			if (lenTarget <= 0) {
-				lastMatch = wEditor.PositionAfter(lastMatch);
-			}
 			if (lastMatch >= rangeSearch.end) {
 				// Run off the end of the document/selection with an empty match
 				posFind = -1;
 			} else {
-				posFind = FindInTarget(findTarget, SA::Span(lastMatch, rangeSearch.end));
+				posFind = FindInTarget(findTarget, SA::Span(lastMatch, rangeSearch.end), notEmptyAtStartRegEx);
 			}
 			replacements++;
 		}
@@ -1629,7 +1678,6 @@ intptr_t SciTEBase::DoReplaceAll(bool inSelection) {
 #endif // RB_RBAFALL
 			SetSelection(lastMatch, lastMatch);
 		}
-		wEditor.EndUndoAction();
 		return replacements;
 	}
 	return 0;
@@ -1711,8 +1759,8 @@ void SciTEBase::Execute() {
 	dirNameForExecute = FilePath();
 	bool displayParameterDialog = false;
 	parameterisedCommand = "";
-	for (size_t ic = 0; ic < jobQueue.commandMax; ic++) {
-		if (StartsWith(jobQueue.jobQueue[ic].command, "*")) {
+	for (size_t ic = 0; ic < JobQueue::commandMax; ic++) {
+		if (jobQueue.jobQueue[ic].command.starts_with("*")) {
 			displayParameterDialog = true;
 			jobQueue.jobQueue[ic].command.erase(0, 1);
 			parameterisedCommand = jobQueue.jobQueue[ic].command;
@@ -1729,7 +1777,7 @@ void SciTEBase::Execute() {
 	} else {
 		ParamGrab();
 	}
-	for (size_t ic = 0; ic < jobQueue.commandMax; ic++) {
+	for (size_t ic = 0; ic < JobQueue::commandMax; ic++) {
 		if (jobQueue.jobQueue[ic].jobType != JobSubsystem::grep) {
 			jobQueue.jobQueue[ic].command = props.Expand(jobQueue.jobQueue[ic].command);
 		}
@@ -1763,11 +1811,8 @@ void SciTEBase::Execute() {
 void SciTEBase::SetOutputVisibility(bool show) {
 	if (show) {
 		if (heightOutput <= 0) {
-			if (previousHeightOutput < 20) {
-				if (splitVertical)
-					heightOutput = NormaliseSplit(300);
-				else
-					heightOutput = NormaliseSplit(100);
+			if (previousHeightOutput < minimumSplit) {
+				heightOutput = NormaliseSplit(splitVertical ? baseSplitHorizontal : baseSplitVertical);
 				previousHeightOutput = heightOutput;
 			} else {
 				heightOutput = NormaliseSplit(previousHeightOutput);
@@ -1880,9 +1925,9 @@ void SciTEBase::Redraw() {
 	wOutput.InvalidateAll();
 }
 
-std::string SciTEBase::GetNearestWords(const char *wordStart, size_t searchLen,
+StringVector SciTEBase::GetNearestWords(const char *wordStart, size_t searchLen,
 				       const char *separators, bool ignoreCase /*=false*/, bool exactLen /*=false*/) {
-	std::string words;
+	StringVector words;
 	while (words.empty() && *separators) {
 		words = apis.GetNearestWords(wordStart, searchLen, ignoreCase, *separators, exactLen);
 		separators++;
@@ -1895,12 +1940,12 @@ void SciTEBase::FillFunctionDefinition(SA::Position pos /*= -1*/) {
 		lastPosCallTip = pos;
 	}
 	if (apis) {
-		std::string words = GetNearestWords(currentCallTipWord.c_str(), currentCallTipWord.length(),
+		StringVector words = GetNearestWords(currentCallTipWord.c_str(), currentCallTipWord.length(),
 						    calltipParametersStart.c_str(), callTipIgnoreCase, true);
 		if (words.empty())
 			return;
 		// Counts how many call tips
-		maxCallTips = std::count(words.begin(), words.end(), ' ') + 1;
+		maxCallTips = words.size();
 
 		// Should get current api definition
 		std::string word = apis.GetNearestWord(currentCallTipWord.c_str(), currentCallTipWord.length(),
@@ -2044,15 +2089,14 @@ void SciTEBase::ContinueCallTip() {
 #endif
 		endHighlight++;
 	if (callTipUseEscapes) {
-		std::string sPreHighlight = functionDefinition.substr(0, startHighlight);
-		std::vector<char> vPreHighlight(sPreHighlight.c_str(), sPreHighlight.c_str() + sPreHighlight.length() + 1);
-		const size_t unslashedStartHighlight = UnSlash(&vPreHighlight[0]);
+		const std::string sPreHighlight = UnSlashString(functionDefinition.substr(0, startHighlight));
+		const size_t unslashedStartHighlight = sPreHighlight.length();
 
 		size_t unslashedEndHighlight = unslashedStartHighlight;
 		if (startHighlight < endHighlight) {
-			std::string sHighlight = functionDefinition.substr(startHighlight, endHighlight - startHighlight);
-			std::vector<char> vHighlight(sHighlight.c_str(), sHighlight.c_str() + sHighlight.length() + 1);
-			unslashedEndHighlight = unslashedStartHighlight + UnSlash(&vHighlight[0]);
+			const std::string sHighlight = UnSlashString(
+				functionDefinition.substr(startHighlight, endHighlight - startHighlight));
+			unslashedEndHighlight = unslashedStartHighlight + sHighlight.length();
 		}
 
 		startHighlight = unslashedStartHighlight;
@@ -2062,25 +2106,23 @@ void SciTEBase::ContinueCallTip() {
 	wEditor.CallTipSetHlt(startHighlight, endHighlight);
 }
 
-std::string SciTEBase::EliminateDuplicateWords(const std::string &words) {
+namespace {
+
+std::string EliminateDuplicateWords(const StringVector &words) {
 	std::set<std::string> wordSet;
 	std::string wordsOut;
 
-	size_t current = 0;
-	while (current < words.length()) {
-		const size_t afterWord = words.find(' ', current);
-		const std::string word(words, current, afterWord - current);
+	for (const std::string &word : words) {
 		std::pair<std::set<std::string>::iterator, bool> result = wordSet.insert(word);
 		if (result.second) {
 			if (!wordsOut.empty())
 				wordsOut += ' ';
 			wordsOut += word;
 		}
-		current = afterWord;
-		if (current < words.length())
-			current++;
 	}
 	return wordsOut;
+}
+
 }
 
 bool SciTEBase::StartAutoComplete() {
@@ -2097,7 +2139,7 @@ bool SciTEBase::StartAutoComplete() {
 
 	const std::string root = line.substr(startword, current - startword);
 	if (apis) {
-		const std::string words = GetNearestWords(root.c_str(), root.length(),
+		const StringVector words = GetNearestWords(root.c_str(), root.length(),
 						    calltipParametersStart.c_str(), autoCompleteIgnoreCase);
 		if (!words.empty()) {
 			std::string wordsUnique = EliminateDuplicateWords(words);
@@ -2161,19 +2203,10 @@ bool SciTEBase::StartAutoCompleteWord(bool onlyOneWord) {
 		posFind = wEditor.SearchInTarget(root);
 	}
 	if ((wordList.Count() != 0) && (!onlyOneWord || (wordList.MinWordLength() > static_cast<size_t>(rootLength)))) {
-		// Protect spaces by temporarily transforming to \001
-		std::string wordsNear = wordList.Get();
-		std::replace(wordsNear.begin(), wordsNear.end(), ' ', '\001');
-		StringList wl(true);
-		wl.Set(wordsNear.c_str());
-		std::string acText = wl.GetNearestWords("", 0, autoCompleteIgnoreCase);
-		// Use \n as word separator
-		std::replace(acText.begin(), acText.end(), ' ', '\n');
-		// Return spaces from \001
-		std::replace(acText.begin(), acText.end(), '\001', ' ');
+		const std::string wordsNear = wordList.Sorted(autoCompleteIgnoreCase);
 		wEditor.AutoCSetSeparator('\n');
 		wEditor.AutoCSetMaxHeight(autoCompleteVisibleItemCount);
-		wEditor.AutoCShow(rootLength, acText.c_str());
+		wEditor.AutoCShow(rootLength, wordsNear.c_str());
 	} else {
 		wEditor.AutoCCancel();
 	}
@@ -2198,7 +2231,7 @@ bool SciTEBase::InsertAbbreviation(const char* _data) {
 #endif // RB_IA
 
 #ifdef RB_ENCODING
-	const std::string expbuf = EncodeString( UnSlashString(data.c_str()) );//>!-add-[FixEncoding]
+	const std::string expbuf = EncodeString( UnSlashString(data) );//>!-add-[FixEncoding]
 #else
 	const std::string expbuf = UnSlashString(data);
 #endif //RB_ENCODING
@@ -2206,6 +2239,7 @@ bool SciTEBase::InsertAbbreviation(const char* _data) {
 
 	const SA::Position selStart = wEditor.SelectionStart();
 	SA::Position selLength = wEditor.SelectionEnd() - selStart;
+	SA::Position selCollapse = -1;
 	SA::Position caretPos = -1; // caret position
 	SA::Line currentLineNumber = wEditor.LineFromPosition(selStart);
 	int indent = 0;
@@ -2215,7 +2249,7 @@ bool SciTEBase::InsertAbbreviation(const char* _data) {
 	bool isIndent = true;
 	const SA::EndOfLine eolMode = wEditor.EOLMode();
 
-	wEditor.BeginUndoAction();
+	UndoBlock ub(wEditor);
 
 	// add temporary characters around the selection for correct line indentation
 	// if there are tabs or spaces at the beginning or end of the selection
@@ -2227,6 +2261,17 @@ bool SciTEBase::InsertAbbreviation(const char* _data) {
 	}
 
 	wEditor.GotoPos(selStart);
+
+	size_t lastPipe = expbuflen; // position of last '|'
+	for (size_t i = 0; i < expbuflen; i++) {
+		if (expbuf[i] == '|') {
+			if (i < (expbuflen - 1) && expbuf[i + 1] == '|') {
+				i++;
+			} else {
+				lastPipe = i;
+			}
+		}
+	}
 
 	// add the abbreviation one character at a time
 	for (size_t i = 0; i < expbuflen; i++) {
@@ -2243,6 +2288,10 @@ bool SciTEBase::InsertAbbreviation(const char* _data) {
 					// put '|' into the line
 					abbrevText += c;
 					i++;
+				} else if (i != lastPipe) {
+					if (selCollapse == -1) {
+						selCollapse = wEditor.CurrentPos();
+					}
 				} else if (caretPos == -1) {
 					caretPos = wEditor.CurrentPos();
 
@@ -2289,9 +2338,12 @@ bool SciTEBase::InsertAbbreviation(const char* _data) {
 	selLength--;
 
 	// restore selection
-	wEditor.SetSelectionEnd(caretPos + selLength);
+	if (selCollapse == -1) {
+		wEditor.SetSelectionEnd(caretPos + selLength);
+	} else {
+		wEditor.SetEmptySelection(selCollapse);
+	}
 
-	wEditor.EndUndoAction();
 	return true;
 }
 
@@ -2331,7 +2383,7 @@ bool SciTEBase::StartExpandAbbreviation() {
 	bool isIndent = true;
 	const SA::EndOfLine eolMode = wEditor.EOLMode();
 
-	wEditor.BeginUndoAction();
+	UndoBlock ub(wEditor);
 
 	// add a temporary character for correct line indentation
 	// if there are tabs or spaces after the caret
@@ -2391,7 +2443,6 @@ bool SciTEBase::StartExpandAbbreviation() {
 		wEditor.GotoPos(caretPos);
 	}
 
-	wEditor.EndUndoAction();
 	return true;
 }
 
@@ -2427,7 +2478,7 @@ bool SciTEBase::StartBlockComment() {
 	if ((lines > 0) &&
 			(selectionEnd == wEditor.LineStart(selEndLine)))
 		selEndLine--;
-	wEditor.BeginUndoAction();
+	UndoBlock ub(wEditor);
 	for (SA::Line i = selStartLine; i <= selEndLine; i++) {
 		const SA::Position lineStart = wEditor.LineStart(i);
 		SA::Position lineIndent = lineStart;
@@ -2439,9 +2490,9 @@ bool SciTEBase::StartBlockComment() {
 		// empty lines are not commented
 		if (linebuf.length() < 1)
 			continue;
-		if (StartsWith(linebuf, comment.c_str())) {
+		if (linebuf.starts_with(comment)) {
 			SA::Position commentLength = comment.length();
-			if (StartsWith(linebuf, longComment.c_str())) {
+			if (linebuf.starts_with(longComment)) {
 				// Removing comment with space after it.
 				commentLength = longCommentLength;
 			}
@@ -2472,7 +2523,6 @@ bool SciTEBase::StartBlockComment() {
 	} else {
 		wEditor.SetSel(selectionStart, selectionEnd);
 	}
-	wEditor.EndUndoAction();
 	return true;
 }
 
@@ -2537,7 +2587,7 @@ bool SciTEBase::StartBoxComment() {
 	const SA::Position middleCommentLength = middleComment.length();
 	const SA::Position endCommentLength = endComment.length();
 
-	wEditor.BeginUndoAction();
+	UndoBlock ub(wEditor);
 
 	// Insert startComment if needed
 	SA::Position lineStart = wEditor.LineStart(selStartLine);
@@ -2599,8 +2649,6 @@ bool SciTEBase::StartBoxComment() {
 		wEditor.SetSel(selectionStart, selectionEnd);
 	}
 
-	wEditor.EndUndoAction();
-
 	return true;
 }
 
@@ -2638,7 +2686,7 @@ bool SciTEBase::StartStreamComment() {
 		if (selection.start == selection.end)
 			return true; // caret is located _between_ words
 	}
-	wEditor.BeginUndoAction();
+	UndoBlock ub(wEditor);
 	wEditor.InsertText(selection.start, startComment.c_str());
 	selection.end += startCommentLength;
 	selection.start += startCommentLength;
@@ -2650,7 +2698,6 @@ bool SciTEBase::StartStreamComment() {
 	} else {
 		wEditor.SetSel(selection.start, selection.end);
 	}
-	wEditor.EndUndoAction();
 	return true;
 }
 
@@ -2672,9 +2719,11 @@ SA::Position SciTEBase::GetCurrentColumnNumber() {
 	       wEditor.SelectionNCaretVirtualSpace(mainSel);
 }
 
-SA::Line SciTEBase::GetCurrentScrollPosition() {
+ScrollDocWithOffset SciTEBase::GetCurrentScrollPosition() {
 	const SA::Line lineDisplayTop = wEditor.FirstVisibleLine();
-	return wEditor.DocLineFromVisible(lineDisplayTop);
+	const SA::Line lineDocTop = wEditor.DocLineFromVisible(lineDisplayTop);
+	const SA::Line subLineTop = lineDisplayTop - wEditor.VisibleFromDocLine(lineDocTop);
+	return { lineDocTop, subLineTop };
 }
 
 /**
@@ -2798,7 +2847,9 @@ SA::Position SciTEBase::GetLineIndentPosition(SA::Line line) {
 	return wEditor.LineIndentPosition(line);
 }
 
-static std::string CreateIndentation(int indent, int tabSize, bool insertSpaces) {
+namespace {
+
+std::string CreateIndentation(int indent, int tabSize, bool insertSpaces) {
 	std::string indentation;
 	if (!insertSpaces) {
 		while (indent >= tabSize) {
@@ -2813,8 +2864,10 @@ static std::string CreateIndentation(int indent, int tabSize, bool insertSpaces)
 	return indentation;
 }
 
+}
+
 void SciTEBase::ConvertIndentation(int tabSize, int useTabs) {
-	wEditor.BeginUndoAction();
+	UndoBlock ub(wEditor);
 	const SA::Line maxLine = wEditor.LineCount();
 	for (SA::Line line = 0; line < maxLine; line++) {
 		const SA::Position lineStart = wEditor.LineStart(line);
@@ -2830,7 +2883,6 @@ void SciTEBase::ConvertIndentation(int tabSize, int useTabs) {
 			}
 		}
 	}
-	wEditor.EndUndoAction();
 }
 
 bool SciTEBase::RangeIsAllWhitespace(SA::Position start, SA::Position end) {
@@ -3119,17 +3171,24 @@ void SciTEBase::CharAdded(int utf32) {
 
 namespace {
 
-void AddProps(std::string &symbols, const PropSetFile &propSet) {
+void AddProps(AutoCompleteWordList &symbols, const PropSetFile &propSet) {
 	const char *key = nullptr;
 	const char *val = nullptr;
-	bool b = propSet.GetFirst(key, val);
-	while (b) {
+	for (bool b = propSet.GetFirst(key, val); b; b = propSet.GetNext(key, val)) {
 		if (IsUpperCase(*key)) {
-			symbols.append(key);
-			symbols.append(") ");
+			symbols.Add(std::string(key) + ")");
 		}
-		b = propSet.GetNext(key, val);
 	}
+}
+
+constexpr int DigitsIn(SA::Line line) noexcept {
+	constexpr SA::Line decimal = 10;
+	int digits = 1;
+	while (line >= decimal) {
+		line /= decimal;
+		++digits;
+	}
+	return digits;
 }
 
 }
@@ -3145,14 +3204,11 @@ void SciTEBase::CharAddedOutput(int ch) {
 		// Potential autocompletion of symbols when $( typed
 		const SA::Position selStart = wOutput.SelectionStart();
 		if ((selStart > 1) && (wOutput.CharacterAt(selStart - 2) == '$')) {
-			std::string symbols;
+			AutoCompleteWordList symbols;
 			AddProps(symbols, props);
 			AddProps(symbols, propsDirectory);
-			StringList symList;
-			symList.Set(symbols.c_str());
-			std::string words = symList.GetNearestWords("", 0, true);
-			if (words.length()) {
-				wOutput.AutoCSetSeparator(' ');
+			if (const std::string words = symbols.Sorted(true); !words.empty()) {
+				wOutput.AutoCSetSeparator('\n');
 				wOutput.AutoCSetMaxHeight(autoCompleteVisibleItemCount);
 				wOutput.AutoCShow(0, words.c_str());
 			}
@@ -3209,13 +3265,12 @@ bool SciTEBase::HandleXml(char ch) {
 	std::string strFound = FindOpenXmlTag(sel.c_str(), nCaret - nMin);
 
 	if (strFound.length() > 0) {
-		wEditor.BeginUndoAction();
+		UndoBlock ub(wEditor);
 		std::string toInsert = "</";
 		toInsert += strFound;
 		toInsert += ">";
 		wEditor.ReplaceSel(toInsert.c_str());
 		SetSelection(nCaret, nCaret);
-		wEditor.EndUndoAction();
 		return true;
 	}
 
@@ -3350,25 +3405,12 @@ void SciTEBase::SetFoldWidth() {
 void SciTEBase::SetLineNumberWidth() {
 	if (lineNumbers) {
 		int lineNumWidth = lineNumbersWidth;
-
 		if (lineNumbersExpand) {
 			// The margin size will be expanded if the current buffer's maximum
 			// line number would overflow the margin.
-
-			SA::Line lineCount = wEditor.LineCount();
-
-			lineNumWidth = 1;
-			while (lineCount >= 10) {
-				lineCount /= 10;
-				++lineNumWidth;
-			}
-
-			if (lineNumWidth < lineNumbersWidth) {
-				lineNumWidth = lineNumbersWidth;
-			}
+			lineNumWidth = std::max(DigitsIn(wEditor.LineCount()), lineNumbersWidth);
 		}
-		if (lineNumWidth < 0)
-			lineNumWidth = 0;
+		lineNumWidth = std::max(0, lineNumWidth);	// No negative width
 		// The 4 here allows for spacing: 1 pixel on left and 3 on right.
 		std::string nNines(lineNumWidth, '9');
 		const int pixelWidth = 4 + wEditor.TextWidth(
@@ -4280,13 +4322,13 @@ void SciTEBase::NewLineInOutput() {
 		line--;
 		while (line >= 0) {
 			cmd = GetLine(wOutput, line);
-			if (StartsWith(cmd, ">") && !StartsWith(cmd, ">Exit")) {
+			if (cmd.starts_with(">") && !cmd.starts_with(">Exit")) {
 				cmd = cmd.substr(1);
 				break;
 			}
 			line--;
 		}
-	} else if (StartsWith(cmd, ">")) {
+	} else if (cmd.starts_with(">")) {
 		cmd = cmd.substr(1);
 	}
 	returnOutputToCommand = false;
@@ -4733,22 +4775,26 @@ void SciTEBase::CheckMenus() {
 #ifdef RB_LangMenuChecker
 	//!-start-[LangMenuChecker]
 	static std::string last_lang = "";
-	if (language != last_lang) {
-		for (size_t item = 0; item < languageMenu.size(); item++) {
+	if (language != last_lang)
+	{
+		for (size_t item = 0; item < languageMenu.size(); item++)
+		{
 			if (languageMenu[item].menuItem[0] == '#') continue;
 			const int itemID = IDM_LANGUAGE + static_cast<int>(item);
 			CheckAMenuItem(itemID, false);
 			const std::string fn = "x." + languageMenu[item].extension;
-			if (language == props.GetNewExpandString("lexer.", fn)) {
+			if (language == props.GetNewExpandString("lexer.", fn))
+			{
 				CheckAMenuItem(itemID, true);
 				last_lang = language;
-}
+			}
 		}
 	}
 	//!-end-[LangMenuChecker]
 #endif // RB_LangMenuChecker
 
 }
+
 #ifdef RB_ECM
 //!-start-[ExtendedContextMenu]
 void SciTEBase::ContextMenu(GUI::ScintillaWindow& wSource, GUI::Point pt,GUI::Point ptClient, GUI::Window wCmd) {
@@ -4945,7 +4991,7 @@ void SciTEBase::ContextMenu(GUI::ScintillaWindow &wSource, GUI::Point pt, GUI::P
 		AddToPopUp("Close", IDM_CLOSE, true);
 	}
 	std::string userContextMenu = props.GetNewExpandString("user.context.menu");
-	std::replace(userContextMenu.begin(), userContextMenu.end(), '|', '\0');
+	std::ranges::replace(userContextMenu, '|', '\0');
 	const char *userContextItem = userContextMenu.c_str();
 	const char *endDefinition = userContextItem + userContextMenu.length();
 	while (userContextItem < endDefinition) {
@@ -4968,13 +5014,13 @@ int SciTEBase::NormaliseSplit(int splitPos) {
 	const GUI::Rectangle rcClient = GetClientRectangle();
 	const int w = rcClient.Width();
 	const int h = rcClient.Height();
-	if (splitPos < 20)
+	if (splitPos < minimumSplit)
 		splitPos = 0;
 	if (splitVertical) {
-		if (splitPos > w - heightBar - 20)
+		if (splitPos > w - heightBar - minimumSplit)
 			splitPos = w - heightBar;
 	} else {
-		if (splitPos > h - heightBar - 20)
+		if (splitPos > h - heightBar - minimumSplit)
 			splitPos = h - heightBar;
 	}
 	return splitPos;
@@ -5174,12 +5220,16 @@ void SciTEBase::PerformOne(std::string_view action) {
 	}
 }
 
-static constexpr bool IsSwitchCharacter(GUI::gui_char ch) noexcept {
+namespace {
+
+constexpr bool IsSwitchCharacter(GUI::gui_char ch) noexcept {
 #if defined(__unix__) || defined(__APPLE__)
 	return ch == '-';
 #else
 	return (ch == '-') || (ch == '/');
 #endif
+}
+
 }
 
 // Called by SciTEBase::PerformOne when action="enumproperties:"
@@ -5337,7 +5387,9 @@ SciTE received a macro command from director : execute it.
 If command needs answer (SCI_GETTEXTLENGTH ...) : give answer to director
 */
 
-static uintptr_t ReadNum(const char *&t) noexcept {
+namespace {
+
+uintptr_t ReadNum(const char *&t) noexcept {
 	assert(t);
 	const char *argend = strchr(t, ';');	// find ';'
 	uintptr_t v = 0;
@@ -5345,6 +5397,8 @@ static uintptr_t ReadNum(const char *&t) noexcept {
 		v = IntegerFromText(t);					// read value
 	t = (argend) ? (argend + 1) : nullptr;	// update pointer
 	return v;						// return value
+}
+
 }
 
 void SciTEBase::ExecuteMacroCommand(const char *command) {
@@ -5461,7 +5515,7 @@ bool SciTEBase::ProcessCommandLine(const std::vector<GUI::gui_string> &args, int
 				if (phase == 1) {
 					OpenFromStdin(arg[0] == '-');
 				}
-			} else if (StartsWith(arg, GUI_TEXT("@"))) {
+			} else if (arg.starts_with(GUI_TEXT("@"))) {
 				if (phase == 1) {
 					OpenFilesFromStdin();
 				}
@@ -5485,7 +5539,7 @@ bool SciTEBase::ProcessCommandLine(const std::vector<GUI::gui_string> &args, int
 				exit(0);
 			} else {
 				if (AfterName(arg) == ':') {
-					if (StartsWith(arg, GUI_TEXT("open:")) || StartsWith(arg, GUI_TEXT("loadsession:"))) {
+					if (arg.starts_with(GUI_TEXT("open:")) || arg.starts_with(GUI_TEXT("loadsession:"))) {
 						if (phase == 0)
 							return performPrint;
 						else
@@ -5598,7 +5652,7 @@ void SciTEBase::ShutDown() {
 
 void SciTEBase::Perform(const char *actionList) {
 	std::vector<char> vActions(actionList, actionList + strlen(actionList) + 1);
-	char *actions = &vActions[0];
+	char *actions = vActions.data();
 	char *nextAct;
 	while ((nextAct = strchr(actions, '\n')) != nullptr) {
 		*nextAct = '\0';

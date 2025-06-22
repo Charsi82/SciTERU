@@ -220,20 +220,6 @@ void LexerVB::CheckIdentifier(StyleContext &sc) {
 			sc.ChangeState(SCE_B_KEYWORD3);
 		} else if (keywords4.InList(s)) {
 			sc.ChangeState(SCE_B_KEYWORD4);
-/*			
-#ifdef RB_VBLI
-		//!-start-[VBLexerImprovement]
-		}
-		else if (keywordlists[4]->Length()) {
-			for (int wl = 4; wl < KEYWORDSET_MAX; wl++) {
-				if (keywordlists[wl]->InList(s)) {
-					sc.ChangeState(SCE_B_KEYWORD4 + wl - 3);
-					break;
-				}
-			}
-		//!-end-[VBLexerImprovement]
-#endif // RB_VBLI
-*/
 		}	// Else, it is really an identifier...
 		sc.SetState(SCE_B_DEFAULT);
 	}
@@ -377,6 +363,9 @@ void LexerVB::Lex(Sci_PositionU startPos, Sci_Position length, int initStyle, ID
 }
 
 void LexerVB::Fold(Sci_PositionU startPos, Sci_Position length, int, IDocument *pAccess) {
+	if (!options.fold)
+		return;
+
 	Accessor styler(pAccess, nullptr);
 	const Sci_Position endPos = startPos + length;
 

@@ -214,16 +214,16 @@ void Utf16_Iter::operator++() noexcept {
 		}
 
 		if (m_nCur16 < 0x80) {
-			m_nCur = m_nCur16 & 0xFF;
+			m_nCur = static_cast<utf8>(m_nCur16 & 0xFF);
 			m_eState = eStart;
 		} else if (m_nCur16 < 0x800) {
-			m_nCur = 0xC0 | ((m_nCur16 >> 6) & 0xFF);
+			m_nCur = static_cast<utf8>(0xC0 | ((m_nCur16 >> 6) & 0xFF));
 			m_eState = eFinal;
 		} else if (m_nCur16 < SURROGATE_FIRST_VALUE) {
-			m_nCur = 0xE0 | ((m_nCur16 >> 12) & 0xFF);
+			m_nCur = static_cast<utf8>(0xE0 | ((m_nCur16 >> 12) & 0xFF));
 			m_eState = ePenultimate;
 		} else {
-			m_nCur = 0xF0 | ((m_nCur16 >> 18) & 0xFF);
+			m_nCur = static_cast<utf8>(0xF0 | ((m_nCur16 >> 18) & 0xFF));
 			m_eState = eSecondOf4Bytes;
 		}
 		break;
@@ -267,7 +267,7 @@ UniMode DetermineEncoding(std::string_view text) noexcept {
 		}
 		if (mem_equal(text.data(), k_Boms[eUtf16LittleEndian], 2)) {
 			return UniMode::uni16LE;
-		} 
+		}
 		if (text.length() >= 3 && mem_equal(text.data(), k_Boms[eUtf8], 3)) {
 			return UniMode::utf8;
 		}
@@ -403,7 +403,7 @@ Utf8_16_Write::~Utf8_16_Write() noexcept = default;
 
 void Utf8_16_Write::appendCodeUnit(int codeUnit) {
 	if (m_eEncoding == eUtf16LittleEndian) {
-		m_buf16.push_back(codeUnit & 0xFFFF);
+		m_buf16.push_back(static_cast<utf16>(codeUnit & 0xFFFF));
 	} else {
 		const utf16 swapped = static_cast<utf16>((codeUnit & 0xFF) << 8) | ((codeUnit & 0xFF00) >> 8);
 		m_buf16.push_back(swapped);

@@ -11,7 +11,7 @@
 /**
  */
 
-typedef std::map<std::string, std::string, std::less<>> mapss;
+using mapss = std::map<std::string, std::string, std::less<>>;
 
 class ImportFilter {
 public:

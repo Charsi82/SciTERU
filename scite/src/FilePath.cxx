@@ -11,6 +11,8 @@
 #include <ctime>
 #include <cerrno>
 
+#include <utility>
+#include <compare>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -64,21 +66,18 @@ const GUI::gui_char listSepString[] = GUI_TEXT(";");
 const GUI::gui_char configFileVisibilityString[] = GUI_TEXT("");
 #endif
 
-const GUI::gui_char fileRead[] = GUI_TEXT("rb");
-const GUI::gui_char fileWrite[] = GUI_TEXT("wb");
-
 namespace {
-const GUI::gui_char currentDirectory[] = GUI_TEXT(".");
-const GUI::gui_char parentDirectory[] = GUI_TEXT("..");
+const GUI::gui_string_view currentDirectory = GUI_TEXT(".");
+const GUI::gui_string_view parentDirectory = GUI_TEXT("..");
 }
 
 FilePath::FilePath() noexcept = default;
 
 FilePath::FilePath(const GUI::gui_char *fileName_) : fileName(fileName_ ? fileName_ : GUI_TEXT("")) {}
 
-FilePath::FilePath(const GUI::gui_string_view fileName_) : fileName(fileName_) {}
+FilePath::FilePath(GUI::gui_string_view fileName_) : fileName(fileName_) {}
 
-FilePath::FilePath(const GUI::gui_string &fileName_) : fileName(fileName_) {}
+FilePath::FilePath(GUI::gui_string fileName_) noexcept : fileName(std::move(fileName_)) {}
 
 FilePath::FilePath(FilePath const &directory, FilePath const &name) {
 	Set(directory, name);
@@ -97,7 +96,7 @@ void FilePath::Set(FilePath const &directory, FilePath const &name) {
 		fileName = name.fileName;
 	} else {
 		fileName = directory.fileName;
-		if (fileName.size() && (fileName[fileName.size()-1] != pathSepChar))
+		if (!fileName.empty() && !fileName.ends_with(pathSepChar))
 			fileName += pathSepString;
 		fileName += name.fileName;
 	}
@@ -127,28 +126,28 @@ namespace {
 
 #endif
 
-bool FilePath::operator==(const FilePath &other) const noexcept {
-	return SameNameAs(other);
-}
-
-bool FilePath::operator<(const FilePath &other) const noexcept {
+std::weak_ordering FilePath::operator<=>(const FilePath &other) const noexcept {
 #ifdef _WIN32
-	return CSTR_LESS_THAN == Compare(fileName, other.fileName);
+	switch (Compare(fileName, other.fileName)) {
+	case CSTR_EQUAL:
+		return std::weak_ordering::equivalent;
+	case CSTR_LESS_THAN:
+		return std::weak_ordering::less;
+	default:
+		return std::weak_ordering::greater;
+	}
 #else
-	return fileName < other.fileName;
+	return fileName <=> other.fileName;
 #endif
 }
 
 bool FilePath::SameNameAs(const FilePath &other) const noexcept {
-#ifdef _WIN32
-	return CSTR_EQUAL == Compare(fileName, other.fileName);
-#else
-	return fileName == other.fileName;
-#endif
+	const std::weak_ordering ordering = *this <=> other;
+	return (ordering == std::weak_ordering::equivalent);
 }
 
 bool FilePath::IsSet() const noexcept {
-	return fileName.length() > 0;
+	return !fileName.empty();
 }
 
 bool FilePath::IsUntitled() const noexcept {
@@ -157,7 +156,7 @@ bool FilePath::IsUntitled() const noexcept {
 }
 
 bool FilePath::IsAbsolute() const noexcept {
-	if (fileName.length() == 0)
+	if (fileName.empty())
 		return false;
 #if defined(__unix__) || defined(__APPLE__)
 	if (fileName[0] == '/')
@@ -188,7 +187,7 @@ bool FilePath::IsRoot() const noexcept {
 #endif
 }
 
-int FilePath::RootLength() noexcept {
+size_t FilePath::RootLength() noexcept {
 #ifdef _WIN32
 	return 3;
 #else
@@ -205,27 +204,23 @@ std::string FilePath::AsUTF8() const {
 }
 
 FilePath FilePath::Name() const {
-	const size_t dirEnd = fileName.rfind(pathSepChar);
-	if (dirEnd != GUI::gui_string::npos)
+	if (const size_t dirEnd = fileName.rfind(pathSepChar); dirEnd != GUI::gui_string::npos)
 		return fileName.substr(dirEnd + 1);
-	else
-		return fileName;
+	return fileName;
 }
 
 FilePath FilePath::BaseName() const {
-	const size_t dirEnd = fileName.rfind(pathSepChar);
 	const size_t extStart = fileName.rfind('.');
-	if (dirEnd != GUI::gui_string::npos) {
+	if (const size_t dirEnd = fileName.rfind(pathSepChar); dirEnd != GUI::gui_string::npos) {
 		if (extStart > dirEnd) {
-			return FilePath(fileName.substr(dirEnd + 1, extStart - dirEnd - 1));
-		} else {
-			return FilePath(fileName.substr(dirEnd + 1));
+			return { fileName.substr(dirEnd + 1, extStart - dirEnd - 1) };
 		}
-	} else if (extStart != GUI::gui_string::npos) {
-		return FilePath(fileName.substr(0, extStart));
-	} else {
-		return fileName;
+		return { fileName.substr(dirEnd + 1) };
 	}
+	if (extStart != GUI::gui_string::npos) {
+		return { fileName.substr(0, extStart) };
+	}
+	return fileName;
 }
 
 FilePath FilePath::Extension() const {
@@ -233,24 +228,20 @@ FilePath FilePath::Extension() const {
 	const size_t extStart = fileName.rfind('.');
 	if ((extStart != GUI::gui_string::npos) && ((dirEnd == GUI::gui_string::npos) || (extStart > dirEnd)))
 		return fileName.substr(extStart + 1);
-	else
-		return GUI_TEXT("");
+	return GUI_TEXT("");
 }
 
 FilePath FilePath::Directory() const {
 	if (IsRoot()) {
-		return FilePath(fileName);
-	} else {
-		size_t lenDirectory = fileName.rfind(pathSepChar);
-		if (lenDirectory != GUI::gui_string::npos) {
-			if (lenDirectory < static_cast<size_t>(RootLength())) {
-				lenDirectory = static_cast<size_t>(RootLength());
-			}
-			return FilePath(fileName.substr(0, lenDirectory));
-		} else {
-			return FilePath();
-		}
+		return { fileName };
 	}
+	if (size_t lenDirectory = fileName.rfind(pathSepChar); lenDirectory != GUI::gui_string::npos) {
+		if (lenDirectory < RootLength()) {
+			lenDirectory = RootLength();
+		}
+		return { fileName.substr(0, lenDirectory) };
+	}
+	return {};
 }
 
 namespace {
@@ -298,12 +289,12 @@ int stat(const wchar_t *path, FileStatus *buffer) noexcept {
 
 FilePath FilePath::NormalizePath() const {
 	if (fileName.empty()) {
-		return FilePath();
+		return {};
 	}
 	GUI::gui_string path(fileName);
 #ifdef _WIN32
 	// Convert Unix path separators to Windows
-	std::replace(path.begin(), path.end(), L'/', pathSepChar);
+	std::ranges::replace(path, L'/', pathSepChar);
 #endif
 	GUI::gui_string_view source = path;
 	GUI::gui_string absPathString;
@@ -341,7 +332,7 @@ FilePath FilePath::NormalizePath() const {
 			break;
 		source.remove_prefix(separator+1);
 	}
-	return FilePath(absPathString);
+	return { absPathString };
 }
 
 GUI::gui_string FilePath::RelativePathTo(const FilePath &filePath) const {
@@ -365,10 +356,11 @@ FilePath FilePath::AbsolutePath() const {
 #ifdef _WIN32
 	// The run-time libraries for GCC and Visual C++ give different results for _fullpath
 	// so use the OS.
-	GUI::gui_char absPath[2000] {};
+	constexpr size_t maxAbsPath = 2000;
+	GUI::gui_char absPath[maxAbsPath] {};
 	GUI::gui_char *fileBit = nullptr;
-	::GetFullPathNameW(AsInternal(), sizeof(absPath)/sizeof(absPath[0]), absPath, &fileBit);
-	return FilePath(absPath);
+	::GetFullPathNameW(AsInternal(), std::size(absPath), absPath, &fileBit);
+	return { absPath };
 #else
 	if (IsAbsolute()) {
 		return NormalizePath();
@@ -397,9 +389,9 @@ FilePath FilePath::GetWorkingDirectory() {
 		if (!gswd.empty() && (gswd.back() == pathSepChar)) {
 			gswd.pop_back();
 		}
-		return FilePath(gswd);
+		return { gswd };
 	}
-	return FilePath();
+	return {};
 }
 
 bool FilePath::SetWorkingDirectory() const noexcept {
@@ -466,21 +458,20 @@ void FilePath::List(FilePathSet &directories, FilePathSet &files) const {
 
 	closedir(dp);
 #endif
-	std::sort(files.begin(), files.end());
-	std::sort(directories.begin(), directories.end());
+	std::ranges::sort(files);
+	std::ranges::sort(directories);
 }
 
 FILE *FilePath::Open(const GUI::gui_char *mode) const noexcept {
 	if (IsSet()) {
 		return fopen(fileName.c_str(), mode);
-	} else {
-		return nullptr;
 	}
+	return nullptr;
 }
 
 std::string FilePath::Read() const {
 	/// Size of block for file reading.
-	constexpr size_t readBlockSize = 64 * 1024;
+	constexpr unsigned int readBlockSize = 64 * 1024;
 
 	std::string data;
 	FileHolder fp(Open(fileRead));
@@ -512,8 +503,7 @@ time_t FilePath::ModifiedTime() const noexcept {
 	FileStatus statusFile;
 	if (stat(AsInternal(), &statusFile) != -1)
 		return statusFile.st_mtime;
-	else
-		return 0;
+	return 0;
 }
 
 long long FilePath::GetFileLength() const noexcept {
@@ -523,7 +513,8 @@ long long FilePath::GetFileLength() const noexcept {
 	WIN32_FILE_ATTRIBUTE_DATA fad {};
 	if (!GetFileAttributesEx(AsInternal(), GetFileExInfoStandard, &fad))
 		return 0;
-	return (static_cast<unsigned long long>(fad.nFileSizeHigh) << 32) + fad.nFileSizeLow;
+	constexpr size_t bitsDWORD = 32;
+	return (static_cast<unsigned long long>(fad.nFileSizeHigh) << bitsDWORD) + fad.nFileSizeLow;
 #else
 	struct stat statusFile;
 	if (stat(AsInternal(), &statusFile) != -1)
@@ -621,7 +612,7 @@ bool FilePath::Matches(GUI::gui_string_view pattern) const {
 
 namespace {
 
-typedef DWORD(STDAPICALLTYPE *GetLongSig)(const GUI::gui_char *lpszShortPath, GUI::gui_char *lpszLongPath, DWORD cchBuffer);
+using GetLongSig = DWORD(STDAPICALLTYPE *)(const GUI::gui_char *lpszShortPath, GUI::gui_char *lpszLongPath, DWORD cchBuffer);
 GetLongSig pfnGetLong = nullptr;
 bool kernelTried = false;
 
@@ -654,13 +645,13 @@ bool MakeLongPath(const GUI::gui_char *shortPath, GUI::gui_string &longPath) {
 	}
 	GUI::gui_string gsLong(1, L'\0');
 	// Call with too-short string returns size + terminating NUL
-	const DWORD size = (pfnGetLong)(shortPath, &gsLong[0], 0);
+	const DWORD size = (pfnGetLong)(shortPath, gsLong.data(), 0);
 	if (size == 0) {
 		return false;
 	}
 	gsLong.resize(size);
 	// Call with correct size string returns size without terminating NUL
-	const DWORD characters = (pfnGetLong)(shortPath, &gsLong[0], size);
+	const DWORD characters = (pfnGetLong)(shortPath, gsLong.data(), size);
 	if (characters != 0) {
 		longPath.assign(gsLong, 0, characters);
 	}
@@ -754,11 +745,13 @@ std::string CommandExecute(const GUI::gui_char *command, const GUI::gui_char *di
 
 	if (running && pi.hProcess && pi.hThread) {
 		// Wait until child process exits but time out after 5 seconds.
-		::WaitForSingleObject(pi.hProcess, 5 * 1000);
+		constexpr DWORD maxWait = 5 * 1000;
+		::WaitForSingleObject(pi.hProcess, maxWait);
 
 		DWORD bytesRead = 0;
 		DWORD bytesAvail = 0;
-		char buffer[8 * 1024] {};
+		constexpr unsigned int pipeBufferSize = 8 * 1024;
+		char buffer[pipeBufferSize] {};
 
 		if (::PeekNamedPipe(hPipeRead, buffer, sizeof(buffer), &bytesRead, &bytesAvail, nullptr)) {
 			if (bytesAvail > 0) {

@@ -7,8 +7,11 @@
 
 #include <cstdint>
 
+#include <tuple>
 #include <string>
 #include <string_view>
+#include <vector>
+#include <set>
 #include <chrono>
 
 #include "ScintillaTypes.h"
@@ -16,6 +19,7 @@
 #include "ScintillaStructures.h"
 
 #include "GUI.h"
+#include "StringHelpers.h"
 #include "StyleWriter.h"
 
 namespace SA = Scintilla;
@@ -30,7 +34,7 @@ TextReader::TextReader(SA::ScintillaCall &sc_) noexcept :
 }
 
 bool TextReader::InternalIsLeadByte(char ch) const {
-	return GUI::IsDBCSLeadByte(codePage, ch);
+	return IsDBCSLeadByte(codePage, ch);
 }
 
 void TextReader::Fill(SA::Position position) {

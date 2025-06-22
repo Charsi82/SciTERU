@@ -25,7 +25,7 @@ struct FileWorker : public Worker {
 
 	double nextProgress;
 
-	FileWorker(WorkerListener *pListener_, const FilePath &path_, size_t size_, FILE *fp_);
+	FileWorker(WorkerListener *pListener_, FilePath path_, size_t size_, FILE *fp_) noexcept;
 	~FileWorker() noexcept override;
 	virtual double Duration() noexcept;
 	void Cancel() noexcept override {

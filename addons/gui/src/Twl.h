@@ -94,7 +94,7 @@ public:
 	void  set_style(DWORD s);
 	LRESULT send_msg(UINT msg, WPARAM wparam = 0, LPARAM lparam = 0) const;
 	void  close();
-	int message(const wchar_t* msg, int type = 0);
+	static int message(const wchar_t* msg, int type = 0);
 	Alignment align() const { return m_align; }
 	void align(Alignment a, int size = 0);
 	std::unique_ptr<TWin> get_foreground_window();

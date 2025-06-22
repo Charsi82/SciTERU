@@ -39,8 +39,8 @@ public:
 		   } specified;
 	explicit StyleDefinition(std::string_view definition);
 	bool ParseStyleDefinition(std::string_view definition);
-	Scintilla::Colour Fore() const;
-	Scintilla::Colour Back() const;
+	Scintilla::Colour Fore() const noexcept;
+	Scintilla::Colour Back() const noexcept;
 	int FractionalSize() const noexcept;
 	bool IsBold() const noexcept;
 };
@@ -55,8 +55,8 @@ constexpr Scintilla::ColourAlpha ColourRGBA(unsigned int red, unsigned int green
 
 int IntFromHexByte(std::string_view hexByte) noexcept;
 
-Scintilla::Colour ColourFromString(std::string_view s);
-Scintilla::ColourAlpha ColourAlphaFromString(std::string_view s);
+Scintilla::Colour ColourFromString(std::string_view s) noexcept;
+Scintilla::ColourAlpha ColourAlphaFromString(std::string_view s) noexcept;
 
 struct IndicatorDefinition {
 	Scintilla::IndicatorStyle style;

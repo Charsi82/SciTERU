@@ -346,7 +346,8 @@ int do_colour_dlg(lua_State* L)
 {
 	bool in_rgb = lua_isstring(L, 1);
 	COLORREF cval = in_rgb ? convert_colour_spec(lua_tostring(L, 1)) : luaL_optinteger(L, 1, 0);
-	if (run_colordlg((HWND)get_parent()->handle(), cval))
+	auto p = get_parent();
+	if (p && run_colordlg((HWND)p->handle(), cval))
 	{
 		if (in_rgb)
 		{
@@ -375,7 +376,7 @@ int do_message(lua_State* L)
 	if (kind == L"warning") type = 1;
 	else if (kind == L"error") type = 2;
 	else if (kind == L"query") type = 3;
-	lua_pushboolean(L, get_parent()->message(msg.c_str(), type));
+	lua_pushboolean(L, TWin::message(msg.c_str(), type));
 	return 1;
 }
 
@@ -425,7 +426,7 @@ int do_save_dlg(lua_State* L)
 	auto caption = StringFromUTF8(luaL_optstring(L, 1, "Save File"));
 	auto filter = StringFromUTF8(luaL_optstring(L, 2, "All (*.*)|*.*"));
 	TCHAR tmp[1024]{};
-	if (!run_ofd((HWND)get_parent()->handle(), tmp, caption, filter)) return 0;
+	if (get_parent() && !run_ofd((HWND)get_parent()->handle(), tmp, caption, filter)) return 0;
 	lua_pushwstring(L, tmp);
 	return 1;
 }
@@ -439,7 +440,7 @@ int do_select_dir_dlg(lua_State* L)
 	auto descr = StringFromUTF8(luaL_optstring(L, 1, "Browse for folder..."));
 	auto initdir = StringFromUTF8(luaL_optstring(L, 2, "C:\\"));
 	TCHAR tmp[MAX_PATH]{};
-	if (!run_seldirdlg((HWND)get_parent()->handle(), tmp, descr.c_str(), initdir.c_str())) return 0;
+	if (get_parent() && !run_seldirdlg((HWND)get_parent()->handle(), tmp, descr.c_str(), initdir.c_str())) return 0;
 	lua_pushwstring(L, tmp);
 	return 1;
 }
@@ -3308,7 +3309,8 @@ TPlugin::TPlugin() : m_hRichEditDll(LoadLibrary(L"riched32.dll"))
 		}
 	}
 	if (!subclassed)
-		get_parent()->message(L"Cannot subclass SciTE Window", 2);
+		log_add("gui:cannot subclass SciTE Window");
+		//get_parent()->message(L"Cannot subclass SciTE Window", 2);
 }
 
 TPlugin::~TPlugin()
@@ -3344,7 +3346,8 @@ int luaopen_gui(lua_State * L)
 
 #if LUA_VERSION_NUM < 502
 	luaL_register(L, NULL, window_methods);
-	luaL_openlib(L, "gui", gui, 0);
+	//luaL_openlib(L, "gui", gui, 0);
+	luaL_register(L, "gui", gui);
 #else
 	luaL_setfuncs(L, window_methods, 0);
 	luaL_newlib(L, gui);

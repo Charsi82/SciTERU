@@ -4,6 +4,7 @@
 // The License.txt file describes the conditions under which this software may be distributed.
 
 #include <cstdlib>
+#include <cstdint>
 #include <cassert>
 #include <cstring>
 #include <cstdio>
@@ -13,6 +14,7 @@
 #include <cerrno>
 #include <csignal>
 
+#include <compare>
 #include <tuple>
 #include <string>
 #include <string_view>

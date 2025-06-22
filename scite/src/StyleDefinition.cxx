@@ -6,6 +6,7 @@
 // The License.txt file describes the conditions under which this software may be distributed.
 
 #include <cstdlib>
+#include <cstdint>
 #include <cassert>
 #include <cstring>
 
@@ -90,7 +91,7 @@ bool StyleDefinition::ParseStyleDefinition(std::string_view definition) {
 		if ((optionName == "font") && !optionValue.empty()) {
 			specified = static_cast<flags>(specified | sdFont);
 			font = optionValue;
-			std::replace(font.begin(), font.end(), '|', ',');
+			std::ranges::replace(font, '|', ',');
 		}
 		if ((optionName == "fore") && !optionValue.empty()) {
 			specified = static_cast<flags>(specified | sdFore);
@@ -161,11 +162,11 @@ bool StyleDefinition::ParseStyleDefinition(std::string_view definition) {
 	return true;
 }
 
-SA::Colour StyleDefinition::Fore() const {
+SA::Colour StyleDefinition::Fore() const noexcept {
 	return ColourFromString(fore);
 }
 
-SA::Colour StyleDefinition::Back() const {
+SA::Colour StyleDefinition::Back() const noexcept {
 	return ColourFromString(back);
 }
 
@@ -177,31 +178,25 @@ bool StyleDefinition::IsBold() const noexcept {
 	return weight > SA::FontWeight::Normal;
 }
 
-int IntFromHexByte(std::string_view hexByte) noexcept {
-	return IntFromHexDigit(hexByte[0]) * 16 + IntFromHexDigit(hexByte[1]);
-}
-
-SA::Colour ColourFromString(std::string_view s) {
+SA::Colour ColourFromString(std::string_view s) noexcept {
 	if (s.length() >= 7) {
 		const int r = IntFromHexByte(&s[1]);
 		const int g = IntFromHexByte(&s[3]);
 		const int b = IntFromHexByte(&s[5]);
 		return ColourRGB(r, g, b);
-	} else {
-		return 0;
 	}
+	return 0;
 }
 
-SA::ColourAlpha ColourAlphaFromString(std::string_view s) {
+SA::ColourAlpha ColourAlphaFromString(std::string_view s) noexcept {
 	if (s.length() >= 7) {
 		const int r = IntFromHexByte(&s[1]);
 		const int g = IntFromHexByte(&s[3]);
 		const int b = IntFromHexByte(&s[5]);
 		const int a = (s.length() >= 9)? IntFromHexByte(&s[7]) : 0xff;
 		return ColourRGBA(r, g, b, a);
-	} else {
-		return 0;
 	}
+	return 0;
 }
 
 IndicatorDefinition::IndicatorDefinition(std::string_view definition) :

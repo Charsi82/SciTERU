@@ -7,10 +7,12 @@
 
 #include <cstddef>
 #include <cstdlib>
+#include <cstdint>
 #include <cstring>
 #include <cstdio>
 #include <ctime>
 
+#include <compare>
 #include <tuple>
 #include <string>
 #include <string_view>
@@ -78,47 +80,46 @@
 #define RTF_EOLN "\\par\n"
 #define RTF_TAB "\\tab "
 
-#define MAX_STYLEDEF 128
 #define RTF_FONTFACE "Courier New"
 #define RTF_COLOR "#000000"
 
-static size_t FindCaseInsensitive(const std::vector<std::string> &values, const std::string &s) {
+namespace {
+
+size_t FindCaseInsensitive(const std::vector<std::string> &values, const std::string &s) noexcept {
 	for (size_t i = 0; i < values.size(); i++)
-		if (EqualCaseInsensitive(s.c_str(), values[i].c_str()))
+		if (EqualCaseInsensitive(s, values[i]))
 			return i;
 	return values.size();
 }
 
 // extract the next RTF control word from *style
-static void GetRTFNextControl(const char **style, char *control) noexcept {
+std::string_view GetRTFNextControl(const char **style) noexcept {
 	const char *pos = *style;
-	*control = '\0';
-	if ('\0' == *pos) return;
+	if ('\0' == *pos) return {};
 	pos++; // implicit skip over leading '\'
 	while ('\0' != *pos && '\\' != *pos) { pos++; }
-	ptrdiff_t len = pos - *style;
-	memcpy(control, *style, len);
-	*(control + len) = '\0';
+	const std::string_view ret(*style, pos - *style);
 	*style = pos;
+	return ret;
 }
 
 // extracts control words that are different between two styles
-static std::string GetRTFStyleChange(const char *last, const char *current) { // \f0\fs20\cf0\highlight0\b0\i0
-	char lastControl[MAX_STYLEDEF] = "";
-	char currentControl[MAX_STYLEDEF] = "";
-	const char *lastPos = last;
-	const char *currentPos = current;
+std::string GetRTFStyleChange(const std::string &last, const std::string &current) { // \f0\fs20\cf0\highlight0\b0\i0
+	const char *lastPos = last.c_str();
+	const char *currentPos = current.c_str();
 	std::string delta;
 	// font face, size, color, background, bold, italic
 	for (int i = 0; i < 6; i++) {
-		GetRTFNextControl(&lastPos, lastControl);
-		GetRTFNextControl(&currentPos, currentControl);
-		if (strcmp(lastControl, currentControl)) {	// changed
+		const std::string_view lastControl = GetRTFNextControl(&lastPos);
+		const std::string_view currentControl = GetRTFNextControl(&currentPos);
+		if (lastControl != currentControl) {	// changed
 			delta += currentControl;
 		}
 	}
 	if (!delta.empty()) { delta += " "; }
 	return delta;
+}
+
 }
 
 void SciTEBase::SaveToStreamRTF(std::ostream &os, SA::Position start, SA::Position end) {
@@ -223,9 +224,11 @@ void SciTEBase::SaveToStreamRTF(std::ostream &os, SA::Position start, SA::Positi
 		styles.push_back(osStyle.str());
 	}
 	os << RTF_FONTDEFCLOSE RTF_COLORDEFOPEN;
-	for (const std::string &color : colors) {
-		os << "\\red" << IntFromHexByte(color.c_str() + 1) << "\\green" << IntFromHexByte(color.c_str() + 3) <<
-		   "\\blue" << IntFromHexByte(color.c_str() + 5) << ";";
+	for (std::string color : colors) {
+		color.append("0000000");	// Ensure substr safe by providing at least 7 characters
+		os << "\\red" << IntFromHexByte(color.substr(1,2)) <<
+			"\\green" << IntFromHexByte(color.substr(3,2)) <<
+		   "\\blue" << IntFromHexByte(color.substr(5,2)) << ";";
 	}
 	os << RTF_COLORDEFCLOSE RTF_HEADERCLOSE RTF_BODYOPEN RTF_SETFONTFACE "0"
 	   RTF_SETFONTSIZE << defaultStyle.size << RTF_SETCOLOR "0 ";
@@ -244,7 +247,7 @@ void SciTEBase::SaveToStreamRTF(std::ostream &os, SA::Position start, SA::Positi
 		if (style > StyleMax)
 			style = 0;
 		if (style != styleCurrent) {
-			const std::string deltaStyle = GetRTFStyleChange(lastStyle.c_str(), styles[style].c_str());
+			const std::string deltaStyle = GetRTFStyleChange(lastStyle, styles[style]);
 			lastStyle = styles[style];
 			if (!deltaStyle.empty())
 				os << deltaStyle;

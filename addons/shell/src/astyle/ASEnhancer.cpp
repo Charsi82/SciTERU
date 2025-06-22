@@ -1,5 +1,5 @@
 // ASEnhancer.cpp
-// Copyright (c) 2023 The Artistic Style Authors.
+// Copyright (c) 2025 The Artistic Style Authors.
 // This code is licensed under the MIT License.
 // License.md describes the conditions under which this software may be distributed.
 
@@ -104,7 +104,7 @@ void ASEnhancer::enhance(std::string& line, bool isInNamespace, bool isInPreproc
 		nextLineIsDeclareIndent = false;
 	}
 
-	if (line.length() == 0
+	if (line.empty()
 	        && !isInEventTable
 	        && !isInDeclareSection
 	        && !emptyLineFill)
@@ -155,7 +155,7 @@ void ASEnhancer::convertForceTabIndentToSpaces(std::string& line) const
 	// replace tab indents with spaces
 	for (size_t i = 0; i < line.length(); i++)
 	{
-		if (!isWhiteSpace(line[i]))
+		if (!std::isblank(line[i]))
 			break;
 		if (line[i] == '\t')
 		{
@@ -238,7 +238,7 @@ size_t ASEnhancer::findCaseColon(std::string_view line, size_t caseIndex) const
  */
 int ASEnhancer::indentLine(std::string& line, int indent) const
 {
-	if (line.length() == 0
+	if (line.empty()
 	        && !emptyLineFill)
 		return 0;
 
@@ -454,7 +454,7 @@ void ASEnhancer::parseCurrentLine(std::string& line, bool isInPreprocessor, bool
 		char ch = line[i];
 
 		// bypass whitespace
-		if (isWhiteSpace(ch))
+		if (std::isblank(ch))
 			continue;
 
 		// handle special characters (i.e. backslash+character such as \n, \t, ...)
@@ -691,7 +691,7 @@ size_t ASEnhancer::processSwitchBlock(std::string& line, size_t index)
 		i++;
 		for (; i < line.length(); i++)			// bypass whitespace
 		{
-			if (!isWhiteSpace(line[i]))
+			if (!std::isblank(line[i]))
 				break;
 		}
 		if (i < line.length())

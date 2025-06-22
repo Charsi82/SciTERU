@@ -10,6 +10,8 @@
 #include <cstring>
 #include <cstdio>
 
+#include <utility>
+#include <compare>
 #include <string>
 #include <vector>
 #include <memory>
@@ -31,17 +33,16 @@ constexpr double timeBetweenProgress = 0.4;
 
 #ifdef RB_UTF8AC
 //!-add-[utf8.auto.check]
-FileWorker::FileWorker(WorkerListener* pListener_, const FilePath& path_, size_t size_, FILE* fp_) :
-	pListener(pListener_), path(path_), size(size_), err(0), fp(fp_), sleepTime(0), check_utf8(0), nextProgress(timeBetweenProgress) {
+FileWorker::FileWorker(WorkerListener* pListener_, FilePath path_, size_t size_, FILE* fp_) noexcept :
+	pListener(pListener_), path(std::move(path_)), size(size_), err(0), fp(fp_), sleepTime(0), check_utf8(0), nextProgress(timeBetweenProgress) {
 }
 #else
-FileWorker::FileWorker(WorkerListener *pListener_, const FilePath &path_, size_t size_, FILE *fp_) :
-	pListener(pListener_), path(path_), size(size_), err(0), fp(fp_), sleepTime(0), nextProgress(timeBetweenProgress) {
+FileWorker::FileWorker(WorkerListener *pListener_, FilePath path_, size_t size_, FILE *fp_) noexcept :
+	pListener(pListener_), path(std::move(path_)), size(size_), err(0), fp(fp_), sleepTime(0), nextProgress(timeBetweenProgress) {
 }
 #endif // RB_UTF8AC
 
-FileWorker::~FileWorker() noexcept {
-}
+FileWorker::~FileWorker() noexcept = default;
 
 double FileWorker::Duration() noexcept {
 	return et.Duration();
@@ -127,8 +128,16 @@ FileStorer::FileStorer(WorkerListener *pListener_, std::string_view bytes_, cons
 	convert = Utf8_16::Writer::Allocate(unicodeMode, blockSize);
 }
 
-static constexpr bool IsUTF8TrailByte(int ch) noexcept {
-	return (ch >= 0x80) && (ch < (0x80 + 0x40));
+namespace {
+
+constexpr int minUTF8Trail = 0x80;
+constexpr int minUTF8Lead = 0x80 + 0x40;
+
+constexpr bool IsUTF8TrailByte(char ch) noexcept {
+	const unsigned char uch = ch;
+	return (uch >= minUTF8Trail) && (uch < minUTF8Lead);
+}
+
 }
 
 void FileStorer::Execute() noexcept {
@@ -141,11 +150,12 @@ void FileStorer::Execute() noexcept {
 				size_t grabSize = std::min(lengthDoc - startBlock, blockSize);
 				if ((unicodeMode != UniMode::uni8Bit) && (startBlock + grabSize < lengthDoc)) {
 					// Round down so only whole characters retrieved.
+					constexpr size_t maxRounding = 5;
 					size_t startLast = grabSize;
-					while ((startLast > 0) && ((grabSize - startLast) < 6) &&
-						IsUTF8TrailByte(static_cast<unsigned char>(documentBytes[startBlock + startLast])))
+					while ((startLast > 0) && ((grabSize - startLast) <= maxRounding) &&
+						IsUTF8TrailByte(documentBytes[startBlock + startLast]))
 						startLast--;
-					if ((grabSize - startLast) < 5)
+					if ((grabSize - startLast) < maxRounding)
 						grabSize = startLast;
 				}
 				const size_t written = convert->fwrite(documentView.substr(startBlock, grabSize), fp);

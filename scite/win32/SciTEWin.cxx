@@ -35,14 +35,20 @@ static const GUI::gui_char scintillaName[] = GUI_TEXT("Scintilla.DLL");
 #endif
 #endif // RB_BUILD
 
+#if !defined(STATIC_BUILD)
+const GUI::gui_char scintillaName[] = GUI_TEXT("Scintilla.DLL");
+#endif
+
+#ifdef RB_DOY
 #define XMAS_JOKE_DAY 354
+#endif
 
 #ifdef RB_TABTOP
 extern int toptab_h;
 extern COLORREF toptab_clr;
 #endif
 
-static GUI::gui_string GetErrorMessage(DWORD nRet) {
+GUI::gui_string GetErrorMessage(DWORD nRet) {
 	LPWSTR lpMsgBuf = nullptr;
 	if (::FormatMessage(
 				FORMAT_MESSAGE_ALLOCATE_BUFFER |
@@ -58,9 +64,8 @@ static GUI::gui_string GetErrorMessage(DWORD nRet) {
 		GUI::gui_string s= lpMsgBuf;
 		::LocalFree(lpMsgBuf);
 		return s;
-	} else {
-		return TEXT("");
 	}
+	return {};
 }
 
 #ifdef RB_GAP
@@ -109,9 +114,9 @@ long SciTEKeys::ParseKeyCode(std::string_view mnemonic) {
 			const int vkey = IntegerFromString(sKey, 0);
 			if (vkey > 0 && vkey <= 0x7FFF)
 				keyval = vkey;
-		} else if (StartsWith(sKey, "Keypad")) {
+		} else if (sKey.starts_with("Keypad")) {
 			sKey.erase(0, strlen("Keypad"));
-			if ((sKey.length() > 0) && IsADigit(sKey.at(0))) {
+			if (!sKey.empty() && IsADigit(sKey[0])) {
 				const int keyNum = IntegerFromString(sKey, -1);
 				if (keyNum >= 0 && keyNum <= 9)
 					keyval = keyNum + VK_NUMPAD0;
@@ -127,7 +132,7 @@ long SciTEKeys::ParseKeyCode(std::string_view mnemonic) {
 				keyval = VK_MULTIPLY;
 			}
 #ifdef RB_USCNUM
-			} else if (StartsWith(sKey, "Num")) {
+			} else if (sKey.starts_with("Num")) {
 				sKey.erase(0, strlen("Num"));
 				if (sKey[0]==' ') sKey.erase(0, 1);
 				if ((sKey.length() > 0) && IsADigit(sKey.at(0))) {
@@ -398,7 +403,7 @@ int CodePageFromName(const std::string &encodingName) noexcept {
 		const char *name;
 		int codePage;
 	};
-	const Encoding	knownEncodings[] = {
+	const auto knownEncodings = std::to_array<Encoding>({
 		{ "ascii", CP_UTF8 },
 		{ "utf-8", CP_UTF8 },
 		{ "latin1", 1252 },
@@ -412,7 +417,7 @@ int CodePageFromName(const std::string &encodingName) noexcept {
 		{ "iso8859-11", 874 },
 		{ "1250", 1250 },
 		{ "windows-1251", 1251 },
-	};
+	});
 	for (const Encoding &enc : knownEncodings) {
 		if (encodingName == enc.name) {
 			return enc.codePage;
@@ -423,37 +428,35 @@ int CodePageFromName(const std::string &encodingName) noexcept {
 #endif // !RB_ENCODING
 
 std::string StringEncode(std::wstring_view wsv, int codePage) {
-	if (wsv.length()) {
-		const int sLength = static_cast<int>(wsv.length());
-		const int cchMulti = ::WideCharToMultiByte(codePage, 0, wsv.data(), sLength, nullptr, 0, nullptr, nullptr);
-		std::string sMulti(cchMulti, 0);
-		::WideCharToMultiByte(codePage, 0, wsv.data(), sLength, sMulti.data(), cchMulti, nullptr, nullptr);
-		return sMulti;
-	} else {
-		return std::string();
+	if (wsv.empty()) {
+		return {};
 	}
+	const int sLength = static_cast<int>(wsv.length());
+	const int cchMulti = ::WideCharToMultiByte(codePage, 0, wsv.data(), sLength, nullptr, 0, nullptr, nullptr);
+	std::string sMulti(cchMulti, 0);
+	::WideCharToMultiByte(codePage, 0, wsv.data(), sLength, sMulti.data(), cchMulti, nullptr, nullptr);
+	return sMulti;
 }
 
 std::wstring StringDecode(std::string_view sv, int codePage) {
-	if (sv.length()) {
-		const int sLength = static_cast<int>(sv.length());
-		const int cchWide = ::MultiByteToWideChar(codePage, 0, sv.data(), sLength, nullptr, 0);
-		std::wstring sWide(cchWide, 0);
-		::MultiByteToWideChar(codePage, 0, sv.data(), sLength, sWide.data(), cchWide);
-		return sWide;
-	} else {
-		return std::wstring();
+	if (sv.empty()) {
+		return {};
 	}
+	const int sLength = static_cast<int>(sv.length());
+	const int cchWide = ::MultiByteToWideChar(codePage, 0, sv.data(), sLength, nullptr, 0);
+	std::wstring sWide(cchWide, 0);
+	::MultiByteToWideChar(codePage, 0, sv.data(), sLength, sWide.data(), cchWide);
+	return sWide;
 }
+
 #ifndef RB_ENCODING //!-remove-[FixEncoding]
 // Convert to UTF-8
-std::string ConvertEncoding(const char *original, int codePage) {
+std::string ConvertEncoding(std::string_view original, int codePage) {
 	if (codePage == CP_UTF8) {
-		return original;
-	} else {
-		GUI::gui_string sWide = StringDecode(original, codePage);
-		return GUI::UTF8FromString(sWide);
+		return std::string(original);
 	}
+	GUI::gui_string sWide = StringDecode(original, codePage);
+	return GUI::UTF8FromString(sWide);
 }
 #endif // !RB_ENCODING
 }
@@ -462,7 +465,7 @@ void SciTEWin::ReadLocalization() {
 	SciTEBase::ReadLocalization();
 	std::string encoding = localiser.GetString("translation.encoding");
 	LowerCaseAZ(encoding);
-	if (encoding.length()) {
+	if (!encoding.empty()) {
 #ifdef RB_ENCODING
 		const int codePageNamed = GUI::CodePageFromName(encoding);//!-change-[FixEncoding]
 #else
@@ -478,7 +481,7 @@ void SciTEWin::ReadLocalization() {
 #else
 			const std::string converted = ConvertEncoding(val, codePageNamed);
 #endif
-			if (converted != "") {
+			if (!converted.empty()) {
 				localiser.Set(key, converted);
 			}
 			more = localiser.GetNext(key, val);
@@ -662,14 +665,13 @@ namespace {
 FilePath GetSciTEPath(const FilePath &home) {
 	if (home.IsSet()) {
 		return home;
-	} else {
-		GUI::gui_char path[MAX_PATH+1]{};
-		if (::GetModuleFileNameW(0, path, MAX_PATH) == 0)
-			return {};
-		// Remove the SciTE.exe
-		const FilePath pathSciTE(path);
-		return pathSciTE.Directory();
 	}
+	GUI::gui_char path[MAX_PATH+1]{};
+	if (::GetModuleFileNameW({}, path, MAX_PATH) == 0)
+		return {};
+	// Remove the SciTE.exe
+	const FilePath pathSciTE(path);
+	return pathSciTE.Directory();
 }
 
 }
@@ -759,7 +761,7 @@ void SciTEWin::ExecuteHelp(const char *cmd) {
 				ak.pszMsgTitle = nullptr;
 				ak.pszWindow = nullptr;
 				ak.fIndexOnFail = TRUE;
-				fnHHW(NULL,
+				fnHHW({},
 				      path.c_str(),
 				      0x000d,          	// HH_KEYWORD_LOOKUP
 				      reinterpret_cast<DWORD_PTR>(&ak)
@@ -812,7 +814,7 @@ void SciTEWin::CopyPath() {
 
 void SciTEWin::FullScreenToggle() {
 	HWND wTaskBar = FindWindow(TEXT("Shell_TrayWnd"), TEXT(""));
-	HWND wStartButton = FindWindow(TEXT("Button"), nullptr);
+	HWND wStartButton = FindWindow(WC_BUTTONW, nullptr);
 	fullScreen = !fullScreen;
 	if (fullScreen) {
 		::SystemParametersInfo(SPI_GETWORKAREA, 0, &rcWorkArea, 0);
@@ -872,7 +874,7 @@ void SciTEWin::Command(WPARAM wParam, LPARAM lParam) {
 		if (!wEditor.HasFocus() && !wOutput.HasFocus()) {
 			HWND wWithFocus = ::GetFocus();
 			const GUI::gui_string classNameFocus = ClassNameOfWindow(wWithFocus);
-			if (classNameFocus == GUI_TEXT("Edit")) {
+			if (classNameFocus == WC_EDITW) {
 				switch (cmdID) {
 				case IDM_UNDO:
 					::SendMessage(wWithFocus, EM_UNDO, 0, 0);
@@ -895,7 +897,7 @@ void SciTEWin::Command(WPARAM wParam, LPARAM lParam) {
 		break;
 
 	case IDM_ONTOP:
-		topMost = (topMost ? false : true);
+		topMost = !topMost;
 		::SetWindowPos(MainHWND(), (topMost ? HWND_TOPMOST : HWND_NOTOPMOST), 0, 0, 0, 0, SWP_NOMOVE + SWP_NOSIZE);
 		CheckAMenuItem(IDM_ONTOP, topMost);
 		break;
@@ -934,7 +936,7 @@ void SciTEWin::Command(WPARAM wParam, LPARAM lParam) {
 #ifndef RB_ENCODING
 //!-remove-[FixEncoding]
 // from ScintillaWin.cxx
-static UINT CodePageFromCharSet(SA::CharacterSet characterSet, UINT documentCodePage) noexcept {
+UINT CodePageFromCharSet(SA::CharacterSet characterSet, UINT documentCodePage) noexcept {
 	CHARSETINFO ci {};
 	const BOOL bci = ::TranslateCharsetInfo(reinterpret_cast<DWORD *>(static_cast<uintptr_t>(characterSet)),
 						&ci, TCI_SRCCHARSET);
@@ -992,7 +994,7 @@ void SciTEWin::ResetExecution() {
 
 void SciTEWin::ExecuteNext() {
 	cmdWorker.icmd++;
-	if (cmdWorker.icmd < jobQueue.commandCurrent && cmdWorker.icmd < jobQueue.commandMax && cmdWorker.exitStatus == 0) {
+	if (cmdWorker.icmd < jobQueue.commandCurrent && cmdWorker.icmd < JobQueue::commandMax && cmdWorker.exitStatus == 0) {
 		Execute();
 	} else {
 		ResetExecution();
@@ -1056,7 +1058,7 @@ DWORD SciTEWin::ExecuteOne(const Job &jobToRun) {
 	DWORD exitcode = 0;
 
 	if (jobToRun.jobType == JobSubsystem::shell) {
-		ShellExec(jobToRun.command, jobToRun.directory.AsUTF8().c_str());
+		ShellExec(jobToRun.command, jobToRun.directory.AsUTF8());
 		return exitcode;
 	}
 
@@ -1480,7 +1482,7 @@ void SciTEWin::ShellExec(std::string_view cmd, std::string_view dir) {
 
 	std::string errormsg("Error while launching:\n\"");
 	errormsg += mycmdcopy;
-	if (myparams.length()) {
+	if (!myparams.empty()) {
 		errormsg += "\" with Params:\n\"";
 		errormsg += myparams;
 	}
@@ -1510,14 +1512,10 @@ void SciTEWin::Execute() {
 
 	if (job.jobType == JobSubsystem::extension) {
 		// Execute extensions synchronously
-		if (job.flags & jobGroupUndo)
-			wEditor.BeginUndoAction();
-
-		if (extender)
+		if (extender) {
+			UndoBlock ub(wEditor, job.flags & jobGroupUndo);
 			extender->OnExecute(job.command.c_str());
-
-		if (job.flags & jobGroupUndo)
-			wEditor.EndUndoAction();
+		}
 
 		ExecuteNext();
 	} else {
@@ -1554,7 +1552,7 @@ void SciTEWin::StopExecute() {
 }
 
 void SciTEWin::AddCommand(std::string_view cmd, std::string_view dir, JobSubsystem jobType, std::string_view input, int flags) {
-	if (cmd.length()) {
+	if (!cmd.empty()) {
 		if ((jobType == JobSubsystem::shell) && ((flags & jobForceQueue) == 0)) {
 			std::string pCmd(cmd);
 			parameterisedCommand = "";
@@ -1643,8 +1641,8 @@ void SciTEWin::CreateUI() {
 			(left != static_cast<int>(CW_USEDEFAULT))) {
 		left += width;
 	}
-	// Pass 'this' pointer in lpParam of CreateWindow().
-	wSciTE = ::CreateWindowEx(
+	// Pass 'this' pointer in lpParam of CreateWindowExW().
+	wSciTE = ::CreateWindowExW(
 			 0,
 			 className,
 			 windowName.c_str(),
@@ -1652,8 +1650,8 @@ void SciTEWin::CreateUI() {
 			 WS_MINIMIZEBOX | WS_MAXIMIZEBOX |
 			 WS_CLIPCHILDREN,
 			 left, top, width, height,
-			 NULL,
-			 NULL,
+			 {},
+			 {},
 			 hInstance,
 			 this);
 	if (!wSciTE.Created())
@@ -1849,20 +1847,22 @@ void SciTEWin::DropFiles(HDROP hdrop) {
 	// Scintilla, hdrop is null, and an exception is generated!
 	if (hdrop) {
 		const bool tempFilesSyncLoad = props.GetInt("temp.files.sync.load") != 0;
-		GUI::gui_char tempDir[MAX_PATH];
-		const DWORD tempDirLen = ::GetTempPath(MAX_PATH, tempDir);
+		GUI::gui_char tempDirTest[1];
+		const DWORD tempDirLen = ::GetTempPathW(0, tempDirTest);
+		GUI::gui_string tempDir(tempDirLen-1, L'\0');
+		::GetTempPathW(tempDirLen, tempDir.data());
 		bool isTempFile = false;
-		const int filesDropped = ::DragQueryFile(hdrop, 0xffffffff, nullptr, 0);
+		const int filesDropped = ::DragQueryFileW(hdrop, 0xffffffff, nullptr, 0);
 		// Append paths to dropFilesQueue, to finish drag operation soon
 		for (int i = 0; i < filesDropped; ++i) {
-			GUI::gui_char pathDropped[MAX_PATH];
-			::DragQueryFileW(hdrop, i, pathDropped,
-					 static_cast<UINT>(std::size(pathDropped)));
+			const int lenPath = ::DragQueryFileW(hdrop, i, nullptr, 0);
+			GUI::gui_string pathDropped(lenPath, L'\0');
+			::DragQueryFileW(hdrop, i, pathDropped.data(), lenPath+1);
 			// Only do this for the first file in the drop op
 			// as all are coming from the same drag location
 			if (i == 0 && tempFilesSyncLoad) {
 				// check if file's parent dir is temp
-				if (::wcsncmp(tempDir, pathDropped, tempDirLen) == 0) {
+				if (pathDropped.starts_with(tempDir)) {
 					isTempFile = true;
 				}
 			}
@@ -1871,7 +1871,7 @@ void SciTEWin::DropFiles(HDROP hdrop) {
 					break;
 				}
 			} else {
-				dropFilesQueue.push_back(pathDropped);
+				dropFilesQueue.emplace_back(pathDropped);
 			}
 		}
 		::DragFinish(hdrop);
@@ -1938,8 +1938,8 @@ bool SciTEWin::PreOpenCheck(const GUI::gui_string &file) {
 		} else if (!fpArg.Extension().IsSet()) {
 			// if the filename has no extension, try to match a file with list of standard extensions
 			std::string extensions = props.GetExpandedString("source.default.extensions");
-			if (extensions.length()) {
-				std::replace(extensions.begin(), extensions.end(), '|', '\0');
+			if (!extensions.empty()) {
+				std::ranges::replace(extensions, '|', '\0');
 				size_t start = 0;
 				while (start < extensions.length()) {
 					GUI::gui_string filterName = GUI::StringFromUTF8(extensions.c_str() + start);
@@ -1949,10 +1949,9 @@ bool SciTEWin::PreOpenCheck(const GUI::gui_string &file) {
 						isHandled = true;
 						Open(nameWithExtension);
 						break;	// Found!
-					} else {
-						// Next extension
-						start += strlen(extensions.c_str() + start) + 1;
 					}
+					// Next extension
+					start += strlen(extensions.c_str() + start) + 1;
 				}
 			}
 		}
@@ -2046,7 +2045,7 @@ void SciTEWin::ScaleChanged(WPARAM wParam, LPARAM lParam) {
 		wOutput.Send(WM_DPICHANGED, wParam, lParam);
 		ReloadProperties();
 		const RECT *rect = reinterpret_cast<const RECT *>(lParam);
-		::SetWindowPos(MainHWND(), NULL, rect->left, rect->top, rect->right - rect->left, rect->bottom - rect->top,
+		::SetWindowPos(MainHWND(), {}, rect->left, rect->top, rect->right - rect->left, rect->bottom - rect->top,
 			SWP_NOZORDER | SWP_NOACTIVATE);
 
 		if (!fnSystemParametersInfoForDpi) {
@@ -2180,7 +2179,7 @@ LRESULT SciTEWin::KeyUp(WPARAM wParam) {
 void SciTEWin::AddToPopUp(const char *label, int cmd, bool enabled) {
 	GUI::gui_string localised = localiser.Text(label);
 	HMENU menu = static_cast<HMENU>(popup.GetID());
-	if (0 == localised.length())
+	if (localised.empty())
 		::AppendMenu(menu, MF_SEPARATOR, 0, TEXT(""));
 	else if (enabled)
 		::AppendMenu(menu, MF_STRING, cmd, localised.c_str());
@@ -2286,7 +2285,7 @@ LRESULT SciTEWin::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) {
 		case SCITE_DROP:
 			// Open the files
 			while (!dropFilesQueue.empty()) {
-				FilePath file(dropFilesQueue.front());
+				const FilePath file(dropFilesQueue.front());
 				dropFilesQueue.pop_front();
 				if (file.Exists()) {
 					Open(file);
@@ -2350,9 +2349,8 @@ LRESULT SciTEWin::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) {
 					pmmi->ptMaxTrackSize.x = pmmi->ptMaxSize.x;
 					pmmi->ptMaxTrackSize.y = pmmi->ptMaxSize.y;
 					return 0;
-				} else {
-					return ::DefWindowProc(MainHWND(), iMessage, wParam, lParam);
 				}
+				return ::DefWindowProc(MainHWND(), iMessage, wParam, lParam);
 			}
 
 		case WM_INITMENU:
@@ -2438,9 +2436,8 @@ LRESULT PASCAL SciTEWin::TWndProc(
 	// scite will be zero if WM_CREATE not seen yet
 	if (scite) {
 		return scite->WndProc(iMessage, wParam, lParam);
-	} else {
-		return ::DefWindowProcW(hWnd, iMessage, wParam, lParam);
 	}
+	return ::DefWindowProcW(hWnd, iMessage, wParam, lParam);
 }
 
 LRESULT ContentWin::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) {
@@ -2511,7 +2508,7 @@ LRESULT ContentWin::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) {
 				const GUI::Rectangle rcScintilla = pSciTEWin->wEditor.GetPosition();
 				const GUI::Rectangle rcOutput = pSciTEWin->wOutput.GetPosition();
 				if (!rcScintilla.Contains(ptCursor) && !rcOutput.Contains(ptCursor)) {
-					::SetCursor(::LoadCursor(NULL, pSciTEWin->splitVertical ? IDC_SIZEWE : IDC_SIZENS));
+					::SetCursor(::LoadCursor({}, pSciTEWin->splitVertical ? IDC_SIZEWE : IDC_SIZENS));
 					return TRUE;
 				}
 			}
@@ -2543,8 +2540,8 @@ std::string SciTEWin::EncodeString(const std::string &s) {
 }
 
 // Convert String from doc encoding to UTF-8
-std::string SciTEWin::GetRangeInUIEncoding(GUI::ScintillaWindow &win, SA::Span range) {
-	const std::string s = SciTEBase::GetRangeInUIEncoding(win, range);
+std::string SciTEWin::GetRangeInUIEncoding(GUI::ScintillaWindow &win, SA::Span span) {
+	const std::string s = SciTEBase::GetRangeInUIEncoding(win, span);
 
 	UINT codePageDocument = wEditor.CodePage();
 
@@ -2566,17 +2563,17 @@ uintptr_t SciTEWin::EventLoop() {
 	BOOL going = TRUE;
 	while (going) {
 		if (needIdle) {
-			const BOOL haveMessage = PeekMessageW(&msg, NULL, 0, 0, PM_NOREMOVE);
+			const BOOL haveMessage = PeekMessageW(&msg, {}, 0, 0, PM_NOREMOVE);
 			if (!haveMessage) {
 				OnIdle();
 				continue;
 			}
 		}
-		going = ::GetMessageW(&msg, NULL, 0, 0);
+		going = ::GetMessageW(&msg, {}, 0, 0);
 		if (going > 0) {
 			if (!ModelessHandler(&msg)) {
 				if (!GetID() ||
-						::TranslateAcceleratorW(static_cast<HWND>(GetID()), GetAcceleratorTable(), &msg) == 0) {
+						::TranslateAcceleratorW(static_cast<HWND>(GetID()), hAccTable, &msg) == 0) {
 					::TranslateMessage(&msg);
 					::DispatchMessageW(&msg);
 				}
@@ -2586,7 +2583,9 @@ uintptr_t SciTEWin::EventLoop() {
 	return msg.wParam;
 }
 
-static void RestrictDLLPath() noexcept {
+namespace {
+
+void RestrictDLLPath() noexcept {
 	// Try to limit the locations where DLLs will be loaded from to prevent binary planting.
 	// That is where a bad DLL is placed in the current directory or in the PATH.
 	using SetDefaultDllDirectoriesSig = BOOL(WINAPI *)(DWORD DirectoryFlags);
@@ -2609,6 +2608,8 @@ static void RestrictDLLPath() noexcept {
 			}
 		}
 	}
+}
+
 }
 
 #ifdef STATIC_BUILD
@@ -2647,7 +2648,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 	if (!hmod) {
 		GUI::gui_string explanation = scintillaName;
 		explanation += TEXT(" could not be loaded.  SciTE will now close");
-		::MessageBox(NULL, explanation.c_str(),
+		::MessageBox({}, explanation.c_str(),
 			     TEXT("Error loading Scintilla"), MB_OK | MB_ICONERROR);
 	}
 #endif
@@ -2693,7 +2694,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 	Scintilla_ReleaseResources();
 #else
 
-	::FreeLibrary(hmod);
+	if (hmod) {
+		::FreeLibrary(hmod);
+	}
 #endif
 
 	return static_cast<int>(result);

@@ -205,6 +205,7 @@
     <ClCompile Include="..\..\lexilla\lexers\LexCsound.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexCSS.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexD.cxx" />
+    <ClCompile Include="..\..\lexilla\lexers\LexDart.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexDataflex.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexDiff.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexDMAP.cxx" />
@@ -249,6 +250,7 @@
     <ClCompile Include="..\..\lexilla\lexers\LexMySQL.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexNim.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexNimrod.cxx" />
+    <ClCompile Include="..\..\lexilla\lexers\LexNix.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexNsis.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexNull.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexOpal.cxx" />
@@ -288,6 +290,7 @@
     <ClCompile Include="..\..\lexilla\lexers\LexTCMD.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexTeX.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexTOML.cxx" />
+    <ClCompile Include="..\..\lexilla\lexers\LexTroff.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexTxt2tags.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexVB.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexVerilog.cxx" />
@@ -295,6 +298,7 @@
     <ClCompile Include="..\..\lexilla\lexers\LexVisualProlog.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexX12.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexYAML.cxx" />
+    <ClCompile Include="..\..\lexilla\lexers\LexZig.cxx" />
     <ClCompile Include="..\..\lexilla\access\LexillaAccess.cxx" />
     <ClCompile Include="..\..\lexilla\src\Lexilla.cxx" />
     <!--    <ClCompile Include="..\..\scintilla\src\*.cxx" />-->
@@ -334,6 +338,9 @@
     <ClCompile Include="..\..\scintilla\call\ScintillaCall.cxx" />
     <ClCompile Include="..\..\scintilla\win32\HanjaDic.cxx" />
     <ClCompile Include="..\..\scintilla\win32\PlatWin.cxx" />
+    <ClCompile Include="..\..\scintilla\win32\ListBox.cxx" />
+    <ClCompile Include="..\..\scintilla\win32\SurfaceGDI.cxx" />
+    <ClCompile Include="..\..\scintilla\win32\SurfaceD2D.cxx" />
     <ClCompile Include="..\..\scintilla\win32\ScintillaWin.cxx" />
     <!--    <ClCompile Include="..\src\*.cxx" />-->
     <ClCompile Include="..\src\Cookie.cxx" />
@@ -449,8 +456,11 @@
     <ClInclude Include="..\..\scintilla\src\XPM.h" />
     <!--    <ClInclude Include="..\..\scintilla\win32\*.h" />-->
     <ClInclude Include="..\..\scintilla\win32\HanjaDic.h" />
+    <ClInclude Include="..\..\scintilla\win32\ListBox.h" />
     <ClInclude Include="..\..\scintilla\win32\PlatWin.h" />
     <ClInclude Include="..\..\scintilla\win32\ScintillaWin.h" />
+    <ClInclude Include="..\..\scintilla\win32\SurfaceD2D.h" />
+    <ClInclude Include="..\..\scintilla\win32\SurfaceGDI.h" />
     <ClInclude Include="..\..\scintilla\win32\WinTypes.h" />
     <!--    <ClInclude Include="..\src\*.h" />-->
     <ClInclude Include="..\src\Cookie.h" />
@@ -478,6 +488,7 @@
     <ClInclude Include="..\src\StripDefinition.h" />
     <ClInclude Include="..\src\StyleDefinition.h" />
     <ClInclude Include="..\src\StyleWriter.h" />
+    <ClInclude Include="..\src\UnicodeConstants.h" />
     <ClInclude Include="..\src\Utf8_16.h" />
     <ClInclude Include="..\src\Worker.h" />
     <!--    <ClInclude Include="..\win32\*.h" />-->

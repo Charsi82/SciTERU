@@ -139,10 +139,10 @@ TEST_CASE("Conversion") {
 		MemDoc md(sText, 1024);
 		REQUIRE(md.unicodeMode == UniMode::uni8Bit);
 		REQUIRE(md.result == sText);
-		
+
 		const std::string out = OutBytes(md, 32);
 		REQUIRE(out == sText);
-		
+
 		const std::string outLE = Encode(md.result, UniMode::uni16LE, 32);
 		constexpr std::string_view sTextLE = BOM_UTF16LE "a\0b\0c\0"sv;
 		REQUIRE(outLE.length() == 8);
@@ -163,10 +163,10 @@ TEST_CASE("Conversion") {
 		MemDoc md(sFile, 1024);
 		REQUIRE(md.unicodeMode == UniMode::utf8);
 		REQUIRE(md.result == sText);
-		
+
 		const std::string out = OutBytes(md, 32);
 		REQUIRE(out == sFile);
-		
+
 		constexpr std::string_view sTextLE = BOM_UTF16LE " \0a\0"sv GAMMA_LE GAMMA_LE "z\0 \0"sv;
 		const std::string sTextBE = ByteReverse(sTextLE);
 
@@ -188,10 +188,10 @@ TEST_CASE("Conversion") {
 		MemDoc md(sFile, 1024);
 		REQUIRE(md.unicodeMode == UniMode::utf8);
 		REQUIRE(md.result == sText);
-		
+
 		const std::string out = OutBytes(md, 32);
 		REQUIRE(out == sFile);
-		
+
 		// Katakana U = U+30A6
 		constexpr std::string_view sTextLE = BOM_UTF16LE "a\0"sv KATAKANA_U_LE;
 		const std::string sTextBE = ByteReverse(sTextLE);
@@ -208,17 +208,17 @@ TEST_CASE("Conversion") {
 	}
 
 	SECTION("Non-BMP") {
-		// GOTHIC LETTER HWAIR = U+10348 
+		// GOTHIC LETTER HWAIR = U+10348
 		constexpr std::string_view sFile = BOM_UTF8 HWAIR_TEXT;
 		constexpr std::string_view sHwair = HWAIR_TEXT;
 
 		MemDoc md(sFile, 1024);
 		REQUIRE(md.unicodeMode == UniMode::utf8);
 		REQUIRE(md.result == sHwair);
-		
+
 		const std::string out = OutBytes(md, 32);
 		REQUIRE(out == sFile);
-		
+
 		// "\uD800\uDF48"
 		const std::string_view sTextLE = BOM_UTF16LE "a\0"sv HWAIR_LE;
 		const std::string sTextBE = ByteReverse(sTextLE);
@@ -235,7 +235,7 @@ TEST_CASE("Conversion") {
 	}
 
 	SECTION("U16Input") {
-		// Check cases of UTF-16 input 
+		// Check cases of UTF-16 input
 
 		constexpr std::string_view sFile = sABHwairU16LE; // a b hwair
 		constexpr std::string_view sHwair = AB_HWAIR_TEXT;

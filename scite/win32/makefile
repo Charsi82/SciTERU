@@ -22,22 +22,19 @@ PYTHON = $(if $(windir),pyw,python3)
 WARNINGS += -Wall -pedantic -Wextra
 
 ifdef CLANG
-# Can choose aspect to sanitize: address and undefined can simply change SANITIZE but for
-# thread also need to create Position Independent Executable -> search online documentation
-SANITIZE = address
-#SANITIZE = undefined
-CXX = clang++
-CC = clang
-# Microsoft headers are used so _CRT_SECURE_NO_DEPRECATE avoids warnings for standard library like strcat,
-DEFINES += -D_CRT_SECURE_NO_DEPRECATE
-BASE_FLAGS += -fsanitize=$(SANITIZE)
-# Clang doesn't like omitting braces in array initialization but they just add noise,
-WARNINGS += -Wno-deprecated-register
-WARNINGS += -Wno-missing-braces
-WARNINGS += -Wno-language-extension-token
+	# Can choose aspect to sanitize: address and undefined can simply change SANITIZE but for
+	# thread also need to create Position Independent Executable -> search online documentation
+	SANITIZE = address
+	#SANITIZE = undefined
+	CXX = clang++
+	CC = clang
+	# Microsoft headers are used so _CRT_SECURE_NO_DEPRECATE avoids warnings for standard library like strcat,
+	DEFINES += -D_CRT_SECURE_NO_DEPRECATE
+	BASE_FLAGS += -fsanitize=$(SANITIZE)
 else
-WARNINGS += -Wno-cast-function-type
-SUBSYSTEM_OPT = -Xlinker --subsystem -Xlinker windows
+	# Only enable conversion warnings for C++ as Lua implementation less type-safe
+	CXXFLAGS += -Wconversion
+	SUBSYSTEM_OPT = -Xlinker --subsystem -Xlinker windows
 endif
 
 ifeq ($(OS),Windows_NT)
@@ -52,22 +49,22 @@ ifeq ($(OS),Windows_NT)
 	WINVERWORDS:=$(wordlist 1,2,$(subst ., ,$(lastword $(shell $(VER)))))
 	WINVER:=$(firstword $(WINVERWORDS)).$(lastword $(WINVERWORDS))
 	# Windows NT 4 and Windows 2000 do not support themes so turn off
-ifeq '$(WINVER)' '4.0'
-	DEFINES += -DDISABLE_THEMES -DWIN_TARGET=0x0400
-else
-ifeq '$(WINVER)' '5.00'
-	DEFINES += -DDISABLE_THEMES
-else
-	LIBS += -luxtheme
-endif
-endif
+	ifeq '$(WINVER)' '4.0'
+		DEFINES += -DDISABLE_THEMES -DWIN_TARGET=0x0400
+	else
+		ifeq '$(WINVER)' '5.00'
+			DEFINES += -DDISABLE_THEMES
+		else
+			LIBS += -luxtheme
+		endif
+	endif
 else
 	DEL = rm -f
 	COPY = cp -a
 	LIBS += -luxtheme
 endif
 
-PROG	= ../bin/SciTE.exe
+PROG = ../bin/SciTE.exe
 PROGSTATIC = ../bin/Sc1.exe
 DEFINES += -DUNICODE -D_UNICODE
 
@@ -83,27 +80,27 @@ DEFINES += -D$(if $(DEBUG),DEBUG,NDEBUG)
 BASE_FLAGS += $(if $(DEBUG),-g,-O3)
 
 ifndef DEBUG
-ifndef CLANG
-STRIPFLAG="-Wl,-s"
-endif
+	ifndef CLANG
+		STRIPFLAG="-Wl,-s"
+	endif
 endif
 
 ifndef NO_LUA
-LUA_CORE_OBJS = lapi.o lcode.o lctype.o ldebug.o ldo.o ldump.o lfunc.o lgc.o llex.o \
-		lmem.o lobject.o lopcodes.o lparser.o lstate.o lstring.o \
-		ltable.o ltm.o lundump.o lvm.o lzio.o
+	LUA_CORE_OBJS = lapi.o lcode.o lctype.o ldebug.o ldo.o ldump.o lfunc.o lgc.o llex.o \
+			lmem.o lobject.o lopcodes.o lparser.o lstate.o lstring.o \
+			ltable.o ltm.o lundump.o lvm.o lzio.o
 
-LUA_LIB_OBJS =	lauxlib.o lbaselib.o lbitlib.o lcorolib.o ldblib.o liolib.o lmathlib.o ltablib.o \
-		lstrlib.o loadlib.o loslib.o linit.o lutf8lib.o
+	LUA_LIB_OBJS =	lauxlib.o lbaselib.o lbitlib.o lcorolib.o ldblib.o liolib.o lmathlib.o ltablib.o \
+			lstrlib.o loadlib.o loslib.o linit.o lutf8lib.o
 
-LUA_OBJS = LuaExtension.o $(LUA_CORE_OBJS) $(LUA_LIB_OBJS)
+	LUA_OBJS = LuaExtension.o $(LUA_CORE_OBJS) $(LUA_LIB_OBJS)
 
-vpath %.c ../lua/src ../lua/src/lib
+	vpath %.c ../lua/src ../lua/src/lib
 
-INCLUDES += -I ../lua/src
-CFLAGS += -DLUA_USER_H=\"scite_lua_win.h\"
+	INCLUDES += -I ../lua/src
+	CFLAGS += -DLUA_USER_H=\"scite_lua_win.h\"
 else
-DEFINES += -DNO_LUA
+	DEFINES += -DNO_LUA
 endif
 
 INCLUDES += -I ../../lexilla/include -I ../../lexilla/access -I ../../scintilla/include -I ../src

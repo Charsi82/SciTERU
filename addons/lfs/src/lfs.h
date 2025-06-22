@@ -2,6 +2,7 @@
 ** LuaFileSystem
 ** Copyright Kepler Project 2003 - 2020
 ** (http://keplerproject.github.io/luafilesystem)
+** 2020 - ... (https://lunarmodules.github.io/luafilesystem/)
 */
 
 /* Define 'chdir' for systems that do not implement it */

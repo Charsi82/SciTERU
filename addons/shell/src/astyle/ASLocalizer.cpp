@@ -1,5 +1,5 @@
 // ASLocalizer.cpp
-// Copyright (c) 2023 The Artistic Style Authors.
+// Copyright (c) 2025 The Artistic Style Authors.
 // This code is licensed under the MIT License.
 // License.md describes the conditions under which this software may be distributed.
 //
@@ -43,12 +43,8 @@
 	#include <Windows.h>
 #endif
 
-#ifdef __VMS
-	#define __USE_STD_IOSTREAM 1
-	#include <assert>
-#else
-	#include <cassert>
-#endif
+#include <cassert>
+
 
 #include <clocale>		// needed by some compilers
 #include <cstdio>

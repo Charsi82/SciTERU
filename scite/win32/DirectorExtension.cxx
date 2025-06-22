@@ -6,9 +6,11 @@
 // The License.txt file describes the conditions under which this software may be distributed.
 
 #include <cstdlib>
+#include <cstdint>
 #include <cstdio>
 #include <ctime>
 
+#include <compare>
 #include <tuple>
 #include <string>
 #include <string_view>
@@ -48,18 +50,20 @@
 #include "SciTEBase.h"
 #include "DirectorExtension.h"
 
-static HWND wDirector {};
-static HWND wCorrespondent {};
-static HWND wReceiver {};
-static bool startedByDirector = false;
-static bool shuttingDown = false;
+namespace {
+
+HWND wDirector{};
+HWND wCorrespondent{};
+HWND wReceiver{};
+bool startedByDirector = false;
+bool shuttingDown = false;
 unsigned int SDI = 0;
 
-static bool HasConnection() noexcept {
+bool HasConnection() noexcept {
 	return wDirector || wCorrespondent;
 }
 
-static void SendDirector(const char *verb, const char *arg = nullptr) {
+void SendDirector(const char *verb, const char *arg = nullptr) {
 	if (HasConnection()) {
 		HWND wDestination = wCorrespondent;
 		std::string addressedMessage;
@@ -80,27 +84,27 @@ static void SendDirector(const char *verb, const char *arg = nullptr) {
 		cds.dwData = 0;
 		cds.cbData = static_cast<DWORD>(slashedMessage.length());
 		slashedMessage.append(1, '\0');	// Ensure NUL at end of string
-		cds.lpData = &slashedMessage[0];
+		cds.lpData = slashedMessage.data();
 		::SendMessage(wDestination, WM_COPYDATA,
 			      reinterpret_cast<WPARAM>(wReceiver),
 			      reinterpret_cast<LPARAM>(&cds));
 	}
 }
 
-static void SendDirectorInteger(const char *verb, intptr_t arg) {
+void SendDirectorInteger(const char *verb, intptr_t arg) {
 	std::string s = std::to_string(arg);
 	::SendDirector(verb, s.c_str());
 }
 
-static HWND HwndFromString(const char *s) noexcept {
+HWND HwndFromString(const char *s) noexcept {
 	return reinterpret_cast<HWND>(static_cast<uintptr_t>(atoll(s)));
 }
 
-static void CheckEnvironment(ExtensionAPI *phost) {
+void CheckEnvironment(ExtensionAPI *phost) {
 	if (phost && !shuttingDown) {
 		if (!wDirector) {
 			std::string director = phost->Property("director.hwnd");
-			if (director.length() > 0) {
+			if (!director.empty()) {
 				startedByDirector = true;
 				wDirector = HwndFromString(director.c_str());
 				// Director is just seen so identify this to it
@@ -112,9 +116,9 @@ static void CheckEnvironment(ExtensionAPI *phost) {
 	}
 }
 
-static TCHAR DirectorExtension_ClassName[] = TEXT("DirectorExtension");
+TCHAR DirectorExtension_ClassName[] = TEXT("DirectorExtension");
 
-static LRESULT HandleCopyData(LPARAM lParam) {
+LRESULT HandleCopyData(LPARAM lParam) {
 	const COPYDATASTRUCT *pcds = reinterpret_cast<COPYDATASTRUCT *>(lParam);
 	// Copy into an temporary buffer to ensure \0 terminated
 	if (pcds->lpData) {
@@ -134,7 +138,7 @@ LRESULT PASCAL DirectorExtension_WndProc(
 	return ::DefWindowProc(hWnd, iMessage, wParam, lParam);
 }
 
-static void DirectorExtension_Register(HINSTANCE hInstance) noexcept {
+void DirectorExtension_Register(HINSTANCE hInstance) noexcept {
 	WNDCLASS wndclass{};
 	wndclass.style = 0;
 	wndclass.lpfnWndProc = DirectorExtension_WndProc;
@@ -148,6 +152,8 @@ static void DirectorExtension_Register(HINSTANCE hInstance) noexcept {
 	wndclass.lpszClassName = DirectorExtension_ClassName;
 	if (!::RegisterClass(&wndclass))
 		::exit(FALSE);
+}
+
 }
 
 DirectorExtension &DirectorExtension::Instance() {
@@ -166,8 +172,8 @@ bool DirectorExtension::Initialise(ExtensionAPI *host_) {
 			    DirectorExtension_ClassName,
 			    0,
 			    0, 0, 0, 0,
-			    0,
-			    0,
+			    {},
+			    {},
 			    hInstance,
 			    nullptr);
 	if (!wReceiver)

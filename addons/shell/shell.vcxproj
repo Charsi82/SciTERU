@@ -48,7 +48,7 @@
     <ClInclude Include="src\astyle\ASLocalizer.h" />
     <ClInclude Include="src\astyle\astyle.h" />
     <ClInclude Include="src\astyle\astyle_main.h" />
-    <ClInclude Include="src\luaargs.h" />
+    <ClInclude Include="src\luaargs.hpp" />
     <ClInclude Include="src\md5.h" />
     <ClInclude Include="src\resource.h" />
     <ClInclude Include="src\sha1\calc_sha1.h" />

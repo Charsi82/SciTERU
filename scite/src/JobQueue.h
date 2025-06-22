@@ -51,7 +51,7 @@ public:
 	int flags;
 
 	Job() noexcept;
-	Job(std::string_view command_, const FilePath &directory_, JobSubsystem jobType_, std::string_view input_, int flags_);
+	Job(std::string_view command_, FilePath directory_, JobSubsystem jobType_, std::string_view input_, int flags_);
 	void Clear() noexcept;
 };
 

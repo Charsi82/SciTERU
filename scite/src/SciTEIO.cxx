@@ -15,6 +15,7 @@
 #include <cstdio>
 #include <ctime>
 
+#include <compare>
 #include <tuple>
 #include <string>
 #include <string_view>
@@ -62,46 +63,47 @@ constexpr GUI::gui_char pathSepChar = '\\';
 #ifdef RB_LINK
 // part of Notepad++
 #include <shlobj.h>
-void resolveLinkFile(std::string& linkFilePath)
-{
-	IShellLink* psl;
-	WCHAR targetFilePath[MAX_PATH];
-	WIN32_FIND_DATA wfd = { 0 };
-
-	HRESULT hres = CoInitialize(NULL);
-	if (SUCCEEDED(hres))
+namespace {
+	void resolveLinkFile(std::string& linkFilePath)
 	{
-		hres = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID*)&psl);
+		IShellLink* psl{};
+		WCHAR targetFilePath[MAX_PATH];
+		WIN32_FIND_DATA wfd = { 0 };
+
+		HRESULT hres = CoInitialize(NULL);
 		if (SUCCEEDED(hres))
 		{
-			IPersistFile* ppf;
-			hres = psl->QueryInterface(IID_IPersistFile, (void**)&ppf);
+			hres = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID*)&psl);
 			if (SUCCEEDED(hres))
 			{
-				// Load the shortcut. 
-				hres = ppf->Load(GUI::StringFromUTF8(linkFilePath).c_str() /*linkFilePath.c_str()*/, STGM_READ);
-				if (SUCCEEDED(hres) && hres != S_FALSE)
+				IPersistFile* ppf{};
+				hres = psl->QueryInterface(IID_IPersistFile, (void**)&ppf);
+				if (SUCCEEDED(hres))
 				{
-					// Resolve the link. 
-					hres = psl->Resolve(NULL, 0);
+					// Load the shortcut. 
+					hres = ppf->Load(GUI::StringFromUTF8(linkFilePath).c_str() /*linkFilePath.c_str()*/, STGM_READ);
 					if (SUCCEEDED(hres) && hres != S_FALSE)
 					{
-						// Get the path to the link target. 
-						hres = psl->GetPath(targetFilePath, MAX_PATH, (WIN32_FIND_DATA*)&wfd, SLGP_RAWPATH);
+						// Resolve the link. 
+						hres = psl->Resolve(NULL, 0);
 						if (SUCCEEDED(hres) && hres != S_FALSE)
 						{
-							linkFilePath = GUI::UTF8FromString(targetFilePath);
+							// Get the path to the link target. 
+							hres = psl->GetPath(targetFilePath, MAX_PATH, (WIN32_FIND_DATA*)&wfd, SLGP_RAWPATH);
+							if (SUCCEEDED(hres) && hres != S_FALSE)
+							{
+								linkFilePath = GUI::UTF8FromString(targetFilePath);
+							}
 						}
 					}
+					ppf->Release();
 				}
-				ppf->Release();
+				psl->Release();
 			}
-			psl->Release();
+			CoUninitialize();
 		}
-		CoUninitialize();
 	}
 }
-
 #endif // RB_LINK
 
 #if defined(GTK)
@@ -208,27 +210,27 @@ void SciTEBase::DiscoverEOLSetting() {
 // Look inside the first line for a #! clue regarding the language
 std::string SciTEBase::DiscoverLanguage() {
 	constexpr SA::Position oneK = 1024;
-	const SA::Position length = std::min<SA::Position>(LengthDocument(), 64 * oneK);
+	const SA::Position length = std::min<>(LengthDocument(), 64 * oneK); // fix std::min
 	std::string buf = wEditor.StringOfRange(SA::Span(0, length));
 	std::string languageOverride;
 	std::string_view line = ExtractLine(buf);
-	if (StartsWith(line, "<?xml")) {
+	if (line.starts_with("<?xml")) {
 		languageOverride = "xml";
-	} else if (StartsWith(line, "#!")) {
+	} else if (line.starts_with("#!")) {
 		line.remove_prefix(2);
 		std::string l1(line);
-		std::replace(l1.begin(), l1.end(), '\\', ' ');
-		std::replace(l1.begin(), l1.end(), '/', ' ');
-		std::replace(l1.begin(), l1.end(), '\t', ' ');
+		std::ranges::replace(l1, '\\', ' ');
+		std::ranges::replace(l1, '/', ' ');
+		std::ranges::replace(l1, '\t', ' ');
 		Substitute(l1, "  ", " ");
 		Substitute(l1, "  ", " ");
 		Substitute(l1, "  ", " ");
 		::Remove(l1, std::string("\r"));
 		::Remove(l1, std::string("\n"));
-		if (StartsWith(l1, " ")) {
+		if (l1.starts_with(" ")) {
 			l1 = l1.substr(1);
 		}
-		std::replace(l1.begin(), l1.end(), ' ', '\0');
+		std::ranges::replace(l1, ' ', '\0');
 		l1.append(1, '\0');
 		const char *word = l1.c_str();
 		while (*word) {
@@ -370,11 +372,9 @@ void SciTEBase::OpenCurrentFile(const long long fileSize, bool suppressMessage, 
 
 	CurrentBuffer()->SetTimeFromFile();
 
-	wEditor.BeginUndoAction();	// Group together clear and insert
-	wEditor.ClearAll();
-
 	CurrentBuffer()->lifeState = Buffer::LifeState::reading;
 	if (asynchronous) {
+		wEditor.ClearAll();
 		// Turn grey while loading
 		wEditor.StyleSetBack(StyleDefault, 0xEEEEEE);
 		wEditor.SetReadOnly(true);
@@ -397,43 +397,47 @@ void SciTEBase::OpenCurrentFile(const long long fileSize, bool suppressMessage, 
 
 		PerformOnNewThread(CurrentBuffer()->pFileWorker.get());
 	} else {
-		wEditor.Allocate(bufferSize);
-
 		std::unique_ptr<Utf8_16::Reader> convert = Utf8_16::Reader::Allocate();
-		std::vector<char> data(blockSize);
-		size_t lenFile = fread(data.data(), 1, data.size(), fp);
+		{
+			UndoBlock ub(wEditor);	// Group together clear and insert
+			wEditor.ClearAll();
+			wEditor.Allocate(bufferSize);
+			std::vector<char> data(blockSize);
+			size_t lenFile = fread(data.data(), 1, data.size(), fp);
 
 #ifdef RB_UTF8AC
-		//!-start-[utf8.auto.check]
-		UniMode umCodingCookie = CodingCookieValue(std::string_view(data.data(), lenFile));
-		if (umCodingCookie == UniMode::uni8Bit && check_utf8 == 2) {
-			if (Has_UTF8_Char(data.data(), lenFile)) {
-				umCodingCookie = UniMode::cookie;
+			//!-start-[utf8.auto.check]
+			UniMode umCodingCookie = CodingCookieValue(std::string_view(data.data(), lenFile));
+			if (umCodingCookie == UniMode::uni8Bit && check_utf8 == 2) {
+				if (Has_UTF8_Char(data.data(), lenFile)) {
+					umCodingCookie = UniMode::cookie;
+				}
 			}
-		}
-		//convert->set_utf8_autocheck(umCodingCookie == UniMode::uni8Bit && check_utf8 == 1);
-		//!-end-[utf8.auto.check]
+			//convert->set_utf8_autocheck(umCodingCookie == UniMode::uni8Bit && check_utf8 == 1);
+			//!-end-[utf8.auto.check]
 #endif // RB_UTF8AC
 
-		while (lenFile > 0) {
-			const std::string_view dataBlock = convert->convert(std::string_view(data.data(), lenFile));
-			AddText(wEditor, dataBlock);
-			lenFile = fread(data.data(), 1, data.size(), fp);
-		}
-		fclose(fp);
-		// Handle case where convert is holding a lead surrogate but no more data
-		const std::string_view dataTrail = convert->convert("");
-		AddText(wEditor, dataTrail);
-		wEditor.EndUndoAction();
+			while (lenFile > 0) {
+				const std::string_view dataBlock = convert->convert(std::string_view(data.data(), lenFile));
+				AddText(wEditor, dataBlock);
+				lenFile = fread(data.data(), 1, data.size(), fp);
+			}
+			fclose(fp);
+			// Handle case where convert is holding a lead surrogate but no more data
+			const std::string_view dataTrail = convert->convert("");
+			AddText(wEditor, dataTrail);
+			//} // *removed ->
 
-		CurrentBuffer()->unicodeMode = convert->getEncoding();
+			CurrentBuffer()->unicodeMode = convert->getEncoding();
+			
 #ifdef RB_UTF8AC
-		// Check the first two lines for coding cookies
-		if (CurrentBuffer()->unicodeMode == UniMode::uni8Bit) {
-			CurrentBuffer()->unicodeMode = umCodingCookie;
-		}
+			// Check the first two lines for coding cookies
+			if (CurrentBuffer()->unicodeMode == UniMode::uni8Bit) {
+				CurrentBuffer()->unicodeMode = umCodingCookie;
+			}
 #endif // RB_UTF8AC
-
+		} // *added	<-
+		
 		CompleteOpen(OpenCompletion::synchronous);
 	}
 }
@@ -784,26 +788,26 @@ bool SciTEBase::OpenSelected() {
 	}
 
 #if !defined(GTK)
-	if (StartsWith(selName, "http:") ||
-			StartsWith(selName, "https:") ||
-			StartsWith(selName, "ftp:") ||
-			StartsWith(selName, "ftps:") ||
-			StartsWith(selName, "news:") ||
-			StartsWith(selName, "mailto:")) {
+	if (selName.starts_with("http:") ||
+			selName.starts_with("https:") ||
+			selName.starts_with("ftp:") ||
+			selName.starts_with("ftps:") ||
+			selName.starts_with("news:") ||
+			selName.starts_with("mailto:")) {
 		std::string cmd = selName;
 		AddCommand(cmd, "", JobSubsystem::shell);
 		return false;	// Job is done
 	}
 #endif
 
-	if (StartsWith(selName, "file://")) {
+	if (selName.starts_with("file://")) {
 		selName.erase(0, 7);
 		if (selName[0] == '/' && selName[2] == ':') { // file:///C:/filename.ext
 			selName.erase(0, 1);
 		}
 	}
 
-	if (StartsWith(selName, "~/")) {
+	if (selName.starts_with("~/")) {
 		selName.erase(0, 2);
 		const FilePath selPath(GUI::StringFromUTF8(selName));
 		const FilePath expandedPath(FilePath::UserHomeDirectory(), selPath);
@@ -940,7 +944,7 @@ void SciTEBase::Revert() {
 			const std::string contents = filePath.Read();
 			// Check for BOM that matches file mode
 			const std::string_view svUtf8BOM(UTF8BOM);
-			if ((uniMode == UniMode::utf8) && !StartsWith(contents, svUtf8BOM)) {
+			if ((uniMode == UniMode::utf8) && !contents.starts_with(svUtf8BOM)) {
 				// Should have BOM but doesn't so use full load
 				OpenCurrentFile(fileLength, false, false);
 			} else {
@@ -1312,7 +1316,7 @@ bool SciTEBase::PrepareBufferForSave(const FilePath &saveName) {
 	SetFileProperties(props);	//!-add-[FileAttr in PROPS]
 #endif // RB_FAINP
 
-	wEditor.BeginUndoAction();
+	UndoBlock ub(wEditor);
 	if (stripTrailingSpaces)
 		StripTrailingSpaces();
 	if (ensureFinalLineEnd)
@@ -1322,8 +1326,6 @@ bool SciTEBase::PrepareBufferForSave(const FilePath &saveName) {
 
 	if (extender)
 		retVal = extender->OnBeforeSave(saveName.AsUTF8().c_str());
-
-	wEditor.EndUndoAction();
 
 	return retVal;
 }
@@ -1355,7 +1357,7 @@ bool SciTEBase::SaveBuffer(const FilePath &saveName, SaveFlags sf) {
 				std::vector<char> data(blockSize);
 				retVal = true;
 				for (size_t startBlock = 0; startBlock < lengthDoc;) {
-					size_t grabSize = std::min<size_t>(lengthDoc - startBlock, blockSize);
+					size_t grabSize = std::min<>(lengthDoc - startBlock, blockSize); // fix std::min
 					// Round down so only whole characters retrieved.
 					grabSize = wEditor.PositionBefore(startBlock + grabSize + 1) - startBlock;
 					const SA::Span rangeGrab(startBlock, startBlock + grabSize);
@@ -1464,7 +1466,7 @@ bool SciTEBase::Save(SaveFlags sf) {
 			propsSuggestion.Set("TimeStamp", timeBuff);
 			propsSuggestion.SetPath("SciteUserHome", GetSciteUserHome());
 			std::string savePathSuggestion = propsSuggestion.GetExpandedString("save.path.suggestion");
-			std::replace(savePathSuggestion.begin(), savePathSuggestion.end(), '\\', '/');  // To accept "\" on Unix
+			std::ranges::replace(savePathSuggestion, '\\', '/');  // To accept "\" on Unix
 			if (savePathSuggestion.size() > 0) {
 				filePath = FilePath(GUI::StringFromUTF8(savePathSuggestion)).NormalizePath();
 			}

@@ -10,6 +10,7 @@
 
 class UserControl {
 public:
+	static constexpr int widthControl = 20;
 	enum UCControlType { ucStatic, ucEdit, ucCombo, ucButton, ucDefaultButton } controlType;
 	GUI::gui_string text;
 
@@ -18,39 +19,32 @@ public:
 #endif
 
 	int item;
-	bool fixedWidth;
-	int widthDesired;
-	int widthAllocated;
+	bool fixedWidth = true;
+	int widthDesired = widthControl;
+	int widthAllocated = widthControl;
 	GUI::Window w;
 	UserControl(UCControlType controlType_, const GUI::gui_string &text_, int item_) :
 		controlType(controlType_),
 		text(text_),
-		item(item_),
-		fixedWidth(true),
-		widthDesired(20),
-		widthAllocated(20)	{
+		item(item_)	{
 	}
 };
 
 struct ColumnWidth {
-	int widthDesired;
-	int widthAllocated;
-	bool isResizeable;
-	ColumnWidth() noexcept : widthDesired(0), widthAllocated(0), isResizeable(false) {
-	}
+	int widthDesired = 0;
+	int widthAllocated = 0;
+	bool isResizeable = false;
 };
 
 class StripDefinition {
 public:
-	bool hasClose;
-	unsigned int columns;
+	bool hasClose = false;
+	unsigned int columns = 0;
 	std::vector<std::vector<UserControl> > controls;
 	std::vector<ColumnWidth> widths;
 
 	explicit StripDefinition(const GUI::gui_string &definition) {
-		hasClose = false;
 		controls.clear();
-		columns = 0;
 		controls.push_back(std::vector<UserControl>());
 		const GUI::gui_char *pdef=definition.c_str();
 		unsigned int column = 0;
@@ -90,6 +84,8 @@ public:
 					controlType = UserControl::ucButton;
 				}
 				endChar = ')';
+				break;
+			default:
 				break;
 			}
 			pdef++;
