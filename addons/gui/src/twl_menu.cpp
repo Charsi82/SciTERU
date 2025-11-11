@@ -6,9 +6,9 @@
 
 #include "twl_menu.h"
 
-UINT Item::last_item_id = 100;
+UINT MessageHandler::Item::last_item_id = 100;
 
-Item::Item(UINT _data)
+MessageHandler::Item::Item(UINT _data)
 	: data(_data), id(++last_item_id)
 {
 	//log_add("add item %d", id);
@@ -25,9 +25,9 @@ MessageHandler::~MessageHandler()
 	m_list.clear();
 }
 
-void MessageHandler::add_item(Item& item)
+UINT MessageHandler::add_item(UINT data)
 {
-	m_list.push_back(item);
+	return m_list.emplace_back(data).id;
 }
 
 void MessageHandler::remove(UINT id)
@@ -40,7 +40,7 @@ bool MessageHandler::dispatch(UINT id)
 	auto it = std::find_if(m_list.begin(), m_list.end(), [&id](const Item& item) { return item.id == id; });
 	if (it != m_list.end())
 	{
-		it->trigger();
+		if(it->data) trigger(it->data);
 		return true;// found, but no action
 	}
 	return false;

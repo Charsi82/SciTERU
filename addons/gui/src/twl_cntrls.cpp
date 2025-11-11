@@ -8,6 +8,8 @@
 #include <commctrl.h>
 #include "twl_cntrls.h"
 
+extern HINSTANCE hInst;
+
 ///////////////////////////////////
 /// Windows controls - TControl ///
 
@@ -25,7 +27,7 @@ void TControl::calc_size()
 
 void TControl::calc_size_imp()
 {
-	if (TDC* dc = get_parent_win()->get_dc())
+	if (auto dc = get_parent_win()->get_dc())
 	{
 		std::wstring tmp;
 		get_text(tmp);
@@ -235,7 +237,7 @@ TCheckBox::TCheckBox(TEventWindow* parent, const wchar_t* caption, int id, bool 
 void TButtonBase::calc_size_imp()
 {
 	// If the parent was a TComboBox, then it won't have a DC ready...
-	if (TDC* dc = get_parent_win()->get_dc())
+	if (auto dc = get_parent_win()->get_dc())
 	{
 		std::wstring tmp;
 		get_text(tmp);

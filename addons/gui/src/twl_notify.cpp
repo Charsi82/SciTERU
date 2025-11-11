@@ -8,24 +8,35 @@
 
 /////////////////////
 // utils
-static size_t gID = 445560;
+extern HINSTANCE hInst;
 
-static HWND create_common_control(TWin* form, const wchar_t* winclass, DWORD style, int height = -1)
+namespace
 {
-	int w = CW_USEDEFAULT, h = CW_USEDEFAULT;
-	if (height != -1) { w = 100; h = height; }
-	return CreateWindowEx(0L,				// No extended styles.
-		winclass, nullptr, WS_CHILD | style,
-		0, 0, w, h,
-		(HWND)form->handle(),               // Parent window of the control.
-		reinterpret_cast<HMENU>(gID++),
-		hInst,								// Current instance.
-		NULL);
-}
+	struct id_generator
+	{
+		static int next() { return _id++; }
+		static int _id;
+	};
 
-static void set_explorer(HWND hWND, bool yes)
-{
-	SetWindowTheme(hWND, yes ? L"Explorer" : L"Normal", NULL);
+	int id_generator::_id{ 445560 };
+
+	HWND create_common_control(TWin* form, const wchar_t* winclass, DWORD style, int height = -1)
+	{
+		int w = CW_USEDEFAULT, h = CW_USEDEFAULT;
+		if (height != -1) { w = 100; h = height; }
+		return CreateWindowEx(0L,				// No extended styles.
+			winclass, nullptr, WS_CHILD | style,
+			0, 0, w, h,
+			form->handle(),               // Parent window of the control.
+			reinterpret_cast<HMENU>(id_generator::next()),
+			GetModuleHandle(NULL), //hInst,								// Current instance.
+			NULL);
+	}
+
+	void set_explorer(HWND hWND, bool yes)
+	{
+		SetWindowTheme(hWND, yes ? L"Explorer" : L"Normal", NULL);
+	}
 }
 
 //////////////////////
@@ -368,7 +379,7 @@ void TTabControl::remove(int idx /*= -1*/)
 {
 	if (idx == -1)
 	{
-		TabCtrl_DeleteAllItems(reinterpret_cast<HWND>(handle()));
+		TabCtrl_DeleteAllItems(handle());
 		m_last_selected_idx = m_index = 0;
 		for (TWin*& p : panels)
 			delete p;
@@ -376,7 +387,7 @@ void TTabControl::remove(int idx /*= -1*/)
 	}
 	else
 	{
-		TabCtrl_DeleteItem(reinterpret_cast<HWND>(handle()), idx);
+		TabCtrl_DeleteItem(handle(), idx);
 		delete panels[idx];
 		panels.erase(std::remove(panels.begin(), panels.end(), panels[idx]));
 		if (m_last_selected_idx && (idx <= m_last_selected_idx)) m_last_selected_idx--;
@@ -393,9 +404,9 @@ void TTabControl::selected(int idx)
 	send_msg(TCM_SETCURSEL, idx);
 	NMHDR nmh{};
 	nmh.code = static_cast<UINT>(TCN_SELCHANGE);
-	nmh.idFrom = GetDlgCtrlID(reinterpret_cast<HWND>(handle()));
-	nmh.hwndFrom = reinterpret_cast<HWND>(handle());
-	SendMessage(GetParent(reinterpret_cast<HWND>(handle())), WM_NOTIFY, nmh.idFrom, (LPARAM)&nmh);
+	nmh.idFrom = GetDlgCtrlID(handle());
+	nmh.hwndFrom = handle();
+	SendMessage(GetParent(handle()), WM_NOTIFY, nmh.idFrom, (LPARAM)&nmh);
 }
 
 int TTabControl::selected()
@@ -440,7 +451,7 @@ int TTabControl::handle_notify(void* p)
 
 void TTabControl::set_image_list(bool small_size)
 {
-	TabCtrl_SetImageList(reinterpret_cast<HWND>(handle()), get_image_list());
+	TabCtrl_SetImageList(handle(), get_image_list());
 }
 
 //////////////////////////
@@ -504,7 +515,7 @@ void TListView::set_background(COLORREF colour)
 
 void TListView::set_theme(bool explorer)
 {
-	set_explorer(reinterpret_cast<HWND>(handle()), explorer);
+	set_explorer(handle(), explorer);
 }
 
 unsigned int TListView::columns() const
@@ -649,7 +660,7 @@ int TListView::handle_notify(void* lparam)
 		LPNMITEMACTIVATE lpnmitem = reinterpret_cast<LPNMITEMACTIVATE>(lparam);
 		LVHITTESTINFO pInfo;
 		pInfo.pt = lpnmitem->ptAction;
-		ListView_SubItemHitTest(reinterpret_cast<HWND>(handle()), &pInfo);
+		ListView_SubItemHitTest(handle(), &pInfo);
 
 		int i = pInfo.iItem;
 		int j = pInfo.iSubItem;
@@ -660,9 +671,10 @@ int TListView::handle_notify(void* lparam)
 		item.iSubItem = j;
 		item.cchTextMax = sizeof(buffer) / sizeof(buffer[0]);
 		item.pszText = buffer;
-		ListView_GetItem(reinterpret_cast<HWND>(handle()), &item);
+		ListView_GetItem(handle(), &item);
 		if (i > -1)
 			handle_double_click(i, j, UTF8FromString(std::wstring(buffer)).c_str());
+		return 0;
 	}
 
 	case LVN_KEYDOWN:
@@ -698,27 +710,27 @@ TTreeView::TTreeView(TEventWindow* form, DWORD tree_style) :TNotifyWin(form)
 
 void TTreeView::set_theme(bool explorer)
 {
-	set_explorer(reinterpret_cast<HWND>(handle()), explorer);
+	set_explorer(handle(), explorer);
 }
 
-void TTreeView::expand(Handle itm)
+void TTreeView::expand(HANDLE itm)
 {
 	send_msg(TVM_EXPAND, TVE_EXPAND, (LPARAM)itm);
 }
 
-void TTreeView::collapse(Handle itm)
+void TTreeView::collapse(HANDLE itm)
 {
 	send_msg(TVM_EXPAND, TVE_COLLAPSE, (LPARAM)itm);
 }
 
 void TTreeView::makeLabelEditable(bool toBeEnabled)
 {
-	DWORD dwNewStyle = GetWindowLongPtr(reinterpret_cast<HWND>(handle()), GWL_STYLE);
+	DWORD dwNewStyle = GetWindowLongPtr(handle(), GWL_STYLE);
 	if (toBeEnabled)
 		dwNewStyle |= TVS_EDITLABELS;
 	else
 		dwNewStyle &= ~TVS_EDITLABELS;
-	::SetWindowLongPtr(reinterpret_cast<HWND>(handle()), GWL_STYLE, dwNewStyle);
+	::SetWindowLongPtr(handle(), GWL_STYLE, dwNewStyle);
 }
 
 void TTreeView::set_image_list(bool normal)
@@ -736,35 +748,35 @@ void TTreeView::set_background(COLORREF clr)
 	send_msg(TVM_SETBKCOLOR, 0, clr);
 }
 
-Handle TTreeView::get_root()
+HANDLE TTreeView::get_root()
 {
-	return TreeView_GetRoot(reinterpret_cast<HWND>(handle())); // send_msg(TVM_get, 0, clr);
+	return TreeView_GetRoot(handle()); // send_msg(TVM_get, 0, clr);
 }
 
-Handle TTreeView::get_next(Handle itm)
+HANDLE TTreeView::get_next(HANDLE itm)
 {
-	return TreeView_GetNextSibling(reinterpret_cast<HWND>(handle()), itm);
+	return TreeView_GetNextSibling(handle(), itm);
 }
 
-Handle TTreeView::get_prev(Handle itm)
+HANDLE TTreeView::get_prev(HANDLE itm)
 {
-	return TreeView_GetPrevSibling(reinterpret_cast<HWND>(handle()), itm);
+	return TreeView_GetPrevSibling(handle(), itm);
 }
 
-Handle TTreeView::get_child(Handle itm)
+HANDLE TTreeView::get_child(HANDLE itm)
 {
-	return TreeView_GetChild(reinterpret_cast<HWND>(handle()), itm);
+	return TreeView_GetChild(handle(), itm);
 }
 
-void TTreeView::clean_subitems(Handle itm)
+void TTreeView::clean_subitems(HANDLE itm)
 {
-	for (Handle hItem = get_child(itm); hItem != NULL; hItem = get_next(hItem))
+	for (HANDLE hItem = get_child(itm); hItem != NULL; hItem = get_next(hItem))
 	{
 		TVITEM tvItem;
 		tvItem.hItem = (HTREEITEM)hItem;
 		tvItem.mask = TVIF_PARAM;
 		//SendMessage(_hSelf, TVM_GETITEM, 0, reinterpret_cast<LPARAM>(&tvItem));
-		TreeView_GetItem(reinterpret_cast<HWND>(handle()), &tvItem);
+		TreeView_GetItem(handle(), &tvItem);
 		if (int data = tvItem.lParam)
 			clean_data(data);
 		clean_subitems(hItem);
@@ -773,12 +785,12 @@ void TTreeView::clean_subitems(Handle itm)
 	tvItem.hItem = (HTREEITEM)itm;
 	tvItem.mask = TVIF_PARAM;
 	//SendMessage(_hSelf, TVM_GETITEM, 0, reinterpret_cast<LPARAM>(&tvItem));
-	TreeView_GetItem(reinterpret_cast<HWND>(handle()), &tvItem);
+	TreeView_GetItem(handle(), &tvItem);
 	if (int data = tvItem.lParam)
 		clean_data(data);
 }
 
-const std::vector<int> TTreeView::iterate_item(Handle itm)
+const std::vector<int> TTreeView::iterate_item(HANDLE itm)
 {
 	std::vector<int> res;
 
@@ -786,68 +798,68 @@ const std::vector<int> TTreeView::iterate_item(Handle itm)
 	tvItem.hItem = (HTREEITEM)itm;
 	tvItem.mask = TVIF_PARAM;
 	//SendMessage(_hSelf, TVM_GETITEM, 0, reinterpret_cast<LPARAM>(&tvItem));
-	TreeView_GetItem(reinterpret_cast<HWND>(handle()), &tvItem);
+	TreeView_GetItem(handle(), &tvItem);
 	res.push_back(tvItem.lParam);
 
-	for (Handle hItem = get_child(itm); hItem != NULL; hItem = get_next(hItem))
+	for (HANDLE hItem = get_child(itm); hItem != NULL; hItem = get_next(hItem))
 	{
 		//TVITEM tvItem;
 		tvItem.hItem = (HTREEITEM)hItem;
 		tvItem.mask = TVIF_PARAM;
 		//SendMessage(_hSelf, TVM_GETITEM, 0, reinterpret_cast<LPARAM>(&tvItem));
-		TreeView_GetItem(reinterpret_cast<HWND>(handle()), &tvItem);
+		TreeView_GetItem(handle(), &tvItem);
 		res.push_back(tvItem.lParam);
 	}
 	return res;
 }
 
-void TTreeView::iterate_childs(Handle itm)
+void TTreeView::iterate_childs(HANDLE itm)
 {
 	TVITEM tvItem{};
 	tvItem.hItem = (HTREEITEM)itm;
 	tvItem.mask = TVIF_PARAM;
-	TreeView_GetItem(reinterpret_cast<HWND>(handle()), &tvItem);
+	TreeView_GetItem(handle(), &tvItem);
 	clean_data(tvItem.lParam);
 
-	for (Handle tvProj = get_child(itm);
+	for (HANDLE tvProj = get_child(itm);
 		tvProj != NULL;
 		tvProj = get_next(tvProj))
 	{
 		//TVITEM item_p{};
 		//item_p.mask = TVIF_PARAM;
 		//item_p.hItem = (HTREEITEM)tvProj;
-		//TreeView_GetItem(reinterpret_cast<HWND>(handle()), &item_p);
+		//TreeView_GetItem(handle(), &item_p);
 		//clean_data(item_p.lParam);
 
 		iterate_childs(tvProj);
 	}
 }
 
-void TTreeView::remove_item(Handle itm)
+void TTreeView::remove_item(HANDLE itm)
 {
 	iterate_childs(itm);
-	TreeView_DeleteItem(reinterpret_cast<HWND>(handle()), itm);
+	TreeView_DeleteItem(handle(), itm);
 }
 
-void TTreeView::remove_childs(Handle itm)
+void TTreeView::remove_childs(HANDLE itm)
 {
-	while (Handle tvProj = get_child(itm))
-		TreeView_DeleteItem(reinterpret_cast<HWND>(handle()), tvProj);
+	while (HANDLE tvProj = get_child(itm))
+		TreeView_DeleteItem(handle(), tvProj);
 
 	TVITEM item_p{};
 	item_p.mask = TVIF_CHILDREN;
 	item_p.hItem = (HTREEITEM)itm;
 	item_p.cChildren = 0;
-	TreeView_SetItem(reinterpret_cast<HWND>(handle()), &item_p);
+	TreeView_SetItem(handle(), &item_p);
 }
 
 void TTreeView::clear()
 {
 	iterate_childs(get_root());
-	TreeView_DeleteAllItems(reinterpret_cast<HWND>(handle()));
+	TreeView_DeleteAllItems(handle());
 }
 
-void TTreeView::insert_mode(Handle mode)
+void TTreeView::insert_mode(HANDLE mode)
 {
 	ins_mode = mode;
 }
@@ -866,7 +878,7 @@ void TTreeView::insert_mode(const char* mode)
 		ins_mode = TVI_LAST;
 }
 
-Handle TTreeView::add_item(const wchar_t* caption, Handle parent, int idx1, int idx2, int data)
+HANDLE TTreeView::add_item(const wchar_t* caption, HANDLE parent, int idx1, int idx2, int data)
 {
 	TVITEM item{};
 	item.mask = TVIF_TEXT | TVIF_CHILDREN;
@@ -899,16 +911,16 @@ Handle TTreeView::add_item(const wchar_t* caption, Handle parent, int idx1, int 
 		item_p.mask = TVIF_CHILDREN;
 		item_p.hItem = (HTREEITEM)parent;
 		item_p.cChildren = 1;
-		TreeView_SetItem(reinterpret_cast<HWND>(handle()), &item_p);
+		TreeView_SetItem(handle(), &item_p);
 	}
 	else
 	{
 		tvsi.hParent = TVI_ROOT;
 	}
-	return TreeView_InsertItem(reinterpret_cast<HWND>(handle()), &tvsi);
+	return TreeView_InsertItem(handle(), &tvsi);
 }
 
-int TTreeView::get_item_data(Handle pn)
+int TTreeView::get_item_data(HANDLE pn)
 {
 	//if (pn == NULL) pn = selected();
 	TVITEM item{};
@@ -919,12 +931,12 @@ int TTreeView::get_item_data(Handle pn)
 	return (int)item.lParam;
 }
 
-void TTreeView::select(Handle p)
+void TTreeView::select(HANDLE p)
 {
 	send_msg(TVM_SELECTITEM, TVGN_CARET, (LPARAM)p);
 }
 
-Handle TTreeView::get_item_by_name(const wchar_t* caption, Handle parent_item)
+HANDLE TTreeView::get_item_by_name(const wchar_t* caption, HANDLE parent_item)
 {
 
 	wchar_t wchLabel[MAX_PATH]{};
@@ -936,7 +948,7 @@ Handle TTreeView::get_item_by_name(const wchar_t* caption, Handle parent_item)
 	//int idx = 0;
 	while (tvItem.hItem)
 	{
-		if (TreeView_GetItem(reinterpret_cast<HWND>(handle()), &tvItem))
+		if (TreeView_GetItem(handle(), &tvItem))
 		{
 			//log_add("item[%d]", idx);
 			//log_add( UTF8FromString(tvItem.pszText).c_str());
@@ -948,14 +960,14 @@ Handle TTreeView::get_item_by_name(const wchar_t* caption, Handle parent_item)
 	return NULL;
 }
 
-Handle TTreeView::get_item_parent(Handle item)
+HANDLE TTreeView::get_item_parent(HANDLE item)
 {
-	return TreeView_GetParent(reinterpret_cast<HWND>(handle()), item);
+	return TreeView_GetParent(handle(), item);
 }
 
-Handle TTreeView::get_selected()
+HANDLE TTreeView::get_selected()
 {
-	return TreeView_GetSelection(reinterpret_cast<HWND>(handle()));
+	return TreeView_GetSelection(handle());
 }
 
 void TTreeView::set_item_text(void* itm, const wchar_t* str)
@@ -968,7 +980,7 @@ void TTreeView::set_item_text(void* itm, const wchar_t* str)
 	send_msg(TVM_SETITEM, 0, (LPARAM)&tvi);
 }
 
-std::wstring TTreeView::get_item_text(Handle itm)
+std::wstring TTreeView::get_item_text(HANDLE itm)
 {
 	TCHAR buffer[MAX_PATH]{};
 	TVITEM tvi{};
@@ -996,14 +1008,14 @@ int TTreeView::handle_notify(void* p)
 	{
 		Point ptCursor;
 		GetCursorPos(&ptCursor);
-		ScreenToClient(reinterpret_cast<HWND>(handle()), &ptCursor);
+		ScreenToClient(handle(), &ptCursor);
 		TVHITTESTINFO hitTestInfo{};
 		hitTestInfo.pt.x = ptCursor.x;
 		hitTestInfo.pt.y = ptCursor.y;
 		HTREEITEM targetItem = reinterpret_cast<HTREEITEM>(send_msg(TVM_HITTEST, 0, reinterpret_cast<LPARAM>(&hitTestInfo)));
 		if (targetItem)
 		{
-			TreeView_Select(reinterpret_cast<HWND>(handle()), targetItem, TVGN_CARET);
+			TreeView_Select(handle(), targetItem, TVGN_CARET);
 			show_popup(); // show popup if cursor over item
 		}
 		return 0;
@@ -1017,7 +1029,7 @@ int TTreeView::handle_notify(void* p)
 
 	case TVN_SELCHANGED:
 	{
-		//if (GetActiveWindow() == reinterpret_cast<HWND>(handle())) return 0;
+		//if (GetActiveWindow() == handle()) return 0;
 		handle_select(get_selected());
 		break;
 	}
@@ -1039,7 +1051,7 @@ int TTreeView::handle_notify(void* p)
 
 	//case TVN_BEGINLABELEDIT:
 	//{
-	//	auto hEdit = TreeView_GetEditControl(reinterpret_cast<HWND>(handle()));
+	//	auto hEdit = TreeView_GetEditControl(handle());
 	//	SetFocus(hEdit);
 	//	break;
 	//}
@@ -1047,7 +1059,7 @@ int TTreeView::handle_notify(void* p)
 	case TVN_ENDLABELEDIT:
 	{
 		LPNMTVDISPINFO lp = reinterpret_cast<LPNMTVDISPINFO>(p);
-		if (lp->item.pszText && wcslen(lp->item.pszText))
+		if (lp->item.pszText && lstrlen(lp->item.pszText))
 			return 1;
 		break;
 	}
@@ -1060,7 +1072,7 @@ int TTreeView::handle_notify(void* p)
 TUpDownControl::TUpDownControl(TEventWindow* form, TWin* buddy, DWORD style) : TNotifyWin(form)
 {
 	HWND hUDN = CreateUpDownControl(WS_CHILD | WS_VISIBLE | UDS_SETBUDDYINT | style,
-		0, 0, 0, 0, (HWND)form->handle(), -1 /*id*/, hInst, (HWND)buddy->handle(), 10, -10, 5);
+		0, 0, 0, 0, form->handle(), -1 /*id*/, hInst, buddy->handle(), 10, -10, 5);
 	set(hUDN);
 }
 

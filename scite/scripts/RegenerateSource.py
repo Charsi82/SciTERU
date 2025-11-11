@@ -360,10 +360,10 @@ def RegenerateAll():
     scite = SciTEData(pathSciTE)
 
     if scite.lexillaVersion != lex.version:
-        print(f"{scite.lexillaVersionFile}:0: Lexilla version ", end = '')
+        print(f"{scite.lexillaVersionFile}(1): error Lexilla version ", end = '')
         print(f"{DottedVersion(scite.lexillaVersion)} different from {lex.versionDotted}")
     if scite.scintillaVersion != sci.version:
-        print(f"{scite.scintillaVersionFile}:0: Scintilla version ", end = '')
+        print(f"{scite.scintillaVersionFile}(1): error Scintilla version ", end = '')
         print(f"{DottedVersion(scite.scintillaVersion)} different from {sci.versionDotted}")
 
     # Generate HTML to document each property

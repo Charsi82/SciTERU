@@ -2871,6 +2871,10 @@ representations=π=Pi,\u20AA=shekel(\u20AA),!0,#FF000090,\x0D\x0A=crlf</div>
         <td>lexer.python.strings.over.newline</td>
         <td>Set to 1 to allow strings to span newline characters.</td>
         </tr>
+        <tr id='property-lexer.python.strings.t'>
+        <td>lexer.python.strings.t</td>
+        <td>Set to 0 to not recognise Python 3.14 t-string literals t"var={var}".</td>
+        </tr>
         <tr id='property-lexer.python.strings.u'>
         <td>lexer.python.strings.u</td>
         <td>Set to 0 to not recognise Python Unicode literals u"x" as used before Python 3.</td>
@@ -3155,8 +3159,8 @@ Prev File|IDM_PREVFILE|<br/>
           wrap.visual.startindent
         </td>
         <td>
-          Sets the indention of continued wrapped lines to better visually identify the wrapping.
-          Default is 0 (no indention). Note if wrap.visual.flags is 2 or 3 (begin marker displayed)
+          Sets the indentation of continued wrapped lines to better visually identify the wrapping.
+          Default is 0 (no indentation). Note if wrap.visual.flags is 2 or 3 (begin marker displayed)
           the line is indented at least 1, even if wrap.visual.startindent is still 0.
         </td>
       </tr>

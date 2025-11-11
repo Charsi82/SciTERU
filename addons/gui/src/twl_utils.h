@@ -1,12 +1,12 @@
 #pragma once
 #include <Windows.h>
 #include <commctrl.h>
-#include "utf.h"
+#include <string>
 
 // dialogs
 bool run_colordlg(HWND win, COLORREF& cl);
-bool run_ofd(HWND win, TCHAR* result, const std::wstring& caption, std::wstring filter, bool multi = false);
-bool run_seldirdlg(HWND win, TCHAR* result, const wchar_t* descr, const wchar_t* initial_dir);
+bool run_ofd(HWND win, wchar_t* result, const std::wstring& caption, std::wstring filter, bool multi = false);
+bool run_seldirdlg(HWND win, wchar_t* result, const wchar_t* descr, const wchar_t* initial_dir);
 
 // fs
 HRESULT CreateShellLink(LPCWSTR pszShortcutFile, LPCWSTR pszLink, LPCWSTR pszWorkingDir, LPCWSTR pszDesc);

@@ -70,7 +70,11 @@ local tools_path = props["SciteDefaultHome"].."\\tools\\"
 for _, file_name in ipairs(gui.files(tools_path.."SideBar_tab*.lua")) do
 	local res = dofile(tools_path..file_name)
 	local isOK, res = pcall(res, tabs, panel_width, colorback, colorfore)
-	if isOK then base_panel:client(res) else print(res) end
+	if isOK then
+		if res then base_panel:client(res) end
+	else
+		print(res)
+	end
 end
 
 ----------------------------------------------------------

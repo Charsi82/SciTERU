@@ -4,7 +4,7 @@
 #include <shlobj.h>
 #include <algorithm>
 
-bool run_ofd(HWND win, TCHAR* result, const std::wstring& caption, std::wstring filter, bool multi)
+bool run_ofd(HWND win, wchar_t* result, const std::wstring& caption, std::wstring filter, bool multi)
 {
 	//std::wstring filter(fltr);
 	filter += L"||";
@@ -36,7 +36,7 @@ bool run_colordlg(HWND win, COLORREF& cl)
 	return true;
 }
 
-bool run_seldirdlg(HWND win, TCHAR* result, const wchar_t* descr, const wchar_t* initial_dir)
+bool run_seldirdlg(HWND win, wchar_t* result, const wchar_t* descr, const wchar_t* initial_dir)
 {
 	BROWSEINFO bi{};
 	bi.hwndOwner = win;
@@ -69,11 +69,10 @@ bool run_seldirdlg(HWND win, TCHAR* result, const wchar_t* descr, const wchar_t*
 
 HRESULT CreateShellLink(LPCWSTR pszShortcutFile, LPCWSTR pszLink, LPCWSTR pszWorkingDir, LPCWSTR pszDesc)
 {
-	HRESULT hres{};
 	IShellLink* psl{};
 
 	// Get a pointer to the IShellLink interface.
-	hres = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, reinterpret_cast<void**>(&psl));
+	HRESULT hres = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, reinterpret_cast<void**>(&psl));
 	if (SUCCEEDED(hres))
 	{
 		IPersistFile* ppf;
@@ -110,17 +109,16 @@ HRESULT CreateShellLink(LPCWSTR pszShortcutFile, LPCWSTR pszLink, LPCWSTR pszWor
 		// Release pointer to IShellLink.
 		psl->Release();
 	}
-	return (hres);
+	return hres;
 }
 
 std::wstring GetKnownFolder(int folder_id)
 {
 	LPITEMIDLIST pidl;
-	std::wstring res(L"", MAX_PATH);
-
-	HRESULT ret = SHGetSpecialFolderLocation(NULL, folder_id, &pidl);
-	if (ret == S_OK)
+	std::wstring res{};
+	if (SHGetSpecialFolderLocation(NULL, folder_id, &pidl) == S_OK)
 	{
+		res.resize(MAX_PATH);
 		SHGetPathFromIDList(pidl, res.data());
 	}
 	return res;

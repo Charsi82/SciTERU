@@ -101,6 +101,7 @@ public:
 	TButton(TEventWindow* parent, int id, const wchar_t* caption, ButtonStyle style = ButtonStyle::PUSHBUTTON);
 	void set_icon(const wchar_t* mod, int icon_id) override;
 	void set_bitmap(const wchar_t* file) override;
+
 private:
 	void calc_size_imp() override;
 };

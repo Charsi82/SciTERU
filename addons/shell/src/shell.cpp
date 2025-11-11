@@ -161,7 +161,7 @@ namespace {
 			0,
 			NULL);
 
-		*iLenMsg = wcslen(lpMsgBuf);
+		*iLenMsg = lstrlen(lpMsgBuf);
 
 		// trim right
 		while (*iLenMsg > 0)
@@ -197,7 +197,7 @@ namespace {
 		}
 		else
 		{
-			size_t uBytes = (iLenMsg + wcslen(lpszFunction) + 40);
+			size_t uBytes = (iLenMsg + lstrlen(lpszFunction) + 40);
 			auto lpDisplayBuf = std::make_unique<wchar_t[]>(1024);
 			swprintf_s(lpDisplayBuf.get(), uBytes, L"%s failed with error %lu: %s", lpszFunction, dw, lpMsgBuf.c_str());
 			lua_pushstring(L, UTF8FromString(lpDisplayBuf.get()).c_str());

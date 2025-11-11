@@ -9,22 +9,22 @@ class IniFile
 {
 private:
 	static constexpr int BUFSZ = MAX_PATH;
-	TCHAR m_file[BUFSZ];
-	TCHAR m_section[BUFSZ];
+	wchar_t m_file[BUFSZ];
+	wchar_t m_section[BUFSZ];
 
 public:
 	explicit IniFile(const wchar_t* file, bool in_cwd = false);
 	static const char* classname() { return "IniFile"; }
 	void set_section(const wchar_t* section);
-	void write_string(const wchar_t* key, const wchar_t* value);
-	void remove_section(const wchar_t* sect_to_remove);
-	void remove_key(const wchar_t* key);
-	const std::wstring get_keys(const wchar_t* key);
-	const std::wstring get_sections();
-	const std::wstring read_string(const wchar_t* key, const wchar_t* def = nullptr);
-	double read_number(const wchar_t* key, double def = 0.0);
-	const TCHAR* get_path() const;
-	const TCHAR* get_section() const;
+	void write_string(const wchar_t* key, const wchar_t* value) const;
+	void remove_section(const wchar_t* sect_to_remove) const;
+	void remove_key(const wchar_t* key) const;
+	const std::wstring get_keys(const wchar_t* key) const;
+	const std::wstring get_sections() const;
+	const std::wstring read_string(const wchar_t* key, const wchar_t* def = nullptr) const;
+	double read_number(const wchar_t* key, double def = 0.0) const;
+	const wchar_t* get_path() const;
+	const wchar_t* get_section() const;
 };
 
 IniFile::IniFile(const wchar_t* file, bool in_cwd)
@@ -41,7 +41,7 @@ IniFile::IniFile(const wchar_t* file, bool in_cwd)
 	wcscpy_s(m_section, get_sections().c_str());
 }
 
-double IniFile::read_number(const wchar_t* key, double def)
+double IniFile::read_number(const wchar_t* key, double def) const
 {
 	std::wstring s = read_string(key);
 	return (s.size()) ? _wtof(s.c_str()) : def;
@@ -52,12 +52,12 @@ void IniFile::set_section(const wchar_t* section)
 	wcscpy_s(m_section, section);
 }
 
-void IniFile::write_string(const wchar_t* key, const wchar_t* value)
+void IniFile::write_string(const wchar_t* key, const wchar_t* value) const
 {
 	WritePrivateProfileString(m_section, key, value, m_file);
 }
 
-void IniFile::remove_section(const wchar_t* sect_to_remove)
+void IniFile::remove_section(const wchar_t* sect_to_remove) const
 {
 	if (sect_to_remove && *sect_to_remove)
 		WritePrivateProfileString(sect_to_remove, nullptr, nullptr, m_file);
@@ -65,12 +65,12 @@ void IniFile::remove_section(const wchar_t* sect_to_remove)
 		WritePrivateProfileString(m_section, nullptr, nullptr, m_file);
 }
 
-void IniFile::remove_key(const wchar_t* key)
+void IniFile::remove_key(const wchar_t* key) const
 {
 	WritePrivateProfileString(m_section, key, nullptr, m_file);
 }
 
-const std::wstring IniFile::get_keys(const wchar_t* key)
+const std::wstring IniFile::get_keys(const wchar_t* key) const
 {
 	const size_t buffsize = 1024;
 	std::wstring tmp(buffsize, 0);
@@ -78,7 +78,7 @@ const std::wstring IniFile::get_keys(const wchar_t* key)
 	return tmp;
 }
 
-const std::wstring IniFile::get_sections()
+const std::wstring IniFile::get_sections() const
 {
 	const size_t buffsize = 1024;
 	std::wstring tmp(buffsize, 0);
@@ -86,7 +86,7 @@ const std::wstring IniFile::get_sections()
 	return tmp;
 }
 
-const std::wstring IniFile::read_string(const wchar_t* key, const wchar_t* def)
+const std::wstring IniFile::read_string(const wchar_t* key, const wchar_t* def) const
 {
 	const size_t buffsize = 1024;
 	std::wstring tmp(buffsize, 0);
@@ -94,12 +94,12 @@ const std::wstring IniFile::read_string(const wchar_t* key, const wchar_t* def)
 	return tmp;
 }
 
-const TCHAR* IniFile::get_path() const
+const wchar_t* IniFile::get_path() const
 {
 	return m_file;
 }
 
-const TCHAR* IniFile::get_section() const
+const wchar_t* IniFile::get_section() const
 {
 	return m_section;
 }

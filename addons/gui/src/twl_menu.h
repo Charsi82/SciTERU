@@ -4,19 +4,17 @@
 #pragma once
 #include "twl.h"
 
-struct Item
-{
-	UINT data;
-	UINT id;
-	Item(UINT _data);
-	void trigger();
-
-private:
-	static UINT last_item_id;
-};
-
 class MessageHandler
 {
+	struct Item
+	{
+		UINT data;
+		UINT id;
+		Item(UINT _data);
+
+	private:
+		static UINT last_item_id;
+	};
 	std::list<Item> m_list;
 
 public:
@@ -25,5 +23,6 @@ public:
 	void remove(UINT id);
 	bool dispatch(UINT id);
 	void add_handler(MessageHandler*);
-	void add_item(Item&);
+	UINT add_item(UINT data);
+	void trigger(UINT data) const;
 };

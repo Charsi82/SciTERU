@@ -718,7 +718,7 @@ void Editor::SetSelectionFromSerialized(const char *serialized) {
 		sel = Selection(serialized);
 		sel.Truncate(pdoc->Length());
 		SetRectangularRange();
-		InvalidateStyleRedraw();
+		Redraw();
 	}
 }
 
@@ -2437,6 +2437,7 @@ void Editor::RestoreSelection(Sci::Position newPos, UndoRedo history) {
 				}
 			}
 			newPos = -1; // Used selection from stack so don't use position returned from undo/redo.
+			Redraw();
 		}
 	}
 	if (newPos >= 0)
@@ -4185,6 +4186,12 @@ int Editor::KeyDownWithModifiers(Keys key, KeyMod modifiers, bool *consumed) {
 
 void Editor::Indent(bool forwards, bool lineIndent) {
 	UndoGroup ug(pdoc);
+	// Avoid problems with recalculating rectangular range multiple times by temporarily
+	// treating rectangular selection as multiple stream selection.
+	const Selection::SelTypes selType = sel.selType;
+	if (sel.IsRectangular()) {
+		sel.selType = Selection::SelTypes::stream;
+	}
 	for (size_t r=0; r<sel.Count(); r++) {
 		const Sci::Line lineOfAnchor =
 			pdoc->SciLineFromPosition(sel.Range(r).anchor.Position());
@@ -4261,6 +4268,8 @@ void Editor::Indent(bool forwards, bool lineIndent) {
 			}
 		}
 	}
+	sel.selType = selType;	// Restore rectangular mode
+	ThinRectangularRange();
 	ContainerNeedsUpdate(Update::Selection);
 }
 
@@ -7201,7 +7210,6 @@ sptr_t Editor::WndProc(Message iMessage, uptr_t wParam, sptr_t lParam) {
 
 	case Message::SetUseTabs:
 		pdoc->useTabs = wParam != 0;
-		InvalidateStyleRedraw();
 		break;
 
 	case Message::GetUseTabs:
@@ -9205,7 +9213,7 @@ sptr_t Editor::WndProc(Message iMessage, uptr_t wParam, sptr_t lParam) {
 		return DefWndProc(iMessage, wParam, lParam);
 	}
 
-	// If there was a change that needs its selection saved and it wasn't explicity saved
+	// If there was a change that needs its selection saved and it wasn't explicitly saved
 	// then do that here.
 	RememberCurrentSelectionForRedoOntoStack();
 

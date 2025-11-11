@@ -18,10 +18,11 @@
 #include "twl_treeview.h"
 #include "luabinder.h"
 
+extern HINSTANCE hInst;
 
 int new_inifile(lua_State* L);
 void lua_openclass_iniFile(lua_State* L);
-int new_tooltip(lua_State* L);
+int add_tooltip(lua_State* L);
 void lua_openclass_TTipCtrl(lua_State* L);
 
 #define output(x) lua_pushstring(L, (x)); OutputMessage(L);
@@ -33,6 +34,7 @@ typedef std::vector<std::wstring> vecws;
 static const char* LIB_VERSION = "0.2.8";
 static const char* DEFAULT_ICONLIB = "toolbar\\cool.dll";
 static const char* WINDOW_CLASS = "WINDOW*";
+static const char* MT_TDC = "TDC*";
 
 static HWND hSciTE = NULL, hContent = NULL, hCode = NULL;
 static WNDPROC old_scite_proc, old_scintilla_proc, old_content_proc;
@@ -105,6 +107,17 @@ void dump_stack_to_log(lua_State* L)
 
 //#define DSL dump_stack_to_log(L);
 #define DSL
+
+COLORREF lua_optColor(lua_State* L, int idx = 1, COLORREF def_clr = 0)
+{
+	if (const char* s_clr = luaL_optstring(L, idx, nullptr))
+	{
+		unsigned int r = 0, g = 0, b = 0;
+		sscanf_s(s_clr, "#%02x%02x%02x", &r, &g, &b);
+		return RGB(r, g, b);
+	}
+	return def_clr;
+}
 
 inline bool optboolean(lua_State* L, int idx, bool res = false)
 {
@@ -332,20 +345,13 @@ static LRESULT ContentWndProc(HWND hwnd, UINT iMessage, WPARAM wParam, LPARAM lP
 
 //////////// dialogs functions ////////////
 
-inline COLORREF convert_colour_spec(const char* clrs)
-{
-	unsigned int r = 0, g = 0, b = 0;
-	sscanf_s(clrs, "#%02x%02x%02x", &r, &g, &b);
-	return RGB(r, g, b);
-}
-
 // gui.colour_dlg(default_colour)
 // @param default_colour  colour either in form '#RRGGBB" or as a 32-bit integer
 // @return chosen colour, in same form as default_colour
 int do_colour_dlg(lua_State* L)
 {
 	bool in_rgb = lua_isstring(L, 1);
-	COLORREF cval = in_rgb ? convert_colour_spec(lua_tostring(L, 1)) : luaL_optinteger(L, 1, 0);
+	COLORREF cval = in_rgb ? lua_optColor(L, 1) : luaL_optinteger(L, 1, 0);
 	auto p = get_parent();
 	if (p && run_colordlg((HWND)p->handle(), cval))
 	{
@@ -390,21 +396,21 @@ int do_open_dlg(lua_State* L)
 	const std::wstring filter = StringFromUTF8(luaL_optstring(L, 2, "All (*.*)|*.*"));
 	bool multi = optboolean(L, 3);
 	constexpr int PATHSIZE = 1024;
-	TCHAR tmp[PATHSIZE]{};
+	wchar_t tmp[PATHSIZE]{};
 	if (!run_ofd((HWND)get_parent()->handle(), tmp, caption, filter, multi)) return 0;
 	std::wstring path = tmp;
 	// tmp : path\0file1\0file2\0..\0filen
 	if (path.find(L'.') == std::wstring::npos)
 	{
 		int count = 0;
-		TCHAR* filename = tmp + wcslen(tmp) + 1;
+		wchar_t* filename = tmp + lstrlen(tmp) + 1;
 		while (*filename != L'\0' && (filename - tmp < PATHSIZE))
 		{
 			std::wstring file = tmp;
 			file += L"\\";
 			file += filename;
 			lua_pushwstring(L, file);
-			filename += wcslen(filename) + 1;
+			filename += lstrlen(filename) + 1;
 			count++;
 		}
 		return count;
@@ -425,7 +431,7 @@ int do_save_dlg(lua_State* L)
 {
 	auto caption = StringFromUTF8(luaL_optstring(L, 1, "Save File"));
 	auto filter = StringFromUTF8(luaL_optstring(L, 2, "All (*.*)|*.*"));
-	TCHAR tmp[1024]{};
+	wchar_t tmp[1024]{};
 	if (get_parent() && !run_ofd((HWND)get_parent()->handle(), tmp, caption, filter)) return 0;
 	lua_pushwstring(L, tmp);
 	return 1;
@@ -439,7 +445,7 @@ int do_select_dir_dlg(lua_State* L)
 {
 	auto descr = StringFromUTF8(luaL_optstring(L, 1, "Browse for folder..."));
 	auto initdir = StringFromUTF8(luaL_optstring(L, 2, "C:\\"));
-	TCHAR tmp[MAX_PATH]{};
+	wchar_t tmp[MAX_PATH]{};
 	if (get_parent() && !run_seldirdlg((HWND)get_parent()->handle(), tmp, descr.c_str(), initdir.c_str())) return 0;
 	lua_pushwstring(L, tmp);
 	return 1;
@@ -586,6 +592,13 @@ inline void lua_pushargs(lua_State* L, bool value)
 inline void lua_pushargs(lua_State* L, void* value)
 {
 	lua_pushlightuserdata(L, value);
+}
+
+inline void lua_pushargs(lua_State* L, TDC* value)
+{
+	lua_pushlightuserdata(L, value);
+	luaL_getmetatable(L, MT_TDC);
+	lua_setmetatable(L, -2);
 }
 
 template<typename T, typename... Args>
@@ -757,7 +770,7 @@ private:
 	static void call_SciteCommand();
 };
 
-void Item::trigger()
+void MessageHandler::trigger(UINT data) const
 {
 	if (data) LuaWindow::handler(data);
 }
@@ -987,7 +1000,7 @@ inline TEventWindow* ew_arg(lua_State* L, int idx = 1)
 // w:show()
 int window_show(lua_State* L)
 {
-	window_arg(L)->show();
+	if(auto w = window_arg(L)) w->show();
 	return 0;
 }
 
@@ -995,7 +1008,7 @@ int window_show(lua_State* L)
 // w:hide()
 int window_hide(lua_State* L)
 {
-	window_arg(L)->hide();
+	if(auto w = window_arg(L)) w->hide();
 	return 0;
 }
 
@@ -1224,7 +1237,7 @@ static std::vector<std::unique_ptr<ContainerWindow>> collect_windows;
 int new_window(lua_State* L)
 {
 	std::wstring caption = StringFromUTF8(luaL_optstring(L, 1, nullptr));
-	DWORD style = luaL_optinteger(L, 2, WS_CAPTION | WS_SYSMENU);
+	DWORD style = luaL_optinteger(L, 2, WS_CAPTION | WS_SYSMENU |WS_THICKFRAME);
 	collect_windows.push_back(std::make_unique<ContainerWindow>(caption.c_str(), style));
 	ContainerWindow* cw = collect_windows.back().get();
 	return wrap_window(L, cw);
@@ -1250,16 +1263,22 @@ int new_panel(lua_State* L)
 class LuaControl : protected TLuaState
 {
 protected:
-	int on_select_idx;
-	int on_double_idx;
-	int on_key_idx;
-	int on_close_idx;
-	int on_focus_idx;
-	int on_tip_idx;
-	int on_updn_idx;
+	int on_select_idx{};
+	int on_double_idx{};
+	int on_key_idx{};
+	int on_close_idx{};
+	int on_focus_idx{};
+	int on_tip_idx{};
+	int on_updn_idx{};
+	int on_paint_idx{};
 
 public:
-	LuaControl() : on_select_idx(0), on_double_idx(0), on_key_idx(0), on_close_idx(0), on_focus_idx(0), on_tip_idx(0), on_updn_idx(0) { }
+	LuaControl() = default;
+
+	void set_paint(int iarg)
+	{
+		function_ref(L, iarg, &on_paint_idx);
+	}
 
 	void set_select(int iarg)
 	{
@@ -1300,7 +1319,7 @@ public:
 class TTabControlLua : public TTabControl, public LuaControl
 {
 public:
-	TTabControlLua(TEventWindow* parent) : TTabControl(parent) { }
+	TTabControlLua(TEventWindow* parent) : TTabControl(parent) {}
 
 private:
 	void handle_select(int id) override;
@@ -1481,6 +1500,9 @@ int trbar_set_range(lua_State* L)
 	int imin = luaL_optinteger(L, 2, 0);
 	int imax = luaL_optinteger(L, 3, 100);
 	trb->range(imin, imax);
+	int pos = trb->pos();
+	if (pos < imin) trb->pos(imin);
+	if (pos > imax) trb->pos(imax);
 	return 0;
 }
 
@@ -1522,8 +1544,8 @@ int window_get_text(lua_State* L)
 int memo_set_colour(lua_State* L)
 {
 	TMemoLua* wnd = lua_cast<TMemoLua>(L);
-	wnd->set_text_colour(convert_colour_spec(luaL_checkstring(L, 2))); // must be only ASCII
-	wnd->set_background_colour(convert_colour_spec(luaL_checkstring(L, 3)));
+	wnd->set_text_colour(lua_optColor(L, 2)); // must be only ASCII
+	wnd->set_background_colour(lua_optColor(L, 3));
 	return 0;
 }
 
@@ -1732,7 +1754,7 @@ private:
 	void handle_select(void* itm) override;
 	void handle_dbclick(void* itm) override;
 	void handle_onkey(int id) override;
-	size_t handle_ontip(void* item, TCHAR* str) override;
+	size_t handle_ontip(void* item, wchar_t* str) override;
 	void clean_data(int data) override;
 };
 
@@ -1751,7 +1773,7 @@ void TTreeViewLua::handle_onkey(int id)
 	dispatch_ref(L, on_key_idx, id, IsKeyDown(VK_CONTROL), IsKeyDown(VK_MENU), IsKeyDown(VK_SHIFT));
 }
 
-size_t TTreeViewLua::handle_ontip(void* item, TCHAR* str)
+size_t TTreeViewLua::handle_ontip(void* item, wchar_t* str)
 {
 	//dispatch_ref(L, ontip_idx, item);
 	if (on_tip_idx != 0)
@@ -1803,8 +1825,8 @@ int do_set_iconlib(lua_State* L)
 int do_tree_set_colour(lua_State* L)
 {
 	auto tr = check_treewnd(L);
-	tr->set_foreground(convert_colour_spec(luaL_checkstring(L, 2)));
-	tr->set_background(convert_colour_spec(luaL_checkstring(L, 3)));
+	tr->set_foreground(lua_optColor(L, 2));
+	tr->set_background(lua_optColor(L, 3));
 	return 0;
 }
 
@@ -1812,7 +1834,7 @@ int do_tree_set_colour(lua_State* L)
 int tree_expand(lua_State* L)
 {
 	auto tr = check_treewnd(L);
-	Handle itm = lua_touserdata(L, 2);
+	HANDLE itm = lua_touserdata(L, 2);
 	if (itm)
 		tr->expand(itm);
 	else
@@ -1824,7 +1846,7 @@ int tree_expand(lua_State* L)
 int tree_collapse(lua_State* L)
 {
 	auto tr = check_treewnd(L);
-	Handle itm = lua_touserdata(L, 2);
+	HANDLE itm = lua_touserdata(L, 2);
 	if (itm)
 		tr->collapse(itm);
 	else
@@ -1836,7 +1858,7 @@ int tree_collapse(lua_State* L)
 int tree_remove_item(lua_State* L)
 {
 	auto tr = check_treewnd(L);
-	Handle itm = lua_touserdata(L, 2);
+	HANDLE itm = lua_touserdata(L, 2);
 	if (itm)
 		tr->remove_item(itm);
 	else
@@ -1848,7 +1870,7 @@ int tree_remove_item(lua_State* L)
 int tree_remove_childs(lua_State* L)
 {
 	auto tr = check_treewnd(L);
-	Handle itm = lua_touserdata(L, 2);
+	HANDLE itm = lua_touserdata(L, 2);
 	if (itm)
 		tr->remove_childs(itm);
 	else
@@ -1869,7 +1891,7 @@ int tree_set_insert_mode(lua_State* L)
 		break;
 
 	case LUA_TLIGHTUSERDATA:
-		if (Handle item = lua_touserdata(L, 2))
+		if (HANDLE item = lua_touserdata(L, 2))
 			tr->insert_mode(item);
 		break;
 
@@ -1883,8 +1905,8 @@ int tree_set_insert_mode(lua_State* L)
 int tree_get_item_parent(lua_State* L)
 {
 	auto tr = check_treewnd(L);
-	Handle hItem = lua_touserdata(L, 2);
-	if (Handle hParent = tr->get_item_parent(hItem))
+	HANDLE hItem = lua_touserdata(L, 2);
+	if (HANDLE hParent = tr->get_item_parent(hItem))
 	{
 		lua_pushlightuserdata(L, hParent);
 		return 1;
@@ -1897,8 +1919,8 @@ int tree_get_item(lua_State* L)
 {
 	auto tr = check_treewnd(L);
 	const char* caption = luaL_checkstring(L, 2);
-	Handle parent = lua_touserdata(L, 3);
-	if (Handle sel_itm = tr->get_item_by_name(StringFromUTF8(caption).c_str(), parent))
+	HANDLE parent = lua_touserdata(L, 3);
+	if (HANDLE sel_itm = tr->get_item_by_name(StringFromUTF8(caption).c_str(), parent))
 	{
 		lua_pushlightuserdata(L, sel_itm);
 		return 1;
@@ -1910,7 +1932,7 @@ int tree_get_item(lua_State* L)
 int tree_get_item_selected(lua_State* L)
 {
 	auto tr = check_treewnd(L);
-	Handle sel_itm = tr->get_selected();
+	HANDLE sel_itm = tr->get_selected();
 	if (sel_itm)
 		lua_pushlightuserdata(L, sel_itm);
 	else
@@ -1922,7 +1944,7 @@ int tree_get_item_selected(lua_State* L)
 int tree_set_item_text(lua_State* L)
 {
 	auto tr = check_treewnd(L);
-	if (Handle ud = lua_touserdata(L, 2))
+	if (HANDLE ud = lua_touserdata(L, 2))
 	{
 		std::wstring txt = StringFromUTF8(luaL_checkstring(L, 3));
 		tr->set_item_text(ud, txt.data());
@@ -1936,7 +1958,7 @@ int tree_set_item_text(lua_State* L)
 int tree_get_item_text(lua_State* L)
 {
 	auto tr = check_treewnd(L);
-	if (Handle ud = lua_touserdata(L, 2))
+	if (HANDLE ud = lua_touserdata(L, 2))
 	{
 		const std::wstring str = tr->get_item_text(ud);
 		lua_pushwstring(L, str);
@@ -1951,7 +1973,7 @@ int tree_get_item_text(lua_State* L)
 int tree_get_item_data(lua_State* L)
 {
 	auto tr = check_treewnd(L);
-	if (Handle ud = lua_touserdata(L, 2))
+	if (HANDLE ud = lua_touserdata(L, 2))
 	{
 		if (int data = tr->get_item_data(ud))
 			//lua_rawgeti(L, LUA_REGISTRYINDEX, data);
@@ -2034,9 +2056,9 @@ void construct_menu(lua_State* L, vecws& items, HMENU hm, MessageHandler* dispat
 			auto fun = item.substr(pos + 1);
 			lua_pushwstring(L, fun);
 			const UINT ref_idx = lua_reg_store(L);
-			Item itm(ref_idx);
-			AppendMenu(hm, MF_STRING, itm.id, text.data());
-			dispatcher->add_item(itm);
+			//Item itm(ref_idx);
+			AppendMenu(hm, MF_STRING, dispatcher->add_item(ref_idx), text.data());
+			;
 		}
 	}
 }
@@ -2106,7 +2128,7 @@ int window_aux_item(lua_State* L, bool at_index)
 	}
 	else if (TTreeViewLua* tv = dynamic_cast<TTreeViewLua*>(w))
 	{
-		Handle parent = lua_touserdata(L, 3);
+		HANDLE parent = lua_touserdata(L, 3);
 		int icon_idx = luaL_optinteger(L, 4, -1);
 		int selicon_idx = luaL_optinteger(L, 5, icon_idx);
 		int ref_idx = 0;
@@ -2116,7 +2138,7 @@ int window_aux_item(lua_State* L, bool at_index)
 			//ref_idx = luaL_ref(L, LUA_REGISTRYINDEX);
 			ref_idx = lua_reg_store(L);
 		}
-		if (Handle h = tv->add_item(StringFromUTF8(luaL_checkstring(L, 2)).c_str(), parent, icon_idx, selicon_idx, ref_idx))
+		if (HANDLE h = tv->add_item(StringFromUTF8(luaL_checkstring(L, 2)).c_str(), parent, icon_idx, selicon_idx, ref_idx))
 		{
 			lua_pushlightuserdata(L, h);
 			return 1;
@@ -2174,8 +2196,8 @@ int window_get_item_data(lua_State* L)
 int window_set_colour(lua_State* L)
 {
 	TListViewLua* lv = lua_cast<TListViewLua>(L);
-	lv->set_foreground(convert_colour_spec(luaL_checkstring(L, 2)));
-	lv->set_background(convert_colour_spec(luaL_checkstring(L, 3)));
+	lv->set_foreground(lua_optColor(L, 2));
+	lv->set_background(lua_optColor(L, 3));
 	return 0;
 }
 
@@ -2631,18 +2653,40 @@ int do_cbox_get_item_text(lua_State* L)
 
 int do_get_ctrl_id(lua_State* L)
 {
-	TWin* w = window_arg(L);
-	if (dynamic_cast<LuaControl*>(w))
-		lua_pushinteger(L, w->get_ctrl_id());
+	if (TWin* w = window_arg(L))
+	{
+		if (dynamic_cast<LuaControl*>(w))
+			lua_pushinteger(L, w->get_ctrl_id());
+		else
+			lua_pushinteger(L, w->get_id());
+	}
 	else
-		lua_pushinteger(L, w->get_id());
+	{
+		lua_pushinteger(L, 0);
+	}
 	return 1;
+}
+
+int do_set_tooltip(lua_State* L)
+{
+	if (TEventWindow* form = lua_cast<TEventWindow>(L))
+	//if (TButton* form = lua_cast<TButton>(L))
+	{
+		int id = luaL_checkinteger(L, 2);
+		const char* text = luaL_checkstring(L, 3);
+		const char* caption = luaL_optstring(L, 4, nullptr);
+		bool baloon = optboolean(L, 5);
+		bool close_btn = optboolean(L, 6);
+		unsigned int icon = luaL_optinteger(L, 7, 0);
+		form->set_tooltip(id, StringFromUTF8(text).c_str(), StringFromUTF8(caption).c_str(), baloon, close_btn, icon);
+	}
+	return 0;
 }
 
 int do_remove_transparent(lua_State* L)
 {
-	TEventWindow* form = lua_cast<TEventWindow>(L);
-	form->remove_transparent();
+	if(TEventWindow* form = lua_cast<TEventWindow>(L))
+		form->remove_transparent();
 	return 0;
 }
 
@@ -3039,6 +3083,378 @@ int updown_set_range(lua_State* L)
 }
 
 ////////////////////////////////////////////////////////////////////
+// custom paint
+
+#include "twl_custom_paint.h"
+class TCPWindowLua : public TCustomPaintWin, public LuaControl
+{
+public:
+	TCPWindowLua(TEventWindow* parent) :TCustomPaintWin(parent) {}
+
+private:
+	void handle_paint(TDC*) override;
+};
+
+void TCPWindowLua::handle_paint(TDC* pTDC)
+{
+	if (on_paint_idx) dispatch_ref(L, on_paint_idx, pTDC);
+}
+
+//parent:add_custom()
+int add_custom_paint(lua_State* L)
+{
+	TEventWindow* form = lua_cast<TEventWindow>(L);
+	TCPWindowLua* pCPW = new TCPWindowLua(form);
+	form->add(pCPW);
+	return wrap_window(L, pCPW);
+}
+
+int cpw_on_paint(lua_State* L)
+{
+	if(TCPWindowLua* pCPW = lua_cast<TCPWindowLua>(L))
+		pCPW->set_paint(2);
+	return 0;
+}
+
+TDC* lua_cast_TDC(lua_State* L, int idx = 1)
+{
+	return reinterpret_cast<TDC*>(luaL_checkudata(L, idx, MT_TDC));
+}
+
+int tdc_tostring(lua_State* L)
+{
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		lua_pushstring(L, "tdc_object");
+		return 1;
+	}
+	return 0;
+}
+
+int tdc_rectangle(lua_State* L)
+{
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		Rect rect(luaL_checkinteger(L, 2), luaL_checkinteger(L, 3), luaL_checkinteger(L, 4), luaL_checkinteger(L, 5));
+		pTDC->rectangle(rect);
+	}
+	return 0;
+}
+
+int tdc_ellipse(lua_State* L)
+{
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		Rect rect(luaL_checkinteger(L, 2), luaL_checkinteger(L, 3), luaL_checkinteger(L, 4), luaL_checkinteger(L, 5));
+		pTDC->ellipse(rect);
+	}
+	return 0;
+}
+
+int tdc_round_rect(lua_State* L)
+{
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		Rect rect(luaL_checkinteger(L, 2), luaL_checkinteger(L, 3), luaL_checkinteger(L, 4), luaL_checkinteger(L, 5));
+		int rw = luaL_optinteger(L, 6, 5);
+		int rh = luaL_optinteger(L, 7, 5);
+		pTDC->round_rect(rect, rw, rh);
+	}
+	return 0;
+}
+
+int tdc_chord(lua_State* L)
+{
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		int x1 = luaL_checkinteger(L, 2);
+		int y1 = luaL_checkinteger(L, 3);
+		int x2 = luaL_checkinteger(L, 4);
+		int y2 = luaL_checkinteger(L, 5);
+		int x3 = luaL_checkinteger(L, 6);
+		int y3 = luaL_checkinteger(L, 7);
+		int x4 = luaL_checkinteger(L, 8);
+		int y4 = luaL_checkinteger(L, 9);
+		pTDC->chord(x1, y1, x2, y2, x3, y3, x4, y4);
+	}
+	return 0;
+}
+
+int tdc_draw_text(lua_State* L)
+{
+ 	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		if (const char* txt = luaL_checkstring(L, 2))
+		{
+			pTDC->draw_text(StringFromUTF8(txt).c_str(), luaL_optinteger(L, 3, 0), luaL_optinteger(L, 4, 0));
+		}
+	}
+	return 0;
+}
+
+int tdc_back_text(lua_State* L)
+{
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		if(lua_gettop(L) == 2)
+		{
+			pTDC->set_back_color(lua_optColor(L, 2));
+		}
+		else
+		{
+			pTDC->set_back_color(GetSysColor(COLOR_BTNFACE));
+		}
+	}
+	return 0;
+}
+int tdc_color_text(lua_State* L)
+{
+ 	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		switch (lua_gettop(L))
+		{
+		case 2:
+		{
+			pTDC->set_text_color(lua_optColor(L, 2));
+			break;
+		}
+		case 4:
+		{
+			const int r = luaL_checkinteger(L, 2);
+			const int g = luaL_checkinteger(L, 3);
+			const int b = luaL_checkinteger(L, 4);
+			pTDC->set_text_color(r,g,b);
+			break;
+		}
+		default:
+			pTDC->set_text_color(0, 0, 0);
+			break;
+		}
+	}
+	return 0;
+}
+
+int tdc_move_to(lua_State* L)
+{
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		const int posx = luaL_checkinteger(L, 2);
+		const int posy = luaL_checkinteger(L, 3);
+		pTDC->move_to(posx, posy);
+	}
+	return 0;
+}
+
+int tdc_line_to(lua_State* L)
+{
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		const int posx = luaL_checkinteger(L, 2);
+		const int posy = luaL_checkinteger(L, 3);
+		pTDC->line_to(posx, posy);
+	}
+	return 0;
+}
+
+int tdc_draw_line(lua_State* L)
+{
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		Point p1(luaL_checkinteger(L, 2), luaL_checkinteger(L, 3));
+		Point p2(luaL_checkinteger(L, 4), luaL_checkinteger(L, 5));
+		pTDC->draw_line(p1, p2);
+	}
+	return 0;
+}
+
+std::vector<Point> lua_to_points(lua_State* L, int idx)
+{
+	std::vector<Point> ret;
+	while (lua_isinteger(L, idx) && lua_isinteger(L, idx+1))
+	{
+		int x = lua_tointeger(L, idx++);
+		int y = lua_tointeger(L, idx++);
+		ret.emplace_back(x, y);
+	}
+	return ret;
+}
+
+int tdc_polyline(lua_State* L)
+{
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		std::vector<Point> vp = lua_to_points(L, 2);
+		if(vp.size()) pTDC->polyline(vp.data(), vp.size());
+	}
+	return 0;
+}
+
+int tdc_polygone(lua_State* L)
+{
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		std::vector<Point> vp = lua_to_points(L, 2);
+		if(vp.size()) pTDC->polygone(vp.data(), vp.size());
+	}
+	return 0;
+}
+
+int tdc_polybezier(lua_State* L)
+{
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		std::vector<Point> vp = lua_to_points(L, 2);
+		if (vp.size()) pTDC->polybezier(vp.data(), vp.size());
+	}
+	return 0;
+}
+
+int tdc_set_pixel(lua_State* L)
+{
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		int x = luaL_checkinteger(L, 2);
+		int y = luaL_checkinteger(L, 3);
+		COLORREF clr = lua_optColor(L, 4);
+		pTDC->set_pixel(x, y, clr);
+
+	}
+	return 0;
+}
+
+int tdc_set_pen(lua_State* L)
+{	
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		COLORREF clr = lua_optColor(L, 2);
+		int width = luaL_optinteger(L, 3, 0);
+		DWORD style = luaL_optinteger(L, 4, 0);
+		pTDC->set_pen(clr, width, style);
+	}
+	return 0;
+}
+
+int tdc_set_xorpen(lua_State* L)
+{	
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		bool flag = lua_toboolean(L, 2);
+		pTDC->xor_pen(flag);
+	}
+	return 0;
+}
+
+int tdc_reset_pen(lua_State* L)
+{	
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		pTDC->reset_pen();
+	}
+	return 0;
+}
+
+int tdc_set_solid_brush(lua_State* L)
+{	
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		COLORREF clr = lua_optColor(L, 2);
+		pTDC->set_solid_brush(clr);
+	}
+	return 0;
+}
+
+int tdc_set_hatch_brush(lua_State* L)
+{	
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		COLORREF clr = lua_optColor(L, 2);
+		int style = luaL_optinteger(L, 3, 0);
+		pTDC->set_hatch_brush(style, clr);
+	}
+	return 0;
+}
+
+int tdc_set_text_align(lua_State* L)
+{	
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		int flags = luaL_checkinteger(L, 2);
+		pTDC->set_text_align(flags);
+	}
+	return 0;
+}
+
+int tdc_select_stock(lua_State* L)
+{	
+	if (TDC* pTDC = lua_cast_TDC(L))
+	{
+		int id = luaL_checkinteger(L, 2);
+		pTDC->select_stock(id);
+	}
+	return 0;
+}
+
+const luaL_Reg TDC_metamethods[] =
+{ 
+	{ "__tostring", tdc_tostring },
+	{ NULL, NULL}
+};
+
+const luaL_Reg TDC_methods[] =
+{
+	{ "color_back", tdc_back_text },
+	{ "color_text", tdc_color_text },
+	{ "text_align", tdc_set_text_align },
+	{ "draw_text",  tdc_draw_text },
+
+	{ "reset_pen",	tdc_reset_pen },
+	{ "set_pen",	tdc_set_pen },
+	{ "xor_pen",	tdc_set_xorpen },
+
+	{ "solid_brush",tdc_set_solid_brush },
+	{ "hatch_brush",tdc_set_hatch_brush },
+
+	{ "move_to",	tdc_move_to },
+	{ "set_pixel",	tdc_set_pixel },
+	{ "line_to",	tdc_line_to },
+	{ "draw_line",	tdc_draw_line },
+	{ "polyline",	tdc_polyline },
+	{ "polybezier",	tdc_polybezier },
+	{ "rectangle",  tdc_rectangle },
+	{ "polygone",   tdc_polygone },
+	{ "ellipse",	tdc_ellipse },
+	{ "round_rect",	tdc_round_rect },
+	{ "chord",		tdc_chord },
+
+	{ "select_stock",tdc_select_stock },
+	{ NULL, NULL}
+};
+
+void init_tdc_metatable(lua_State* L)
+{
+	LSG;
+	luaL_newmetatable(L, MT_TDC);  // create metatable for window objects
+
+	// Add optional metamethods, except __index
+#if LUA_VERSION_NUM < 502
+	luaL_register(L, NULL, TDC_metamethods);
+#else
+	luaL_setfuncs(L, TDC_metamethods, 0);
+#endif
+
+	// Add methods
+	lua_createtable(L, 0, 0);
+
+#if LUA_VERSION_NUM < 502
+	luaL_register(L, NULL, TDC_methods);
+#else
+	luaL_setfuncs(L, TDC_methods, 0);
+#endif
+
+	lua_setfield(L, -2, "__index"); // mt.__index = methods
+}
+
+////////////////////////////////////////////////////////////////////
 
 static const luaL_Reg gui[] =
 {
@@ -3101,6 +3517,7 @@ static const luaL_Reg window_methods[] =
 	{ "get_ctrl_id",		do_get_ctrl_id		},
 	{ "set_transparent",	do_set_transparent	},
 	{ "remove_transparent",	do_remove_transparent},
+	{ "set_tiptext",		do_set_tooltip		},
 
 	// progress bar
 	{ "set_progress_pos",	do_set_progress_pos		},
@@ -3218,6 +3635,9 @@ static const luaL_Reg window_methods[] =
 	{ "emplace_h",		window_emplace_h		},
 	{ "emplace_v",		window_emplace_v		},
 
+	// custom paint
+	{ "on_paint",		cpw_on_paint },
+	
 	// add controls
 	{ "add_tabbar",		add_tabbar 		},
 	{ "add_tree",		add_tree 		},
@@ -3236,7 +3656,8 @@ static const luaL_Reg window_methods[] =
 	{ "add_link",		add_link 		},
 	{ "add_updown",		add_updown 		},
 	{ "set_align",		do_set_align 	},
-	{ "add_tooltip",	new_tooltip		},
+	{ "add_tooltip",	add_tooltip		},
+	{ "add_custom",		add_custom_paint},
 
 	{ NULL, NULL },
 };
@@ -3334,11 +3755,18 @@ TPlugin* getPlugin()
 extern "C" __declspec(dllexport)
 int luaopen_gui(lua_State * L)
 {
+	if (!hInst)
+	{
+		MessageBox(NULL, L"This dll work with SciTE.exe only.", L"Error", MB_OK);
+		return 0;
+	}
 	getPlugin()->reinit();
 	TLuaState::set_LuaState(L);
 	reinit_storage(L);
 	lua_openclass_iniFile(L); // IniFile
 	lua_openclass_TTipCtrl(L); // ToolTip
+
+	init_tdc_metatable(L);
 
 	luaL_newmetatable(L, WINDOW_CLASS);  // create metatable for window objects
 	lua_pushvalue(L, -1);  // push metatable

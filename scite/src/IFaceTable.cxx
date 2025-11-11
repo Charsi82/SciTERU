@@ -2070,6 +2070,12 @@ static IFaceConstant ifaceConstants[] = {
 	{"SCE_SH_SCALAR",9},
 	{"SCE_SH_STRING",5},
 	{"SCE_SH_WORD",4},
+	{"SCE_SINEX_BLOCK_END",3},
+	{"SCE_SINEX_BLOCK_START",2},
+	{"SCE_SINEX_COMMENTLINE",1},
+	{"SCE_SINEX_DATE",4},
+	{"SCE_SINEX_DEFAULT",0},
+	{"SCE_SINEX_NUMBER",5},
 	{"SCE_SML_CHAR",9},
 	{"SCE_SML_COMMENT",12},
 	{"SCE_SML_COMMENT1",13},
@@ -3042,6 +3048,7 @@ static IFaceConstant ifaceConstants[] = {
 	{"SCLEX_RUST",111},
 	{"SCLEX_SAS",125},
 	{"SCLEX_SCRIPTOL",33},
+	{"SCLEX_SINEX",141},
 	{"SCLEX_SMALLTALK",72},
 	{"SCLEX_SML",97},
 	{"SCLEX_SORCUS",94},
@@ -4031,7 +4038,7 @@ static IFaceProperty ifaceProperties[] = {
 
 enum {
 	ifaceFunctionCount = 333,
-	ifaceConstantCount = 3267,
+	ifaceConstantCount = 3274,
 	ifacePropertyCount = 279
 };
 

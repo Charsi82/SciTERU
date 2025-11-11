@@ -5,6 +5,7 @@
 #include <lauxlib.h>
 
 #include "luamacro.h"
+#include <Windows.h>
 
 size_t lua_utf8towcsZ(lua_State *L, const char *s, int len){
 	wchar_t UNCH = 0;
@@ -242,7 +243,7 @@ const wchar_t *lua_checklwcs_from_utf8(lua_State *L, int narg, size_t* l){
 const wchar_t *lua_optlwcs_from_utf8(lua_State *L, int narg, const wchar_t *def, size_t *len){
 	if (lua_isnoneornil(L, narg)) {
 		if (len)
-			*len = (def ? wcslen(def) : 0);
+			*len = (def ? lstrlen(def) : 0);
 		return def;
 	}
 	else return lua_checklwcs_from_utf8(L, narg, len);
@@ -252,7 +253,7 @@ void lua_pushutf8_from_wcs (lua_State *L, const wchar_t *s) {
   if (s == NULL)
     lua_pushnil(L);
   else
-    lua_wcstoutf8(L, s, wcslen(s));
+    lua_wcstoutf8(L, s, lstrlen(s));
 }
 
 
@@ -290,7 +291,7 @@ const wchar_t *lua_checklwcs_from_char(lua_State *L, int narg, size_t* l){
 const wchar_t *lua_optlwcs_from_char (lua_State *L, int narg, const wchar_t *def, size_t *len){
 	if (lua_isnoneornil(L, narg)) {
 		if (len)
-			*len = (def ? wcslen(def) : 0);
+			*len = (def ? lstrlen(def) : 0);
 		return def;
 	}
 	else return lua_checklwcs_from_char(L, narg, len);

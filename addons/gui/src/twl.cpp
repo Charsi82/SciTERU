@@ -9,24 +9,26 @@
 //  based on SWL, 1995.
 ////////////////////////////////////////////////////////////
 
-#define NO_STRICT
+#include <cassert> // for assert
 #include "twl_menu.h"
 #include <commctrl.h>
-//#include <stdlib.h>
-#include <ctype.h>
-#include <cassert> // for assert
 #include "twl_cntrls.h"
 #include "twl_notify.h"
+#include "twl_custom_paint.h"
 
-constexpr TCHAR EW_CLASSNAME[] = L"EVNTWNDCLSS";
+constexpr wchar_t EW_CLASSNAME[] = L"EVNTWNDCLSS";
 
-static HANDLE hModeless = NULL;
+static HWND hModeless = NULL;
 static Point g_mouse_pt_right{};
+HINSTANCE hInst{};
 
 // Miscelaneous functions!!
-COLORREF RGBF(float r, float g, float b)
+namespace
 {
-	return RGB(byte(255 * r), byte(255 * g), byte(255 * b));
+	COLORREF RGBF(float r, float g, float b)
+	{
+		return RGB(byte(255 * r), byte(255 * g), byte(255 * b));
+	}
 }
 
 Rect::Rect(TEventWindow* pwin)
@@ -85,8 +87,15 @@ void Rect::offset_by(int dx, int dy)
 /// TDC ///////////////
 
 //TDC::TDC(TWin* ptr) :m_hdc(NULL), m_pen(NULL), m_font(NULL), m_brush(NULL), m_twin(ptr)
-TDC::TDC(TWin* ptr) :m_hdc(NULL), m_pen(NULL), m_twin(ptr)
+TDC::TDC(TWin* ptr) :m_hdc(NULL), m_pen(NULL), m_brush(NULL), m_twin(ptr)
 { }
+
+TDC::~TDC()
+{
+	DeleteObject(m_pen);
+	DeleteObject(m_brush);
+	kill();
+}
 
 void TDC::get(TWin* pw)
 
@@ -101,34 +110,72 @@ void TDC::release(TWin* pw)
 	ReleaseDC(pw->handle(), m_hdc);
 }
 
-void TDC::kill()
+void TDC::kill() const
 {
 	DeleteDC(m_hdc);
 }
 
-Handle TDC::select(Handle obj)
+HGDIOBJ TDC::select(HGDIOBJ obj) const
 {
 	return SelectObject(m_hdc, obj);
 }
 
 void TDC::select_stock(int val)
 {
+	get();
 	select(GetStockObject(val));
+	release();
 }
 
-void TDC::xor_pen(bool on_off)
+void TDC::xor_pen(bool on_off) const
 {
-	SetROP2(m_hdc, !on_off ? R2_COPYPEN : R2_XORPEN);
+	SetROP2(m_hdc, on_off ? R2_XORPEN : R2_COPYPEN);
 }
 
 // this changes both the _pen_ and the _text_ colour
-void TDC::set_colour(float r, float g, float b)
+void TDC::set_text_color(COLORREF rgb)
 {
-	COLORREF rgb = RGBF(r, g, b);
 	get();
 	SetTextColor(m_hdc, rgb);
+	release();
+}
+
+void TDC::set_text_color(int r, int g, int b)
+{
+	set_text_color(RGB(r, g, b));
+}
+
+void TDC::set_solid_brush(COLORREF rgb)
+{
+	get();
+	if (m_brush) DeleteObject(m_brush);
+	m_brush = CreateSolidBrush(rgb);
+	select(m_brush);
+	release();
+}
+
+void TDC::set_hatch_brush(int style, COLORREF rgb)
+{
+	get();
+	if (m_brush) DeleteObject(m_brush);
+	m_brush = CreateHatchBrush(style, rgb);
+	select(m_brush);
+	release();
+}
+
+void TDC::set_pen(COLORREF rgb, int width, DWORD style)
+{
+	get();
 	if (m_pen) DeleteObject(m_pen);
-	m_pen = CreatePen(PS_SOLID, 0, rgb);
+	m_pen = CreatePen(style, width, rgb);
+	select(m_pen);
+	release();
+}
+
+// after selecting stock pen
+void TDC::reset_pen()
+{	
+	get();
 	select(m_pen);
 	release();
 }
@@ -146,47 +193,82 @@ SIZE TDC::get_text_extent(const wchar_t* text)
 	//HFONT oldfont = NULL;
 	get();
 	//if (font) oldfont = select(*font);
-	GetTextExtentPoint32(m_hdc, text, wcslen(text), &sz);
+	GetTextExtentPoint32(m_hdc, text, lstrlen(text), &sz);
 	//if (font) select(oldfont);
 	release();
 	return sz;
 }
 
 // wrappers around common graphics calls
-void TDC::draw_text(const wchar_t* msg)
+void TDC::draw_text(const wchar_t* msg, int x, int y) const
 {
-	TextOut(m_hdc, 0, 0, msg, wcslen(msg));
+	TextOut(m_hdc, x, y, msg, lstrlen(msg));
 }
 
-void TDC::move_to(int x, int y)
+void TDC::move_to(int x, int y) const
 {
 	MoveToEx(m_hdc, x, y, NULL);
 }
 
-void TDC::line_to(int x, int y)
+void TDC::line_to(int x, int y) const
 {
 	LineTo(m_hdc, x, y/*,NULL*/);
 }
 
-void TDC::rectangle(const Rect& rt)
+void TDC::rectangle(const Rect& rt) const
 {
 	Rectangle(m_hdc, rt.left, rt.top, rt.right, rt.bottom);
 }
 
-void TDC::polyline(Point* pts, int npoints)
+void TDC::ellipse(const Rect& rt) const
+{
+	Ellipse(m_hdc, rt.left, rt.top, rt.right, rt.bottom);
+}
+
+void TDC::round_rect(const Rect& rt, int rw, int rh) const
+{
+	RoundRect(m_hdc, rt.left, rt.top, rt.right, rt.bottom, rw, rh);
+}
+
+void TDC::chord(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4) const
+{
+	Chord(m_hdc, x1, y1, x2, y2, x3, y3, x4, y4);
+}
+
+void TDC::polyline(const Point* pts, int npoints) const
 {
 	Polyline(m_hdc, pts, npoints);
 }
 
-void TDC::draw_focus_rect(const Rect& rt)
+void TDC::polygone(const Point* pts, int npoints) const
+{
+	Polygon(m_hdc, pts, npoints);
+}
+
+void TDC::draw_focus_rect(const Rect& rt) const
 {
 	DrawFocusRect(m_hdc, static_cast<const RECT*>(&rt));
 }
 
-void TDC::draw_line(const Point& p1, const Point& p2)
+void TDC::draw_line(const Point& p1, const Point& p2) const
 {
 	POINT pts[] = { {p1.x,p1.y},{p2.x,p2.y} };
 	Polyline(m_hdc, pts, 2);
+}
+
+void TDC::set_pixel(int x, int y, COLORREF clr) const
+{
+	SetPixel(m_hdc, x, y, clr);
+}
+
+void TDC::polybezier(const Point* pts, DWORD npoints) const
+{
+	PolyBezier(m_hdc, pts, npoints);
+}
+
+void TDC::set_back_color(COLORREF clr) const
+{
+	SetBkColor(m_hdc, clr);
 }
 
 ////// TWin ///////////
@@ -211,13 +293,13 @@ TWin::TWin(TEventWindow* form) : m_form(form)
 	set(NULL);
 }
 
-TWin::TWin(Handle hwnd /*= NULL*/)
+TWin::TWin(HWND hwnd /*= NULL*/)
 {
 	m_form = nullptr;
 	set(hwnd);
 }
 
-void TWin::set(Handle hwnd)
+void TWin::set(HWND hwnd)
 {
 	m_hwnd = hwnd;
 	m_align = Alignment::alNone;
@@ -229,12 +311,11 @@ TWin::~TWin()
 }
 
 void TWin::update()
-//--
 {
 	UpdateWindow(m_hwnd);
 }
 
-void TWin::invalidate(Rect* lprt)
+void TWin::invalidate(Rect* lprt) const
 {
 	InvalidateRect(m_hwnd, (LPRECT)lprt, TRUE);
 }
@@ -251,7 +332,7 @@ void TWin::align(Alignment a, int size)
 	}
 }
 
-Handle TWin::parent_handle()
+HWND TWin::parent_handle() const
 {
 	return GetParent(m_hwnd);
 }
@@ -261,7 +342,7 @@ void TWin::get_client_rect(const Rect& rt) const
 	GetClientRect(m_hwnd, (LPRECT)&rt);
 }
 
-void TWin::get_rect(Rect& rt, bool use_parent_client)
+void TWin::get_rect(Rect& rt, bool use_parent_client) const
 {
 	GetWindowRect(m_hwnd, (LPRECT)&rt);
 	if (use_parent_client)
@@ -271,7 +352,7 @@ void TWin::get_rect(Rect& rt, bool use_parent_client)
 	}
 }
 
-void TWin::map_points(Point* pt, int n, TWin* target_wnd)
+void TWin::map_points(Point* pt, int n, TWin* target_wnd) const
 {
 	HWND hwndTo = (target_wnd) ? target_wnd->handle() : GetParent(m_hwnd);
 	MapWindowPoints(m_hwnd, hwndTo, (LPPOINT)pt, n);
@@ -296,49 +377,47 @@ void TWin::set_text(const wchar_t* str)
 	SetWindowText(m_hwnd, str);
 }
 
-void TWin::get_text(std::wstring& str)
+void TWin::get_text(std::wstring& str) const
 {
-	int len = GetWindowTextLength(m_hwnd);
-	if (len)
+	if (int len = GetWindowTextLength(m_hwnd))
 	{
 		++len;
 		str.resize(len);
-		GetWindowText(m_hwnd, &str[0], len);
+		GetWindowText(m_hwnd, str.data(), len);
 	}
 }
 
 // These guys work with the specified _child_ of the window
 
-void TWin::set_text(int id, const wchar_t* str)
+void TWin::set_text(int id, const wchar_t* str) const
 {
 	SetDlgItemText(m_hwnd, id, str);
 }
 
-void TWin::set_int(int id, int val)
+void TWin::set_int(int id, int val) const
 {
 	SetDlgItemInt(m_hwnd, id, val, TRUE);
 }
 
 void TWin::get_text(int id, std::wstring& str)
 {
-	int len = GetWindowTextLength(GetDlgItem(m_hwnd, id));
-	if (len)
+	if (int len = GetWindowTextLength(GetDlgItem(m_hwnd, id)))
 	{
 		++len;
 		str.resize(len);
-		GetDlgItemText(m_hwnd, id, &str[0], len);
+		GetDlgItemText(m_hwnd, id, str.data(), len);
 	}
 }
 
-int TWin::get_ctrl_id()
+int TWin::get_ctrl_id() const
 {
 	return GetDlgCtrlID(m_hwnd);
 }
 
-int TWin::get_int(int id)
+int TWin::get_int(int id) const
 {
 	BOOL success;
-	return (int)GetDlgItemInt(m_hwnd, id, &success, TRUE);
+	return static_cast<int>(GetDlgItemInt(m_hwnd, id, &success, TRUE));
 }
 
 std::unique_ptr<TWin> TWin::get_active_window()
@@ -351,12 +430,12 @@ std::unique_ptr<TWin> TWin::get_foreground_window()
 	return std::make_unique<TWin>(GetForegroundWindow());
 }
 
-bool TWin::set_enable(bool state)
+bool TWin::set_enable(bool state) const
 {
 	return EnableWindow(m_hwnd, state);
 }
 
-void TWin::remove_transparent()
+void TWin::remove_transparent() const
 {
 	SetWindowLongPtr(m_hwnd, GWL_EXSTYLE, ::GetWindowLongPtr(m_hwnd, GWL_EXSTYLE) & ~(WS_EX_LAYERED));
 }
@@ -369,50 +448,50 @@ void TWin::set_transparent(int percent)
 	update();
 }
 
-void TWin::to_foreground()
+void TWin::to_foreground() const
 {
 	SetForegroundWindow(m_hwnd);
 }
 
-void TWin::set_focus()
+void TWin::set_focus() const
 {
 	SetFocus((HWND)m_hwnd);
 }
 
-void TWin::mouse_capture(bool do_grab)
+void TWin::mouse_capture(bool do_grab) const
 {
 	if (do_grab) SetCapture(m_hwnd);
 	else ReleaseCapture();
 }
 
-void TWin::close()
+void TWin::close() const
 {
 	send_msg(WM_CLOSE);
 }
 
-int TWin::get_id()
+int TWin::get_id() const
 {
 	return GetWindowLongPtr(m_hwnd, GWL_ID);
 }
 
-void TWin::resize(int x0, int y0, int w, int h)
+void TWin::resize(int x0, int y0, int w, int h) const
 {
 	MoveWindow(m_hwnd, x0, y0, w, h, TRUE);
 }
 
-void TWin::resize(const Rect& rt)
+void TWin::resize(const Rect& rt) const
 {
 	MoveWindow(m_hwnd, rt.left, rt.top, rt.right - rt.left, rt.bottom - rt.top, TRUE);
 }
 
-void TWin::resize(int w, int h)
+void TWin::resize(int w, int h) const
 {
-	SetWindowPos(handle(), NULL, 0, 0, w, h, SWP_NOMOVE);
+	SetWindowPos(m_hwnd, NULL, 0, 0, w, h, SWP_NOMOVE);
 }
 
-void TWin::move(int x0, int y0)
+void TWin::move(int x0, int y0) const
 {
-	SetWindowPos(handle(), NULL, x0, y0, 0, 0, SWP_NOSIZE);
+	SetWindowPos(m_hwnd, NULL, x0, y0, 0, 0, SWP_NOSIZE);
 }
 
 void TWin::show(int how)
@@ -425,12 +504,12 @@ void TWin::hide()
 	ShowWindow(m_hwnd, SW_HIDE);
 }
 
-bool TWin::visible()
+bool TWin::visible() const
 {
 	return IsWindowVisible(m_hwnd);
 }
 
-void TWin::set_parent(TWin* w)
+void TWin::set_parent(TWin* w) const
 {
 	SetParent(m_hwnd, w ? w->handle() : NULL);
 }
@@ -448,33 +527,37 @@ void TEventWindow::set_statusbar_text(int part_id, const wchar_t* str)
 		SendDlgItemMessage(m_hwnd, statusbar_id, SB_SETTEXT, part_id, (LPARAM)str);
 }
 
-//void TEventWindow::set_tooltip(int id, const wchar_t* tiptext, bool balloon)
-//{
-//	TOOLINFO ti{};
-//	DWORD style = WS_POPUP | TTS_ALWAYSTIP;
-//	if (balloon) style |= TTS_BALLOON;
-//	HWND hwTooltip = CreateWindowEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, NULL, style,
-//		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, handle(), NULL, hInst, NULL);
-//	ti.cbSize = sizeof(TOOLINFO);
-//	ti.uFlags = TTF_SUBCLASS | TTF_IDISHWND;
-//	ti.hwnd = m_hwnd;
-//	ti.uId = (UINT_PTR)GetDlgItem(m_hwnd, id);
-//	ti.hinst = hInst;
-//	ti.lpszText = (LPWSTR)tiptext;
-//
-//	SendMessage(hwTooltip, TTM_ADDTOOL, 0, (LPARAM)&ti);
-//
-//	SendMessage(hwTooltip, TTM_ACTIVATE, TRUE, 0);
-//	const DWORD ttl = 10000; // lifetime in 10 seconds
-//	SendMessage(hwTooltip, TTM_SETDELAYTIME, TTDT_AUTOPOP | TTDT_AUTOMATIC, MAKELPARAM((ttl), (0)));
-//}
+void TEventWindow::set_tooltip(int id, const wchar_t* tiptext, const wchar_t* caption, bool balloon, bool close_btn, int icon)
+{
+	TOOLINFO ti{};
+	DWORD style = WS_POPUP | TTS_ALWAYSTIP;
+	if (balloon) style |= TTS_BALLOON;
+	if (caption && close_btn) style |= TTS_CLOSE;
+	HWND hwTooltip = CreateWindowEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, NULL, style,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hwnd, NULL, hInst, NULL);
+	ti.cbSize = sizeof(TOOLINFO);
+	ti.uFlags = TTF_SUBCLASS | TTF_IDISHWND;
+	//ti.hwnd = m_hwnd;
+	ti.uId = (UINT_PTR)GetDlgItem(m_hwnd, id);
+	//ti.hinst = hInst;
+	ti.lpszText = (LPWSTR)tiptext;
 
-DWORD TWin::get_style()
+	SendMessage(hwTooltip, TTM_ADDTOOL, 0, (LPARAM)&ti);
+
+	SendMessage(hwTooltip, TTM_ACTIVATE, TRUE, 0);
+	const DWORD ttl = 10000; // lifetime in 10 seconds
+	SendMessage(hwTooltip, TTM_SETDELAYTIME, TTDT_AUTOPOP | TTDT_AUTOMATIC, MAKELPARAM((ttl), (0)));
+
+	if (icon > TTI_ERROR_LARGE) icon = TTI_NONE;
+	if (caption) SendMessage(hwTooltip, TTM_SETTITLE, icon, (LPARAM)caption);
+}
+
+DWORD TWin::get_style() const
 {
 	return GetWindowLongPtr(m_hwnd, GWL_STYLE);
 }
 
-void TWin::set_style(DWORD s)
+void TWin::set_style(DWORD s) const
 {
 	SetWindowLongPtr(m_hwnd, GWL_STYLE, s);
 }
@@ -484,12 +567,6 @@ LRESULT TWin::send_msg(UINT msg, WPARAM wparam, LPARAM lparam) const
 {
 	return SendMessage(m_hwnd, msg, wparam, lparam);
 }
-
-//std::unique_ptr<TWin> TWin::create_child(const wchar_t* winclss, const wchar_t* text, int id, DWORD styleEx)
-//
-//{
-//	return std::make_unique<TWin>((TEventWindow*)this, winclss, text, id, styleEx);
-//}
 
 int TWin::message(const wchar_t* msg, int type)
 {
@@ -526,9 +603,9 @@ int TWin::message(const wchar_t* msg, int type)
 	return MessageBox({}, msg, title, flags) == retval;
 }
 
-void TWin::on_top()  // *add 0.9.4
+void TWin::on_top() const  // *add 0.9.4
 {
-	SetWindowPos(handle(), HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+	SetWindowPos(m_hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 }
 
 //-TEventWindow class member definitions--
@@ -588,10 +665,11 @@ bool TEventWindow::cant_resize() const
 	return !m_do_resize;
 }
 
-TDC* TEventWindow::get_dc()
+std::unique_ptr<TDC> TEventWindow::get_dc()
 {
-	if (!m_dc) m_dc = std::make_unique<TDC>(this);
-	return m_dc.get();
+	//if (!m_dc) m_dc = std::make_unique<TDC>(this);
+	//return m_dc.get();
+	return std::make_unique<TDC>(this);
 }
 
 int TEventWindow::metrics(int ntype)
@@ -650,7 +728,7 @@ void TEventWindow::enable_resize(bool do_resize, int w, int h)
 	m_fixed_size.y = h;
 }
 
-POINT TEventWindow::fixed_size()
+POINT TEventWindow::fixed_size() const
 {
 	return m_fixed_size;
 }
@@ -692,7 +770,7 @@ void TEventWindow::cursor(CursorType curs)
 
 bool TEventWindow::check_notify(LPARAM lParam, int& ret)
 {
-	LPNMHDR ph = (LPNMHDR)lParam;
+	LPNMHDR ph = reinterpret_cast<LPNMHDR>(lParam);
 	for (TWin* win : m_children)
 	{
 		if (ph->hwndFrom == win->handle())
@@ -734,13 +812,13 @@ void TEventWindow::set_menu(HMENU menu)
 	SetMenu(m_hwnd, menu);
 }
 
-void TEventWindow::set_popup_menu(HANDLE menu)
+void TEventWindow::set_popup_menu(HMENU menu)
 {
 	if (m_hpopup_menu) DestroyMenu(m_hpopup_menu);
 	m_hpopup_menu = menu;
 }
 
-HMENU TEventWindow::get_popup_menu()
+HMENU TEventWindow::get_popup_menu() const
 {
 	return m_hpopup_menu;
 }
@@ -753,7 +831,7 @@ void TEventWindow::last_mouse_pos(int& x, int& y)
 	y = pt.y;
 }
 
-void TEventWindow::check_menu(int id, bool check)
+void TEventWindow::check_menu(int id, bool check) const
 {
 	CheckMenuItem(m_hmenu, id, MF_BYCOMMAND | (check ? MF_CHECKED : MF_UNCHECKED));
 }
@@ -949,9 +1027,21 @@ void TEventWindow::focus()
 	if (m_client) m_client->set_focus();
 }
 
+TCustomPaintWin::TCustomPaintWin(TEventWindow* form) :TWin(form) {}
+
+void TEventWindow::paint(TDC* pTDC)
+{
+	for (TWin* win : m_children)
+	{
+		if (TCustomPaintWin* pcpw = dynamic_cast<TCustomPaintWin*>(win))
+		{
+			pcpw->handle_paint(pTDC);
+		}
+	}
+}
+
 bool TEventWindow::command(int, int) { return true; }
 bool TEventWindow::sys_command(int) { return false; }
-void TEventWindow::paint(TDC*) { }
 void TEventWindow::ncpaint(TDC*) { }
 void TEventWindow::mouse_down(Point&) { }
 void TEventWindow::mouse_up(Point&) { }
@@ -964,13 +1054,13 @@ int  TEventWindow::notify(int id, void* ph) { return 0; }
 void TEventWindow::scroll(int code, int posn) { };
 void TEventWindow::move() { };
 
-LRESULT CALLBACK WndProc(Handle hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 //----------------Window Registration----------------------
 
 static bool been_registered = false;
 
-void RegisterEventWindow(HANDLE hIcon = NULL, HANDLE hCurs = NULL)
+void RegisterEventWindow(HICON hIcon = NULL, HCURSOR hCurs = NULL)
 {
 	WNDCLASS    wndclass{};
 	wndclass.style =
@@ -1010,9 +1100,16 @@ BOOL APIENTRY DllMain(
 	switch (fdwReason)
 	{
 	case DLL_PROCESS_ATTACH:
-		hInst = hinstDLL;
-		RegisterEventWindow();
+	{
+		std::wstring tmp(MAX_PATH, 0);
+		auto ret = GetModuleFileName(NULL, tmp.data(), MAX_PATH);
+		if(tmp.erase(ret).ends_with(L"SciTE.exe"))
+		{
+			hInst = hinstDLL;
+			RegisterEventWindow();
+		}
 		break;
+	}
 
 	case DLL_PROCESS_DETACH:
 		UnregisterEventWindow();  // though it is important only on NT platform...
@@ -1021,7 +1118,7 @@ BOOL APIENTRY DllMain(
 	return TRUE;
 }
 
-LRESULT CALLBACK WndProc(Handle hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	TEventWindow* This = reinterpret_cast<TEventWindow*>(GetWindowLongPtr(hwnd, 0));
 
@@ -1136,9 +1233,9 @@ LRESULT CALLBACK WndProc(Handle hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_PAINT:
 	{
 		PAINTSTRUCT ps;
-		TDC* dc = This->get_dc();
+		auto dc = This->get_dc();
 		dc->set_hdc(BeginPaint(hwnd, &ps));
-		This->paint(dc);
+		This->paint(dc.get());
 		dc->set_hdc(NULL);
 		EndPaint(hwnd, &ps);
 		return 0;

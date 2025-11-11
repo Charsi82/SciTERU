@@ -356,10 +356,10 @@ FilePath FilePath::AbsolutePath() const {
 #ifdef _WIN32
 	// The run-time libraries for GCC and Visual C++ give different results for _fullpath
 	// so use the OS.
-	constexpr size_t maxAbsPath = 2000;
+	constexpr int maxAbsPath = 2000;
 	GUI::gui_char absPath[maxAbsPath] {};
 	GUI::gui_char *fileBit = nullptr;
-	::GetFullPathNameW(AsInternal(), std::size(absPath), absPath, &fileBit);
+	::GetFullPathNameW(AsInternal(), maxAbsPath, absPath, &fileBit);
 	return { absPath };
 #else
 	if (IsAbsolute()) {

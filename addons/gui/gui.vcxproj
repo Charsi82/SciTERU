@@ -35,6 +35,7 @@
     <ClInclude Include="src\luabinder.h" />
     <ClInclude Include="src\Twl.h" />
     <ClInclude Include="src\twl_cntrls.h" />
+    <ClInclude Include="src\twl_custom_paint.h" />
     <ClInclude Include="src\twl_imagelist.h" />
     <ClInclude Include="src\twl_listview.h" />
     <ClInclude Include="src\twl_menu.h" />
@@ -187,7 +188,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>GUI_EXPORTS;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>../lua_dll/src;../utf/src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DisableSpecificWarnings>4100</DisableSpecificWarnings>
@@ -210,7 +211,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>GUI_EXPORTS;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>../lua_dll/src;../utf/src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DisableSpecificWarnings>4100;26454</DisableSpecificWarnings>
