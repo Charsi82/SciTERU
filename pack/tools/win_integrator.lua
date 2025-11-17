@@ -276,6 +276,7 @@ callbacks[ResetBtnW10_ID] = function()
 	shell.exec("ms-settings:defaultapps")
 end
 
+cbbox:enable(winold)
 btnADD:enable(winold)
 btnDEL:enable(winold)
 btn_reset:enable(winold)
@@ -435,6 +436,7 @@ function SetLang(lng_id)
 	current_lng = lng_id
 	local str_ids = {
 		["eng"] = {
+			btn_param = "Options",
 			rbtn1 = "English",
 			rbtn2 = "Russian",
 			grbox1 = " Interface Language: ",
@@ -444,7 +446,7 @@ function SetLang(lng_id)
 			intgr_win = " Integration with Windows: ",
 			label_helper = "Install SciTE.Helper (COM-server for communication with SciTE)",
 			-- st_bar = "Administrator rights required.",
-			label_bind = "Associate SciTE with extensions:",
+			label_bind = "Associate SciTE with extensions (For Win10+ use Options):",
 			check_sess = "Associate files *.session as SciTE session files",
 			check_sendto = 'Add SciTE to "SendTo" context menu',
 			check_html_def = "Set SciTE as default HTML editor",
@@ -460,6 +462,7 @@ function SetLang(lng_id)
 			btn_reset_tip = 'Restore default associations (' .. table.concat(def_associations, ',') .. ')'
 		},
 		["ru"] = {
+			btn_param = "Параметры",
 			rbtn1 = "Английский",
 			rbtn2 = "Русский",
 			grbox1 = " Язык интерфейса: ",
@@ -469,7 +472,7 @@ function SetLang(lng_id)
 			intgr_win = " Интеграция в Windows: ",
 			label_helper = "Установить SciTE.Helper (COM-сервер для управления SciTE)",
 			-- st_bar = "Требуются права Администратора.",
-			label_bind = "Связать файлы заданных расширений с SciTE:",
+			label_bind = "Связать расширения с SciTE (Для Win10+ через Параметры):",
 			check_sess = "Открывать файлы *.session как файлы сессий SciTE",
 			check_sendto = 'Добавить SciTE в контекстное меню "Отправить"',
 			check_html_def = "Установить SciTE в качестве дефолтового HTML редактора",
@@ -487,6 +490,7 @@ function SetLang(lng_id)
 	}
 	local lng = str_ids[lng_id]
 	if lng then
+		btn_param:set_text(lng['btn_param'] or '')
 		grbox1:set_text(lng['grbox1'] or '')
 		RadioBtn1:set_text(lng['rbtn1'] or '')
 		RadioBtn1_tt:set_text(lng['lang_tip'] or '')

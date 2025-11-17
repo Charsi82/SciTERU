@@ -1,0 +1,1598 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <link rel="stylesheet" type="text/css" href="style.css" />
+  <title>GUI</title>
+</head>
+
+<body>
+<table bgcolor="#000000" width="100%" cellspacing="0" cellpadding="0" border="0" class="tmenu">
+	<tr>
+		<td><img src="SciTEIco.png" height="32" width="32" alt="Scintilla icon" /></td>
+		<td width="100%"><font size="4">GUI Lua library for SciTE</font></td>
+	</tr>
+</table>
+
+<table bgcolor="#CCCCCC" width="100%" cellspacing="0" cellpadding="8" border="0" class="tmenu">
+	<tr><td>
+		<a href="SciTEDoc_rus.html">Документация</a>&nbsp;&nbsp;
+		<a href="SciTEFAQ_rus.html">FAQ</a>&nbsp;&nbsp;
+		<a href="SciTERegEx_rus.html">Регулярные выражения</a>&nbsp;&nbsp;
+		<a href="SciTEExtension_rus.html">SciTE Extension</a>&nbsp;&nbsp;
+		<a href="SciTELua_rus.html">LUA</a>&nbsp;&nbsp;
+		<a href="SciTEDirector_rus.html">SciTE Director</a>&nbsp;&nbsp;
+		<a href="CommandValues_rus.html">Команды SciTE и Scintilla</a>&nbsp;&nbsp;
+		<a href="SciTE-Ru_Pack_rus.html">Сборка Ru-Board</a>&nbsp;&nbsp;
+		<a href="SciTE-Ru_Kernel_rus.html">Ядро SciTE-Ru</a>&nbsp;&nbsp;
+		GUI&nbsp;&nbsp;
+		<a href="../Helper/SciTE.Helper_rus.html">SciTE Helper</a>&nbsp;&nbsp;
+		<a href="ScintillaHistory_rus.html">История</a>
+	</td></tr>
+</table>
+
+<h3>Описание</h3>
+
+<p>GUI.dll — это библиотека Lua, реализующая функции окон и виджетов, а также некоторые прочие функции.<br />
+<b>Предназначена ТОЛЬКО для работы с редактором SciTE!</b><br />
+Примеры использования смотрим в файлах SideBar_tab*.lua и win_integrator.lua.<br />
+Вкладка Test, реализованная в файле SideBar_tab4.lua, активируется параметром <b>'sidebar.demo'</b> со значением 1.
+</p>
+
+<h3>Подключение</h3>
+
+<p>Перед использованием функций библиотеки ее необходимо загрузить:</p>
+<div class="example">
+package.cpath = props["SciteDefaultHome"].."\\tools\\LuaLib\\?.dll;"..package.cpath<br />
+-- покажем все пути, по которым SciTE будет искать нашу библиотеку<br />
+print(package.cpath)<br />
+-- загрузка библиотеки<br />
+require 'gui'<br />
+-- тест успешной загрузки<br />
+if gui then<br />
+&nbsp;&nbsp;for k,v in pairs(gui) do print(type(v), k) end<br />
+end
+</div>
+
+<h3>Функции</h3>
+
+<table width="100%" cellpadding="1" cellspacing="0" border="1">
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.version">gui.version()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Функция, возвращающая строку с текущей версией библиотеки. (На момент написания документации - &#34&#48.2.8&#34)
+	<br />
+	</p>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.colour_dlg">gui.colour_dlg()</dfn><br />
+		<dfn id="gui.colour_dlg">gui.colour_dlg('#RRGGBB')</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Запускает диалог выбора цвета. Возвращает числовое значение выбранного цвета или nil.<br />
+		&nbsp;&nbsp;Опциональный строковый параметр задает исходный цвет в формате '#RRGGBB'. По умолчанию '#000000' - чёрный цвет.
+	<br />
+	</p>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.pass_focus">gui.pass_focus()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Переключаем фокус на редактор.
+	<br />
+	</p>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.test">gui.test()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Ничего не делает. Использовалась для тестирования при разработке функций библиотеки.
+	<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.log">gui.log('text')</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Ничего не делает. Использовалась для тестирования при разработке функций библиотеки.
+	<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.get_ascii">gui.get_ascii(128)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Функция для боковой панели. Получает число от 0 до 255.<br />
+		&nbsp;&nbsp;Возвращает соответствующий символ ASCII, html номер и код.
+		&nbsp;&nbsp;<div class="example">local symbol, html_number, html_code = gui.get_ascii(i)</div>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.day_of_year">gui.day_of_year()</dfn><br />
+		<dfn id="gui.day_of_year">gui.day_of_year(day, month, year)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Без аргуменов возвращает номер текущего дня в году.<br />
+		&nbsp;&nbsp;С тремя целочисленными аргументами возвращает номер дня указанной даты.<br />
+		&nbsp;&nbsp;<div class="example">print( gui.day_of_year(1, 3, 2024) ) --> 61<br />
+		print( gui.day_of_year(1, 3, 2025) ) --> 60</div>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.message">gui.message('text', 'message')</dfn><br />
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Показывает окно с текстовым сообщением.<br />
+		&nbsp;&nbsp;Второй аргумент задаёт тип окна: "message", "warning", "error", "query".<br />
+		&nbsp;&nbsp;Возвращает логическое значение ответа.
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.inifile">gui.inifile('filename.ini', true)</dfn><br />
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Создаёт объект для работы с ini файлом.<br />
+		&nbsp;&nbsp;Первый аргумент задаёт путь к файлу или его имя.<br />
+		&nbsp;&nbsp;Второй аргумент задаёт - создать в текущей папке.<br />
+		<div class="example">local ini = gui.inifile('filename.ini', true)</div>
+		&nbsp;&nbsp;Доступные методы:
+		&nbsp;&nbsp;<div class="example">
+		&nbsp;&nbsp;ini:set_section('section name') -- устанавливает текущую секцию<br />
+		&nbsp;&nbsp;ini:get_section() - возвращает текущую секцию<br />
+		&nbsp;&nbsp;ini:write_string('key', 'string') -- записывает строку по указанному ключу<br />
+		&nbsp;&nbsp;ini:write_number('key', 123) -- записывает число по указанному ключу<br />
+		&nbsp;&nbsp;ini:read_string('key') -- читает строку по указанному ключу<br />
+		&nbsp;&nbsp;ini:read_number('key) -- читает число по указанному ключу<br />
+		&nbsp;&nbsp;ini:remove_section('section name') -- удаляет секцию<br />
+		&nbsp;&nbsp;ini:remove_key('key') -- удаляет ключ из текущей секции<br />
+		&nbsp;&nbsp;local str_path = ini:get_path() -- возвращает путь файла<br />
+		&nbsp;&nbsp;local tbl_keys = ini:get_keys() -- возвращает список ключей текущей секции<br />
+		&nbsp;&nbsp;local tbl_sections = ini:get_sections() -- возвращает список секций в файле.<br /></div>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.create_link">gui.create_link('C:\\file_path.txt', 'C:\\link_to_file_path_txt.lnk')</dfn><br />
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Создаёт ярлык на файл, заданный первым аргументом, по пути, заданным вторым аргументом.<br />
+		&nbsp;&nbsp;Возвращает логическое значение успеха операции.
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.get_folder">gui.get_folder( nIndex )</dfn><br />
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Возвращает путь к системной папке по её номеру. Доступные индексы системных путей:
+		<div class="example">0 => "C:\Users\%UserName%\Desktop"<br />
+2 => "C:\Users\%UserName%\AppData\Roaming\Microsoft\Windows\Start Menu\Programs"<br />
+5 => "C:\Users\%UserName%\Documents"<br />
+6 => "C:\Users\%UserName%\Favorites"<br />
+7 => "C:\Users\%UserName%\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup"<br />
+8 => "C:\Users\%UserName%\AppData\Roaming\Microsoft\Windows\Recent"<br />
+9 => "C:\Users\%UserName%\AppData\Roaming\Microsoft\Windows\SendTo"<br />
+11 => "C:\Users\%UserName%\AppData\Roaming\Microsoft\Windows\Start Menu"<br />
+13 => "C:\Users\%UserName%\Music"<br />
+14 => "C:\Users\%UserName%\Videos"<br />
+16 => "C:\Users\%UserName%\Desktop"<br />
+19 => "C:\Users\%UserName%\AppData\Roaming\Microsoft\Windows\Network Shortcuts"<br />
+20 => "C:\Windows\Fonts"<br />
+21 => "C:\Users\%UserName%\AppData\Roaming\Microsoft\Windows\Templates"<br />
+22 => "C:\ProgramData\Microsoft\Windows\Start Menu"<br />
+23 => "C:\ProgramData\Microsoft\Windows\Start Menu\Programs"<br />
+24 => "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup"<br />
+25 => "C:\Users\Public\Desktop"<br />
+26 => "C:\Users\%UserName%\AppData\Roaming"<br />
+27 => "C:\Users\%UserName%\AppData\Roaming\Microsoft\Windows\Printer Shortcuts"<br />
+28 => "C:\Users\%UserName%\AppData\Local"<br />
+29 => "C:\Users\%UserName%\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup"<br />
+30 => "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup"<br />
+31 => "C:\Users\%UserName%\Favorites"<br />
+32 => "C:\Users\%UserName%\AppData\Local\Microsoft\Windows\Temporary Internet Files"<br />
+33 => "C:\Users\%UserName%\AppData\Roaming\Microsoft\Windows\Cookies"<br />
+34 => "C:\Users\%UserName%\AppData\Local\Microsoft\Windows\History"<br />
+35 => "C:\ProgramData"<br />
+36 => "C:\Windows"<br />
+37 => "C:\Windows\System32"<br />
+38 => "C:\Program Files"<br />
+39 => "C:\Users\%UserName%\Pictures"<br />
+40 => "C:\Users\%UserName%"<br />
+41 => "C:\Windows\SysWOW64"<br />
+42 => "C:\Program Files (x86)"<br />
+43 => "C:\Program Files\Common Files"<br />
+44 => "C:\Program Files (x86)\Common Files"<br />
+45 => "C:\ProgramData\Microsoft\Windows\Templates"<br />
+46 => "C:\Users\Public\Documents"<br />
+47 => "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Administrative Tools"<br />
+48 => "C:\Users\%UserName%\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Administrative Tools"<br />
+53 => "C:\Users\Public\Music"<br />
+54 => "C:\Users\Public\Pictures"<br />
+55 => "C:\Users\Public\Videos"<br />
+56 => "C:\Windows\Resources"<br />
+59 => "C:\Users\%UserName%\AppData\Local\Microsoft\Windows\Burn\Burn"<br /></div>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.select_dir_dlg">gui.select_dir_dlg("Выберите папку:", "D:\\")</dfn><br />
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Запускает диалог выбора папки с указанным заголовком.<br />
+		&nbsp;&nbsp;Второй аргумент - стартовый путь.<br />
+		&nbsp;&nbsp;Возвращает путь к выбранной папке или пустую сроку.
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.open_dlg">gui.open_dlg("Открыть файл", "Text (*.txt)|*.txt|All files (*.*)|*.*")</dfn><br />
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Запускает диалог выбора пути сохранения файла с указанным заголовком.<br />
+		&nbsp;&nbsp;Второй аргумент - набор фильтров диалога(набор пар имени фильтра и маски, разделённых вертикальной чертой). <br />
+		&nbsp;&nbsp;Возвращает путь к выбранному файлу или пустую сроку.
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.prompt_value">gui.prompt_value()</dfn><br />
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устарело. Используйте shell.input_box()<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.chdir">gui.chdir('path')</dfn><br />
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает рабочую папку.<br />
+		&nbsp;&nbsp;Возвращает путь true в случае успеха.
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.run">gui.run('file.exe','params','working directory')</dfn><br />
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Запуск внешней программы с указанными параметрами и рабочей папкой.<br />
+		&nbsp;&nbsp;Возвращает 0 в случае успеха. Иначе код ошибки и информацию об ошибке.
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.files">gui.files('D:\\files\\*.txt', false)</dfn><br />
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Возвращает список файлов, соответствующих указанной маске.<br />
+		&nbsp;&nbsp;Второй аргумент true, если нужен только список папок
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.desktop">gui.desktop()</dfn><br />
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Возвращает объект окна рабочего стола.<br />
+		&nbsp;&nbsp;Может быть использовано для получения размера экрана в пикселях.<br />
+		<div class="example">print(gui.desktop():size())</div>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.scite_window">gui.scite_window()</dfn><br />
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Возвращает объект окна редактора SciTE.<br />
+		&nbsp;&nbsp;Используется для прикрепления боковой панели.<br />
+		&nbsp;&nbsp;Также может быть использовано для получения/изменения размера и положения окна редактора и т.п.<br />
+		<div class="example">print(gui.scite_window():position())<br /> print(gui.scite_window():size())</div>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.set_panel">gui.set_panel()<br />
+		gui.set_panel(panel, "left" )</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Только для редактора SciTE!<br />
+		&nbsp;&nbsp;Вызов без аргументов скрывает боковую панель, если она отображается.<br />
+		&nbsp;&nbsp;Иначе прикрепляет созданную панель со стороны, указанной вторым аргументом ("left" или "right")<br />
+		<div class="example">local sb_panel = gui.panel(200)<br />gui.set_panel(sb_panel, "left" )</div>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.panel">gui.panel()<br />
+		gui.panel(width)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Только для редактора SciTE!<br />
+		&nbsp;&nbsp;Создаёт новую панель с указанной шириной. Ширина по умолчанию 100 пикселов.
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.window">gui.window()<br />
+		gui.window("SideBar", style)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Только для редактора SciTE!<br />
+		&nbsp;&nbsp;Создаёт новое окно с указанным заголовком и стилем.<br />
+		&nbsp;&nbsp;Ширина по умолчанию 100 пикселов.<br />
+		&nbsp;&nbsp;Стиль по умолчанию WS_CAPTION + WS_SYSMENU. <a href="https://learn.microsoft.com/ru-ru/windows/win32/winmsg/window-styles">Подробнее о стилях</a>.<br />
+		&nbsp;&nbsp;Иконка окна автоматически копируется из окна редактора.<br />
+</td></tr>
+
+
+</table>
+
+<h3>Методы окон и панелей</h3>
+
+<table width="100%" cellpadding="1" cellspacing="0" border="1">
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:show">wnd:show()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Показать окно или виджет.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:hide">wnd:hide()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Скрыть окно или виджет.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:enable">wnd:enable()<br />wnd:enable(bStatus)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Активирует или деактивирует виджет.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:set_focus">wnd:set_focus()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает фокус на окно или виджет.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:position">wnd:position()<br />wnd:position(posX, posY)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получает или устанавливает позицию окна или виджета.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:size">wnd:size()<br />wnd:size(w, h)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получает или устанавливает размер окна или виджета.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:center_h">wnd:center_h(child_window)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Центрирует виджет по ширине относительно другого виджета.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:center_v">wnd:center_v(child_window)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Центрирует виджет по высоте относительно другого виджета.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:center">wnd:center(child_window)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Выполняет wnd:center_v(child_window) и wnd:center_h(child_window)<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:resize">wnd:resize(bStatus, nWidth, nHeight)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Включает\отключает изменение размеров окна. Устанавливает указанный размер.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:bounds">wnd:bounds()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Возвращает 5 значений: отображается ли окно, координаты верхнего левого угла, ширина и высота окна.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:client">wnd:client(widget)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляется к окну wnd панель или окно widget с выравниванием "client".<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add">wnd:add(widget, sAligment = "client", nSize = 100, bSplitted = true)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет к окну wnd панель или виджет widget с выравниванием sAligment ("top", "bottom", "left", "right" - пристаковано к указанной стороне,<br />
+		&nbsp;&nbsp;"none" - без стыковки, "client" - заполняет всё свободное место) и размером nSize (по умолчанию 100).<br />
+		&nbsp;&nbsp;Если задано выравнивание со стыковкой и установлен bSplitted, то будет создан сплиттер для изменения размеров дочернего окна.
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:remove_child">wnd:remove_child(child_window)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Удаляет из окна wnd дочернее окно child_window.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:context_menu">wnd:context_menu{"..."}</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Создаёт контекстное меню окна.<br />
+		<div class="example">
+		function list_test_menu1()<br />
+		-- item1 handler<br />
+		end<br />
+		function list_test_menu2()<br />
+		-- item2 handler<br />
+		end<br />
+		listbox:context_menu{"item1|list_test_menu1|item2|list_test_menu2|hideSideBar|".. (IDM_TOOLS + tonumber(props['CN_SIDEBAR']))}</div>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:statusbar">wnd:statusbar(100, 200, -1)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет на окно панель состояния с блоками указанной ширины.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:status_setpart">wnd:status_setpart(part_index, "text")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает указанный текст в блок панели состояния с индексом part_index.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:get_ctrl_id">widget:get_ctrl_id()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Возвращает идентификатор виджета, заданный при его создании.<br />
+		<div class="example">local Button_ID = 777<br />
+	local btn = wnd:add_button(Button_ID, "simple tip")<br />
+	btn:position(20, 420)<br />
+	btn:size(70, 25)<br />
+	wnd:set_tiptext(btn:get_ctrl_id(), "tiptext for button", true)</div>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:set_transparent">wnd:set_transparent( value )</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает прозрачность окна в диапазоне от 0 до 255.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:remove_transparent">wnd:remove_transparent()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Отключает прозрачность окна.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:set_tiptext">wnd:set_tiptext(ctrlID, "tiptext", "optCaption", optBoolBaloon, optBoolCloseBtn, optIconType)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет для виджета с идентификатором ctrlID всплывающее окно подсказки с указанным текстом.<br />
+		&nbsp;&nbsp;Опциональные аргументы: "optCaption" - заголовок (по умолчанию пустой),<br />
+		&nbsp;&nbsp;optBoolBaloon - стиль окна подсказки Baloon (по умолчанию false),<br />
+		&nbsp;&nbsp;optBoolCloseBtn - кнопка закрытия для стиля Baloon (по умолчанию false),<br />
+		&nbsp;&nbsp;optIconType - инонка окна подсказки для стиля Baloon (значения от 0 до 6, по умолчанию 0),<br />
+</td></tr>
+
+</table>
+
+<h3>События окон и панелей</h3>
+
+<table width="100%" cellpadding="1" cellspacing="0" border="1">
+
+<tr><td>
+	<p>
+		
+		&nbsp;&nbsp;Аргумент <b>func</b> методов для событий как правило является функцией или именем глобальной функции.<br />
+		&nbsp;&nbsp;Также допустимо указать число, соответствующее команде редактора <b>SCI_</b>*, или в виде строки команду меню <b>"IDM_*"</b>.
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:on_close">wnd:on_close(func)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает колбек на событие закрытия окна.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:on_show">wnd:on_show(func)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает колбек на событие включение отображения окна.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:on_move">wnd:on_move(func)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает колбек на событие перемещения окна.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:on_focus">wnd:on_focus(function(bIsFocused) end)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает колбек на смену фокуса окна, получающий значение в фокусе окно или нет.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:on_key">wnd:on_key(func)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает колбек на нажатие кнопки. Колбек получает код нажатой клавиши, а также нажаты ли модификаторы Ctrl, Alt и Shift.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:on_command">wnd:on_command(func)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает колбек на нажатие контрола (кнопки, чекбокса). Колбек получает идентификатор нажатого контрола и его состояние.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:on_scroll">wnd:on_scroll(func)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает колбек на событие прокрутки. Колбек получает идентификатор виджета, в котором произошла прокрутка и позицию прокрутки.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:on_size">wnd:on_size(func)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает колбек на событие изменения размера окна. Колбек получает актуальную ширину и высоту окна.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:on_timer">wnd:on_timer(func, nOptPeriod)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает колбек на срабатывание таймера с указанным периодом в секундах (по умолчанию 1 секунда) <br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:stop_timer">wnd:stop_timer()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Отменяет работу ранее установленного таймера.<br />
+</td></tr>
+
+</table>
+
+<h3>Добавление виджетов на окно или панель</h3>
+
+<table width="100%" cellpadding="1" cellspacing="0" border="1">
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add_tabbar">wnd:add_tabbar("top")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет панель вкладок с указанным выравниванием - "top"(по умолчанию) или "bottom".<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add_tree">wnd:add_tree(0x02)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет представление в виде дерева. Второй аргумент указывает стиль дерева.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add_label">wnd:add_label(0x01, "Text")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет статический текст. Первый аргумент задаёт стиль отрисовки.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add_memo">wnd:add_memo()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет поле ввода.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add_list">wnd:add_list(bMultipleColumns, bSingleSelect, bLargeIcons)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет список.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add_groupbox">wnd:add_groupbox()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет элемент управления "Групповая рамка".<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add_progress">wnd:add_progress(bVertical, bHasBorder, bSmooth, bSmoothRevers)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет прогрессбар (индикатор выполнения).<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add_trackbar">wnd:add_trackbar(nStyle, ctrlID)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет трекбар (панель отслеживания).<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add_checkbox">wnd:add_checkbox("sCaption", ctrlID, bTreeState)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет чекбокс (флажок).<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add_radiobutton">wnd:add_radiobutton("sCaption", ctrlID, bAuto)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет радиокнопку.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add_editbox">wnd:add_editbox("sCaption", nStyle, ctrlID)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет однострочное поле ввода.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add_button">wnd:add_button(ctrlID, "sCaption", bDefPushButton)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет кнопку.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add_listbox">wnd:add_listbox(ctrlID, bSorted)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет список.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add_combobox">wnd:add_combobox(ctrlID, nStyle)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет выпадающий список.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add_link">wnd:add_link("text with link")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет текст с гиперссылкой.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add_updown">wnd:add_updown(buddy_window, nStyle)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет элемент управления UpDown (стрелочки) для изменения значения окна buddy_window.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:set_align">widget:set_align(sAlign, nSize)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает для виджета способ размещения на окне\панели.<br />
+		&nbsp;&nbsp;выравнивание sAlign - "client"(по умолчанию), "top", "bottom", "none", "left", "right".<br />
+		&nbsp;&nbsp;Размер nSize (по умолчанию 100) устанавливается при выравнивании "top" и "bottom" как высота виджета, при "left" и "right" - как ширина.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add_tooltip">wnd:add_tooltip(ctrlID, bOptBaloonStyle)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет объект, управляющий всплывающей подсказкой.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add_custom">wnd:add_custom()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет объект с произвольной отрисовкой, обрабытываемый функцией, переданной в метод on_paint.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:emplace_h">wnd:emplace_h(child1, child2,...)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Автовыравнивание дочерних элементов окна по горизонтали.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:emplace_v">wnd:emplace_v(child1, child2,...)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Автовыравнивание дочерних элементов окна по вертикали.<br />
+</td></tr>
+
+</table>
+
+<h3>Методы прогрессбара</h3>
+
+<table width="100%" cellpadding="1" cellspacing="0" border="1">
+
+<tr><td>
+	<p class="head">
+		<dfn id="progress:set_progress_pos">progress:set_progress_pos(nPos)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает прогресс в указанную позицию.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="progress:set_progress_range">progress:set_progress_range(nStart, nFinish)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает границы диапазона изменения прогресса.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="progress:get_progress_range">progress:get_progress_range()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получает границы диапазона изменения прогресса.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="progress:progress_go">progress:progress_go()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Изменяет прогресс.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="progress:set_step">progress:set_step()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает шаг изменения прогресса.<br />
+</td></tr>
+
+</table>
+
+<h3>Методы панели вкладок</h3>
+
+<table width="100%" cellpadding="1" cellspacing="0" border="1">
+<tr><td>
+	<p class="head">
+		<dfn id="tabbar:add_tab">tabbar:add_tab("sCaption", Panel)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет вкладку с указанным заголовком и назначает ей панель Panel.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tabbar:select_tab">tabbar:select_tab()<br />tabbar:select_tab(nIdx)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получает индекс активной вкладки или устанавливает активную вкладку.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tabbar:tab_fixedwidth">tabbar:tab_fixedwidth()<br />tabbar:tab_fixedwidth(bIsFixed)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получает или задаёт фиксированные по ширине вкладки.<br />
+</td></tr>
+
+</table>
+
+<h3>Методы updown</h3>
+<table width="100%" cellpadding="1" cellspacing="0" border="1">
+<tr><td>
+	<p class="head">
+		<dfn id="updown:on_updown">updown:on_updown(func)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает колбек на изменение счётчика.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="updown:set_current">updown:set_current(nValue)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает текущее значение счётчика.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="updown:get_current">updown:get_current()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получает текущее значение счётчика.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="updown:set_range">updown:set_range(nStart, nEnd)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает диапазон значений счётчика.<br />
+</td></tr>
+
+</table>
+
+<h3>Методы представления в виде дерева</h3>
+
+<table width="100%" cellpadding="1" cellspacing="0" border="1">
+<tr><td>
+	<p class="head">
+		<dfn id="tree:set_tree_colour">tree:set_tree_colour("#RRGGBB", "#RRGGBB")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает цвет текста и фона.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tree:set_tree_editable">tree:set_tree_editable()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Разрешает редактировать названия узлов дерева.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tree:set_theme">tree:set_theme(bExplorer)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает тему Explorer или Normal<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tree:set_iconlib">tree:set_iconlib("sPath\\To\\icons.dll", bSmallSize)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает набор иконок из указанной dll. Возвращает количество загруженных иконок. Аналогичный метод работает для tabbar и list.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tree:tree_get_item_selected">tree:tree_get_item_selected()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Возвращает дескриптор выделенного узла.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tree:tree_set_insert_mode">tree:tree_set_insert_mode(hItem)<br />tree:tree_set_insert_mode(sMode)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает режим добавления нового узла.<br />
+		&nbsp;&nbsp;Второй аргумент hItem - дескриптор узла или sMode - строка "last", "first", "sort", "root".<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tree:tree_remove_item">tree:tree_remove_item(hItem)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Удаляет указанный элемент.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tree:tree_get_item">tree:tree_get_item("sCaption", hItem)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получить узел с указанным заголовком, прикрепленный в узлу hItem.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tree:tree_get_item_parent">tree:tree_get_item_parent(hItem)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получить родительский узел для указанного узла.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tree:tree_remove_childs">tree:tree_remove_childs(hItem)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Удаляет дочерние узлы для узла hItem.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tree:tree_get_item_text">tree:tree_get_item_text(hItem)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получает название узла.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tree:tree_set_item_text">tree:tree_set_item_text(hItem)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает название узла.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tree:tree_get_item_data">tree:tree_get_item_data(hItem)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получить данные узла.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tree:tree_collapse">tree:tree_collapse(hItem)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Развернуть ветку.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tree:tree_expand">tree:tree_expand(hItem)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Свернуть ветку.<br />
+</td></tr>
+
+</table>
+
+<h3>Методы трекбара</h3>
+<table width="100%" cellpadding="1" cellspacing="0" border="1">
+<tr><td>
+	<p class="head">
+		<dfn id="trackbar:get_pos">trackbar:get_pos()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получает текущее положение.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="trackbar:set_pos">trackbar:set_pos()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Установить положение.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="trackbar:select">trackbar:select(min, max)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Выделить диапазон.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="trackbar:sel_clear">trackbar:sel_clear()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Отменить выделение.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="trackbar:range">trackbar:range(min, max)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает диапазон.<br />
+</td></tr>
+
+</table>
+
+<h3>Методы memo</h3>
+<table width="100%" cellpadding="1" cellspacing="0" border="1">
+
+<tr><td>
+	<p class="head">
+		<dfn id="memo:set_memo_colour">memo:set_memo_colour("#RRGGBB", "#RRGGBB")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Установить цвет текста и заднего фона.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="memo:set_text">memo:set_text("text")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Установить текста. Также работает для label.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="memo:get_text">memo:get_text("text")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получить текст. Также работает для label.<br />
+</td></tr>
+
+</table>
+
+<h3>Установка иконок для label и button</h3>
+<table width="100%" cellpadding="1" cellspacing="0" border="1">
+
+<tr><td>
+	<p class="head">
+		<dfn id="ctrl:set_icon">ctrl:set_icon("path\\to\\icons.dll", nIdx)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает иконку с указанным индексом из файла по указанному пути.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="ctrl:set_bitmap">ctrl:set_bitmap("path\\to\\file.ico")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает иконку из файла по указанному пути.<br />
+</td></tr>
+
+</table>
+
+<h3>Методы списка</h3>
+
+<table width="100%" cellpadding="1" cellspacing="0" border="1">
+
+<tr><td>
+	<p class="head">
+		<dfn id="listbox:insert">listbox:insert(idx, "text", optData)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Вставляет в указанную позицию новый элемент с указанным текстом и данными.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="listbox:append">listbox:append()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет в конец новый элемент с указанным текстом и данными.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="listbox:remove">listbox:remove(idx)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Удаляет элемент в указанной позиции.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="listbox:get_line_text">listbox:get_line_text(idx)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получить текст элемента в указанной позиции.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="listbox:get_line_data">listbox:get_line_data(idx)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получить данные элемента в указанной позиции.<br />
+</td></tr>
+
+</table>
+
+<h3>Методы button, radiobutton, checkbox</h3>
+<table width="100%" cellpadding="1" cellspacing="0" border="1">
+
+<tr><td>
+	<p class="head">
+		<dfn id="ctrl:check">ctrl:check()<br />ctrl:check(state)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает или возвращает состояние элемента управления.<br />
+</td></tr>
+
+</table>
+
+<h3>Методы combobox</h3>
+<table width="100%" cellpadding="1" cellspacing="0" border="1">
+<tr><td>
+	<p class="head">
+		<dfn id="combobox:cb_append">combobox:cb_append("text", optData)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет строку в конец списка.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="combobox:cb_insert">combobox:cb_insert(idx, "text", optData)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет строку по указанному индексу.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="combobox:cb_clear">combobox:cb_clear()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Очистить список.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="combobox:cb_items_h">combobox:cb_items_h()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Установить высоту элемента списка.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="combobox:cb_setcursel">combobox:cb_setcursel(idx)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Выбрать элемент с указанным индексом.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="combobox:cb_getcursel">combobox:cb_getcursel()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получить индекс выбранного элемента.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="combobox:cb_getdata">combobox:cb_getdata(idx)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получить данные элемента с указанным индексом.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="combobox:cb_find">combobox:cb_find("text", optIdx = -1)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получить индекс элемента с указанным текстом, начиная поиск с optIdx.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="combobox:cb_item_text">combobox:cb_item_text(idx)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получить текст элемента по указанному индексу.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="combobox:cb_remove">combobox:cb_remove(idx)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Удалить элемент по указанному индексу.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="combobox:cb_count">combobox:cb_count()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получить количество элементов в списке.<br />
+</td></tr>
+
+</table>
+
+<h3>Методы list</h3>
+<table width="100%" cellpadding="1" cellspacing="0" border="1">
+<tr><td>
+	<p class="head">
+		<dfn id="list:on_select">list:on_select(func)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает колбек на выделение элемента списка.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="list:on_double_click">list:on_double_click(func)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает колбек на двойной клик элемента списка.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="list:on_tip">list:on_tip(func)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает колбек на показ всплывающей подсказки элемента списка.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="list:clear">list:clear()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Очистить список.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="list:set_selected_item">list:set_selected_item(idx)<br />tree:set_selected_item(hItem)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Выделяет элемент с указанным индексом. Для дерева по указанному хендлу.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="list:count">list:count()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Возвращает количество элементов в списке.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="list:delete_item">list:delete_item(idx)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Удаляет элемент с указанным индексом.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="list:insert_item">list:insert_item(idx, "text")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;description<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="list:add_item">list:add_item("text", data)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет элемент в список.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="list:add_item">list:add_item({"text1", "text2"}, data)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет строку в список с двумя колонками.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tree:add_item">tree:add_item("text", hParent = root, icon = -1, selected_icon = -1, data = nil)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет узел в дерево к узлу hParent с указанными иконками и данными.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="list:add_column">list:add_column("caption", nSize)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Добавляет столбец с указанным заголовком и шириной.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="list:get_item_text">list:get_item_text(idx)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получает текст элемента с указанным индексом.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="list:get_item_data">list:get_item_data(idx)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получает данные элемента с указанным индексом.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="list:set_list_colour">list:set_list_colour("#RRGGBB", "#RRGGBB")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает цвет текста и фона.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="list:selected_count">list:selected_count()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Количество выделенных элементов.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="list:get_selected_item">list:get_selected_item()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получить индекс выделенного элемента.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="list:get_selected_items">list:get_selected_items()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Получить список индексов выделенных элементов в списке с множественным выделением.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="list:autosize">list:autosize(column, bOptByContent = false)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Автоподстройка ширины столбца списка.<br />
+</td></tr>
+
+</table>
+</body>
+</html>
+
+
+
+
+
+

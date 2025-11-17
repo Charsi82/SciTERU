@@ -2,7 +2,7 @@
 -- Demo Tab for SideBar
 -------------------------
 return function(tabs, panel_width, colorback, colorfore)
-	if props['sidebar.demo'] ~= '1' then return end
+	if (tonumber(props['sidebar.demo']) or 0) ~= 1 then return end
 	local tab4 = gui.panel(panel_width)
 	local label_text
 	local label_icon

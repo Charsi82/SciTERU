@@ -24,7 +24,7 @@ private:
 
 TToolTip::TToolTip(HWND hParent, int nID, bool isBaloon) :m_hParent(hParent), m_nID(nID)
 {
-	m_hTT = CreateWindowEx(NULL, TOOLTIPS_CLASS, NULL,
+	m_hTT = CreateWindowEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, NULL,
 		WS_POPUP | TTS_ALWAYSTIP | (isBaloon ? TTS_BALLOON : 0),
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
 		NULL, NULL, NULL, NULL);
