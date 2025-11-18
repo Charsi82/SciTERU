@@ -685,12 +685,13 @@ protected:
 	int on_key_idx;
 	int on_move_idx;
 	int on_activate_idx;
+	int on_paint;
 
 public:
 	LuaWindow(const wchar_t* caption, TWin* parent, DWORD stylex = 0, bool is_child = false, DWORD style = -1)
 		:TEventWindow(caption, parent, stylex, is_child, style), on_close_idx(0), on_show_idx(0),
 		on_command_idx(0), on_scroll_idx(0), on_timer_idx(0), on_size_idx(0), on_key_idx(0), on_move_idx(0),
-		on_activate_idx(0)
+		on_activate_idx(0), on_paint(0)
 	{ }
 
 	virtual ~LuaWindow()
@@ -704,6 +705,7 @@ public:
 		lua_reg_release(L, on_key_idx);
 		lua_reg_release(L, on_move_idx);
 		lua_reg_release(L, on_activate_idx);
+		lua_reg_release(L, on_paint);
 	}
 
 	void size() override;
@@ -716,6 +718,7 @@ public:
 	void on_showhide(bool show) override;
 	void keydown(int key) override;
 	bool activate(bool arg) override;
+	void paint(TDC*) override;
 	static void handler(int data);
 
 	void set_on_key(int iarg)
@@ -762,6 +765,11 @@ public:
 	void set_on_activate(int iarg)
 	{
 		function_ref(L, iarg, &on_activate_idx);
+	}
+
+	void set_on_paint(int iarg)
+	{
+		function_ref(L, iarg, &on_paint);
 	}
 
 private:
@@ -972,6 +980,11 @@ bool LuaWindow::activate(bool arg)
 {
 	dispatch_ref(L, on_activate_idx, arg);
 	return true;
+}
+
+void LuaWindow::paint(TDC* pTDC)
+{
+	dispatch_ref(L, on_paint, pTDC);
 }
 
 class ContainerWindow : public PaletteWindow
@@ -2509,6 +2522,16 @@ int window_on_focus(lua_State* L)
 	return 0;
 }
 
+int window_on_paint(lua_State* L)
+{
+	TWin* w = window_arg(L);
+	if (LuaWindow* lw = dynamic_cast<LuaWindow*>(w))
+	{
+		lw->set_on_paint(2);
+	}
+	return 0;
+}
+
 // wnd:on_key(function or <name global function>)
 int window_on_key(lua_State* L)
 {
@@ -2639,18 +2662,6 @@ int do_cbox_get_item_text(lua_State* L)
 	return 1;
 }
 
-////////////////// Tool Tip ////////////////////////////////////////
-// wnd:tooltip(id, tip_text, true)
-//int do_tooltip(lua_State* L)
-//{
-//	TEventWindow* form = lua_cast<TEventWindow>(L);
-//	int id = luaL_checkinteger(L, 2);
-//	const char* text = luaL_checkstring(L, 3);
-//	bool balloon = optboolean(L, 4);
-//	form->set_tooltip(id, StringFromUTF8(text).c_str(), balloon);
-//	return 0;
-//}
-
 int do_get_ctrl_id(lua_State* L)
 {
 	if (TWin* w = window_arg(L))
@@ -2667,10 +2678,11 @@ int do_get_ctrl_id(lua_State* L)
 	return 1;
 }
 
+// simple tooltip
+// wnd:set_tiptext(ctrID, "tips","optCaprion", bBaloonStype, bCloseBtn, IconType)
 int do_set_tooltip(lua_State* L)
 {
 	if (TEventWindow* form = lua_cast<TEventWindow>(L))
-	//if (TButton* form = lua_cast<TButton>(L))
 	{
 		int id = luaL_checkinteger(L, 2);
 		const char* text = luaL_checkstring(L, 3);
@@ -3084,37 +3096,6 @@ int updown_set_range(lua_State* L)
 
 ////////////////////////////////////////////////////////////////////
 // custom paint
-
-#include "twl_custom_paint.h"
-class TCPWindowLua : public TCustomPaintWin, public LuaControl
-{
-public:
-	TCPWindowLua(TEventWindow* parent) :TCustomPaintWin(parent) {}
-
-private:
-	void handle_paint(TDC*) override;
-};
-
-void TCPWindowLua::handle_paint(TDC* pTDC)
-{
-	if (on_paint_idx) dispatch_ref(L, on_paint_idx, pTDC);
-}
-
-//parent:add_custom()
-int add_custom_paint(lua_State* L)
-{
-	TEventWindow* form = lua_cast<TEventWindow>(L);
-	TCPWindowLua* pCPW = new TCPWindowLua(form);
-	form->add(pCPW);
-	return wrap_window(L, pCPW);
-}
-
-int cpw_on_paint(lua_State* L)
-{
-	if(TCPWindowLua* pCPW = lua_cast<TCPWindowLua>(L))
-		pCPW->set_paint(2);
-	return 0;
-}
 
 TDC* lua_cast_TDC(lua_State* L, int idx = 1)
 {
@@ -3535,6 +3516,7 @@ static const luaL_Reg window_methods[] =
 	{ "on_command",	window_on_command	},
 	{ "on_scroll",	window_on_scroll	},
 	{ "on_size",	window_on_size		},
+	{ "on_paint",	window_on_paint		},
 	{ "on_timer",	window_on_timer		},
 	{ "stop_timer",	window_stop_timer	},
 
@@ -3635,9 +3617,6 @@ static const luaL_Reg window_methods[] =
 	{ "emplace_h",		window_emplace_h		},
 	{ "emplace_v",		window_emplace_v		},
 
-	// custom paint
-	{ "on_paint",		cpw_on_paint },
-	
 	// add controls
 	{ "add_tabbar",		add_tabbar 		},
 	{ "add_tree",		add_tree 		},
@@ -3657,7 +3636,6 @@ static const luaL_Reg window_methods[] =
 	{ "add_updown",		add_updown 		},
 	{ "set_align",		do_set_align 	},
 	{ "add_tooltip",	add_tooltip		},
-	{ "add_custom",		add_custom_paint},
 
 	{ NULL, NULL },
 };

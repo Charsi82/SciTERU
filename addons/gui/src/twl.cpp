@@ -14,7 +14,6 @@
 #include <commctrl.h>
 #include "twl_cntrls.h"
 #include "twl_notify.h"
-#include "twl_custom_paint.h"
 
 constexpr wchar_t EW_CLASSNAME[] = L"EVNTWNDCLSS";
 
@@ -1027,19 +1026,7 @@ void TEventWindow::focus()
 	if (m_client) m_client->set_focus();
 }
 
-TCustomPaintWin::TCustomPaintWin(TEventWindow* form) :TWin(form) {}
-
-void TEventWindow::paint(TDC* pTDC)
-{
-	for (TWin* win : m_children)
-	{
-		if (TCustomPaintWin* pcpw = dynamic_cast<TCustomPaintWin*>(win))
-		{
-			pcpw->handle_paint(pTDC);
-		}
-	}
-}
-
+void TEventWindow::paint(TDC* pTDC) {}
 bool TEventWindow::command(int, int) { return true; }
 bool TEventWindow::sys_command(int) { return false; }
 void TEventWindow::ncpaint(TDC*) { }

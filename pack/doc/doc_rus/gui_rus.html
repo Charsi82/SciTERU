@@ -152,36 +152,12 @@ end
 
 <tr><td>
 	<p class="head">
-		<dfn id="gui.inifile">gui.inifile('filename.ini', true)</dfn><br />
-	</p>
-	<p>
-		<b>Описание:</b><br />
-		&nbsp;&nbsp;Создаёт объект для работы с ini файлом.<br />
-		&nbsp;&nbsp;Первый аргумент задаёт путь к файлу или его имя.<br />
-		&nbsp;&nbsp;Второй аргумент задаёт - создать в текущей папке.<br />
-		<div class="example">local ini = gui.inifile('filename.ini', true)</div>
-		&nbsp;&nbsp;Доступные методы:
-		&nbsp;&nbsp;<div class="example">
-		&nbsp;&nbsp;ini:set_section('section name') -- устанавливает текущую секцию<br />
-		&nbsp;&nbsp;ini:get_section() - возвращает текущую секцию<br />
-		&nbsp;&nbsp;ini:write_string('key', 'string') -- записывает строку по указанному ключу<br />
-		&nbsp;&nbsp;ini:write_number('key', 123) -- записывает число по указанному ключу<br />
-		&nbsp;&nbsp;ini:read_string('key') -- читает строку по указанному ключу<br />
-		&nbsp;&nbsp;ini:read_number('key) -- читает число по указанному ключу<br />
-		&nbsp;&nbsp;ini:remove_section('section name') -- удаляет секцию<br />
-		&nbsp;&nbsp;ini:remove_key('key') -- удаляет ключ из текущей секции<br />
-		&nbsp;&nbsp;local str_path = ini:get_path() -- возвращает путь файла<br />
-		&nbsp;&nbsp;local tbl_keys = ini:get_keys() -- возвращает список ключей текущей секции<br />
-		&nbsp;&nbsp;local tbl_sections = ini:get_sections() -- возвращает список секций в файле.<br /></div>
-</td></tr>
-
-<tr><td>
-	<p class="head">
-		<dfn id="gui.create_link">gui.create_link('C:\\file_path.txt', 'C:\\link_to_file_path_txt.lnk')</dfn><br />
+		<dfn id="gui.create_link">gui.create_link('C:\\file_path.txt', 'C:\\link_to_file_path_txt.lnk', 'C:\\work_dir','Description')</dfn><br />
 	</p>
 	<p>
 		<b>Описание:</b><br />
 		&nbsp;&nbsp;Создаёт ярлык на файл, заданный первым аргументом, по пути, заданным вторым аргументом.<br />
+		&nbsp;&nbsp;Опциональные аргументы: третий задаёт рабочую папку, четвёртый - описание файла.<br />
 		&nbsp;&nbsp;Возвращает логическое значение успеха операции.
 </td></tr>
 
@@ -817,7 +793,14 @@ end
 	</p>
 	<p>
 		<b>Описание:</b><br />
-		&nbsp;&nbsp;Добавляет текст с гиперссылкой.<br />
+		&nbsp;&nbsp;Добавляет текст с гиперссылкой.
+		<div class="example">local link = tab4:add_link("Go to &lt;a href=\"https://3dnews.ru/\"&gt;www.3dnews.ru&lt;/a&gt;")<br />
+	link:position(175, 10)<br />
+	link:size(150, 20)<br /><br />
+	local link = tab4:add_link("Go to &lt;a href=\"file://D:\\\"&gt;disk D:\\&lt;/a&gt;")<br />
+	link:position(175, 30)<br />
+	link:size(150, 20)</div><br />
+		
 </td></tr>
 
 <tr><td>
@@ -838,24 +821,6 @@ end
 		&nbsp;&nbsp;Устанавливает для виджета способ размещения на окне\панели.<br />
 		&nbsp;&nbsp;выравнивание sAlign - "client"(по умолчанию), "top", "bottom", "none", "left", "right".<br />
 		&nbsp;&nbsp;Размер nSize (по умолчанию 100) устанавливается при выравнивании "top" и "bottom" как высота виджета, при "left" и "right" - как ширина.<br />
-</td></tr>
-
-<tr><td>
-	<p class="head">
-		<dfn id="wnd:add_tooltip">wnd:add_tooltip(ctrlID, bOptBaloonStyle)</dfn>
-	</p>
-	<p>
-		<b>Описание:</b><br />
-		&nbsp;&nbsp;Добавляет объект, управляющий всплывающей подсказкой.<br />
-</td></tr>
-
-<tr><td>
-	<p class="head">
-		<dfn id="wnd:add_custom">wnd:add_custom()</dfn>
-	</p>
-	<p>
-		<b>Описание:</b><br />
-		&nbsp;&nbsp;Добавляет объект с произвольной отрисовкой, обрабытываемый функцией, переданной в метод on_paint.<br />
 </td></tr>
 
 <tr><td>
@@ -1481,11 +1446,11 @@ end
 
 <tr><td>
 	<p class="head">
-		<dfn id="list:insert_item">list:insert_item(idx, "text")</dfn>
+		<dfn id="list:insert_item">list:insert_item(idx, "text", data)</dfn>
 	</p>
 	<p>
 		<b>Описание:</b><br />
-		&nbsp;&nbsp;description<br />
+		&nbsp;&nbsp;Вставляет элемент в позицию с указанным индексом.<br />
 </td></tr>
 
 <tr><td>
@@ -1494,16 +1459,16 @@ end
 	</p>
 	<p>
 		<b>Описание:</b><br />
-		&nbsp;&nbsp;Добавляет элемент в список.<br />
+		&nbsp;&nbsp;Добавляет элемент в конец списка.<br />
 </td></tr>
 
 <tr><td>
 	<p class="head">
-		<dfn id="list:add_item">list:add_item({"text1", "text2"}, data)</dfn>
+		<dfn id="list:add_item">list:add_item({"text1", ..., "textn"}, data)</dfn>
 	</p>
 	<p>
 		<b>Описание:</b><br />
-		&nbsp;&nbsp;Добавляет строку в список с двумя колонками.<br />
+		&nbsp;&nbsp;Добавляет элемент в список с несколькими колонками.<br />
 </td></tr>
 
 <tr><td>
@@ -1588,11 +1553,287 @@ end
 </td></tr>
 
 </table>
+
+<h3>Всплывающая подсказка</h3>
+
+<table width="100%" cellpadding="1" cellspacing="0" border="1">
+
+<tr><td>
+	<p class="head">
+		<dfn id="wnd:add_tooltip">wnd:add_tooltip(ctrlID, bOptBaloonStyle = false)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Возращает объект, управляющий всплывающей подсказкой для контрола с указанным идентификатором.<br />
+		&nbsp;&nbsp;Если второй аргумент указан true, то подсказка отображается в виде воздушного шара.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tooltip:set_text">tooltip:set_text("text")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Изменяет текст подсказки. Возвращает tooltip.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tooltip:set_caption">tooltip:set_caption("caption")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Изменяет заголовок подсказки. Возвращает tooltip.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tooltip:set_color">tooltip:set_color("#RRGGBB", "#RRGGBB")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Изменяет цвет текста и фона подсказки. Возвращает tooltip.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tooltip:remove">tooltip:remove()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Удаляет окно подсказки.<br />
+</td></tr>
+
+</table>
+
+<h3>Методы рисования кистью и пером</h3>
+
+<table width="100%" cellpadding="1" cellspacing="0" border="1">
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:color_back">tdc:color_back("#RRGGBB")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Задаёт цвет фона для текста. По умолчанию COLOR_BTNFACE.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:color_text">tdc:color_text("#RRGGBB")<br />tdc:color_text(intR, intG, intB)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Задаёт цвет текста. По умолчанию "#000000".<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:text_align">tdc:text_align(nTextAlignFlags)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Задаёт выравнивание текста.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:draw_text">tdc:draw_text("text", pos_x, pos_y)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Отрисовать текст в указанной позиции.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:set_pen">tdc:set_pen("#RRGGBB", nWidth, nStyle)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Создаёт перо с указанными параметрами. Запоминает текущее перо.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:reset_pen">tdc:reset_pen()</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Возвращает запомненное перо.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:xor_pen">tdc:xor_pen(true)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Включает стиль отрисовки.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:solid_brush">tdc:solid_brush("#RRGGBB")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Создаёт сплошную кисть с указанным цветом. Запоминает текущую кисть.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:hatch_brush">tdc:hatch_brush("#RRGGBB", nStyle)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Создаёт штриховую кисть с указанным цветом и стилем nStyle (от 0 до 5).<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:set_pixel">tdc:set_pixel(posx, posy, "#RRGGBB")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Изменяет цвет пикселя с указанными координатами.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:move_to">tdc:move_to(posx, posy)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Перемещает перо в указанные координаты.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:line_to">tdc:line_to(posx, posy)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Проводит линию из текущей точки к точке с указанными координатами.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:draw_line">tdc:draw_line(x1, y1, x2, y2)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Рисует отрезок от точки (x1, y1) до точки (x2, y2).<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:polyline">tdc:polyline(x1, y1, x2, y2, ... , xn, yn)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Рисует ломаную с узлами в указанных точках (x1, y1), ..., (xn, yn).<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:polybezier">tdc:polybezier(x1, y1, x2, y2, ... , xn, yn)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Рисует кривую Безье по указанным точкам (x1, y1), ..., (xn, yn).<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:rectangle">tdc:rectangle(x1, y1, x2, y2)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Рисует прямоугольник с указанными вершинами.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:polygone">tdc:polygone(x1, y1, x2, y2, ..., xn, yn)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Рисует замкнутый полигон с указанными вершинами.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:ellipse">tdc:ellipse(x1, y1, x2, y2)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Рисует эллипс, вписанный в прямоугольник с указанными вершинами.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:round_rect">tdc:round_rect(x1, y1, x2, y2, rw, rh)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Рисует прямоугольник с указанными вершинами со скруглением углов.<br />
+		&nbsp;&nbsp;Параметры rw, rh задают степень скругления в процентах от половины ширины и высоты соответственно.<br />
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:chord">tdc:chord(x1, y1, x2, y2, x3, y3, x4, y4)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Рисует сегмент эллипса, ограниченого хордой.<br />
+		&nbsp;&nbsp;Аргументы x1, y1, x2, y2 задают прямоугольник, в который вписан эллипс.<br />
+		&nbsp;&nbsp;Аргументы x3, y3 - начало ограничивающей хорды.<br />
+		&nbsp;&nbsp;Аргументы x4, y4 - конец ограничивающей хорды.
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:select_stock">tdc:select_stock(nIndex)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает системный объект отрисовки (перо, кисть, шрифт).<br />
+</td></tr>
+
+</table>
+
+<h3>Чтение и запись ini файлов</h3>
+
+<table width="100%" cellpadding="1" cellspacing="0" border="1">
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.inifile">gui.inifile('filename.ini', true)</dfn><br />
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Создаёт объект для работы с ini файлом.<br />
+		&nbsp;&nbsp;Первый аргумент задаёт путь к файлу или его имя.<br />
+		&nbsp;&nbsp;Второй аргумент задаёт - создать в текущей папке.<br />
+		<div class="example">local ini = gui.inifile('filename.ini', true)</div>
+		&nbsp;&nbsp;Доступные методы:
+		&nbsp;&nbsp;<div class="example">
+		&nbsp;ini:set_section('section name') -- устанавливает текущую секцию<br />
+		&nbsp;ini:get_section() - возвращает текущую секцию<br />
+		&nbsp;ini:write_string('key', 'string') -- записывает строку по указанному ключу<br />
+		&nbsp;ini:write_number('key', 123) -- записывает число по указанному ключу<br />
+		&nbsp;ini:read_string('key') -- читает строку по указанному ключу<br />
+		&nbsp;ini:read_number('key) -- читает число по указанному ключу<br />
+		&nbsp;ini:remove_section('section name') -- удаляет секцию<br />
+		&nbsp;ini:remove_key('key') -- удаляет ключ из текущей секции<br />
+		&nbsp;local str_path = ini:get_path() -- возвращает путь файла<br />
+		&nbsp;local tbl_keys = ini:get_keys() -- возвращает список ключей текущей секции<br />
+		&nbsp;local tbl_sections = ini:get_sections() -- возвращает список секций в файле.<br /></div>
+</td></tr>
+</table>
+
 </body>
 </html>
-
-
-
-
-
-

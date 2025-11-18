@@ -692,9 +692,17 @@ trbar1:sel_clear() -- clear selection
 		scite.MenuCommand(IDM_SAVE)
 		scite.ReloadStartupScript()
 	end
+
+	------------- link ------------
+	local link = tab4:add_link("Go to <a href=\"https://3dnews.ru/\">www.3dnews.ru</a>")
+	link:position(175, 10)
+	link:size(150, 20)
+	local link = tab4:add_link("Go to <a href=\"file://D:\\\">disk D:\\</a>")
+	link:position(175, 30)
+	link:size(150, 20)
+	
 	---------------------------------
-	local cp = tab4:add_custom()
-	cp:on_paint(function(a)
+	tab4:on_paint(function(a)
 		-- print('paint')
 		-- print(a.rectangle, a.draw_text)
 		--[[
