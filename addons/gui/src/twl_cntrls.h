@@ -46,7 +46,7 @@ public:
 	void set_pos(int to);
 	void set_step(int step);
 	void go();
-	int get_range(int& hi);
+	void get_range(int& low, int& hi);
 };
 
 class TComboBox : public TControl

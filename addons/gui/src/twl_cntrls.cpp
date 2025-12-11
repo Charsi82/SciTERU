@@ -75,12 +75,12 @@ void TProgressControl::go()
 	send_msg(PBM_STEPIT);
 }
 
-int TProgressControl::get_range(int& hi)
+void TProgressControl::get_range(int& low, int& hi)
 {
 	PBRANGE rng;
 	send_msg(PBM_GETRANGE, 1, (LPARAM)&rng);
 	hi = rng.iHigh;
-	return rng.iLow;
+	low = rng.iLow;
 }
 
 void TProgressControl::set_pos(int to)

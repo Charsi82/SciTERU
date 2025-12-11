@@ -8,6 +8,7 @@
 #include <vector>
 #include <io.h>		// _A_SUBDIR
 #include <direct.h>	// _chdir
+#include <format>
 #include "lua.hpp"
 #include "twl_menu.h"
 #include "twl_notify.h"
@@ -31,17 +32,17 @@ void lua_openclass_TTipCtrl(lua_State* L);
 // vector of wide strings
 typedef std::vector<std::wstring> vecws;
 
-static const char* LIB_VERSION = "0.2.8";
-static const char* DEFAULT_ICONLIB = "toolbar\\cool.dll";
-static const char* WINDOW_CLASS = "WINDOW*";
-static const char* MT_TDC = "TDC*";
+const char* LIB_VERSION = "0.2.8";
+const char* DEFAULT_ICONLIB = "toolbar\\cool.dll";
+const char* WINDOW_CLASS = "WINDOW*";
+const char* MT_TDC = "TDC*";
 
-static HWND hSciTE = NULL, hContent = NULL, hCode = NULL;
-static WNDPROC old_scite_proc, old_scintilla_proc, old_content_proc;
-static TWin* extra_window = nullptr;
-static TWin* extra_window_splitter = nullptr;
-static bool forced_resize = false;
-static Rect cwb, extra;
+HWND hSciTE = NULL, hContent = NULL, hCode = NULL;
+WNDPROC old_scite_proc, old_scintilla_proc, old_content_proc;
+TWin* extra_window = nullptr;
+TWin* extra_window_splitter = nullptr;
+bool forced_resize = false;
+Rect cwb, extra;
 
 class PaletteWindow;
 
@@ -119,58 +120,58 @@ COLORREF lua_optColor(lua_State* L, int idx = 1, COLORREF def_clr = 0)
 	return def_clr;
 }
 
-inline bool optboolean(lua_State* L, int idx, bool res = false)
+bool optboolean(lua_State* L, int idx, bool res = false)
 {
 	return lua_isnoneornil(L, idx) ? res : lua_toboolean(L, idx);
 }
 
-TWin* get_parent()
-{
-	static std::unique_ptr<TWin> s_parent = std::make_unique<TWin>(hSciTE);
-	return s_parent.get();
-}
-
-TWin* get_code_window()
-{
-	static std::unique_ptr<TWin> s_code_window = std::make_unique<TWin>(hCode);
-	return s_code_window.get();
-}
-
-TWin* get_content_window()
-{
-	static std::unique_ptr<TWin> s_code_window = std::make_unique<TWin>(hContent);
-	return s_code_window.get();
-}
-
-TWin* get_desktop_window()
-{
-	static std::unique_ptr<TWin> desk = std::make_unique<TWin>(GetDesktopWindow());
-	return desk.get();
-}
-
-// print version
-static int do_version(lua_State* L)
-{
-	lua_getglobal(L, "print");
-	lua_pushstring(L, LIB_VERSION);
-	lua_pcall(L, 1, 0, 0);
-	return 0;
-}
-
-// show a message on the SciTE output window
-void OutputMessage(lua_State* L)
-{
-	if (lua_isstring(L, -1))
-	{
-		lua_getglobal(L, "print");
-		lua_insert(L, -2);
-		lua_pcall(L, 1, 0, 0);
-	}
-}
-
 namespace
 {
-	static const void* gui_st_name = "_GUI_ST_NAME";
+	TWin* get_parent()
+	{
+		static TWin s_parent(hSciTE);
+		return &s_parent;
+	}
+
+	TWin* get_code_window()
+	{
+		static TWin code_window(hCode);
+		return &code_window;
+	}
+
+	TWin* get_content_window()
+	{
+		static TWin content_window(hContent);
+		return &content_window;
+	}
+
+	TWin* get_desktop_window()
+	{
+		static TWin desktop(GetDesktopWindow());
+		return &desktop;
+	}
+
+	// print version
+	int do_version(lua_State* L)
+	{
+		lua_getglobal(L, "print");
+		lua_pushstring(L, LIB_VERSION);
+		lua_pcall(L, 1, 0, 0);
+		return 0;
+	}
+
+	// show a message on the SciTE output window
+	void OutputMessage(lua_State* L)
+	{
+		if (lua_isstring(L, -1))
+		{
+			lua_getglobal(L, "print");
+			lua_insert(L, -2);
+			lua_pcall(L, 1, 0, 0);
+		}
+	}
+
+	const void* gui_st_name = "_GUI_ST_NAME";
 
 	void reinit_storage(lua_State* L)
 	{
@@ -692,7 +693,8 @@ public:
 		:TEventWindow(caption, parent, stylex, is_child, style), on_close_idx(0), on_show_idx(0),
 		on_command_idx(0), on_scroll_idx(0), on_timer_idx(0), on_size_idx(0), on_key_idx(0), on_move_idx(0),
 		on_activate_idx(0), on_paint(0)
-	{ }
+	{
+	}
 
 	virtual ~LuaWindow()
 	{
@@ -786,7 +788,7 @@ void MessageHandler::trigger(UINT data) const
 class PaletteWindow : public LuaWindow
 {
 public:
-	PaletteWindow(const wchar_t* caption, TWin* parent = nullptr, DWORD stylex = 0, DWORD style = -1) : LuaWindow(caption, parent, stylex, false, style) { }
+	PaletteWindow(const wchar_t* caption, TWin* parent = nullptr, DWORD stylex = 0, DWORD style = -1) : LuaWindow(caption, parent, stylex, false, style) {}
 	void show(int how = SW_SHOW) override;
 	bool query_close() override;
 };
@@ -810,7 +812,7 @@ struct WinWrap
 
 static int wrap_window(lua_State* L, TWin* win)
 {
-	WinWrap* wrp = reinterpret_cast<WinWrap*>(lua_newuserdata(L, sizeof(WinWrap)));
+	WinWrap* wrp = static_cast<WinWrap*>(lua_newuserdata(L, sizeof(WinWrap)));
 	wrp->window = win;
 	wrp->data = nullptr;
 	luaL_getmetatable(L, WINDOW_CLASS);
@@ -820,22 +822,22 @@ static int wrap_window(lua_State* L, TWin* win)
 
 inline TWin* window_arg(lua_State* L, int idx = 1)
 {
-	if (WinWrap* wrp = reinterpret_cast<WinWrap*>(lua_touserdata(L, idx)))
+	if (WinWrap* wrp = static_cast<WinWrap*>(luaL_checkudata(L, idx, WINDOW_CLASS)))
 		return wrp->window;
 	throw_error(L, "not a window");
 	return nullptr;
 }
 
-template<typename ... Args>
-std::string string_format(const std::string_view format, Args ... args)
-{
-	int size_s = std::snprintf(nullptr, 0, format.data(), args ...) + 1; // Extra space for '\0'
-	if (size_s <= 0) { throw std::runtime_error("Error during formatting."); }
-	auto size = static_cast<size_t>(size_s);
-	std::unique_ptr<char[]> buf(new char[size]);
-	std::snprintf(buf.get(), size, format.data(), args ...);
-	return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
-}
+//template<typename ... Args>
+//std::string string_format(const std::string_view format, Args ... args)
+//{
+//	int size_s = std::snprintf(nullptr, 0, format.data(), args ...) + 1; // Extra space for '\0'
+//	if (size_s <= 0) { throw std::runtime_error("Error during formatting."); }
+//	auto size = static_cast<size_t>(size_s);
+//	std::unique_ptr<char[]> buf(new char[size]);
+//	std::snprintf(buf.get(), size, format.data(), args ...);
+//	return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
+//}
 
 template<class T>
 T* lua_cast(lua_State* L, int idx = 1)
@@ -844,7 +846,7 @@ T* lua_cast(lua_State* L, int idx = 1)
 	T* ptr = dynamic_cast<T*>(pWin);
 	if (!ptr)
 	{
-		const std::string errstring = string_format("object of '%s' expected, got '%s'", typeid(T).name(), typeid(pWin).name());
+		const std::string errstring = std::format("object of '{}' expected, got '{}'", typeid(T).name(), typeid(pWin).name());
 		throw_error(L, errstring.c_str());
 	}
 	return ptr;
@@ -1013,7 +1015,7 @@ inline TEventWindow* ew_arg(lua_State* L, int idx = 1)
 // w:show()
 int window_show(lua_State* L)
 {
-	if(auto w = window_arg(L)) w->show();
+	if (auto w = window_arg(L)) w->show();
 	return 0;
 }
 
@@ -1021,7 +1023,7 @@ int window_show(lua_State* L)
 // w:hide()
 int window_hide(lua_State* L)
 {
-	if(auto w = window_arg(L)) w->hide();
+	if (auto w = window_arg(L)) w->hide();
 	return 0;
 }
 
@@ -1250,7 +1252,7 @@ static std::vector<std::unique_ptr<ContainerWindow>> collect_windows;
 int new_window(lua_State* L)
 {
 	std::wstring caption = StringFromUTF8(luaL_optstring(L, 1, nullptr));
-	DWORD style = luaL_optinteger(L, 2, WS_CAPTION | WS_SYSMENU |WS_THICKFRAME);
+	DWORD style = luaL_optinteger(L, 2, WS_CAPTION | WS_SYSMENU | WS_THICKFRAME);
 	collect_windows.push_back(std::make_unique<ContainerWindow>(caption.c_str(), style));
 	ContainerWindow* cw = collect_windows.back().get();
 	return wrap_window(L, cw);
@@ -1259,7 +1261,7 @@ int new_window(lua_State* L)
 class PanelWindow : public LuaWindow
 {
 public:
-	PanelWindow() : LuaWindow(nullptr, get_parent(), 0, true) { }
+	PanelWindow() : LuaWindow(nullptr, get_parent(), 0, true) {}
 };
 
 // create new panel
@@ -1366,25 +1368,29 @@ int tabbar_add(lua_State* L)
 // @param panel
 int tabbar_sel(lua_State* L)
 {
-	TTabControl* tab = lua_cast<TTabControl>(L);
-	if (lua_gettop(L) == 1)
+	if (TTabControl* tab = lua_cast<TTabControl>(L))
 	{
-		lua_pushinteger(L, tab->selected());
-		return 1;
+		if (lua_gettop(L) == 1)
+		{
+			lua_pushinteger(L, tab->selected());
+			return 1;
+		}
+		tab->selected(luaL_checkinteger(L, 2));
 	}
-	tab->selected(luaL_checkinteger(L, 2));
 	return 0;
 }
 
 int tabbar_fixedwidth(lua_State* L)
 {
-	TTabControl* tab = lua_cast<TTabControl>(L);
-	if (lua_gettop(L) == 1)
+	if (TTabControl* tab = lua_cast<TTabControl>(L))
 	{
-		lua_pushboolean(L, tab->fixedwidth());
-		return 1;
+		if (lua_gettop(L) == 1)
+		{
+			lua_pushboolean(L, tab->fixedwidth());
+			return 1;
+		}
+		tab->fixedwidth(lua_toboolean(L, 2));
 	}
-	tab->fixedwidth(lua_toboolean(L, 2));
 	return 0;
 }
 
@@ -1488,34 +1494,39 @@ int do_ctrl_set_bitmap(lua_State* L)
 
 int trbar_get_pos(lua_State* L)
 {
-	TTrackBar* trb = lua_cast<TTrackBar>(L);
-	lua_pushinteger(L, trb->pos());
-	return 1;
+	if (TTrackBar* trb = lua_cast<TTrackBar>(L))
+	{
+		lua_pushinteger(L, trb->pos());
+		return 1;
+	}
+	return 0;
 }
 
 int trbar_set_pos(lua_State* L)
 {
-	TTrackBar* trb = lua_cast<TTrackBar>(L);
-	trb->pos(luaL_optinteger(L, 2, 0));
+	if (TTrackBar* trb = lua_cast<TTrackBar>(L))
+		trb->pos(luaL_optinteger(L, 2, 0));
 	return 0;
 }
 
 int trbar_sel_clear(lua_State* L)
 {
-	TTrackBar* trb = lua_cast<TTrackBar>(L);
-	trb->sel_clear();
+	if (TTrackBar* trb = lua_cast<TTrackBar>(L))
+		trb->sel_clear();
 	return 0;
 }
 
 int trbar_set_range(lua_State* L)
 {
-	TTrackBar* trb = lua_cast<TTrackBar>(L);
-	int imin = luaL_optinteger(L, 2, 0);
-	int imax = luaL_optinteger(L, 3, 100);
-	trb->range(imin, imax);
-	int pos = trb->pos();
-	if (pos < imin) trb->pos(imin);
-	if (pos > imax) trb->pos(imax);
+	if (TTrackBar* trb = lua_cast<TTrackBar>(L))
+	{
+		int imin = luaL_optinteger(L, 2, 0);
+		int imax = luaL_optinteger(L, 3, 100);
+		trb->range(imin, imax);
+		int pos = trb->pos();
+		if (pos < imin) trb->pos(imin);
+		if (pos > imax) trb->pos(imax);
+	}
 	return 0;
 }
 
@@ -1524,7 +1535,7 @@ int trbar_set_range(lua_State* L)
 class TMemoLua : public TMemo, public LuaControl
 {
 public:
-	TMemoLua(TEventWindow* parent, int id = -1, bool do_scroll = false, bool plain = false) : TMemo(parent, id, do_scroll, plain) { }
+	TMemoLua(TEventWindow* parent, int id = -1, bool do_scroll = false, bool plain = false) : TMemo(parent, id, do_scroll, plain) {}
 
 private:
 	void handle_onkey(int id) override;
@@ -1556,9 +1567,15 @@ int window_get_text(lua_State* L)
 
 int memo_set_colour(lua_State* L)
 {
-	TMemoLua* wnd = lua_cast<TMemoLua>(L);
-	wnd->set_text_colour(lua_optColor(L, 2)); // must be only ASCII
-	wnd->set_background_colour(lua_optColor(L, 3));
+	if (TMemoLua* wnd = lua_cast<TMemoLua>(L))
+	{
+		wnd->set_text_colour(lua_optColor(L, 2)); // must be only ASCII
+		wnd->set_background_colour(lua_optColor(L, 3));
+	}
+	else
+	{
+		throw_error(L, "memo_set_colour failed");
+	}
 	return 0;
 }
 
@@ -1572,7 +1589,7 @@ static void shake_scite_descendants()
 class SideSplitter : public TSplitterB
 {
 public:
-	SideSplitter(TWin* form, TWin* control) : TSplitterB(form, control, 5) { }
+	SideSplitter(TWin* form, TWin* control) : TSplitterB(form, control, 5) {}
 
 	void paint(TDC* dc) override;
 	void on_resize(const Rect& rt) override;
@@ -1761,7 +1778,7 @@ void TListViewLua::handle_onfocus(bool yes)
 class TTreeViewLua : public TTreeView, public LuaControl
 {
 public:
-	TTreeViewLua(TEventWindow* parent, DWORD style) : TTreeView(parent, style) { }
+	TTreeViewLua(TEventWindow* parent, DWORD style) : TTreeView(parent, style) {}
 
 private:
 	void handle_select(void* itm) override;
@@ -2071,7 +2088,6 @@ void construct_menu(lua_State* L, vecws& items, HMENU hm, MessageHandler* dispat
 			const UINT ref_idx = lua_reg_store(L);
 			//Item itm(ref_idx);
 			AppendMenu(hm, MF_STRING, dispatcher->add_item(ref_idx), text.data());
-			;
 		}
 	}
 }
@@ -2180,17 +2196,17 @@ int window_insert_item(lua_State* L)
 // @param iWidth
 int window_add_column(lua_State* L)
 {
-	TListViewLua* lv = lua_cast<TListViewLua>(L);
-	lv->add_column(StringFromUTF8(luaL_checkstring(L, 2)).c_str(), (int)luaL_checkinteger(L, 3));
+	if(TListViewLua* lv = lua_cast<TListViewLua>(L))
+		lv->add_column(StringFromUTF8(luaL_checkstring(L, 2)).c_str(), (int)luaL_checkinteger(L, 3));
 	return 0;
 }
 
 // list_wnd:get_item_text( index )
 int window_get_item_text(lua_State* L)
 {
-	TListViewLua* lv = lua_cast<TListViewLua>(L);
 	std::wstring buff(MAX_PATH, 0);
-	lv->get_item_text((int)luaL_checkinteger(L, 2), buff.data(), MAX_PATH);
+	if (TListViewLua* lv = lua_cast<TListViewLua>(L))
+		lv->get_item_text((int)luaL_checkinteger(L, 2), buff.data(), MAX_PATH);
 	lua_pushwstring(L, buff);
 	return 1;
 }
@@ -2199,18 +2215,19 @@ int window_get_item_text(lua_State* L)
 int window_get_item_data(lua_State* L)
 {
 	TListViewLua* lv = lua_cast<TListViewLua>(L);
-	int data = lv->get_item_data((int)luaL_checkinteger(L, 2));
-	//lua_rawgeti(L, LUA_REGISTRYINDEX, data);
-	lua_reg_restore(L, data);
+	if (!lv) return 0;
+	lua_reg_restore(L, lv->get_item_data((int)luaL_checkinteger(L, 2)));
 	return 1;
 }
 
 // list_wnd:set_list_colour( sForeColor, sBackColor )
 int window_set_colour(lua_State* L)
 {
-	TListViewLua* lv = lua_cast<TListViewLua>(L);
-	lv->set_foreground(lua_optColor(L, 2));
-	lv->set_background(lua_optColor(L, 3));
+	if (TListViewLua* lv = lua_cast<TListViewLua>(L))
+	{
+		lv->set_foreground(lua_optColor(L, 2));
+		lv->set_background(lua_optColor(L, 3));
+	}
 	return 0;
 }
 
@@ -2219,18 +2236,19 @@ int window_set_colour(lua_State* L)
 int window_selected_item(lua_State* L)
 {
 	TListViewLua* lv = lua_cast<TListViewLua>(L);
-	lua_pushinteger(L, lv->selected_id());
+	lua_pushinteger(L, lv ? lv->selected_id() : -1);
 	return 1;
 }
 
 // list_wnd:get_selected_items(index)
-// @return {idx1, idx2, idx3,...}
+// @return {idx1, idx2, idx3, ...}
 int window_selected_items(lua_State* L)
 {
 	TListViewLua* lv = lua_cast<TListViewLua>(L);
+	lua_newtable(L);
+	if (!lv) return 1;
 	int i = -1;
 	int idx = 0;
-	lua_newtable(L);
 	while (lv)
 	{
 		i = lv->next_selected_id(i);
@@ -2245,18 +2263,18 @@ int window_selected_items(lua_State* L)
 // @return count of selected items
 int window_selected_count(lua_State* L)
 {
-	TListViewLua* lv = lua_cast<TListViewLua>(L);
-	lua_pushinteger(L, lv->selected_count());
+	if (TListViewLua* lv = lua_cast<TListViewLua>(L))
+		lua_pushinteger(L, lv->selected_count());
 	return 1;
 }
 
 // list_wnd:autosize( index [, by_contents = false])
-// @param iIndex
+// @param nIndex
 // @param bFlag [=false]
 int window_autosize(lua_State* L)
 {
-	TListViewLua* lv = lua_cast<TListViewLua>(L);
-	lv->autosize_column((int)luaL_checkinteger(L, 2), optboolean(L, 3));
+	if (TListViewLua* lv = lua_cast<TListViewLua>(L))
+		lv->autosize_column((int)luaL_checkinteger(L, 2), optboolean(L, 3));
 	return 0;
 }
 
@@ -2266,22 +2284,22 @@ class TListBoxLua :public TListBox, public LuaControl
 {
 public:
 	TListBoxLua(TEventWindow* parent, int id, bool is_sorted) : TListBox(parent, id, is_sorted) {}
-private:
-	void clear_impl() override;
-};
 
-void TListBoxLua::clear_impl()
-{
-	const int items_count = count();
-	for (int i = 0; i < items_count; i++)
-		//luaL_unref(L, LUA_REGISTRYINDEX, data);
-		lua_reg_release(L, get_data(i));
-}
+private:
+	void clear_impl() override
+	{
+		const int items_count = count();
+		for (int i = 0; i < items_count; i++)
+			//luaL_unref(L, LUA_REGISTRYINDEX, data);
+			lua_reg_release(L, get_data(i));
+	}
+};
 
 // list_box:insert(idx, str, data)
 int do_listbox_insert(lua_State* L)
 {
 	TListBoxLua* lb = lua_cast<TListBoxLua>(L);
+	if (!lb) return 0;
 	const int id = luaL_checkinteger(L, 2) - 1;
 	const char* val = luaL_checkstring(L, 3);
 	lb->insert(id, StringFromUTF8(val).c_str());
@@ -2299,6 +2317,7 @@ int do_listbox_insert(lua_State* L)
 int do_listbox_append(lua_State* L)
 {
 	TListBoxLua* lb = lua_cast<TListBoxLua>(L);
+	if (!lb) return 0;
 	const int id = lb->count();
 	const char* val = luaL_checkstring(L, 2);
 	lb->insert(id, StringFromUTF8(val).c_str());
@@ -2315,11 +2334,13 @@ int do_listbox_append(lua_State* L)
 // list_box:remove(idx)
 int do_listbox_remove(lua_State* L)
 {
-	TListBoxLua* lb = lua_cast<TListBoxLua>(L);
-	const int id = luaL_checkinteger(L, 2) - 1;
-	//luaL_unref(L, LUA_REGISTRYINDEX, data);
-	lua_reg_release(L, lb->get_data(id));
-	lb->remove(id);
+	if (TListBoxLua* lb = lua_cast<TListBoxLua>(L))
+	{
+		const int id = luaL_checkinteger(L, 2) - 1;
+		//luaL_unref(L, LUA_REGISTRYINDEX, data);
+		lua_reg_release(L, lb->get_data(id));
+		lb->remove(id);
+	}
 	return 0;
 }
 
@@ -2338,13 +2359,14 @@ int do_list_elements_count(lua_State* L)
 		return 1;
 	}
 	else
-		luaL_error(L, "argument 1 is not a ListBox or ListView");
+		throw_error(L, "1st argument must be ListBox or ListView");
 	return 0;
 }
 
 int do_listbox_get_text(lua_State* L)
 {
 	TListBoxLua* lb = lua_cast<TListBoxLua>(L);
+	if (!lb) return 0;
 	const int id = luaL_checkinteger(L, 2) - 1;
 	lua_pushwstring(L, lb->get_text(id));
 	return 1;
@@ -2353,6 +2375,7 @@ int do_listbox_get_text(lua_State* L)
 int do_listbox_get_data(lua_State* L)
 {
 	TListBoxLua* lb = lua_cast<TListBoxLua>(L);
+	if (!lb) return 0;
 	const int id = luaL_checkinteger(L, 2) - 1;
 	if (int data = lb->get_data(id))
 	{
@@ -2422,88 +2445,77 @@ int do_wnd_selection(lua_State* L)
 // wnd:on_tip(function or <name global function>)
 int window_on_tip(lua_State* L)
 {
-	LuaControl* lc = lua_cast<LuaControl>(L);
-	lc->set_on_tip(2);
+	if (LuaControl* lc = lua_cast<LuaControl>(L)) lc->set_on_tip(2);
 	return 0;
 }
 
 // wnd:on_select(function or <name global function>)
 int window_on_select(lua_State* L)
 {
-	LuaControl* lc = lua_cast<LuaControl>(L);
-	lc->set_select(2);
+	if (LuaControl* lc = lua_cast<LuaControl>(L)) lc->set_select(2);
 	return 0;
 }
 
 // wnd:on_double_click(function or <name global function>)
 int window_on_double_click(lua_State* L)
 {
-	LuaControl* lc = lua_cast<LuaControl>(L);
-	lc->set_double_click(2);
+	if (LuaControl* lc = lua_cast<LuaControl>(L)) lc->set_double_click(2);
 	return 0;
 }
 
 // wnd:on_close(function or <name global function>)
 int window_on_close(lua_State* L)
 {
-	LuaWindow* cw = lua_cast<LuaWindow>(L);
-	cw->set_on_close(2);
+	if (LuaWindow* cw = lua_cast<LuaWindow>(L)) cw->set_on_close(2);
 	return 0;
 }
 
 // wnd:on_command(function or <name global function>)
 int window_on_command(lua_State* L)
 {
-	LuaWindow* cw = lua_cast<LuaWindow>(L);
-	cw->set_on_command(2);
+	if (LuaWindow* cw = lua_cast<LuaWindow>(L)) cw->set_on_command(2);
 	return 0;
 }
 
 // wnd:on_size(function)
 int window_on_size(lua_State* L)
 {
-	LuaWindow* cw = lua_cast<LuaWindow>(L);
-	cw->set_on_size(2);
+	if (LuaWindow* cw = lua_cast<LuaWindow>(L)) cw->set_on_size(2);
 	return 0;
 }
 
 // wnd:on_scroll(function or <name global function>)
 int window_on_scroll(lua_State* L)
 {
-	LuaWindow* cw = lua_cast<LuaWindow>(L);
-	cw->set_on_scroll(2);
+	if (LuaWindow* cw = lua_cast<LuaWindow>(L)) cw->set_on_scroll(2);
 	return 0;
 }
 
 // wnd:on_timer(function, delay)
 int window_on_timer(lua_State* L)
 {
-	LuaWindow* cw = lua_cast<LuaWindow>(L);
-	cw->set_on_timer(2, luaL_optnumber(L, 3, 1) * 1000);
+	if (LuaWindow* cw = lua_cast<LuaWindow>(L)) cw->set_on_timer(2, luaL_optnumber(L, 3, 1) * 1000);
 	return 0;
 }
 
 // wnd:stop_timer()
 int window_stop_timer(lua_State* L)
 {
-	LuaWindow* cw = lua_cast<LuaWindow>(L);
-	cw->kill_timer();
+	if (LuaWindow* cw = lua_cast<LuaWindow>(L)) cw->kill_timer();
 	return 0;
 }
 
 // wnd:on_show(function or <name global function>)
 int window_on_show(lua_State* L)
 {
-	LuaWindow* cw = lua_cast<LuaWindow>(L);
-	cw->set_on_show(2);
+	if (LuaWindow* cw = lua_cast<LuaWindow>(L)) cw->set_on_show(2);
 	return 0;
 }
 
 // wnd:on_move(function or <name global function>)
 int window_on_move(lua_State* L)
 {
-	LuaWindow* cw = lua_cast<LuaWindow>(L);
-	cw->set_on_move(2);
+	if (LuaWindow* cw = lua_cast<LuaWindow>(L)) cw->set_on_move(2);
 	return 0;
 }
 
@@ -2553,52 +2565,56 @@ int window_on_key(lua_State* L)
 
 int do_cbox_clear(lua_State* L)
 {
-	auto cb = check_combo(L);
-	int cnt = cb->count();
+	auto cbox = check_combo(L);
+	if (!cbox) return 0;
+	const int cnt = cbox->count();
 	for (int idx = 0; idx < cnt; ++idx)
 		//luaL_unref(L, LUA_REGISTRYINDEX, data);
-		lua_reg_release(L, cb->get_data(idx));
-	cb->reset();
+		lua_reg_release(L, cbox->get_data(idx));
+	cbox->reset();
 	return 0;
 }
 
 int do_cbox_append_string(lua_State* L)
 {
-	auto cb = check_combo(L);
-	const char* text = luaL_checkstring(L, 2);
-	int idx = cb->add_string(StringFromUTF8(text).c_str());
+	auto cbox = check_combo(L);
+	if (!cbox) return 0;
+	auto text = StringFromUTF8(luaL_checkstring(L, 2));
+	int idx = cbox->add_string(text.c_str());
 	if (!lua_isnil(L, 3))
 	{
 		lua_pushvalue(L, 3);
 		//int ref_idx = luaL_ref(L, LUA_REGISTRYINDEX);
 		int ref_idx = lua_reg_store(L);
-		cb->set_data(idx, ref_idx);
+		cbox->set_data(idx, ref_idx);
 	}
 	return 0;
 }
 
 int do_cbox_insert_string(lua_State* L)
 {
-	auto cb = check_combo(L);
+	auto cbox = check_combo(L);
+	if (!cbox) return 0;
 	int id = luaL_checkinteger(L, 2);
 	const char* text = luaL_checkstring(L, 3);
-	cb->insert_string(id, StringFromUTF8(text).c_str());
+	cbox->insert_string(id, StringFromUTF8(text).c_str());
 	if (!lua_isnil(L, 4))
 	{
 		lua_pushvalue(L, 4);
 		//int ref_idx = luaL_ref(L, LUA_REGISTRYINDEX);
 		int ref_idx = lua_reg_store(L);
-		cb->set_data(id, ref_idx);
+		cbox->set_data(id, ref_idx);
 	}
 	return 0;
 }
 
 int do_cbox_find_string(lua_State* L)
 {
-	auto cb = check_combo(L);
-	const char* text = luaL_checkstring(L, 2);
+	auto cbox = check_combo(L);
+	if (!cbox) return 0;
+	auto text = StringFromUTF8(luaL_checkstring(L, 2));
 	int start_pos = luaL_optinteger(L, 3, -1);
-	int idx = cb->find_string(start_pos, StringFromUTF8(text).c_str());
+	int idx = cbox->find_string(start_pos, text.c_str());
 	lua_pushinteger(L, idx);
 	return 1;
 }
@@ -2606,6 +2622,7 @@ int do_cbox_find_string(lua_State* L)
 int do_cbox_remove(lua_State* L)
 {
 	auto cbox = check_combo(L);
+	if (!cbox) return 0;
 	int idx = luaL_checkinteger(L, 2);
 	lua_reg_release(L, cbox->get_data(idx));
 	lua_pushinteger(L, cbox->remove_item(idx));
@@ -2615,6 +2632,7 @@ int do_cbox_remove(lua_State* L)
 int do_cbox_get_data(lua_State* L)
 {
 	auto cbox = check_combo(L);
+	if (!cbox) return 0;
 	int id = cbox->get_cursel();
 	if (int data = cbox->get_data(id))
 	{
@@ -2627,35 +2645,34 @@ int do_cbox_get_data(lua_State* L)
 
 int do_cbox_set_items_h(lua_State* L)
 {
-	auto cbox = check_combo(L);
-	cbox->set_height(luaL_checkinteger(L, 2));
+	if (auto cbox = check_combo(L))	cbox->set_height(luaL_checkinteger(L, 2));
 	return 0;
 }
 
 int do_cbox_setcursel(lua_State* L)
 {
-	auto cbox = check_combo(L);
-	cbox->set_cursel(luaL_checkinteger(L, 2));
+	if (auto cbox = check_combo(L)) cbox->set_cursel(luaL_checkinteger(L, 2));
 	return 0;
 }
 
 int do_cbox_getcursel(lua_State* L)
 {
 	auto cbox = check_combo(L);
-	lua_pushinteger(L, cbox->get_cursel());
+	lua_pushinteger(L, cbox ? cbox->get_cursel() : 0);
 	return 1;
 }
 
 int do_cbox_count(lua_State* L)
 {
 	auto cbox = check_combo(L);
-	lua_pushinteger(L, cbox->count());
+	lua_pushinteger(L, cbox ? cbox->count() : 0);
 	return 1;
 }
 
 int do_cbox_get_item_text(lua_State* L)
 {
 	auto cbox = check_combo(L);
+	if (!cbox) return 0;
 	const int idx = luaL_checkinteger(L, 2);
 	const std::wstring str = cbox->get_item_text(idx);
 	lua_pushwstring(L, str);
@@ -2685,19 +2702,19 @@ int do_set_tooltip(lua_State* L)
 	if (TEventWindow* form = lua_cast<TEventWindow>(L))
 	{
 		int id = luaL_checkinteger(L, 2);
-		const char* text = luaL_checkstring(L, 3);
-		const char* caption = luaL_optstring(L, 4, nullptr);
+		auto text = StringFromUTF8(luaL_checkstring(L, 3));
+		auto caption = StringFromUTF8(luaL_optstring(L, 4, nullptr));
 		bool baloon = optboolean(L, 5);
 		bool close_btn = optboolean(L, 6);
 		unsigned int icon = luaL_optinteger(L, 7, 0);
-		form->set_tooltip(id, StringFromUTF8(text).c_str(), StringFromUTF8(caption).c_str(), baloon, close_btn, icon);
+		form->set_tooltip(id, text.c_str(), caption.c_str(), baloon, close_btn, icon);
 	}
 	return 0;
 }
 
 int do_remove_transparent(lua_State* L)
 {
-	if(TEventWindow* form = lua_cast<TEventWindow>(L))
+	if (TEventWindow* form = lua_cast<TEventWindow>(L))
 		form->remove_transparent();
 	return 0;
 }
@@ -2705,6 +2722,7 @@ int do_remove_transparent(lua_State* L)
 int do_set_transparent(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
+	if (!form) return 0;
 	const int percent = luaL_optinteger(L, 2, 255);
 	form->set_transparent(std::clamp(percent, 0, 255));
 	return 0;
@@ -2716,6 +2734,7 @@ int do_set_transparent(lua_State* L)
 int do_statusbar(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
+	if (!form) return 0;
 	const int nbParts = lua_gettop(L) - 1;
 	auto parts = std::make_unique<int[]>(nbParts);
 	for (int idx = 0; idx < nbParts; idx++)
@@ -2728,6 +2747,7 @@ int do_statusbar(lua_State* L)
 int do_status_setpart(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
+	if (!form) return 0;
 	int part_id = luaL_checkinteger(L, 2);
 	const char* text = luaL_checkstring(L, 3);
 	form->set_statusbar_text(part_id, StringFromUTF8(text).c_str());
@@ -2738,23 +2758,23 @@ int do_status_setpart(lua_State* L)
 
 int do_set_progress_pos(lua_State* L)
 {
-	auto pc = lua_cast<TProgressControl>(L);
-	pc->set_pos(luaL_checkinteger(L, 2));
+	if (auto pc = lua_cast<TProgressControl>(L)) pc->set_pos(luaL_checkinteger(L, 2));
 	return 0;
 }
 
 int do_set_progress_range(lua_State* L)
 {
-	auto pc = lua_cast<TProgressControl>(L);
-	pc->set_range(luaL_checkinteger(L, 2), luaL_checkinteger(L, 3));
+	if (auto pc = lua_cast<TProgressControl>(L)) pc->set_range(luaL_checkinteger(L, 2), luaL_checkinteger(L, 3));
 	return 0;
 }
 
 int do_get_progress_range(lua_State* L)
 {
 	auto pc = lua_cast<TProgressControl>(L);
+	if (!pc) return 0;
 	int low = 0;
-	int high = pc->get_range(low);
+	int high = 0;
+	pc->get_range(low, high);
 	lua_pushinteger(L, low);
 	lua_pushinteger(L, high);
 	return 2;
@@ -2762,15 +2782,13 @@ int do_get_progress_range(lua_State* L)
 
 int do_progress_go(lua_State* L)
 {
-	auto pc = lua_cast<TProgressControl>(L);
-	pc->go();
+	if (auto pc = lua_cast<TProgressControl>(L))	pc->go();
 	return 0;
 }
 
 int do_progress_step(lua_State* L)
 {
-	auto pc = lua_cast<TProgressControl>(L);
-	pc->set_step(luaL_checkinteger(L, 2));
+	if (auto pc = lua_cast<TProgressControl>(L))	pc->set_step(luaL_checkinteger(L, 2));
 	return 0;
 }
 
@@ -2823,6 +2841,7 @@ int do_get_desktop_window(lua_State* L)
 int add_tabbar(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
+	if (!form) return 0;
 	std::string align = luaL_optstring(L, 2, "top");
 	TTabControlLua* pTab = new TTabControlLua(form);
 	Alignment al = Alignment::alTop;
@@ -2885,7 +2904,7 @@ int do_set_align(lua_State* L)
 		}
 	}
 	else
-		luaL_error(L, "There is no parent window to split");
+		throw_error(L, "There is no parent window to split");
 	return 0;
 }
 
@@ -2893,6 +2912,7 @@ int do_set_align(lua_State* L)
 int add_tree(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
+	if (!form) return 0;
 	DWORD style = luaL_optinteger(L, 2, 0x2); // stack: parent, style
 	TTreeViewLua* pTree = new TTreeViewLua(form, style);
 	form->add(pTree);
@@ -2903,6 +2923,7 @@ int add_tree(lua_State* L)
 int add_label(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
+	if (!form) return 0;
 	DWORD label_style = luaL_optinteger(L, 2, 0x1);
 	const char* caption = luaL_optstring(L, 3, nullptr);
 	TLabel* pLabel = new TLabel(form, label_style);
@@ -2914,6 +2935,7 @@ int add_label(lua_State* L)
 int add_memo(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
+	if (!form) return 0;
 	return wrap_window(L, new TMemoLua(form));
 }
 
@@ -2921,6 +2943,7 @@ int add_memo(lua_State* L)
 int add_list(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
+	if (!form) return 0;
 	bool multiple_columns = optboolean(L, 2);
 	bool single_select = optboolean(L, 3, true);
 	bool large_icons = optboolean(L, 4);
@@ -2933,6 +2956,7 @@ int add_list(lua_State* L)
 int add_groupbox(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
+	if (!form) return 0;
 	const char* caption = luaL_optstring(L, 2, nullptr);
 	TGroupBox* pGrBox = new TGroupBox(form, StringFromUTF8(caption).c_str(), luaL_optinteger(L, 3, 0));
 	return wrap_window(L, pGrBox);
@@ -2942,6 +2966,7 @@ int add_groupbox(lua_State* L)
 int add_progress(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
+	if (!form) return 0;
 	bool vertical = optboolean(L, 2);
 	bool hasborder = optboolean(L, 3);
 	bool smooth = optboolean(L, 4);
@@ -2955,73 +2980,81 @@ int add_progress(lua_State* L)
 int add_trackbar(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
+	if (!form) return 0;
 	DWORD style = luaL_optinteger(L, 2, 0);
-	int cmd_id = luaL_optinteger(L, 3, -1);
-	return wrap_window(L, new TTrackBar(form, style, cmd_id));
+	int cntrl_id = luaL_optinteger(L, 3, -1);
+	return wrap_window(L, new TTrackBar(form, style, cntrl_id));
 }
 
 //parent:add_checkbox(sCaption, id, bTreestate)
 int add_checkbox(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
+	if (!form) return 0;
 	const char* caption = luaL_optstring(L, 2, nullptr);
-	int cmd_id = luaL_optinteger(L, 3, -1);
+	int cntrl_id = luaL_optinteger(L, 3, -1);
 	bool is3state = optboolean(L, 4);
-	return wrap_window(L, new TCheckBox(form, StringFromUTF8(caption).c_str(), cmd_id, is3state));
+	return wrap_window(L, new TCheckBox(form, StringFromUTF8(caption).c_str(), cntrl_id, is3state));
 }
 
 //parent:add_radiobutton(sCaption, id, bTreestate)
 int add_radiobutton(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
+	if (!form) return 0;
 	auto caption = luaL_checkstring(L, 2);
-	int cmd_id = luaL_optinteger(L, 3, -1);
+	int cntrl_id = luaL_optinteger(L, 3, -1);
 	bool is_auto = optboolean(L, 4);
-	return wrap_window(L, new TRadioButton(form, StringFromUTF8(caption).c_str(), cmd_id, is_auto));
+	return wrap_window(L, new TRadioButton(form, StringFromUTF8(caption).c_str(), cntrl_id, is_auto));
 }
 
 //parent:add_editbox(sCaption, style, id)
 int add_editbox(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
+	if (!form) return 0;
 	const char* caption = luaL_optstring(L, 2, nullptr);
 	DWORD style = luaL_optinteger(L, 3, 0);
-	int cmd_id = luaL_optinteger(L, 4, -1);
-	return wrap_window(L, new TEdit(form, StringFromUTF8(caption).c_str(), cmd_id, style));
+	int cntrl_id = luaL_optinteger(L, 4, -1);
+	return wrap_window(L, new TEdit(form, StringFromUTF8(caption).c_str(), cntrl_id, style));
 }
 
 //parent:add_button(sCaption, id)
 int add_button(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
-	const int cmd_id = luaL_checkinteger(L, 2);
+	if (!form) return 0;
+	const int cntrl_id = luaL_checkinteger(L, 2);
 	const char* caption = luaL_optstring(L, 3, nullptr);
 	const bool defpushbtn = optboolean(L, 4, true);
-	return wrap_window(L, new TButton(form, cmd_id, StringFromUTF8(caption).c_str(), defpushbtn ? TButtonBase::ButtonStyle::DEFPUSHBUTTON : TButtonBase::ButtonStyle::PUSHBUTTON));
+	return wrap_window(L, new TButton(form, cntrl_id, StringFromUTF8(caption).c_str(), defpushbtn ? TButtonBase::ButtonStyle::DEFPUSHBUTTON : TButtonBase::ButtonStyle::PUSHBUTTON));
 }
 
 //parent:add_listbox(id, bSorted)
 int add_listbox(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
-	int id = luaL_checkinteger(L, 2);
+	if (!form) return 0;
+	int cntrl_id = luaL_checkinteger(L, 2);
 	bool is_sorted = optboolean(L, 3);
-	return wrap_window(L, new TListBoxLua(form, id, is_sorted));
+	return wrap_window(L, new TListBoxLua(form, cntrl_id, is_sorted));
 }
 
 //parent:add_combobox(id, style)
 int add_combobox(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
-	int cmd_id = luaL_optinteger(L, 2, -1);
+	if (!form) return 0;
+	int cntrl_id = luaL_optinteger(L, 2, -1);
 	DWORD style = luaL_optinteger(L, 3, CBS_DROPDOWN | CBS_AUTOHSCROLL);
-	return wrap_window(L, new TComboBox(form, cmd_id, style));
+	return wrap_window(L, new TComboBox(form, cntrl_id, style));
 }
 
 //parent:add_link(sCaption)
 int add_link(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
+	if (!form) return 0;
 	const char* caption = luaL_checkstring(L, 2);
 	TSysLink* pLink = new TSysLink(form, StringFromUTF8(caption).c_str());
 	form->add(pLink);
@@ -3032,7 +3065,9 @@ class TUpDownLua : public TUpDownControl, public LuaControl
 {
 public:
 	TUpDownLua(TEventWindow* form, TWin* buddy, DWORD style) : TUpDownControl(form, buddy, style)
-	{ }
+	{
+	}
+
 private:
 	void ud_clicked(int delta) override;
 };
@@ -3068,29 +3103,25 @@ int add_updown(lua_State* L)
 // wnd:on_updown(function or <name global function>)
 int updown_on_updown(lua_State* L)
 {
-	TUpDownLua* lc = check_udc(L);
-	lc->set_on_updown(2);
+	if (TUpDownLua* lc = check_udc(L)) lc->set_on_updown(2);
 	return 0;
 }
 
 int updown_set_current(lua_State* L)
 {
-	TUpDownLua* lc = check_udc(L);
-	lc->set_current(luaL_checkinteger(L, 2));
+	if (TUpDownLua* lc = check_udc(L)) lc->set_current(luaL_checkinteger(L, 2));
 	return 0;
 }
 
 int updown_get_current(lua_State* L)
 {
-	TUpDownLua* lc = check_udc(L);
-	lua_pushinteger(L, lc->get_current());
+	if (TUpDownLua* lc = check_udc(L)) lua_pushinteger(L, lc->get_current());
 	return 1;
 }
 
 int updown_set_range(lua_State* L)
 {
-	TUpDownLua* lc = check_udc(L);
-	lc->set_range(luaL_checkinteger(L, 2), luaL_checkinteger(L, 3));
+	if (TUpDownLua* lc = check_udc(L)) lc->set_range(luaL_checkinteger(L, 2), luaL_checkinteger(L, 3));
 	return 0;
 }
 
@@ -3099,7 +3130,7 @@ int updown_set_range(lua_State* L)
 
 TDC* lua_cast_TDC(lua_State* L, int idx = 1)
 {
-	return reinterpret_cast<TDC*>(luaL_checkudata(L, idx, MT_TDC));
+	return static_cast<TDC*>(luaL_checkudata(L, idx, MT_TDC));
 }
 
 int tdc_tostring(lua_State* L)
@@ -3163,7 +3194,7 @@ int tdc_chord(lua_State* L)
 
 int tdc_draw_text(lua_State* L)
 {
- 	if (TDC* pTDC = lua_cast_TDC(L))
+	if (TDC* pTDC = lua_cast_TDC(L))
 	{
 		if (const char* txt = luaL_checkstring(L, 2))
 		{
@@ -3177,7 +3208,7 @@ int tdc_back_text(lua_State* L)
 {
 	if (TDC* pTDC = lua_cast_TDC(L))
 	{
-		if(lua_gettop(L) == 2)
+		if (lua_gettop(L) == 2)
 		{
 			pTDC->set_back_color(lua_optColor(L, 2));
 		}
@@ -3190,7 +3221,7 @@ int tdc_back_text(lua_State* L)
 }
 int tdc_color_text(lua_State* L)
 {
- 	if (TDC* pTDC = lua_cast_TDC(L))
+	if (TDC* pTDC = lua_cast_TDC(L))
 	{
 		switch (lua_gettop(L))
 		{
@@ -3204,7 +3235,7 @@ int tdc_color_text(lua_State* L)
 			const int r = luaL_checkinteger(L, 2);
 			const int g = luaL_checkinteger(L, 3);
 			const int b = luaL_checkinteger(L, 4);
-			pTDC->set_text_color(r,g,b);
+			pTDC->set_text_color(r, g, b);
 			break;
 		}
 		default:
@@ -3251,7 +3282,7 @@ int tdc_draw_line(lua_State* L)
 std::vector<Point> lua_to_points(lua_State* L, int idx)
 {
 	std::vector<Point> ret;
-	while (lua_isinteger(L, idx) && lua_isinteger(L, idx+1))
+	while (lua_isinteger(L, idx) && lua_isinteger(L, idx + 1))
 	{
 		int x = lua_tointeger(L, idx++);
 		int y = lua_tointeger(L, idx++);
@@ -3265,7 +3296,7 @@ int tdc_polyline(lua_State* L)
 	if (TDC* pTDC = lua_cast_TDC(L))
 	{
 		std::vector<Point> vp = lua_to_points(L, 2);
-		if(vp.size()) pTDC->polyline(vp.data(), vp.size());
+		if (vp.size()) pTDC->polyline(vp.data(), vp.size());
 	}
 	return 0;
 }
@@ -3275,7 +3306,7 @@ int tdc_polygone(lua_State* L)
 	if (TDC* pTDC = lua_cast_TDC(L))
 	{
 		std::vector<Point> vp = lua_to_points(L, 2);
-		if(vp.size()) pTDC->polygone(vp.data(), vp.size());
+		if (vp.size()) pTDC->polygone(vp.data(), vp.size());
 	}
 	return 0;
 }
@@ -3304,7 +3335,7 @@ int tdc_set_pixel(lua_State* L)
 }
 
 int tdc_set_pen(lua_State* L)
-{	
+{
 	if (TDC* pTDC = lua_cast_TDC(L))
 	{
 		COLORREF clr = lua_optColor(L, 2);
@@ -3316,7 +3347,7 @@ int tdc_set_pen(lua_State* L)
 }
 
 int tdc_set_xorpen(lua_State* L)
-{	
+{
 	if (TDC* pTDC = lua_cast_TDC(L))
 	{
 		bool flag = lua_toboolean(L, 2);
@@ -3326,7 +3357,7 @@ int tdc_set_xorpen(lua_State* L)
 }
 
 int tdc_reset_pen(lua_State* L)
-{	
+{
 	if (TDC* pTDC = lua_cast_TDC(L))
 	{
 		pTDC->reset_pen();
@@ -3335,7 +3366,7 @@ int tdc_reset_pen(lua_State* L)
 }
 
 int tdc_set_solid_brush(lua_State* L)
-{	
+{
 	if (TDC* pTDC = lua_cast_TDC(L))
 	{
 		COLORREF clr = lua_optColor(L, 2);
@@ -3345,7 +3376,7 @@ int tdc_set_solid_brush(lua_State* L)
 }
 
 int tdc_set_hatch_brush(lua_State* L)
-{	
+{
 	if (TDC* pTDC = lua_cast_TDC(L))
 	{
 		COLORREF clr = lua_optColor(L, 2);
@@ -3356,7 +3387,7 @@ int tdc_set_hatch_brush(lua_State* L)
 }
 
 int tdc_set_text_align(lua_State* L)
-{	
+{
 	if (TDC* pTDC = lua_cast_TDC(L))
 	{
 		int flags = luaL_checkinteger(L, 2);
@@ -3366,7 +3397,7 @@ int tdc_set_text_align(lua_State* L)
 }
 
 int tdc_select_stock(lua_State* L)
-{	
+{
 	if (TDC* pTDC = lua_cast_TDC(L))
 	{
 		int id = luaL_checkinteger(L, 2);
@@ -3376,7 +3407,7 @@ int tdc_select_stock(lua_State* L)
 }
 
 const luaL_Reg TDC_metamethods[] =
-{ 
+{
 	{ "__tostring", tdc_tostring },
 	{ NULL, NULL}
 };
@@ -3439,10 +3470,10 @@ void init_tdc_metatable(lua_State* L)
 
 static const luaL_Reg gui[] =
 {
-	// log
+#ifdef _DEBUG
+	{ "test",			do_test_function		},
 	{ "log",			do_log 					},
-	{ "create_link",	do_create_link 			},
-	{ "get_folder",		do_get_shell_folder		},
+#endif
 
 	// dialogs
 	{ "colour_dlg",		do_colour_dlg 			},
@@ -3453,6 +3484,8 @@ static const luaL_Reg gui[] =
 	{ "prompt_value",	do_prompt_value 		},
 
 	// others
+	{ "create_link",	do_create_link 			},
+	{ "get_folder",		do_get_shell_folder		},
 	{ "day_of_year",	do_day_of_year 			},
 	{ "ini_file",		new_inifile 			},
 	{ "version",		do_version 				},
@@ -3469,9 +3502,7 @@ static const luaL_Reg gui[] =
 	{ "window",			new_window				},
 	{ "panel",			new_panel				},
 
-	// test
-	{ "test",			do_test_function		},
-	{NULL, NULL},
+	{ NULL, NULL },
 };
 
 static const luaL_Reg window_methods[] =
@@ -3709,7 +3740,7 @@ TPlugin::TPlugin() : m_hRichEditDll(LoadLibrary(L"riched32.dll"))
 	}
 	if (!subclassed)
 		log_add("gui:cannot subclass SciTE Window");
-		//get_parent()->message(L"Cannot subclass SciTE Window", 2);
+	//get_parent()->message(L"Cannot subclass SciTE Window", 2);
 }
 
 TPlugin::~TPlugin()
@@ -3731,7 +3762,7 @@ TPlugin* getPlugin()
 }
 
 extern "C" __declspec(dllexport)
-int luaopen_gui(lua_State * L)
+int luaopen_gui(lua_State* L)
 {
 	if (!hInst)
 	{

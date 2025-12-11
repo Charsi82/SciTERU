@@ -15,7 +15,7 @@ public:
 	void start_items();
 	int  add_item_at(int i, const wchar_t* text, int idx = 0, int data = 0);
 	int  add_item(const wchar_t* text, int idx = 0, int data = 0);
-	void add_subitem(int i, const wchar_t* text, int idx);
+	void add_subitem(int i, wchar_t* text, int idx);
 	void select_item(int i);
 	void get_item_text(int i, wchar_t* buff, int buffsize);
 	int  get_item_data(int i);

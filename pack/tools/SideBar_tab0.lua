@@ -53,7 +53,7 @@ return function(tabs, panel_width, colorback, colorfore)
 	----------------------------------------------------------
 	-- Show Current Colour
 	----------------------------------------------------------
-	local function SetColour(colour)
+	function SetMemoColour(colour)
 		if (#colour == 6 or #colour == 8) and colour:match('%x%x%x%x%x%x') then
 			-- Set colour's value HEX
 			memo_path:set_memo_colour("", "#" .. colour)
@@ -66,14 +66,15 @@ return function(tabs, panel_width, colorback, colorfore)
 	end
 
 	props["dwell.period"] = 50
-	AddEventHandler("OnDwellStart", function(pos, cur_word) if pos ~= 0 then SetColour(cur_word) end end)
+
+	AddEventHandler("OnDwellStart", function(pos, cur_word) if pos ~= 0 then SetMemoColour(cur_word) end end)
 
 	local cur_word_old = ""
 	AddEventHandler("OnKey", function()
 		if editor.Focus then
 			local cur_word = GetCurrentWord()
 			if cur_word ~= cur_word_old then
-				SetColour(cur_word)
+				SetMemoColour(cur_word)
 				cur_word_old = cur_word
 			end
 		end

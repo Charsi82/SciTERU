@@ -42,7 +42,8 @@ namespace
 //////////////////////
 // TNotifyWin
 TNotifyWin::TNotifyWin(TEventWindow* form) :TWin(form), m_hpopup_menu(NULL)
-{}
+{
+}
 
 TNotifyWin::~TNotifyWin()
 {
@@ -496,7 +497,7 @@ void TListView::add_column(const wchar_t* label, int width)
 	lvc.pszText = const_cast<wchar_t*>(label);
 	lvc.iSubItem = m_last_col;
 
-	ListView_InsertColumn((HWND)m_hwnd, m_last_col, &lvc);
+	ListView_InsertColumn(m_hwnd, m_last_col, &lvc);
 	m_last_col++;
 }
 
@@ -515,7 +516,7 @@ void TListView::set_background(COLORREF colour)
 
 void TListView::set_theme(bool explorer)
 {
-	set_explorer(handle(), explorer);
+	set_explorer(m_hwnd, explorer);
 }
 
 unsigned int TListView::columns() const
@@ -525,7 +526,7 @@ unsigned int TListView::columns() const
 
 void TListView::autosize_column(int col, bool by_contents)
 {
-	ListView_SetColumnWidth((HWND)m_hwnd, col, by_contents ? LVSCW_AUTOSIZE : LVSCW_AUTOSIZE_USEHEADER);
+	ListView_SetColumnWidth(m_hwnd, col, by_contents ? LVSCW_AUTOSIZE : LVSCW_AUTOSIZE_USEHEADER);
 }
 
 void TListView::start_items()
@@ -553,7 +554,7 @@ int TListView::add_item_at(int i, const wchar_t* text, int idx, int data)
 	lvi.iItem = i;
 	lvi.iSubItem = 0;
 
-	ListView_InsertItem((HWND)m_hwnd, &lvi);
+	ListView_InsertItem(m_hwnd, &lvi);
 	return i;
 }
 
@@ -563,31 +564,31 @@ int TListView::add_item(const wchar_t* text, int idx, int data)
 	return add_item_at(m_last_row, text, idx, data);
 }
 
-void TListView::add_subitem(int i, const wchar_t* text, int idx)
+void TListView::add_subitem(int i, wchar_t* text, int idx)
 {
-	ListView_SetItemText((HWND)m_hwnd, i, idx, const_cast<wchar_t*>(text));
+	ListView_SetItemText(m_hwnd, i, idx, text);
 }
 
 void TListView::remove_item(int i)
 {
 	remove_item_impl(i);
-	ListView_DeleteItem((HWND)m_hwnd, i);
+	ListView_DeleteItem(m_hwnd, i);
 }
 
 void TListView::select_item(int i)
 {
 	if (i != -1)
 	{
-		ListView_SetItemState((HWND)m_hwnd, i, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
-		ListView_EnsureVisible((HWND)m_hwnd, i, true);
+		ListView_SetItemState(m_hwnd, i, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+		ListView_EnsureVisible(m_hwnd, i, true);
 	}
 	else
-		ListView_SetItemState((HWND)m_hwnd, i, 0, LVIS_SELECTED | LVIS_FOCUSED);
+		ListView_SetItemState(m_hwnd, i, 0, LVIS_SELECTED | LVIS_FOCUSED);
 }
 
 void TListView::get_item_text(int i, wchar_t* buff, int buffsize)
 {
-	ListView_GetItemText((HWND)m_hwnd, i, 0, buff, buffsize);
+	ListView_GetItemText(m_hwnd, i, 0, buff, buffsize);
 }
 
 int TListView::get_item_data(int i)
@@ -596,7 +597,7 @@ int TListView::get_item_data(int i)
 	lvi.mask = LVIF_PARAM;
 	lvi.iItem = i;
 	lvi.iSubItem = 0;
-	ListView_GetItem((HWND)m_hwnd, &lvi);
+	ListView_GetItem(m_hwnd, &lvi);
 	return lvi.lParam;
 }
 

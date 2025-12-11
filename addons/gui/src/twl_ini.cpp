@@ -1,14 +1,17 @@
 // TWL_INI.CPP
 /////////////////////
 
-#include "Twl.h"
+//#include "Twl.h"
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 #include "luabinder.h"
 #include "utf.h"
+#include <cmath>
 
 class IniFile
 {
 private:
-	static constexpr int BUFSZ = MAX_PATH;
+	static constexpr size_t BUFSZ = MAX_PATH;
 	wchar_t m_file[BUFSZ];
 	wchar_t m_section[BUFSZ];
 
@@ -90,7 +93,7 @@ const std::wstring IniFile::read_string(const wchar_t* key, const wchar_t* def) 
 {
 	const size_t buffsize = 1024;
 	std::wstring tmp(buffsize, 0);
-	GetPrivateProfileString(m_section, key, def, tmp.data(), BUFSZ, m_file);
+	GetPrivateProfileString(m_section, key, def, tmp.data(), buffsize, m_file);
 	return tmp;
 }
 
@@ -112,8 +115,8 @@ const wchar_t* IniFile::get_section() const
 int do_set_section(lua_State* L)
 {
 	IniFile* pini = check_inifile(L);
-	const char* sect = luaL_checkstring(L, 2);
-	pini->set_section(StringFromUTF8(sect).c_str());
+	auto sect = StringFromUTF8(luaL_checkstring(L, 2));
+	pini->set_section(sect.c_str());
 	return 0;
 }
 
@@ -121,9 +124,9 @@ int do_set_section(lua_State* L)
 int do_write_string(lua_State* L)
 {
 	IniFile* pini = check_inifile(L);
-	const char* key = luaL_checkstring(L, 2);
-	const char* val = lua_tostring(L, 3);
-	pini->write_string(StringFromUTF8(key).c_str(), StringFromUTF8(val).c_str());
+	auto key = StringFromUTF8(luaL_checkstring(L, 2));
+	auto val = StringFromUTF8(lua_tostring(L, 3));
+	pini->write_string(key.c_str(), val.c_str());
 	return 0;
 }
 
@@ -131,9 +134,9 @@ int do_write_string(lua_State* L)
 int do_read_string(lua_State* L)
 {
 	IniFile* pini = check_inifile(L);
-	const char* key = luaL_checkstring(L, 2);
-	const char* def = luaL_optstring(L, 3, "");
-	std::wstring str = pini->read_string(StringFromUTF8(key).c_str());
+	auto key = StringFromUTF8(luaL_checkstring(L, 2));
+	auto def = luaL_optstring(L, 3, "");
+	std::wstring str = pini->read_string(key.c_str());
 	lua_pushstring(L, str.size() ? UTF8FromString(str).c_str() : def);
 	return 1;
 }
@@ -142,11 +145,13 @@ int do_read_string(lua_State* L)
 int do_read_number(lua_State* L)
 {
 	IniFile* pini = check_inifile(L);
-	const char* key = luaL_checkstring(L, 2);
-	lua_Number def = luaL_optnumber(L, 3, 0.f);
-	lua_Number res = pini->read_number(StringFromUTF8(key).c_str(), def);
-	lua_pushnumber(L, res);
-	if (res == lua_tointeger(L, -1)) lua_pushinteger(L, res);
+	auto key = StringFromUTF8(luaL_checkstring(L, 2));
+	lua_Number def = luaL_optnumber(L, 3, 0.0);
+	lua_Number fpRes = pini->read_number(key.c_str(), def);
+	if(std::floor(fpRes) == fpRes)
+		lua_pushinteger(L, static_cast<lua_Integer>(fpRes));
+	else
+		lua_pushnumber(L, fpRes);
 	return 1;
 }
 
@@ -154,8 +159,8 @@ int do_read_number(lua_State* L)
 int do_remove_section(lua_State* L)
 {
 	IniFile* pini = check_inifile(L);
-	const char* sect_to_remove = luaL_optstring(L, 2, nullptr);
-	pini->remove_section(StringFromUTF8(sect_to_remove).c_str());
+	auto sect_to_remove = StringFromUTF8(luaL_optstring(L, 2, nullptr));
+	pini->remove_section(sect_to_remove.c_str());
 	return 0;
 }
 
@@ -163,8 +168,8 @@ int do_remove_section(lua_State* L)
 int do_remove_key(lua_State* L)
 {
 	IniFile* pini = check_inifile(L);
-	const char* key = luaL_checkstring(L, 2);
-	pini->remove_key(StringFromUTF8(key).c_str());
+	auto key = StringFromUTF8(luaL_checkstring(L, 2));
+	pini->remove_key(key.c_str());
 	return 0;
 }
 
@@ -223,7 +228,7 @@ int do_get_section(lua_State* L)
 const luaL_Reg LuaBinder<IniFile>::metamethods[] =
 {
 	{ "__gc",			do_destroy<IniFile> },
-	{ NULL, NULL}
+	{ NULL, NULL }
 };
 
 const luaL_Reg LuaBinder<IniFile>::methods[] =
@@ -249,9 +254,9 @@ void lua_openclass_iniFile(lua_State* L)
 
 int new_inifile(lua_State* L)
 {
-	const char* path = luaL_checkstring(L, 1);
+	auto path = StringFromUTF8(luaL_checkstring(L, 1));
 	bool in_cwd = lua_toboolean(L, 2);
 	//lua_push_newobject(L, new IniFile(StringFromUTF8(path).c_str(), in_cwd));
-	lua_push_newobject<IniFile>(L, StringFromUTF8(path).c_str(), in_cwd);
+	lua_push_newobject<IniFile>(L, path.c_str(), in_cwd);
 	return 1;
 }

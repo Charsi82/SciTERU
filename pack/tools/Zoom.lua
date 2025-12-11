@@ -23,7 +23,7 @@ local function ChangeFontSize(zoom)
 		if props["pane.accessible"] == '1' then
 			editor.PrintMagnification = zoom
 		end
-		local font_current_size = props["style.*.32"]:match("size:(%d+)")
+		local font_current_size = props["style.*.32"]:match("size:(%d+)") or 10
 		props["font.current.size"] = font_current_size + zoom -- Used in statusbar
 	end
 end

@@ -97,26 +97,6 @@ end
 
 <tr><td>
 	<p class="head">
-		<dfn id="gui.test">gui.test()</dfn>
-	</p>
-	<p>
-		<b>Описание:</b><br />
-		&nbsp;&nbsp;Ничего не делает. Использовалась для тестирования при разработке функций библиотеки.
-	<br />
-</td></tr>
-
-<tr><td>
-	<p class="head">
-		<dfn id="gui.log">gui.log('text')</dfn>
-	</p>
-	<p>
-		<b>Описание:</b><br />
-		&nbsp;&nbsp;Ничего не делает. Использовалась для тестирования при разработке функций библиотеки.
-	<br />
-</td></tr>
-
-<tr><td>
-	<p class="head">
 		<dfn id="gui.get_ascii">gui.get_ascii(128)</dfn>
 	</p>
 	<p>
@@ -148,6 +128,31 @@ end
 		&nbsp;&nbsp;Показывает окно с текстовым сообщением.<br />
 		&nbsp;&nbsp;Второй аргумент задаёт тип окна: "message", "warning", "error", "query".<br />
 		&nbsp;&nbsp;Возвращает логическое значение ответа.
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="gui.inifile">gui.inifile('filename.ini', true)</dfn><br />
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Создаёт объект для работы с ini файлом.<br />
+		&nbsp;&nbsp;Первый аргумент задаёт путь к файлу или его имя.<br />
+		&nbsp;&nbsp;Второй аргумент задаёт - создать в текущей папке.<br />
+		<div class="example">local ini = gui.inifile('filename.ini', true)</div>
+		&nbsp;&nbsp;Доступные методы:
+		&nbsp;&nbsp;<div class="example">
+		&nbsp;&nbsp;ini:set_section('section name') -- устанавливает текущую секцию<br />
+		&nbsp;&nbsp;ini:get_section() - возвращает текущую секцию<br />
+		&nbsp;&nbsp;ini:write_string('key', 'string') -- записывает строку по указанному ключу<br />
+		&nbsp;&nbsp;ini:write_number('key', 123) -- записывает число по указанному ключу<br />
+		&nbsp;&nbsp;ini:read_string('key') -- читает строку по указанному ключу<br />
+		&nbsp;&nbsp;ini:read_number('key) -- читает число по указанному ключу<br />
+		&nbsp;&nbsp;ini:remove_section('section name') -- удаляет секцию<br />
+		&nbsp;&nbsp;ini:remove_key('key') -- удаляет ключ из текущей секции<br />
+		&nbsp;&nbsp;local str_path = ini:get_path() -- возвращает путь файла<br />
+		&nbsp;&nbsp;local tbl_keys = ini:get_keys() -- возвращает список ключей текущей секции<br />
+		&nbsp;&nbsp;local tbl_sections = ini:get_sections() -- возвращает список секций в файле.<br /></div>
 </td></tr>
 
 <tr><td>
@@ -1805,35 +1810,11 @@ end
 
 </table>
 
-<h3>Чтение и запись ini файлов</h3>
-
-<table width="100%" cellpadding="1" cellspacing="0" border="1">
-
-<tr><td>
-	<p class="head">
-		<dfn id="gui.inifile">gui.inifile('filename.ini', true)</dfn><br />
-	</p>
-	<p>
-		<b>Описание:</b><br />
-		&nbsp;&nbsp;Создаёт объект для работы с ini файлом.<br />
-		&nbsp;&nbsp;Первый аргумент задаёт путь к файлу или его имя.<br />
-		&nbsp;&nbsp;Второй аргумент задаёт - создать в текущей папке.<br />
-		<div class="example">local ini = gui.inifile('filename.ini', true)</div>
-		&nbsp;&nbsp;Доступные методы:
-		&nbsp;&nbsp;<div class="example">
-		&nbsp;ini:set_section('section name') -- устанавливает текущую секцию<br />
-		&nbsp;ini:get_section() - возвращает текущую секцию<br />
-		&nbsp;ini:write_string('key', 'string') -- записывает строку по указанному ключу<br />
-		&nbsp;ini:write_number('key', 123) -- записывает число по указанному ключу<br />
-		&nbsp;ini:read_string('key') -- читает строку по указанному ключу<br />
-		&nbsp;ini:read_number('key) -- читает число по указанному ключу<br />
-		&nbsp;ini:remove_section('section name') -- удаляет секцию<br />
-		&nbsp;ini:remove_key('key') -- удаляет ключ из текущей секции<br />
-		&nbsp;local str_path = ini:get_path() -- возвращает путь файла<br />
-		&nbsp;local tbl_keys = ini:get_keys() -- возвращает список ключей текущей секции<br />
-		&nbsp;local tbl_sections = ini:get_sections() -- возвращает список секций в файле.<br /></div>
-</td></tr>
-</table>
-
 </body>
 </html>
+
+
+
+
+
+

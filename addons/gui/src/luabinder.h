@@ -47,9 +47,10 @@ public:
 			lua_createtable(L, 1, 1);
 			lua_pushcfunction(L, lookup);
 			lua_setfield(L, -2, "__index");
-			lua_createtable(L, inherits.size(), inherits.size());
+			const int inh_size = static_cast<int>(inherits.size());
+			lua_createtable(L, inh_size, inh_size);
 
-			for (unsigned int i = 0; i < inherits.size();)
+			for (size_t i = 0; i < inh_size;)
 			{
 				lua_pushstring(L, inherits[i].c_str());
 				lua_rawseti(L, -2, ++i);
