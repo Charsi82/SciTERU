@@ -264,7 +264,7 @@ local function CreateAPITable()
 			if api_file then
 				for line in api_file:lines() do
 					-- обрезаем комментарии, оставляя алиасы-паттерны без изменений
-					line = line:match('^#$%s*'..word_extended_patt..'+=.+$') or line:match('^[^%s%(]+')
+					local line = line:match('^#$%s*'..word_extended_patt..'+=.+$') or line:match('^[^%s%(]+')
 					if line then
 						api_table[#api_table+1] = line
 					end

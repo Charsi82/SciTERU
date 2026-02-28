@@ -59,7 +59,7 @@ function OpenFindFiles()
 	path = path:match('^.+\\')
 	local filename_prev = ''
 	for filename, lineno in output_text:gmatch('([^\r\n:]+):(%d+):[^\r\n]+') do
-		filename = filename:gsub('^%.\\', path)
+		local filename = filename:gsub('^%.\\', path)
 		if filename ~= filename_prev then
 			scite.Open(filename)
 			local pos = editor:findtext(str)

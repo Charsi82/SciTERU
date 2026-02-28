@@ -1,5 +1,6 @@
 #include "twl_utils.h"
 #include "log.h"
+#include <format>
 
 /*
 DWORD shell_execute_sync(const wchar_t* _command, const wchar_t* _args = nullptr, const wchar_t* _curDir = nullptr)
@@ -63,20 +64,11 @@ DWORD shell_execute(const wchar_t* _command, const wchar_t* _args, const wchar_t
 	return 0;
 }
 
-int THasIconWin::load_icons(const wchar_t* path, bool small_size)
+int THasIconWin::load_icons(const wchar_t* path, bool bSmallIcon)
 {
-	destroy();
-	TImageList il(small_size);
-	int icons_loaded = il.load_icons_from_module(path);
-	hImgList = il.handle();
-	set_image_list();
+	const int icons_loaded = iList.load_icons_from_module(path);
+	if (icons_loaded) set_image_list(bSmallIcon);
 	return icons_loaded;
-}
-
-void THasIconWin::destroy()
-{
-	if (hImgList) ImageList_Destroy(hImgList);
-	hImgList = NULL;
 }
 
 HICON load_icon(const wchar_t* file, int idx, bool small_icon)
@@ -93,14 +85,16 @@ HBITMAP load_bitmap(const wchar_t* file)
 
 ////////////////////////////
 // TImageList class
-TImageList::TImageList(bool s) : m_small_icons(s), m_handle(ImageList_Create(s ? 16 : 32, s ? 16 : 32, ILC_COLOR32 | ILC_MASK, 0, 32))
-{}
+TImageList::TImageList(bool s) : m_small_icons(s), m_handle(NULL)
+{ 
+	log_add("TImageList::TImageList");
+}
 
 int TImageList::add(const wchar_t* bitmapfile, COLORREF mask_clr)
 {
+	create();
 	int res = -1;
-	HBITMAP hBitmap = load_bitmap(bitmapfile);
-	if (hBitmap)
+	if (HBITMAP hBitmap = load_bitmap(bitmapfile))
 	{
 		if (mask_clr != -1)
 			res = ImageList_AddMasked(m_handle, hBitmap, mask_clr);
@@ -111,9 +105,31 @@ int TImageList::add(const wchar_t* bitmapfile, COLORREF mask_clr)
 	return res;
 }
 
+TImageList::~TImageList()
+{
+	log_add("TImageList::~TImageList");
+	destroy();
+}
+
+void TImageList::create()
+{
+	destroy();
+	m_handle = ImageList_Create(m_small_icons ? 16 : 32, m_small_icons ? 16 : 32, ILC_COLOR32 | ILC_MASK, 0, 32);
+}
+
+void TImageList::destroy()
+{
+	if (m_handle)
+	{
+		ImageList_Destroy(m_handle);
+		m_handle = NULL;
+	}
+}
+
 int TImageList::load_icons_from_module(const wchar_t* mod)
 {
-	int icon_cnt = ExtractIconEx(mod, -1, NULL, NULL, 1);
+	create();
+	const int icon_cnt = ExtractIconEx(mod, -1, NULL, NULL, 1);
 	for (int i = 0; i < icon_cnt; ++i)
 		if (HICON hIcon = load_icon(mod, i, m_small_icons))
 		{
@@ -124,7 +140,7 @@ int TImageList::load_icons_from_module(const wchar_t* mod)
 	return icon_cnt;
 }
 
-void TImageList::set_back_colour(COLORREF clrRef)
+void TImageList::set_back_colour(COLORREF clrRef) const
 {
-	ImageList_SetBkColor(m_handle, clrRef);
+	if (m_handle) ImageList_SetBkColor(m_handle, clrRef);
 }

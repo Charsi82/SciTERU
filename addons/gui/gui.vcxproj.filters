@@ -35,9 +35,6 @@
     <ClInclude Include="src\twl_cntrls.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="src\twl_imagelist.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="src\twl_listview.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>

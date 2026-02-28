@@ -27,7 +27,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <UseDebugLibraries>true</UseDebugLibraries>
@@ -116,6 +116,7 @@
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
     </Link>
@@ -150,6 +151,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -216,6 +218,7 @@
     <ClCompile Include="..\..\lexilla\lexers\LexErlang.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexErrorList.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexEScript.cxx" />
+    <ClCompile Include="..\..\lexilla\lexers\LexEscSeq.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexFlagship.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexForth.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexFortran.cxx" />

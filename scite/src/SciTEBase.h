@@ -96,6 +96,7 @@ public:
 	RecentFile file;
 	std::vector<SA::Line> foldState;
 	std::vector<SA::Line> bookmarks;
+	bool readOnly = false;
 };
 
 class Session {
@@ -106,8 +107,6 @@ public:
 
 struct FileWorker;
 
-// Scintilla documents can only be released by calling a method on a Scintilla
-// instance so store a Scintilla instance in the release functor
 struct BufferDocReleaser {
 	void operator()(SA::IDocumentEditable *pDoc) noexcept;
 };
@@ -586,7 +585,7 @@ protected:
 
 	std::unique_ptr<IEditorConfig> editorConfig;
 
-	enum { bufferMax = IDM_IMPORT - IDM_BUFFER };
+	static constexpr BufferIndex bufferMax = IDM_IMPORT - IDM_BUFFER;
 	BufferList buffers;
 
 	// Handle buffers

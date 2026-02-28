@@ -1056,8 +1056,8 @@ int luaopen_shell(lua_State * L)
 #else
 	luaL_newlib(L, shell); //Lua5.2+
 #endif
-
 	lua_pushvalue(L, -1);  /* copy of module */
 	lua_setglobal(L, "shell");
+
 	return 1;
 }

@@ -16,7 +16,8 @@ version 1.1.0
 -- Выводит содержимое таблицы в виде дерева
 local function print_table(tbl, tbl_name)
 	if tbl_name == nil then tbl_name = '.' end
-	for fields, value in pairs(tbl) do
+	for sfields, value in pairs(tbl) do
+		local fields = sfields
 		if type(fields) == 'string' then fields = "'" .. fields .. "'" end
 		if type(value) == 'table' then
 			print("+", tbl_name .. "[" .. fields .. "] =", value)
@@ -30,7 +31,7 @@ end
 local value = props['CurrentSelection']
 if (value == '') then value = props['CurrentWord'] end
 local res = _G[value] or props[value]
-print(value .. '=' .. tostring(res))
+-- print(value .. '=' .. tostring(res))
 if type(res) == 'string' then
 	local pane = editor.Focus and editor or output
 	local sel = pane:GetSelText():trim()

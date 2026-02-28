@@ -2545,16 +2545,22 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 		</td>
 	</tr>
 
-		<tr>
-			<td><dfn><a name="lexer.errorlist.value.separate">lexer.errorlist.value.separate</a></dfn></td>
-			<td>For lines in the output pane that are matches from Find in Files or GCC-style diagnostics,
-style the path and line number separately from the rest of the line with style 21 used for the rest of the line. This allows matched text to be more easily distinguished from its location.</td>
-		</tr>
+	<tr>
+		<td><dfn><a name="lexer.errorlist.value.separate">lexer.errorlist.value.separate</a></dfn></td>
+		<td>Для строк в области вывода, которые соответствуют результатам поиска в файлах или диагностическим сообщениям в стиле GCC,
+отдельно от остальной части строки следует задать стиль пути и номера строки, используя стиль 21. Это позволяет легче отличить найденный текст от его местоположения.</td>
+	</tr>
+	
+	<tr>
+		<td><dfn><a name="lexer.escseq.colour.text">lexer.escseq.colour.text</a></dfn></td>
+		<td>Установите значение 1, чтобы раскрасить текст в соответствии с управляющими последовательностями.</td>
+	</tr>
 
-		<tr>
-			<td><dfn><a name="lexer.flagship.styling.within.preprocessor">lexer.flagship.styling.within.preprocessor</a></dfn></td>
-			<td>For Harbour code, determines whether all preprocessor code is styled in the preprocessor style (0) or only from the initial # to the end of the command word(1, the default). It also determines how to present text, dump, and disabled code.</td>
-		</tr>
+	<tr>
+		<td><dfn><a name="lexer.flagship.styling.within.preprocessor">lexer.flagship.styling.within.preprocessor</a></dfn></td>
+		<td>Для кода Harbour определяется, будет ли весь код препроцессора оформлен в стиле препроцессора (0) или только от начального # до конца командного слова (1, значение по умолчанию). Также определяется способ отображения текста, дампа и отключенного кода.</td>
+	</tr>
+	
 	<tr>
 		<td>
 			<dfn><a name="lexer.gdscript.keywords2.no.sub.identifiers">lexer.gdscript.keywords2.no.sub.identifiers</a></dfn>
@@ -3141,6 +3147,11 @@ style the path and line number separately from the rest of the line with style 2
 			<td><dfn><a name="session.bookmarks">session.bookmarks<br>
 			session.folds</a></dfn></td>
 			<td>Задайте переменную <dfn>session.bookmarks</dfn>, чтобы положение меток сохранялось в файлах сессий. Если задать переменную <dfn>session.folds</dfn>, в файлах сессий будет сохранено положение свёртки кода. При загрузке файла сессии, метки и/или положение свёртки кода восстанавливаются. Если задана переменная <dfn><a href="#fold">fold.on.open</a></dfn>, положение свёртки кода не восстанавливается.</td>
+		</tr>
+		
+		<tr>
+			<td><dfn><a name="session.readonly">session.readonly</a></dfn></td>
+			<td>Установка параметра <dfn>session.readonly</dfn> приводит к тому, что состояние «только для чтения» каждого буфера сохраняется в файлах сессии и восстанавливается при загрузке файла сессии.</td>
 		</tr>
 
 		<tr class="windowsonly">

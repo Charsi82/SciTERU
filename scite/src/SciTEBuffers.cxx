@@ -71,7 +71,7 @@ void BufferDocReleaser::operator()(SA::IDocumentEditable *pDoc) noexcept {
 }
 
 Buffer::Buffer() :
-	file(), isDirty(false), isReadOnly(false), failedSave(false), useMonoFont(false), lifeState(LifeState::empty),
+	isDirty(false), isReadOnly(false), failedSave(false), useMonoFont(false), lifeState(LifeState::empty),
 	unicodeMode(UniMode::uni8Bit), fileModTime(0), fileModLastAsk(0), documentModTime(0),
 	findMarks(FindMarks::none), futureDo(FutureDo::none) {}
 
@@ -601,13 +601,7 @@ void SciTEBase::ClearDocument() {
 }
 
 void SciTEBase::CreateBuffers() {
-	int buffersWanted = props.GetInt("buffers");
-	if (buffersWanted > bufferMax) {
-		buffersWanted = bufferMax;
-	}
-	if (buffersWanted < 1) {
-		buffersWanted = 1;
-	}
+	const BufferIndex buffersWanted = std::clamp(props.GetInt("buffers"), 1, bufferMax);
 	buffers.Allocate(buffersWanted);
 }
 
@@ -749,7 +743,7 @@ void SciTEBase::RestoreSession() {
 
 	Session session;
 
-	for (int i = 0; i < bufferMax; i++) {
+	for (BufferIndex i = 0; i < bufferMax; i++) {
 		std::string propKey = IndexPropKey("buffer", i, "path");
 		std::string propStr = propsSession.GetString(propKey);
 		if (propStr == "")
@@ -774,6 +768,11 @@ void SciTEBase::RestoreSession() {
 			propKey = IndexPropKey("buffer", i, "bookmarks");
 			propStr = propsSession.GetString(propKey);
 			bufferState.bookmarks = LinesFromString(propStr);
+		}
+
+		if (props.GetInt("session.readonly")) {
+			propKey = IndexPropKey("buffer", i, "readonly");
+			bufferState.readOnly = (propsSession.GetInt(propKey) == 1);
 		}
 
 		if (props.GetInt("fold") && !props.GetInt("fold.on.open") &&
@@ -884,6 +883,12 @@ void SciTEBase::SaveSessionFile(const GUI::gui_char *sessionName) {
 						propKey = IndexPropKey("buffer", i, "bookmarks");
 						fprintf(sessionFile, "%s=%s\n", propKey.c_str(), bmString.c_str());
 					}
+				}
+
+				if (props.GetInt("session.readonly")) {
+					const std::string roString = buff.isReadOnly ? "1" : "0";
+					propKey = IndexPropKey("buffer", i, "readonly");
+					fprintf(sessionFile, "%s=%s\n", propKey.c_str(), roString.c_str());
 				}
 
 				if (props.GetInt("fold") && props.GetInt("session.folds")) {
@@ -1325,7 +1330,7 @@ GUI::gui_string BufferTitle([[maybe_unused]] int pos, const Buffer &buffer, Titl
 	// Read only indicator
 	if (buffer.isReadOnly && props.GetInt("read.only.indicator")) {
 #ifdef RB_ROTM
-		std::string mark = props.GetString("tabbar.readonly.marker");
+		const std::string mark = props.GetString("tabbar.readonly.marker");
 		title += mark.empty() ? GUI_TEXT(" |") : GUI::StringFromUTF8(mark);
 #else
 		title += GUI_TEXT(" |");
@@ -1449,6 +1454,8 @@ bool SciTEBase::AddFileToBuffer(const BufferState &bufferState) {
 				buffers.buffers[iBuffer].file.filePosition = bufferState.file.filePosition;
 				buffers.buffers[iBuffer].foldState = bufferState.foldState;
 				buffers.buffers[iBuffer].bookmarks = bufferState.bookmarks;
+				if (bufferState.readOnly)
+					buffers.buffers[iBuffer].isReadOnly = bufferState.readOnly;
 				if (buffers.buffers[iBuffer].lifeState == Buffer::LifeState::opened) {
 					// File was opened synchronously
 					RestoreState(buffers.buffers[iBuffer], true);
@@ -2363,7 +2370,7 @@ void SciTEBase::GoMessage(int dir) {
 				}
 
 				else if (style == SCE_ERR_DIFF_MESSAGE) {
-					const bool isAdd = message.find("+++ ") == 0;
+					const bool isAdd = message.starts_with("+++ ");
 					const SA::Line atLine = lookLine + (isAdd ? 1 : 2); // lines are in this order: ---, +++, @@
 					std::string atMessage = GetLine(wOutput, atLine);
 					if (atMessage.starts_with("@@ -")) {

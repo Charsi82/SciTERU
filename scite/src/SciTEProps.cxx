@@ -597,6 +597,7 @@ const char *propertiesToForward[] = {
 	"lexer.edifact.highlight.un.all",
 	"lexer.errorlist.escape.sequences",
 	"lexer.errorlist.value.separate",
+	"lexer.escseq.colour.text",
 	"lexer.flagship.styling.within.preprocessor",
 	"lexer.gdscript.keywords2.no.sub.identifiers",
 	"lexer.gdscript.literals.binary",

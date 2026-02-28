@@ -359,6 +359,10 @@ SciTE Ru-Board additions defines
 // фикс раскраски двоеточия для лексера Lua (пример: "obj:method1():method2()" )
 #define RB_FLL
 
+// фикс раскраски модификаторов <const> и <close> для лексера Lua5.4+
+// используется стиль style.lua.19 (SCE_LUA_WORD8)
+#define RB_FLLMODS
+
 // изменение отображения пунктов меню Вкладки
 #define RB_TMF
 

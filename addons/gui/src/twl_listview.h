@@ -6,7 +6,6 @@ class TListView : public TNotifyWin, public THasIconWin
 	int m_last_row;
 	bool m_custom_paint;
 	COLORREF m_fg, m_bg;
-	void set_image_list(bool small_size) override;
 
 public:
 	TListView(TEventWindow* form, bool multiple_columns = false, bool single_select = true, bool large_icons = false);
@@ -32,6 +31,7 @@ public:
 	void clear();
 
 private:
+	void set_image_list(bool bSmallIcon) override;
 	virtual void handle_select(int id) = 0;
 	virtual void handle_double_click(int id, int j, const char* s) = 0;
 	virtual void handle_onkey(int id) = 0;

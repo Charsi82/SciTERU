@@ -7,7 +7,8 @@ enum { SURROGATE_LEAD_FIRST = 0xD800 };
 enum { SURROGATE_TRAIL_FIRST = 0xDC00 };
 enum { SURROGATE_TRAIL_LAST = 0xDFFF };
 
-static size_t UTF8Length(const wchar_t* uptr, size_t tlen) {
+static size_t UTF8Length(const wchar_t* uptr, size_t tlen)
+{
 	size_t len = 0;
 	for (size_t i = 0; i < tlen && uptr[i];) {
 		unsigned int uch = uptr[i];
@@ -30,7 +31,8 @@ static size_t UTF8Length(const wchar_t* uptr, size_t tlen) {
 	return len;
 }
  
-static void UTF8FromUTF16(const wchar_t* uptr, size_t tlen, char* putf, size_t len) {
+static void UTF8FromUTF16(const wchar_t* uptr, size_t tlen, char* putf, size_t len)
+{
 	int k = 0;
 	for (size_t i = 0; i < tlen && uptr[i];) {
 		unsigned int uch = uptr[i];
@@ -61,7 +63,8 @@ static void UTF8FromUTF16(const wchar_t* uptr, size_t tlen, char* putf, size_t l
 	putf[len] = '\0';
 }
 
-static size_t UTF16Length(const char* s, size_t len) {
+static size_t UTF16Length(const char* s, size_t len)
+{
 	size_t ulen = 0;
 	size_t charLen;
 	for (size_t i = 0; i < len;) {
@@ -85,7 +88,8 @@ static size_t UTF16Length(const char* s, size_t len) {
 	return ulen;
 }
 
-static size_t UTF16FromUTF8(const char* s, size_t len, wchar_t* tbuf, size_t tlen) {
+static size_t UTF16FromUTF8(const char* s, size_t len, wchar_t* tbuf, size_t tlen)
+{
 	size_t ui = 0;
 	const unsigned char* us = reinterpret_cast<const unsigned char*>(s);
 	size_t i = 0;
@@ -135,20 +139,23 @@ std::wstring StringFromUTF8(const char* s)
 	return us;
 }
 
-std::string UTF8FromString(const std::wstring& s)
+std::string UTF8FromString(std::wstring_view s)
 {
 	size_t sLen = s.size();
-	size_t narrowLen = UTF8Length(s.c_str(), sLen);
+	size_t narrowLen = UTF8Length(s.data(), sLen);
 	std::string res(narrowLen + 1, 0);
-	UTF8FromUTF16(s.c_str(), sLen, res.data(), narrowLen);
+	UTF8FromUTF16(s.data(), sLen, res.data(), narrowLen);
 	return res;
 }
 
-std::string ConvertFromUTF8(std::string_view s, int codePage) {
-	if (codePage == CP_UTF8) {
+std::string ConvertFromUTF8(std::string_view s, int codePage)
+{
+	if (codePage == CP_UTF8)
+	{
 		return s.data();
 	}
-	else {
+	else
+	{
 		std::wstring sWide = StringFromUTF8(s.data());
 		int len = static_cast<int>(sWide.length());
 		int cchMulti = ::WideCharToMultiByte(codePage, 0, sWide.c_str(), len, NULL, 0, NULL, NULL);
@@ -158,11 +165,14 @@ std::string ConvertFromUTF8(std::string_view s, int codePage) {
 	}
 }
 
-std::string ConvertToUTF8(std::string_view s, int codePage) {
-	if (codePage == CP_UTF8) {
+std::string ConvertToUTF8(std::string_view s, int codePage)
+{
+	if (codePage == CP_UTF8)
+	{
 		return s.data();
 	}
-	else {
+	else
+	{
 		const char* original = s.data();
 		int cchWide = ::MultiByteToWideChar(codePage, 0, original, -1, NULL, 0);
 		std::wstring sWide(static_cast<size_t>(cchWide) + 1, 0);

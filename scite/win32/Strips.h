@@ -28,7 +28,7 @@ public:
 		return static_cast<HWND>(GetID());
 	}
 	virtual LRESULT WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) = 0;
-	static LRESULT PASCAL StWndProc(
+	static LRESULT CALLBACK StWndProc(
 		HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
 };
 

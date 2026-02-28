@@ -88,10 +88,10 @@
 #define LUA_LIB
 #define LUA_BUILD_AS_DLL
 #include "lua.hpp"
-//#pragma comment( lib, "lua.lib" )
+
 #include "lfs.h"
 
-#define LFS_VERSION "1.8.0"
+#define LFS_VERSION "1.9.0"
 #define LFS_LIBNAME "lfs"
 
 #if LUA_VERSION_NUM >= 503      /* Lua 5.3+ */
@@ -185,7 +185,7 @@ typedef struct dir_data {
 
 #ifdef _WIN32
 
-int lfs_win32_pusherror(lua_State* L)
+static int lfs_win32_pusherror(lua_State* L)
 {
     int en = GetLastError();
     lua_pushnil(L);
@@ -202,7 +202,7 @@ int lfs_win32_pusherror(lua_State* L)
 
 #define TICKS_PER_SECOND 10000000
 #define EPOCH_DIFFERENCE 11644473600LL
-time_t windowsToUnixTime(FILETIME ft)
+static time_t windowsToUnixTime(FILETIME ft)
 {
   ULARGE_INTEGER uli{};
   uli.LowPart = ft.dwLowDateTime;
@@ -210,7 +210,7 @@ time_t windowsToUnixTime(FILETIME ft)
   return (time_t) (uli.QuadPart / TICKS_PER_SECOND - EPOCH_DIFFERENCE);
 }
 
-int lfs_win32_lstat(const char *path, STAT_STRUCT * buffer)
+static int lfs_win32_lstat(const char *path, STAT_STRUCT * buffer)
 {
   WIN32_FILE_ATTRIBUTE_DATA win32buffer{};
   if (GetFileAttributesEx(path, GetFileExInfoStandard, &win32buffer)) {
@@ -260,9 +260,10 @@ static int pusherror(lua_State * L, const char *info)
 
 static int pushresult(lua_State * L, int res, const char *info)
 {
-  if (res == -1) {
+  if (res == -1)
+  {
     return pusherror(L, info);
-  } else {
+  }   else    {
     lua_pushboolean(L, 1);
     return 1;
   }
@@ -275,14 +276,16 @@ static int pushresult(lua_State * L, int res, const char *info)
 static int change_dir(lua_State * L)
 {
   const char *path = luaL_checkstring(L, 1);
-  if (chdir(path)) {
+  if (chdir(path))
+  {
     lua_pushnil(L);
     char tmp[MAX_PATH];
     strerror_s(tmp, MAX_PATH, errno);
     lua_pushfstring(L, "Unable to change working directory to '%s'\n%s\n",
                     path, tmp /*chdir_error*/);
     return 2;
-  } else {
+  } else
+  {
     lua_pushboolean(L, 1);
     return 1;
   }
@@ -306,7 +309,7 @@ static int get_dir(lua_State * L)
   size_t size = LFS_MAXPATHLEN; /* initial buffer size */
   int result;
   while (1) {
-    char *path2 = (char*)realloc(path, size);
+    char *path2 = static_cast<char*>(realloc(path, size));
     if (!path2) {               /* failed to allocate */
       result = pusherror(L, "get_dir realloc() failed");
       break;
@@ -342,7 +345,7 @@ static FILE *check_file(lua_State * L, int idx, const char *funcname)
     return 0;
   } else
     return *fh;
-#elif LUA_VERSION_NUM >= 502 && LUA_VERSION_NUM <= 504
+#elif LUA_VERSION_NUM >= 502 && LUA_VERSION_NUM <= 505
   luaL_Stream *fh = (luaL_Stream *) luaL_checkudata(L, idx, "FILE*");
   if (fh->closef == 0 || fh->f == NULL) {
     luaL_error(L, "%s: closed file", funcname);
@@ -1106,16 +1109,16 @@ static int push_link_target(lua_State * L)
   }
 #endif
   char *target = NULL;
-  int tsize = 0, size = 256;        /* size = initial buffer capacity */
+  size_t tsize = 0, size = 256;        /* size = initial buffer capacity */
   int ok = 0;
   while (!ok) {
-    char *target2 = (char*)realloc(target, size);
+    char *target2 = static_cast<char*>(realloc(target, size));
     if (!target2) {             /* failed to allocate */
       break;
     }
     target = target2;
 #ifdef _WIN32
-    tsize = GetFinalPathNameByHandle(h, target, size, FILE_NAME_OPENED);
+    tsize = GetFinalPathNameByHandle(h, target, static_cast<DWORD>(size), FILE_NAME_OPENED);
 #else
     tsize = readlink(file, target, size);
 #endif
@@ -1125,7 +1128,8 @@ static int push_link_target(lua_State * L)
     if (tsize < size) {
 #ifdef _WIN32
       if (tsize > 4 && strncmp(target, "\\\\?\\", 4) == 0) {
-        memmove_s(target, static_cast<rsize_t>(tsize) - 3, target + 4, static_cast<rsize_t>(tsize) - 3);
+        //- memmove_s(target, static_cast<rsize_t>(tsize) - 3, target + 4, static_cast<rsize_t>(tsize) - 3);
+        memmove(target, target + 4, tsize - 3);
         tsize -= 4;
       }
 #endif
@@ -1172,8 +1176,6 @@ static int link_info(lua_State * L)
 */
 static void set_info(lua_State * L)
 {
-  lua_pushliteral(L, "Copyright (C) 2003-2017 Kepler Project");
-  lua_setfield(L, -2, "_COPYRIGHT");
   lua_pushliteral(L,
                   "LuaFileSystem is a Lua library developed to complement "
                   "the set of functions related to file systems offered by "

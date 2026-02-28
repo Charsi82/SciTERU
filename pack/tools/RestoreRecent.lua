@@ -104,7 +104,7 @@ local function Restore(file)
 			local folds = FileParams['folds']
 			if folds ~= nil then
 				for line_num in string.gmatch(folds, "%d+") do
-					line_num = tonumber(line_num)-1
+					local line_num = tonumber(line_num)-1
 					if editor.FoldExpanded[line_num] then
 -- 						editor:ToggleFold(line_num)
 						editor:FoldLine(line_num, 0)

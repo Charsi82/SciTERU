@@ -259,9 +259,9 @@ bool SciTEWin::ModelessHandler(MSG *pmsg) {
 }
 
 //  DoDialog is a bit like something in PC Magazine May 28, 1991, page 357
-int SciTEWin::DoDialog(const TCHAR *resName, DLGPROC lpProc) {
-	const int result = static_cast<int>(
-				   ::DialogBoxParam(hInstance, resName, MainHWND(), lpProc, reinterpret_cast<LPARAM>(this)));
+INT_PTR SciTEWin::DoDialog(const TCHAR *resName, DLGPROC lpProc) {
+	const INT_PTR result =
+				   ::DialogBoxParam(hInstance, resName, MainHWND(), lpProc, reinterpret_cast<LPARAM>(this));
 
 	if (result == -1) {
 		GUI::gui_string errorNum = GUI::StringFromInteger(::GetLastError());
@@ -974,8 +974,12 @@ void SciTEWin::UserStripClosed() {
 }
 
 void SciTEWin::ShowBackgroundProgress(const GUI::gui_string &explanation, size_t size, size_t progress) {
+	const bool backgroundWasVisible = backgroundStrip.visible;
 	backgroundStrip.visible = !explanation.empty();
-	SizeSubWindows();
+	if (backgroundWasVisible != backgroundStrip.visible) {
+		// Changed visibility so resize.
+		SizeSubWindows();
+	}
 	if (backgroundStrip.visible)
 		backgroundStrip.SetProgress(explanation, size, progress);
 }

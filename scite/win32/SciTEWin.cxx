@@ -1242,9 +1242,8 @@ DWORD SciTEWin::ExecuteOne(const Job &jobToRun) {
 				} else {
 					bytesToWrite = eolPos + 1 - writingPosition;
 				}
-				if (bytesToWrite > 250) {
-					bytesToWrite = 250;
-				}
+				constexpr size_t maxBytesWrite = 250;
+				bytesToWrite = std::min(bytesToWrite, maxBytesWrite);
 
 				DWORD bytesWrote = 0;
 
@@ -1253,7 +1252,8 @@ DWORD SciTEWin::ExecuteOne(const Job &jobToRun) {
 							      static_cast<DWORD>(bytesToWrite), &bytesWrote, nullptr);
 
 				if (bTest) {
-					if ((writingPosition + bytesToWrite) / 1024 > writingPosition / 1024) {
+					constexpr size_t oneK = 1024;
+					if ((writingPosition + bytesToWrite) / oneK > writingPosition / oneK) {
 						// sleep occasionally, even when writing
 						::Sleep(100L);
 					}
@@ -2425,7 +2425,7 @@ LRESULT SciTEWin::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) {
 	return 0;
 }
 
-LRESULT PASCAL SciTEWin::TWndProc(
+LRESULT CALLBACK SciTEWin::TWndProc(
 	HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam) {
 	if (iMessage == WM_CREATE) {
 		SciTEWin *scitePassed = static_cast<SciTEWin *>(SetWindowPointerFromCreate(hWnd, lParam));
@@ -2611,10 +2611,6 @@ void RestrictDLLPath() noexcept {
 }
 
 }
-
-#ifdef STATIC_BUILD
-extern "C" Scintilla::ILexer5 * __stdcall CreateLexer(const char *name);
-#endif
 
 #if defined(_MSC_VER) && defined(_PREFAST_)
 // Stop warning for WinMain. Microsoft headers have annotations and MinGW don't.

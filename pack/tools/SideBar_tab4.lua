@@ -225,7 +225,7 @@ end]]
 
 	local tree = tab4:add_tree(tree_style)
 	do
-		if colorback then tree:set_tree_colour(colorfore, colorback) end
+		if colorback then tree:tree_set_colour(colorfore, colorback) end
 		-- tab4:add(tree, "none")
 		tree:position(550, 5)
 		tree:size(170, 370)
@@ -265,7 +265,7 @@ tree:add_item("qwerty3", nil, 1)]]
 			label_icon:set_icon([[toolbar\cool.dll]], data)
 		end)
 		tab4:set_tiptext(tree:get_ctrl_id(), 'tips tree')
-		-- tree:set_tree_editable(true)
+		-- tree:tree_set_editable(true)
 		function tree_test_menu() label_text:set_text('menu for tree ' .. (tree:get_ctrl_id() or '[none]') .. ' clicked') end -- ok
 
 		tree:context_menu{"test|tree_test_menu"} -- ok
@@ -312,7 +312,7 @@ tree:add_item("qwerty3", nil, 1)]]
 	btn:size(40, 30)
 	callbacks[Button1_ID] = function(state)
 		label_text:set_text('btn_1_clicked')
-		trbar1:select(30, 60)
+		trbar1:selection(30, 60)
 	end
 
 	local Button2_ID = 12
@@ -424,8 +424,8 @@ right  2
 	-- trbar1:range(20,80)
 	--[[
 -- style TBS_ENABLESELRANGE required
-local selmin, selmax = trbar1:select() -- get selmin, selmax
-trbar1:select(20,80) -- set selection
+local selmin, selmax = trbar1:selection() -- get selmin, selmax
+trbar1:selection(20,80) -- set selection
 trbar1:sel_clear() -- clear selection
 ]]
 	local prog
@@ -508,7 +508,7 @@ trbar1:sel_clear() -- clear selection
 	local tree_editable = false
 	callbacks[Button4_ID] = function(state)
 		tree_editable = not tree_editable
-		tree:set_tree_editable(tree_editable)
+		tree:tree_set_editable(tree_editable)
 		btn4:set_text(tree_editable and "Tree Edit OFF" or "Tree Edit ON")
 	end
 
@@ -581,7 +581,7 @@ trbar1:sel_clear() -- clear selection
 	local updown = tab4:add_updown(editbox, style) -- buddy, style
 	updown:set_range(-50, 50)
 	updown:set_current(7)
-
+	updown:on_updown( function() label_text:set_text("updown value:" .. updown:get_current()) end )
 	-------- groupbox ---------
 	local grbox = tab4:add_groupbox('Дата и время')
 	grbox:position(20, 10)

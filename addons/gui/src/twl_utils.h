@@ -29,29 +29,31 @@ int getHtmlNumber(unsigned char value);
 // icons and images list
 class TImageList
 {
-	bool m_small_icons;
-	HIMAGELIST m_handle;
+	bool m_small_icons{};
+	HIMAGELIST m_handle{};
 
 public:
 	explicit TImageList(bool s = true);
+	~TImageList();
 	HIMAGELIST handle() const { return m_handle; }
 	int add(const wchar_t* bitmapfile, COLORREF mask_clr = -1);
 	int load_icons_from_module(const wchar_t* mod);
-	void set_back_colour(COLORREF clrRef);
+	void set_back_colour(COLORREF clrRef) const;
+	void create();
+	void destroy();
 };
 
 class THasIconWin
 {
-	HIMAGELIST hImgList;
+	TImageList iList{};
 
 public:
-	THasIconWin() : hImgList(NULL) {}
-	virtual ~THasIconWin() { destroy(); }
-	HIMAGELIST get_image_list() const { return hImgList; }
-	bool has_image() const { return hImgList != NULL; }
 	int load_icons(const wchar_t* path, bool small_size);
 
+protected:
+	HIMAGELIST get_image_list() const { return iList.handle(); }
+	bool has_image() const { return iList.handle() != NULL; }
+
 private:
-	virtual void set_image_list(bool normal = true) = 0;
-	void destroy();
+	virtual void set_image_list(bool small_size) = 0;
 };

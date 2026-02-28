@@ -62,9 +62,9 @@ int luaopen_winreg(lua_State *L){
 	luaL_register(L, "winreg", lreg_reglib);
 #else
 	luaL_newlib(L, lreg_reglib);
-#endif
 	lua_pushvalue(L, -1);
 	lua_setglobal(L, "winreg");
+#endif
 	return 1;
 }
 #define reg_aux_gethkey(L,index) (*((PHKEY)luaL_checkudata(L, index, lrk_hkey)))

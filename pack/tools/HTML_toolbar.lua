@@ -36,7 +36,7 @@ function(e, id, state)
 		gui.pass_focus()
 		return
 	end
-	print('control '..id..' '..changeNames[state+1])
+	print('control '..id..' '..changeNames[state + 1])
 end)
 
 local s = "!"
@@ -50,10 +50,10 @@ for line in io.lines(ini) do
 		t[idx] = ins
 		s = s.."( "..btn_name.." )"
 	end
-	idx = idx+1
+	idx = idx + 1
 end
 scite.StripShow(s..sep.."( ? )")
-for i = idx, 0,-1 do
-	if t[i] then scite.StripSetBtnTipText(i,t[i]) end
+for i = idx, 0, -1 do
+	if t[i] then scite.StripSetBtnTipText(i, t[i]) end
 end
 scite.StripSetBtnTipText(25,"Открыть ini файл")

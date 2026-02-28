@@ -35,7 +35,7 @@ and next lines into SciTEUser.properties:
  command.mode.44.*=subsystem:lua,savebefore:no
 ---------------------------------------------------
 ]]
-require 'shell'
+local shell = require 'shell'
 
 scite.Perform("macroenable:1")
 
@@ -248,7 +248,7 @@ local function macro_load(text)
       macro = {}
       name = str_to_macro_name(string.sub(str, 4))
     else
-      str = string.gsub(str, "\r", "")
+      local str = string.gsub(str, "\r", "")
       for fnc,wp,lp in string.gmatch(str, "(%w+);(%d+);(.*)") do
         local c = IFACE_FUNCTIONS[fnc]
         if c then

@@ -85,6 +85,7 @@ const LexicalClass lexicalClasses[] = {
 	18, "SCE_LUA_WORD7", "identifier", "Other keywords",
 	19, "SCE_LUA_WORD8", "identifier", "Other keywords",
 	20, "SCE_LUA_LABEL", "label", "Labels",
+	21, "SCE_LUA_WORD9", "identifier", "Other keywords",
 };
 
 // Options used for LexerLua
@@ -214,7 +215,7 @@ Sci_Position SCI_METHOD LexerLua::WordListSet(int n, const char *wl) {
 		break;
 	case 7:
 		wordListN = &keywords8;
-		break;
+		break; 
 	default:
 		break;
 	}
@@ -552,7 +553,44 @@ void LexerLua::Lex(Sci_PositionU startPos, Sci_Position length, int initStyle, I
 			} else if (sc.atLineStart && sc.Match('$')) {
 				sc.SetState(SCE_LUA_PREPROCESSOR);	// Obsolete since Lua 4.0, but still in old code
 			} else if (setLuaOperator.Contains(sc.ch)) {
-				sc.SetState(SCE_LUA_OPERATOR);
+				sc.SetState(SCE_LUA_OPERATOR);	
+
+#ifdef RB_FLLMODS
+				if (sc.ch == '<') {	// < const > forward scan
+					Sci_Position ln = 0;
+					while (isspacechar(sc.GetRelativeChar(ln + 1)))	// skip over spaces/tabs
+						ln++;
+					const Sci_Position ws1 = ln;
+					char cLabel = 0;
+					std::string s;
+					while (IsLowerCase(cLabel = sc.GetRelativeChar(ln + 1))) {	// get potential modificator
+						s.push_back(cLabel);
+						ln++;
+					}
+					if (s == "const" || s == "close") {
+						const Sci_Position lbl = ln;
+						while (isspacechar(sc.GetRelativeChar(ln + 1)))	// skip over spaces/tabs
+							ln++;
+						const Sci_Position ws2 = ln - lbl;
+						if (sc.GetRelativeChar(ln + 1) == '>') {
+							sc.Forward();
+							if (ws1) {
+								sc.SetState(SCE_LUA_DEFAULT);
+								sc.ForwardBytes(ws1);
+							}
+							sc.SetState(SCE_LUA_WORD8);
+							sc.ForwardBytes(lbl - ws1);
+							if (ws2) {
+								sc.SetState(SCE_LUA_DEFAULT);
+								sc.ForwardBytes(ws2);
+							}
+							sc.SetState(SCE_LUA_OPERATOR);
+							sc.Forward();
+						}
+					}
+				}
+#endif // RB_FLLMODS
+
 			}
 			if (!AnyOf(sc.state, SCE_LUA_DEFAULT, SCE_LUA_COMMENTDOC)) {
 				lastLineDocComment = 0;

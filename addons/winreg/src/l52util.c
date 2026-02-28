@@ -5,16 +5,16 @@
 
 #if LUA_VERSION_NUM >= 502 
 
-int luaL_typerror (lua_State *L, int narg, const char *tname) {
-  const char *msg = lua_pushfstring(L, "%s expected, got %s", tname,
-      luaL_typename(L, narg));
-  return luaL_argerror(L, narg, msg);
-}
+//int luaL_typerror (lua_State *L, int narg, const char *tname) {
+//  const char *msg = lua_pushfstring(L, "%s expected, got %s", tname,
+//      luaL_typename(L, narg));
+//  return luaL_argerror(L, narg, msg);
+//}
 
-void luaL_register (lua_State *L, const char *libname, const luaL_Reg *l){
-  if(libname) lua_newtable(L);
-  luaL_setfuncs(L, l, 0);
-}
+//void luaL_register (lua_State *L, const char *libname, const luaL_Reg *l){
+//  if (libname) lua_newtable(L);
+//  luaL_setfuncs(L, l, 0);
+//}
 
 #else 
 
@@ -92,7 +92,7 @@ void *lutil_checkudatap (lua_State *L, int ud, const void *p) {
       }
     }
   }
-  luaL_typerror(L, ud, p);  /* else error */
+  luaL_typeerror(L, ud, p);  /* else error */
   return NULL;              /* to avoid warnings */
 }
 

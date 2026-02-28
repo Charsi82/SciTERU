@@ -21,9 +21,14 @@
 
 extern HINSTANCE hInst;
 
+// create new inifile
+// gui.ini_file( 'path', bInCurrentDir)
 int new_inifile(lua_State* L);
-void lua_openclass_iniFile(lua_State* L);
+
+// parent_wnd:add_tooltip(ctrlID, bBaloonStyle)
 int add_tooltip(lua_State* L);
+
+void lua_openclass_iniFile(lua_State* L);
 void lua_openclass_TTipCtrl(lua_State* L);
 
 #define output(x) lua_pushstring(L, (x)); OutputMessage(L);
@@ -32,10 +37,10 @@ void lua_openclass_TTipCtrl(lua_State* L);
 // vector of wide strings
 typedef std::vector<std::wstring> vecws;
 
-const char* LIB_VERSION = "0.2.8";
-const char* DEFAULT_ICONLIB = "toolbar\\cool.dll";
-const char* WINDOW_CLASS = "WINDOW*";
-const char* MT_TDC = "TDC*";
+constexpr const char* LIB_VERSION = "0.2.8";
+constexpr const char* DEFAULT_ICONLIB = "toolbar\\cool.dll";
+constexpr const char* WINDOW_CLASS = "WINDOW*";
+constexpr const char* MT_TDC = "TDC*";
 
 HWND hSciTE = NULL, hContent = NULL, hCode = NULL;
 WNDPROC old_scite_proc, old_scintilla_proc, old_content_proc;
@@ -207,8 +212,16 @@ namespace
 		if (idx)
 		{
 			lua_rawgetp(L, LUA_REGISTRYINDEX, gui_st_name);
-			luaL_unref(L, -1, idx);
-			lua_pop(L, 1);
+			if (lua_istable(L, -1)) {
+
+				luaL_unref(L, -1, idx);
+				lua_pop(L, 1);
+			}
+			else
+			{
+				luaL_unref(L, -1, idx);
+				lua_pop(L, 1);
+			}
 		}
 	}
 	//#pragma optimize( "", on )
@@ -698,16 +711,16 @@ public:
 
 	virtual ~LuaWindow()
 	{
-		lua_reg_release(L, on_close_idx);
-		lua_reg_release(L, on_show_idx);
-		lua_reg_release(L, on_command_idx);
-		lua_reg_release(L, on_scroll_idx);
-		lua_reg_release(L, on_timer_idx);
-		lua_reg_release(L, on_size_idx);
-		lua_reg_release(L, on_key_idx);
-		lua_reg_release(L, on_move_idx);
-		lua_reg_release(L, on_activate_idx);
-		lua_reg_release(L, on_paint);
+		//lua_reg_release(L, on_close_idx);
+		//lua_reg_release(L, on_show_idx);
+		//lua_reg_release(L, on_command_idx);
+		//lua_reg_release(L, on_scroll_idx);
+		//lua_reg_release(L, on_timer_idx);
+		//lua_reg_release(L, on_size_idx);
+		//lua_reg_release(L, on_key_idx);
+		//lua_reg_release(L, on_move_idx);
+		//lua_reg_release(L, on_activate_idx);
+		//lua_reg_release(L, on_paint);
 	}
 
 	void size() override;
@@ -827,17 +840,6 @@ inline TWin* window_arg(lua_State* L, int idx = 1)
 	throw_error(L, "not a window");
 	return nullptr;
 }
-
-//template<typename ... Args>
-//std::string string_format(const std::string_view format, Args ... args)
-//{
-//	int size_s = std::snprintf(nullptr, 0, format.data(), args ...) + 1; // Extra space for '\0'
-//	if (size_s <= 0) { throw std::runtime_error("Error during formatting."); }
-//	auto size = static_cast<size_t>(size_s);
-//	std::unique_ptr<char[]> buf(new char[size]);
-//	std::snprintf(buf.get(), size, format.data(), args ...);
-//	return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
-//}
 
 template<class T>
 T* lua_cast(lua_State* L, int idx = 1)
@@ -1247,8 +1249,6 @@ static std::vector<std::unique_ptr<ContainerWindow>> collect_windows;
 
 // create new window
 // w = gui.window( sCaption )
-// @param strCaption
-// @return window
 int new_window(lua_State* L)
 {
 	std::wstring caption = StringFromUTF8(luaL_optstring(L, 1, nullptr));
@@ -1265,8 +1265,7 @@ public:
 };
 
 // create new panel
-// gui.panel( nWidth )
-// @param nWidth[=100]
+// gui.panel( [nWidth = 100] )
 // @return window
 int new_panel(lua_State* L)
 {
@@ -1279,7 +1278,7 @@ class LuaControl : protected TLuaState
 {
 protected:
 	int on_select_idx{};
-	int on_double_idx{};
+	int on_dbclick_idx{};
 	int on_key_idx{};
 	int on_close_idx{};
 	int on_focus_idx{};
@@ -1302,7 +1301,7 @@ public:
 
 	void set_double_click(int iarg)
 	{
-		function_ref(L, iarg, &on_double_idx);
+		function_ref(L, iarg, &on_dbclick_idx);
 	}
 
 	void set_onkey(int iarg)
@@ -1349,8 +1348,6 @@ void TTabControlLua::handle_select(int id)
 }
 
 // tabbar:add_tab(sCaption, wndPanel)
-// @param sCaption
-// @param panel
 int tabbar_add(lua_State* L)
 {
 	TTabControl* tab = lua_cast<TTabControl>(L);
@@ -1363,37 +1360,37 @@ int tabbar_add(lua_State* L)
 	return 0;
 }
 
-// tabbar:select_tab(idx) or idx = tabbar:select_tab()
-// @param sCaption
-// @param panel
-int tabbar_sel(lua_State* L)
+// tabbar:select_tab( idx )
+// local status = tabbar:select_tab( )
+int tabbar_select(lua_State* L)
 {
-	if (TTabControl* tab = lua_cast<TTabControl>(L))
+	TTabControl* tab = lua_cast<TTabControl>(L);
+	if (!tab) return 0;
+	if (lua_gettop(L) == 1)
 	{
-		if (lua_gettop(L) == 1)
-		{
-			lua_pushinteger(L, tab->selected());
-			return 1;
-		}
-		tab->selected(luaL_checkinteger(L, 2));
+		lua_pushinteger(L, tab->selected());
+		return 1;
 	}
+	tab->selected(luaL_checkinteger(L, 2));
 	return 0;
 }
 
+// tabbar:tab_fixedwidth( bool )
+// local state = tabbar:tab_fixedwidth()
 int tabbar_fixedwidth(lua_State* L)
 {
-	if (TTabControl* tab = lua_cast<TTabControl>(L))
+	TTabControl* tab = lua_cast<TTabControl>(L);
+	if (!tab) return 0;
+	if (lua_gettop(L) == 1)
 	{
-		if (lua_gettop(L) == 1)
-		{
-			lua_pushboolean(L, tab->fixedwidth());
-			return 1;
-		}
-		tab->fixedwidth(lua_toboolean(L, 2));
+		lua_pushboolean(L, tab->fixedwidth());
+		return 1;
 	}
+	tab->fixedwidth(lua_toboolean(L, 2));
 	return 0;
 }
 
+// wnd_parent:remove_child( childwnd )
 int window_remove(lua_State* L)
 {
 	TEventWindow* form = ew_arg(L);
@@ -1408,11 +1405,7 @@ int window_remove(lua_State* L)
 	return 0;
 }
 
-// wnd_parent:add( child_window[, sAligment = "client"][, nSize = 100][, bSplitted = true])
-// @param wnd
-// @param sAligment [= "client"]
-// @param nSize [= 100]
-// @param bSplitted [= true]
+// wnd_parent:add( child_window[, sAligment = "client"][, nWidth = 100][, bSplitted = true])
 int window_add(lua_State* L)
 {
 	TEventWindow* cw = ew_arg(L);
@@ -1457,7 +1450,9 @@ int window_add(lua_State* L)
 }
 
 // button, checkbox
-int do_check(lua_State* L)
+// btn:check(state)
+// local state = btn:check()
+int button_check(lua_State* L)
 {
 	TButtonBase* btn = reinterpret_cast<TButtonBase*>(window_arg(L));
 	if (!btn) return 0;
@@ -1471,7 +1466,9 @@ int do_check(lua_State* L)
 	return 1;
 }
 
-int do_ctrl_set_icon(lua_State* L)
+// label:set_icon([path = "toolbar\\cool.dll"], [idx = 0])
+// button:set_icon([path = "toolbar\\cool.dll"], [idx = 0])
+int ctrl_set_icon(lua_State* L)
 {
 	if (THasIconCtrl* lbl = dynamic_cast<THasIconCtrl*>(window_arg(L)))
 	{
@@ -1482,7 +1479,9 @@ int do_ctrl_set_icon(lua_State* L)
 	return 0;
 }
 
-int do_ctrl_set_bitmap(lua_State* L)
+// label:set_bitmap(path)
+// button:set_bitmap(path)
+int ctrl_set_bitmap(lua_State* L)
 {
 	if (THasIconCtrl* lbl = dynamic_cast<THasIconCtrl*>(window_arg(L)))
 	{
@@ -1492,6 +1491,7 @@ int do_ctrl_set_bitmap(lua_State* L)
 	return 0;
 }
 
+// trackbar:get_pos()
 int trbar_get_pos(lua_State* L)
 {
 	if (TTrackBar* trb = lua_cast<TTrackBar>(L))
@@ -1502,6 +1502,7 @@ int trbar_get_pos(lua_State* L)
 	return 0;
 }
 
+// trackbar:set_pos()
 int trbar_set_pos(lua_State* L)
 {
 	if (TTrackBar* trb = lua_cast<TTrackBar>(L))
@@ -1509,6 +1510,7 @@ int trbar_set_pos(lua_State* L)
 	return 0;
 }
 
+// trackbar:sel_clear()
 int trbar_sel_clear(lua_State* L)
 {
 	if (TTrackBar* trb = lua_cast<TTrackBar>(L))
@@ -1516,6 +1518,7 @@ int trbar_sel_clear(lua_State* L)
 	return 0;
 }
 
+// trackbar:set_range([from = 0], [to = 100])
 int trbar_set_range(lua_State* L)
 {
 	if (TTrackBar* trb = lua_cast<TTrackBar>(L))
@@ -1527,6 +1530,24 @@ int trbar_set_range(lua_State* L)
 		if (pos < imin) trb->pos(imin);
 		if (pos > imax) trb->pos(imax);
 	}
+	return 0;
+}
+
+// local from, to = trbar:selection()
+// trbar:selection(from, to)
+int trbar_selection(lua_State* L)
+{
+	TTrackBar* trb = dynamic_cast<TTrackBar*>(window_arg(L));
+	if (!trb) return 0;
+	if (lua_gettop(L) == 1)
+	{
+		lua_pushinteger(L, trb->sel_start());
+		lua_pushinteger(L, trb->sel_end());
+		return 2;
+	}
+	const int imin = luaL_optinteger(L, 2, 0);
+	const int imax = luaL_optinteger(L, 3, 100);
+	trb->selection(imin, imax);
 	return 0;
 }
 
@@ -1546,6 +1567,8 @@ void TMemoLua::handle_onkey(int id)
 	dispatch_ref(L, on_key_idx, id, IsKeyDown(VK_CONTROL), IsKeyDown(VK_MENU), IsKeyDown(VK_SHIFT));
 }
 
+// memo:set_text( text )
+// label:set_text( text )
 int window_set_text(lua_State* L)
 {
 	if (TWin* win = window_arg(L))
@@ -1553,6 +1576,8 @@ int window_set_text(lua_State* L)
 	return 0;
 }
 
+// memo:get_text( )
+// label:get_text( )
 int window_get_text(lua_State* L)
 {
 	if (TWin* win = window_arg(L))
@@ -1565,6 +1590,7 @@ int window_get_text(lua_State* L)
 	return 0;
 }
 
+// memo:set_memo_colour('#RRGGBB_fore', '#RRGGBB')
 int memo_set_colour(lua_State* L)
 {
 	if (TMemoLua* wnd = lua_cast<TMemoLua>(L))
@@ -1762,7 +1788,7 @@ void TListViewLua::handle_select(int id)
 
 void TListViewLua::handle_double_click(int row, int col, const char* s)
 {
-	dispatch_ref(L, on_double_idx, row, col, s);
+	dispatch_ref(L, on_dbclick_idx, row, col, s);
 }
 
 void TListViewLua::handle_onkey(int id)
@@ -1795,7 +1821,7 @@ void TTreeViewLua::handle_select(void* itm)
 
 void TTreeViewLua::handle_dbclick(void* itm)
 {
-	dispatch_ref(L, on_double_idx, itm);
+	dispatch_ref(L, on_dbclick_idx, itm);
 }
 
 void TTreeViewLua::handle_onkey(int id)
@@ -1806,7 +1832,7 @@ void TTreeViewLua::handle_onkey(int id)
 size_t TTreeViewLua::handle_ontip(void* item, wchar_t* str)
 {
 	//dispatch_ref(L, ontip_idx, item);
-	if (on_tip_idx != 0)
+	if (on_tip_idx)
 	{
 		LSG;
 		//lua_rawgeti(L, LUA_REGISTRYINDEX, data);
@@ -1851,8 +1877,9 @@ int do_set_iconlib(lua_State* L)
 }
 
 #define check_treewnd lua_cast<TTreeViewLua>
+
 // tree_wnd:tree_set_colour() -- set colors
-int do_tree_set_colour(lua_State* L)
+int tree_set_colour(lua_State* L)
 {
 	auto tr = check_treewnd(L);
 	tr->set_foreground(lua_optColor(L, 2));
@@ -1962,8 +1989,7 @@ int tree_get_item(lua_State* L)
 int tree_get_item_selected(lua_State* L)
 {
 	auto tr = check_treewnd(L);
-	HANDLE sel_itm = tr->get_selected();
-	if (sel_itm)
+	if (HANDLE sel_itm = tr->get_selected())
 		lua_pushlightuserdata(L, sel_itm);
 	else
 		lua_pushnil(L);
@@ -2017,21 +2043,22 @@ int tree_get_item_data(lua_State* L)
 	return 0;
 }
 
-int do_tree_set_LabelEditable(lua_State* L)
+// tree_wnd:set_tree_editable( bool )
+int tree_set_LabelEditable(lua_State* L)
 {
-	auto tr = check_treewnd(L);
-	tr->makeLabelEditable(lua_toboolean(L, 2));
+	if (auto tr = check_treewnd(L))
+		tr->makeLabelEditable(lua_toboolean(L, 2));
 	return 0;
 }
 
-int do_wnd_set_theme(lua_State* L)
+// list_wnd:set_theme( bool )
+// tree_wnd:set_theme( bool )
+int window_set_theme(lua_State* L)
 {
 	if (auto lst = dynamic_cast<TListViewLua*>(window_arg(L)))
 		lst->set_theme(lua_toboolean(L, 2));
 	else if (auto tree = dynamic_cast<TTreeViewLua*>(window_arg(L)))
 		tree->set_theme(lua_toboolean(L, 2));
-	else
-		luaL_error(L, "do_wnd_set_theme: there is no tree or list at 1st arg");
 	return 0;
 }
 
@@ -2053,8 +2080,8 @@ int window_select_item(lua_State* L)
 // list_wnd:delete_item(index)
 int window_delete_item(lua_State* L)
 {
-	TListViewLua* lv = lua_cast<TListViewLua>(L);
-	lv->remove_item(static_cast<int>(luaL_checkinteger(L, 2)));
+	if (TListViewLua* lv = lua_cast<TListViewLua>(L))
+		lv->remove_item(static_cast<int>(luaL_checkinteger(L, 2)));
 	return 0;
 }
 
@@ -2062,32 +2089,31 @@ void construct_menu(lua_State* L, vecws& items, HMENU hm, MessageHandler* dispat
 {
 	while (items.size())
 	{
-		std::wstring item = items[0];
-		items.erase(items.begin(), items.begin() + 1);
-		size_t pos = item.find(L"POPUPBEGIN");
-		if (pos != std::string::npos)
+		std::wstring item = std::move(items[0]);
+		items.erase(items.begin());
+		constexpr wchar_t PopUpBegin[]{ L"POPUPBEGIN" };
+		size_t pos = item.find(PopUpBegin);
+		if (pos != std::wstring::npos)
 		{
-			std::wstring itm_caption = item.substr(pos + 11);
+			const wchar_t* itm_caption = item.data() + pos + std::size(PopUpBegin);
 			HMENU submenu = CreatePopupMenu();
-			AppendMenu(hm, MF_STRING | MF_POPUP, reinterpret_cast<UINT_PTR>(submenu), itm_caption.data());
+			AppendMenu(hm, MF_STRING | MF_POPUP, reinterpret_cast<UINT_PTR>(submenu), itm_caption);
 			construct_menu(L, items, submenu, dispatcher);
 			continue;
 		}
 		pos = item.find(L"POPUPEND");
-		if (pos != std::string::npos) return;
+		if (pos != std::wstring::npos) return;
 		pos = item.find(L"|");
-		if (pos == std::string::npos)
+		if (pos == std::wstring::npos)
 		{
 			AppendMenu(hm, MF_SEPARATOR, 0, NULL);
 		}
 		else
 		{
-			auto text = item.substr(0, pos);
-			auto fun = item.substr(pos + 1);
-			lua_pushwstring(L, fun);
+			item[pos] = L'\0';
+			lua_pushwstring(L, &item.at(pos + 1));
 			const UINT ref_idx = lua_reg_store(L);
-			//Item itm(ref_idx);
-			AppendMenu(hm, MF_STRING, dispatcher->add_item(ref_idx), text.data());
+			AppendMenu(hm, MF_STRING, dispatcher->add_item(ref_idx), item.data());
 		}
 	}
 }
@@ -2095,12 +2121,8 @@ void construct_menu(lua_State* L, vecws& items, HMENU hm, MessageHandler* dispat
 vecws table_to_str_array(lua_State* L, int idx)
 {
 	vecws res;
-	if (!lua_istable(L, idx))
-	{
-		throw_error(L, "table argument expected");
-	}
 	lua_pushnil(L); // first key
-	while (lua_next(L, idx) != 0)
+	while (lua_next(L, idx))
 	{
 		res.emplace_back(StringFromUTF8(lua_tostring(L, -1)));
 		lua_pop(L, 1);  /* removes `value'; keeps `key' for next iteration */
@@ -2110,6 +2132,7 @@ vecws table_to_str_array(lua_State* L, int idx)
 
 int window_context_menu(lua_State* L)
 {
+	luaL_checktype(L, 2, LUA_TTABLE);
 	TWin* w = window_arg(L);
 	if (LuaWindow* cw = dynamic_cast<LuaWindow*>(w))
 	{
@@ -2128,75 +2151,78 @@ int window_context_menu(lua_State* L)
 	return 0;
 }
 
-int window_aux_item(lua_State* L, bool at_index)
+int list_add_item(lua_State* L, TListViewLua* lv, bool at_index)
 {
-	TWin* w = window_arg(L);
-	if (TListViewLua* lv = dynamic_cast<TListViewLua*>(w))
+	int ref_idx = 0;
+	int next_arg = at_index ? 3 : 2;
+	int ipos = at_index ? luaL_checkinteger(L, 2) : lv->count();
+	if (!lua_isnoneornil(L, next_arg + 1))
 	{
-		int ref_idx = 0;
-		int next_arg = at_index ? 3 : 2;
-		int ipos = at_index ? luaL_checkinteger(L, 2) : lv->count();
-		if (!lua_isnoneornil(L, next_arg + 1))
-		{
-			lua_pushvalue(L, next_arg + 1);
-			//ref_idx = luaL_ref(L, LUA_REGISTRYINDEX);
-			ref_idx = lua_reg_store(L);
-		}
-		if (lua_isstring(L, next_arg))
-		{
-			lv->add_item_at(ipos, StringFromUTF8(luaL_checkstring(L, next_arg)).c_str(), luaL_optinteger(L, next_arg + 2, 0), ref_idx); // single column init with string
-		}
-		else
-		{
-			vecws items = table_to_str_array(L, next_arg);
-			const int _min = min(lv->columns(), items.size());
-			int idx = lv->add_item_at(ipos, items.at(0).data(), 0, ref_idx); // init first column
-			for (int i = 1; (i < _min) && items.at(i).size(); ++i) // init others
-				lv->add_subitem(idx, items.at(i).data(), i);
-		}
+		lua_pushvalue(L, next_arg + 1);
+		//ref_idx = luaL_ref(L, LUA_REGISTRYINDEX);
+		ref_idx = lua_reg_store(L);
 	}
-	else if (TTreeViewLua* tv = dynamic_cast<TTreeViewLua*>(w))
+	if (lua_isstring(L, next_arg))
 	{
-		HANDLE parent = lua_touserdata(L, 3);
-		int icon_idx = luaL_optinteger(L, 4, -1);
-		int selicon_idx = luaL_optinteger(L, 5, icon_idx);
-		int ref_idx = 0;
-		if (!lua_isnoneornil(L, 6))
-		{
-			lua_pushvalue(L, 6);
-			//ref_idx = luaL_ref(L, LUA_REGISTRYINDEX);
-			ref_idx = lua_reg_store(L);
-		}
-		if (HANDLE h = tv->add_item(StringFromUTF8(luaL_checkstring(L, 2)).c_str(), parent, icon_idx, selicon_idx, ref_idx))
-		{
-			lua_pushlightuserdata(L, h);
-			return 1;
-		}
+		lv->add_item_at(ipos, StringFromUTF8(luaL_checkstring(L, next_arg)).c_str(), luaL_optinteger(L, next_arg + 2, 0), ref_idx); // single column init with string
+	}
+	else
+	{
+		vecws items = table_to_str_array(L, next_arg);
+		const int _min = min(lv->columns(), items.size());
+		int idx = lv->add_item_at(ipos, items.at(0).data(), 0, ref_idx); // init first column
+		for (int i = 1; (i < _min) && items.at(i).size(); ++i) // init others
+			lv->add_subitem(idx, items.at(i).data(), i);
+	}
+	return 0;
+}
+
+int tree_add_item(lua_State* L, TTreeViewLua* tv)
+{
+	HANDLE parent = lua_touserdata(L, 3);
+	int icon_idx = luaL_optinteger(L, 4, -1);
+	int selicon_idx = luaL_optinteger(L, 5, icon_idx);
+	int ref_idx = 0;
+	if (!lua_isnoneornil(L, 6))
+	{
+		lua_pushvalue(L, 6);
+		//ref_idx = luaL_ref(L, LUA_REGISTRYINDEX);
+		ref_idx = lua_reg_store(L);
+	}
+	if (HANDLE h = tv->add_item(StringFromUTF8(luaL_checkstring(L, 2)).c_str(), parent, icon_idx, selicon_idx, ref_idx))
+	{
+		lua_pushlightuserdata(L, h);
+		return 1;
 	}
 	return 0;
 }
 
 // list_wnd:add_item(text, data)
 // list_wnd:add_item({text1,text2}, data)
-// tree:add_item( text [, parent_item = root][, id_icon = -1][, id_selicon = -1][, data = null] )
+// tree_wnd:add_item(text [, parent_item = root][, id_icon = -1][, id_selicon = -1][, data = null] )
 int window_add_item(lua_State* L)
 {
-	return window_aux_item(L, false);
-}
-
-// list_wnd:insert_item(index, string)
-int window_insert_item(lua_State* L)
-{
-	window_aux_item(L, true);
+	TWin* w = window_arg(L);
+	if (TTreeViewLua* tv = dynamic_cast<TTreeViewLua*>(w))
+		return tree_add_item(L, tv);
+	if (TListViewLua* lv = dynamic_cast<TListViewLua*>(w))
+		return list_add_item(L, lv, false);
 	return 0;
 }
 
-// list_wnd:add_column( sTitle, iSize)
-// @param sTitle
-// @param iWidth
+// list_wnd:insert_item(idx, text)
+int window_insert_item(lua_State* L)
+{
+	TWin* w = window_arg(L);
+	if (TListViewLua* lv = dynamic_cast<TListViewLua*>(w))
+		return list_add_item(L, lv, true);
+	return 0;
+}
+
+// list_wnd:add_column(sTitle, nWidth)
 int window_add_column(lua_State* L)
 {
-	if(TListViewLua* lv = lua_cast<TListViewLua>(L))
+	if (TListViewLua* lv = lua_cast<TListViewLua>(L))
 		lv->add_column(StringFromUTF8(luaL_checkstring(L, 2)).c_str(), (int)luaL_checkinteger(L, 3));
 	return 0;
 }
@@ -2268,9 +2294,7 @@ int window_selected_count(lua_State* L)
 	return 1;
 }
 
-// list_wnd:autosize( index [, by_contents = false])
-// @param nIndex
-// @param bFlag [=false]
+// list_wnd:autosize( index [, bAlignByContents = false])
 int window_autosize(lua_State* L)
 {
 	if (TListViewLua* lv = lua_cast<TListViewLua>(L))
@@ -2295,8 +2319,8 @@ private:
 	}
 };
 
-// list_box:insert(idx, str, data)
-int do_listbox_insert(lua_State* L)
+// listbox:insert(idx, str, data)
+int listbox_insert(lua_State* L)
 {
 	TListBoxLua* lb = lua_cast<TListBoxLua>(L);
 	if (!lb) return 0;
@@ -2313,8 +2337,8 @@ int do_listbox_insert(lua_State* L)
 	return 0;
 }
 
-// list_box:append(str, data)
-int do_listbox_append(lua_State* L)
+// listbox:append(str, data)
+int listbox_append(lua_State* L)
 {
 	TListBoxLua* lb = lua_cast<TListBoxLua>(L);
 	if (!lb) return 0;
@@ -2331,8 +2355,8 @@ int do_listbox_append(lua_State* L)
 	return 0;
 }
 
-// list_box:remove(idx)
-int do_listbox_remove(lua_State* L)
+// listbox:remove(idx)
+int listbox_remove(lua_State* L)
 {
 	if (TListBoxLua* lb = lua_cast<TListBoxLua>(L))
 	{
@@ -2345,8 +2369,7 @@ int do_listbox_remove(lua_State* L)
 }
 
 // list_wnd:count() or listbox:count()
-// @return count of elements
-int do_list_elements_count(lua_State* L)
+int list_count(lua_State* L)
 {
 	if (auto lb = dynamic_cast<TListBoxLua*>(window_arg(L)))
 	{
@@ -2358,12 +2381,11 @@ int do_list_elements_count(lua_State* L)
 		lua_pushinteger(L, lv->count());
 		return 1;
 	}
-	else
-		throw_error(L, "1st argument must be ListBox or ListView");
 	return 0;
 }
 
-int do_listbox_get_text(lua_State* L)
+// listbox:get_line_text(idx)
+int listbox_get_text(lua_State* L)
 {
 	TListBoxLua* lb = lua_cast<TListBoxLua>(L);
 	if (!lb) return 0;
@@ -2372,7 +2394,8 @@ int do_listbox_get_text(lua_State* L)
 	return 1;
 }
 
-int do_listbox_get_data(lua_State* L)
+// listbox:get_line_data(idx)
+int listbox_get_data(lua_State* L)
 {
 	TListBoxLua* lb = lua_cast<TListBoxLua>(L);
 	if (!lb) return 0;
@@ -2409,36 +2432,18 @@ int window_clear(lua_State* L)
 	return 0;
 }
 
-int do_wnd_selection(lua_State* L)
+// listbox:select()
+// listbox:select(idx)
+int listbox_selection(lua_State* L)
 {
-	if (TTrackBar* trb = dynamic_cast<TTrackBar*>(window_arg(L)))
+	auto lb = dynamic_cast<TListBoxLua*>(window_arg(L));
+	if (!lb) return 0;
+	if (lua_gettop(L) == 1)
 	{
-		if (lua_gettop(L) == 1)
-		{
-			lua_pushinteger(L, trb->sel_start());
-			lua_pushinteger(L, trb->sel_end());
-			return 2;
-		}
-		else
-		{
-			int imin = luaL_optinteger(L, 2, 0);
-			int imax = luaL_optinteger(L, 3, 100);
-			trb->selection(imin, imax);
-		}
+		lua_pushinteger(L, (lua_Integer)lb->selected() + 1);
+		return 1;
 	}
-	else if (auto lb = dynamic_cast<TListBoxLua*>(window_arg(L)))
-	{
-		if (lua_gettop(L) == 1)
-		{
-			lua_pushinteger(L, (lua_Integer)lb->selected() + 1);
-			return 1;
-		}
-		else
-		{
-			// set selection
-			lb->selected(luaL_checkinteger(L, 2) - 1);
-		}
-	}
+	lb->selected(luaL_checkinteger(L, 2) - 1);
 	return 0;
 }
 
@@ -2534,6 +2539,7 @@ int window_on_focus(lua_State* L)
 	return 0;
 }
 
+// wnd:on_paint(function or <name global function>)
 int window_on_paint(lua_State* L)
 {
 	TWin* w = window_arg(L);
@@ -2679,6 +2685,7 @@ int do_cbox_get_item_text(lua_State* L)
 	return 1;
 }
 
+// local id = ctrl:get_ctrl_id()
 int do_get_ctrl_id(lua_State* L)
 {
 	if (TWin* w = window_arg(L))
@@ -2719,6 +2726,8 @@ int do_remove_transparent(lua_State* L)
 	return 0;
 }
 
+// wnd:set_transparent( n )
+// 0 <= n <= 255
 int do_set_transparent(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
@@ -2801,6 +2810,7 @@ int do_log(lua_State* L)
 	return 0;
 }
 
+// local success = gui.create_link('target', 'path_to_link_file', 'workdir', 'description')
 int do_create_link(lua_State* L)
 {
 	std::wstring path = StringFromUTF8(luaL_checkstring(L, 1));
@@ -2817,6 +2827,7 @@ int do_create_link(lua_State* L)
 	return 1;
 }
 
+// local path = gui.get_folder(idx)
 int do_get_shell_folder(lua_State* L)
 {
 	int folder_id = luaL_checkinteger(L, 1);
@@ -2825,11 +2836,13 @@ int do_get_shell_folder(lua_State* L)
 	return 1;
 }
 
+// gui.scite_window() - get SciTE window
 int do_get_scite_window(lua_State* L)
 {
 	return wrap_window(L, get_parent());
 }
 
+// gui.desktop() - get_desktop_window
 int do_get_desktop_window(lua_State* L)
 {
 	return wrap_window(L, get_desktop_window());
@@ -2837,7 +2850,7 @@ int do_get_desktop_window(lua_State* L)
 
 ////////////////////////////////////////////////////////////////////
 
-//parent:add_tabbar("align")
+// parent:add_tabbar("align")
 int add_tabbar(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
@@ -2854,7 +2867,7 @@ int add_tabbar(lua_State* L)
 	return wrap_window(L, pTab);
 }
 
-//child:set_align([sAlign = "client"][, nSize = 100])
+// child:set_align([sAlign = "client"][, nSize = 100])
 int do_set_align(lua_State* L)
 {
 	WinWrap* wrp = reinterpret_cast<WinWrap*>(lua_touserdata(L, 1));
@@ -2919,7 +2932,7 @@ int add_tree(lua_State* L)
 	return wrap_window(L, pTree);
 }
 
-//parent:add_label(style, "caption")
+// parent:add_label(style, "caption")
 int add_label(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
@@ -2931,7 +2944,7 @@ int add_label(lua_State* L)
 	return wrap_window(L, pLabel);
 }
 
-//parent:add_memo()
+// parent:add_memo()
 int add_memo(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
@@ -2939,7 +2952,7 @@ int add_memo(lua_State* L)
 	return wrap_window(L, new TMemoLua(form));
 }
 
-//parent:add_list(bSingleSelect, bMultiColumn)
+// parent:add_list(bSingleSelect, bMultiColumn)
 int add_list(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
@@ -2952,7 +2965,7 @@ int add_list(lua_State* L)
 	return wrap_window(L, lv);
 }
 
-//parent:add_groupbox(sCaption, nTextAlign)
+// parent:add_groupbox(sCaption, nTextAlign)
 int add_groupbox(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
@@ -2962,7 +2975,7 @@ int add_groupbox(lua_State* L)
 	return wrap_window(L, pGrBox);
 }
 
-//parent:add_progress(vertical, hasborder, smooth, smoothrevers)
+// parent:add_progress(vertical, hasborder, smooth, smoothrevers)
 int add_progress(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
@@ -2976,7 +2989,7 @@ int add_progress(lua_State* L)
 	return wrap_window(L, pc);
 }
 
-//parent:add_trackbar(style, id)
+// parent:add_trackbar(style, id)
 int add_trackbar(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
@@ -2986,7 +2999,7 @@ int add_trackbar(lua_State* L)
 	return wrap_window(L, new TTrackBar(form, style, cntrl_id));
 }
 
-//parent:add_checkbox(sCaption, id, bTreestate)
+// parent:add_checkbox(sCaption, id, bTreestate)
 int add_checkbox(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
@@ -2997,7 +3010,7 @@ int add_checkbox(lua_State* L)
 	return wrap_window(L, new TCheckBox(form, StringFromUTF8(caption).c_str(), cntrl_id, is3state));
 }
 
-//parent:add_radiobutton(sCaption, id, bTreestate)
+// parent:add_radiobutton(sCaption, id, bTreestate)
 int add_radiobutton(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
@@ -3008,7 +3021,7 @@ int add_radiobutton(lua_State* L)
 	return wrap_window(L, new TRadioButton(form, StringFromUTF8(caption).c_str(), cntrl_id, is_auto));
 }
 
-//parent:add_editbox(sCaption, style, id)
+// parent:add_editbox(sCaption, style, id)
 int add_editbox(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
@@ -3019,7 +3032,7 @@ int add_editbox(lua_State* L)
 	return wrap_window(L, new TEdit(form, StringFromUTF8(caption).c_str(), cntrl_id, style));
 }
 
-//parent:add_button(sCaption, id)
+// parent:add_button(sCaption, id)
 int add_button(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
@@ -3030,7 +3043,7 @@ int add_button(lua_State* L)
 	return wrap_window(L, new TButton(form, cntrl_id, StringFromUTF8(caption).c_str(), defpushbtn ? TButtonBase::ButtonStyle::DEFPUSHBUTTON : TButtonBase::ButtonStyle::PUSHBUTTON));
 }
 
-//parent:add_listbox(id, bSorted)
+// parent:add_listbox(id, bSorted)
 int add_listbox(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
@@ -3040,7 +3053,7 @@ int add_listbox(lua_State* L)
 	return wrap_window(L, new TListBoxLua(form, cntrl_id, is_sorted));
 }
 
-//parent:add_combobox(id, style)
+// parent:add_combobox(id, style)
 int add_combobox(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
@@ -3050,7 +3063,7 @@ int add_combobox(lua_State* L)
 	return wrap_window(L, new TComboBox(form, cntrl_id, style));
 }
 
-//parent:add_link(sCaption)
+// parent:add_link(sCaption)
 int add_link(lua_State* L)
 {
 	TEventWindow* form = lua_cast<TEventWindow>(L);
@@ -3074,10 +3087,10 @@ private:
 
 void TUpDownLua::ud_clicked(int delta)
 {
-	dispatch_ref(L, on_updn_idx, delta);
+	dispatch_ref(L, on_updn_idx, delta, 0);
 }
 
-//parent:add_updown(buddy, style)
+// parent:add_updown(buddy, style)
 int add_updown(lua_State* L)
 {
 	TEventWindow* form = dynamic_cast<TEventWindow*>(window_arg(L));
@@ -3100,23 +3113,27 @@ int add_updown(lua_State* L)
 
 #define check_udc lua_cast<TUpDownLua>
 
-// wnd:on_updown(function or <name global function>)
+// ud:on_updown(function or <name global function>)
 int updown_on_updown(lua_State* L)
 {
 	if (TUpDownLua* lc = check_udc(L)) lc->set_on_updown(2);
 	return 0;
 }
 
+// ud:set_current(int)
 int updown_set_current(lua_State* L)
 {
 	if (TUpDownLua* lc = check_udc(L)) lc->set_current(luaL_checkinteger(L, 2));
 	return 0;
 }
 
+// ud:get_current()
 int updown_get_current(lua_State* L)
 {
-	if (TUpDownLua* lc = check_udc(L)) lua_pushinteger(L, lc->get_current());
-	return 1;
+	TUpDownLua* lc = check_udc(L);
+	if (!lc) return 0;
+		lua_pushinteger(L, lc->get_current());
+	return 1;	
 }
 
 int updown_set_range(lua_State* L)
@@ -3414,31 +3431,31 @@ const luaL_Reg TDC_metamethods[] =
 
 const luaL_Reg TDC_methods[] =
 {
-	{ "color_back", tdc_back_text },
-	{ "color_text", tdc_color_text },
-	{ "text_align", tdc_set_text_align },
-	{ "draw_text",  tdc_draw_text },
+	{ "color_back", tdc_back_text		},
+	{ "color_text", tdc_color_text		},
+	{ "text_align", tdc_set_text_align	},
+	{ "draw_text",  tdc_draw_text		},
 
-	{ "reset_pen",	tdc_reset_pen },
-	{ "set_pen",	tdc_set_pen },
-	{ "xor_pen",	tdc_set_xorpen },
+	{ "reset_pen",	tdc_reset_pen	},
+	{ "set_pen",	tdc_set_pen		},
+	{ "xor_pen",	tdc_set_xorpen	},
 
 	{ "solid_brush",tdc_set_solid_brush },
 	{ "hatch_brush",tdc_set_hatch_brush },
 
-	{ "move_to",	tdc_move_to },
-	{ "set_pixel",	tdc_set_pixel },
-	{ "line_to",	tdc_line_to },
-	{ "draw_line",	tdc_draw_line },
-	{ "polyline",	tdc_polyline },
-	{ "polybezier",	tdc_polybezier },
-	{ "rectangle",  tdc_rectangle },
-	{ "polygone",   tdc_polygone },
-	{ "ellipse",	tdc_ellipse },
-	{ "round_rect",	tdc_round_rect },
-	{ "chord",		tdc_chord },
+	{ "move_to",	tdc_move_to		},
+	{ "set_pixel",	tdc_set_pixel	},
+	{ "line_to",	tdc_line_to		},
+	{ "draw_line",	tdc_draw_line	},
+	{ "polyline",	tdc_polyline	},
+	{ "polybezier",	tdc_polybezier	},
+	{ "rectangle",  tdc_rectangle	},
+	{ "polygone",   tdc_polygone	},
+	{ "ellipse",	tdc_ellipse		},
+	{ "round_rect",	tdc_round_rect	},
+	{ "chord",		tdc_chord		},
 
-	{ "select_stock",tdc_select_stock },
+	{ "select_stock", tdc_select_stock },
 	{ NULL, NULL}
 };
 
@@ -3487,7 +3504,6 @@ static const luaL_Reg gui[] =
 	{ "create_link",	do_create_link 			},
 	{ "get_folder",		do_get_shell_folder		},
 	{ "day_of_year",	do_day_of_year 			},
-	{ "ini_file",		new_inifile 			},
 	{ "version",		do_version 				},
 	{ "files",			do_files 				},
 	{ "chdir",			do_chdir 				},
@@ -3495,6 +3511,7 @@ static const luaL_Reg gui[] =
 	{ "get_ascii",		do_get_ascii			},
 	{ "pass_focus",		do_pass_focus			},
 	{ "set_panel",		do_set_panel			},
+	{ "ini_file",		new_inifile 			},
 
 	// windows
 	{ "scite_window",	do_get_scite_window		},
@@ -3552,30 +3569,11 @@ static const luaL_Reg window_methods[] =
 	{ "stop_timer",	window_stop_timer	},
 
 	// tabbar
-	{ "add_tab",			tabbar_add				},
-	{ "select_tab",			tabbar_sel				},
-	{ "tab_fixedwidth",		tabbar_fixedwidth		},
-	//{ "tab_set_item_size",	tabbar_set_item_size	},
+	{ "add_tab",			tabbar_add			},
+	{ "select_tab",			tabbar_select		},
+	{ "tab_fixedwidth",		tabbar_fixedwidth	},
+	//{ "tab_set_item_size",	tabbar_set_item_size },
 	//{ "tab_rowcount",		tabbar_rowcount	},
-
-	// list, tree
-	{ "on_select",			window_on_select		},
-	{ "on_double_click",	window_on_double_click	},
-	{ "on_tip",				window_on_tip			},
-	{ "clear",				window_clear			},
-	{ "set_selected_item",	window_select_item		},
-	{ "count",				do_list_elements_count	},
-	{ "delete_item",		window_delete_item		},
-	{ "insert_item",		window_insert_item		},
-	{ "add_item",			window_add_item			},
-	{ "add_column",			window_add_column		},
-	{ "get_item_text",		window_get_item_text	},
-	{ "get_item_data",		window_get_item_data	},
-	{ "set_list_colour",	window_set_colour		},
-	{ "selected_count",		window_selected_count	},
-	{ "get_selected_item",	window_selected_item	},
-	{ "get_selected_items",	window_selected_items	},
-	{ "autosize",			window_autosize			},
 
 	// updown
 	{ "on_updown",			updown_on_updown	},
@@ -3583,15 +3581,37 @@ static const luaL_Reg window_methods[] =
 	{ "get_current",		updown_get_current	},
 	{ "set_range",			updown_set_range	},
 
+	// list
+	{ "autosize",			window_autosize			},
+	{ "set_list_colour",	window_set_colour		},
+	{ "add_column",			window_add_column		},
+	{ "get_item_text",		window_get_item_text	},
+	{ "get_item_data",		window_get_item_data	},
+	{ "selected_count",		window_selected_count	},
+	{ "get_selected_item",	window_selected_item	},
+	{ "get_selected_items",	window_selected_items	},
+	{ "insert_item",		window_insert_item		},
+	{ "delete_item",		window_delete_item		},
+
+	// callbacks for LuaControls
+	{ "on_select",			window_on_select		},
+	{ "on_double_click",	window_on_double_click	},
+	{ "on_tip",				window_on_tip			},
+
+	// list, listbox
+	{ "count",				list_count	},
+
+	// list, tree, listbox
+	{ "clear",				window_clear},
+
+	// list, tree
+	{ "set_theme",			window_set_theme	},
+	{ "add_item",			window_add_item		},
+	{ "set_selected_item",	window_select_item	},
+
 	// tree
-	{ "set_tree_colour",	do_tree_set_colour			},
-	{ "set_tree_editable",	do_tree_set_LabelEditable	},
-	{ "set_theme",			do_wnd_set_theme			},
-
-	// tree, tabbar
-	{ "set_iconlib",		do_set_iconlib	},
-
-	// treeItem
+	{ "tree_set_colour",		tree_set_colour			},
+	{ "tree_set_editable",		tree_set_LabelEditable	},
 	{ "tree_get_item_selected",	tree_get_item_selected	},
 	{ "tree_set_insert_mode",	tree_set_insert_mode	},
 	{ "tree_remove_item",		tree_remove_item		},
@@ -3604,33 +3624,37 @@ static const luaL_Reg window_methods[] =
 	{ "tree_collapse",			tree_collapse			},
 	{ "tree_expand",			tree_expand				},
 
+	// tree, tabbar, list
+	{ "set_iconlib",	do_set_iconlib	},
+
 	// trackbar
-	{ "get_pos",		trbar_get_pos		},
-	{ "set_pos",		trbar_set_pos		},
-	{ "select",			do_wnd_selection	},
-	{ "sel_clear",		trbar_sel_clear		},
-	{ "range",			trbar_set_range		},
+	{ "get_pos",		trbar_get_pos	},
+	{ "set_pos",		trbar_set_pos	},
+	{ "sel_clear",		trbar_sel_clear	},
+	{ "range",			trbar_set_range	},
+	{ "selection",		trbar_selection	},
 
 	// memo
-	{ "set_memo_colour", memo_set_colour	},
+	{ "set_memo_colour", memo_set_colour },
 
 	// memo, label
-	{ "set_text",		window_set_text		},
-	{ "get_text",		window_get_text		},
+	{ "set_text",		window_set_text	},
+	{ "get_text",		window_get_text	},
 
 	// label, button
-	{ "set_icon",		do_ctrl_set_icon	},
-	{ "set_bitmap",		do_ctrl_set_bitmap	},
+	{ "set_icon",		ctrl_set_icon	},
+	{ "set_bitmap",		ctrl_set_bitmap	},
 
 	// button, checkbox, radio
-	{ "check",			do_check			},
+	{ "check",			button_check	},
 
-	// do_listbox_insert
-	{ "insert",			do_listbox_insert	},
-	{ "append",			do_listbox_append	},
-	{ "remove",			do_listbox_remove	},
-	{ "get_line_text",	do_listbox_get_text	},
-	{ "get_line_data",	do_listbox_get_data	},
+	// listbox
+	{ "select",			listbox_selection	},
+	{ "insert",			listbox_insert		},
+	{ "append",			listbox_append		},
+	{ "remove",			listbox_remove		},
+	{ "get_line_text",	listbox_get_text	},
+	{ "get_line_data",	listbox_get_data	},
 
 	// combobox
 	{ "cb_append",		do_cbox_append_string	},
@@ -3645,8 +3669,8 @@ static const luaL_Reg window_methods[] =
 	{ "cb_remove",		do_cbox_remove			},
 	{ "cb_count",		do_cbox_count			},
 
-	{ "emplace_h",		window_emplace_h		},
-	{ "emplace_v",		window_emplace_v		},
+	{ "emplace_h",		window_emplace_h },
+	{ "emplace_v",		window_emplace_v },
 
 	// add controls
 	{ "add_tabbar",		add_tabbar 		},
@@ -3665,8 +3689,10 @@ static const luaL_Reg window_methods[] =
 	{ "add_combobox",	add_combobox 	},
 	{ "add_link",		add_link 		},
 	{ "add_updown",		add_updown 		},
+
+	// utils
+	{ "add_tooltip",	add_tooltip		}, // parent_wnd:add_tooltip(ctrlID, bBaloonStyle)
 	{ "set_align",		do_set_align 	},
-	{ "add_tooltip",	add_tooltip		},
 
 	{ NULL, NULL },
 };

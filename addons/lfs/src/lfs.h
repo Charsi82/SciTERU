@@ -1,8 +1,10 @@
 /*
 ** LuaFileSystem
-** Copyright Kepler Project 2003 - 2020
-** (http://keplerproject.github.io/luafilesystem)
-** 2020 - ... (https://lunarmodules.github.io/luafilesystem/)
+** File system manipulation library
+**
+** Copyright (C) 2003-2010 Kepler Project.
+** Copyright (C) 2010-2022 The LuaFileSystem authors.
+** (http://lunarmodules.github.io/luafilesystem)
 */
 
 /* Define 'chdir' for systems that do not implement it */
@@ -17,7 +19,7 @@
 #define chdir(p) (_chdir(p))
 #define getcwd(d, s) (_getcwd(d, s))
 #define rmdir(p) (_rmdir(p))
-#define LFS_EXPORT  LUALIB_API //__declspec (dllexport)
+#define LFS_EXPORT __declspec (dllexport)
 #ifndef fileno
 #define fileno(f) (_fileno(f))
 #endif
@@ -25,13 +27,12 @@
 #define LFS_EXPORT
 #endif
 
-//#ifdef __cplusplus
-//extern "C" {
-//#endif
-//
-//  LFS_EXPORT int luaopen_lfs(lua_State * L);
-//
-//#ifdef __cplusplus
-//}
-//#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+  LFS_EXPORT int luaopen_lfs(lua_State * L);
+
+#ifdef __cplusplus
+}
+#endif

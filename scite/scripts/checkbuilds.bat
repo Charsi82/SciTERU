@@ -155,7 +155,7 @@ pythonw performanceTests.py
 pythonw win32Tests.py
 @popd
 @pushd scite\win32
-mingw32-make CLANG=1 SANITIZE=undefined -j%THREADS%
+mingw32-make CLANG=1 "SANITIZE=" -j%THREADS%
 @if ERRORLEVEL 2 goto ERROR
 @popd
 @rem

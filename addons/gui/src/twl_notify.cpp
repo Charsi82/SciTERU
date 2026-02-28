@@ -327,6 +327,10 @@ int TMemo::handle_notify(void* p)
 
 		case WM_KEYDOWN:
 			handle_onkey(static_cast<int>(msf->wParam));
+			break;
+
+		default:
+			break;
 		}
 	}
 	return 0;
@@ -347,7 +351,7 @@ TTabControl::~TTabControl()
 	for (int idx = 0; idx < m_index; ++idx)
 		if (idx != m_last_selected_idx)
 			if (TWin* p = panels[idx]) delete p;
-	panels.clear();
+	panels.clear();	   
 }
 
 void TTabControl::add(wchar_t* caption, TWin* data, int image_idx /*= -1*/)
@@ -438,19 +442,21 @@ void TTabControl::set_item_size(int w, int h)
 int TTabControl::handle_notify(void* p)
 {
 	LPNMHDR np = reinterpret_cast<LPNMHDR>(p);
-	int id = selected();
 	switch (np->code)
 	{
 	case TCN_SELCHANGE:
+	{
+		int id = selected();
 		handle_select(id);
 		return 1;
+	}
 	case NM_RCLICK:
 		show_popup();
 	}
 	return 0;
 }
 
-void TTabControl::set_image_list(bool small_size)
+void TTabControl::set_image_list(bool bSmallIcon)
 {
 	TabCtrl_SetImageList(handle(), get_image_list());
 }
@@ -483,9 +489,9 @@ TListView::TListView(TEventWindow* form, bool multiple_columns, bool single_sele
 	send_msg(LVM_SETEXTENDEDLISTVIEWSTYLE, 0, LVS_EX_FULLROWSELECT); // Set style
 }
 
-void TListView::set_image_list(bool small_size)
+void TListView::set_image_list(bool iconSize)
 {
-	send_msg(LVM_SETIMAGELIST, small_size ? LVSIL_SMALL : LVSIL_NORMAL, (LPARAM)get_image_list());
+	send_msg(LVM_SETIMAGELIST, iconSize ? LVSIL_SMALL : LVSIL_NORMAL, (LPARAM)get_image_list());
 }
 
 void TListView::add_column(const wchar_t* label, int width)
@@ -666,11 +672,11 @@ int TListView::handle_notify(void* lparam)
 		int i = pInfo.iItem;
 		int j = pInfo.iSubItem;
 		wchar_t buffer[10]{};
-		LVITEM item;
+		LVITEM item{};
 		item.mask = LVIF_TEXT | LVIF_PARAM;
 		item.iItem = i;
 		item.iSubItem = j;
-		item.cchTextMax = sizeof(buffer) / sizeof(buffer[0]);
+		item.cchTextMax = std::size(buffer);
 		item.pszText = buffer;
 		ListView_GetItem(handle(), &item);
 		if (i > -1)
@@ -734,9 +740,9 @@ void TTreeView::makeLabelEditable(bool toBeEnabled)
 	::SetWindowLongPtr(handle(), GWL_STYLE, dwNewStyle);
 }
 
-void TTreeView::set_image_list(bool normal)
+void TTreeView::set_image_list(bool iconSize)
 {
-	send_msg(TVM_SETIMAGELIST, normal ? TVSIL_NORMAL : TVSIL_STATE, (LPARAM)get_image_list());
+	send_msg(TVM_SETIMAGELIST, iconSize ? TVSIL_NORMAL : TVSIL_STATE, (LPARAM)get_image_list());
 }
 
 void TTreeView::set_foreground(COLORREF clr)

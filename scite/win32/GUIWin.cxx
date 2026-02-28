@@ -188,35 +188,35 @@ gui_string StringFromLongLong(long long i) {
 	return std::to_wstring(i);
 }
 
-	//!-start-[EncodingToLua]
-	int CodePageFromName(std::string_view encodingName) noexcept {
-		struct Encoding {
-			const char* name;
-			int codePage;
-		};
-		const Encoding	knownEncodings[] = {
-			{ "ascii", CP_UTF8 },
-			{ "utf-8", CP_UTF8 },
-			{ "latin1", 1252 },
-			{ "latin2", 28592 },
-			{ "big5", 950 },
-			{ "gbk", 936 },
-			{ "shift_jis", 932 },
-			{ "euc-kr", 949 },
-			{ "cyrillic", 1251 },
-			{ "iso-8859-5", 28595 },
-			{ "iso8859-11", 874 },
-			{ "1250", 1250 },
-			{ "windows-1251", 1251 },
-		};
-		for (const Encoding& enc : knownEncodings) {
-			if (encodingName == enc.name) {
-				return enc.codePage;
-			}
+//!-start-[EncodingToLua]
+int CodePageFromName(std::string_view encodingName) noexcept {
+	struct Encoding {
+		const char* name;
+		int codePage;
+	};
+	const Encoding	knownEncodings[] = {
+		{ "ascii", CP_UTF8 },
+		{ "utf-8", CP_UTF8 },
+		{ "latin1", 1252 },
+		{ "latin2", 28592 },
+		{ "big5", 950 },
+		{ "gbk", 936 },
+		{ "shift_jis", 932 },
+		{ "euc-kr", 949 },
+		{ "cyrillic", 1251 },
+		{ "iso-8859-5", 28595 },
+		{ "iso8859-11", 874 },
+		{ "1250", 1250 },
+		{ "windows-1251", 1251 },
+	};
+	for (const Encoding& enc : knownEncodings) {
+		if (encodingName == enc.name) {
+			return enc.codePage;
 		}
-		return CP_UTF8;
 	}
-	//!-end-[EncodingToLua]
+	return CP_UTF8;
+}
+//!-end-[EncodingToLua]
 
 #ifdef RB_ENCODING
 //!-start-[FixEncoding]

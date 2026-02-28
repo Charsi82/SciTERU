@@ -1,15 +1,12 @@
 #pragma once
-//#include "utf.h"
 
 class TTreeView : public TNotifyWin, public THasIconWin
 {
-private:
 	HANDLE ins_mode;
 	HANDLE get_next(HANDLE itm);
 	HANDLE get_child(HANDLE itm);
 	HANDLE get_prev(HANDLE itm);
 	void clean_subitems(HANDLE itm);
-	void set_image_list(bool normal = true) override;
 
 public:
 	TTreeView(TEventWindow* form, DWORD tree_style);
@@ -38,6 +35,7 @@ public:
 	int handle_notify(void* p) override;
 
 private:
+	void set_image_list(bool iconSize) override;
 	virtual void clean_data(int) = 0;
 	virtual void handle_select(HANDLE) = 0;
 	virtual void handle_dbclick(HANDLE) = 0;

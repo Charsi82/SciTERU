@@ -104,8 +104,8 @@ public:
 
 	~Event()
 	{
-		for (int callbackRef : callbacks)
-			luaL_unref(m_L, LUA_REGISTRYINDEX, callbackRef);
+		//for (int callbackRef : callbacks)
+			//luaL_unref(m_L, LUA_REGISTRYINDEX, callbackRef);
 	}
 
 	static void set_state(lua_State* L) { m_L = L; };
@@ -355,18 +355,18 @@ namespace
 
 	const struct luaL_Reg event_methods[] =
 	{
-		{"name",				do_name},
-		{"register",			do_register},
-		{"unregister",			do_unregister},
-		{"trigger",				do_trigger},
-		{"__call",				do_trigger},
-		{"__tostring",			do_tostring},
-		{"stop",				do_stop},
-		{"setFingerprint",		do_setfp},
-		{"removeThisCallback",	do_setRemove},
-		{"clear",				do_clear},
-		{"print",				do_print},
-		{NULL, NULL}
+		{ "name",				do_name},
+		{ "register",			do_register},
+		{ "unregister",			do_unregister},
+		{ "trigger",			do_trigger},
+		{ "__call",				do_trigger},
+		{ "__tostring",			do_tostring},
+		{ "stop",				do_stop},
+		{ "setFingerprint",		do_setfp},
+		{ "removeThisCallback",	do_setRemove},
+		{ "clear",				do_clear},
+		{ "print",				do_print},
+		{ NULL, NULL }
 	};
 }
 

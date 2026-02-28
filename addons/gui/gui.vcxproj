@@ -36,7 +36,6 @@
     <ClInclude Include="src\Twl.h" />
     <ClInclude Include="src\twl_cntrls.h" />
     <ClInclude Include="src\twl_custom_paint.h" />
-    <ClInclude Include="src\twl_imagelist.h" />
     <ClInclude Include="src\twl_listview.h" />
     <ClInclude Include="src\twl_menu.h" />
     <ClInclude Include="src\twl_notify.h" />
@@ -85,13 +84,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>

@@ -146,7 +146,7 @@ bool IsSameOrChild(const GUI::Window &wParent, HWND wChild) noexcept {
 
 }
 
-LRESULT PASCAL BaseWin::StWndProc(
+LRESULT CALLBACK BaseWin::StWndProc(
 	HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam) {
 	if (iMessage == WM_CREATE) {
 		// Pointer to BaseWin passed with WM_CREATE so remember in window pointer

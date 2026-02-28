@@ -128,7 +128,7 @@ LRESULT HandleCopyData(LPARAM lParam) {
 	return 0;
 }
 
-LRESULT PASCAL DirectorExtension_WndProc(
+LRESULT CALLBACK DirectorExtension_WndProc(
 	HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam) {
 	if (iMessage == WM_COPYDATA) {
 		return HandleCopyData(lParam);

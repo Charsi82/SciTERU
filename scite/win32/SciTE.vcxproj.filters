@@ -540,8 +540,6 @@
     <ClCompile Include="..\..\scintilla\src\ChangeHistory.cxx">
       <Filter>scintilla</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\lexilla\lexlib\InList.cxx" />
-    <ClCompile Include="..\..\scintilla\src\UndoHistory.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexZig.cxx">
       <Filter>lexers</Filter>
     </ClCompile>
@@ -557,11 +555,26 @@
     <ClCompile Include="..\..\lexilla\lexers\LexDart.cxx">
       <Filter>lexers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\scintilla\win32\ListBox.cxx" />
-    <ClCompile Include="..\..\scintilla\win32\SurfaceGDI.cxx" />
-    <ClCompile Include="..\..\scintilla\win32\SurfaceD2D.cxx" />
     <ClCompile Include="..\..\lexilla\lexers\LexSINEX.cxx">
       <Filter>lexers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lexilla\lexers\LexEscSeq.cxx">
+      <Filter>lexers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lexilla\lexlib\InList.cxx">
+      <Filter>lexilla</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\scintilla\win32\ListBox.cxx">
+      <Filter>lexilla</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\scintilla\win32\SurfaceD2D.cxx">
+      <Filter>scintilla</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\scintilla\win32\SurfaceGDI.cxx">
+      <Filter>scintilla</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\scintilla\src\UndoHistory.cxx">
+      <Filter>scintilla</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -807,12 +820,22 @@
     <ClInclude Include="..\..\lexilla\lexlib\CatalogueModules.h">
       <Filter>lexilla</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\lexilla\lexlib\InList.h" />
-    <ClInclude Include="..\..\scintilla\src\UndoHistory.h" />
-    <ClInclude Include="..\..\scintilla\win32\ListBox.h" />
-    <ClInclude Include="..\..\scintilla\win32\SurfaceD2D.h" />
-    <ClInclude Include="..\..\scintilla\win32\SurfaceGDI.h" />
     <ClInclude Include="..\src\UnicodeConstants.h" />
+    <ClInclude Include="..\..\lexilla\lexlib\InList.h">
+      <Filter>lexilla</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\scintilla\win32\ListBox.h">
+      <Filter>lexilla</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\scintilla\src\UndoHistory.h">
+      <Filter>scintilla</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\scintilla\win32\SurfaceD2D.h">
+      <Filter>scintilla</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\scintilla\win32\SurfaceGDI.h">
+      <Filter>scintilla</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\win32\SciTERes.rc" />

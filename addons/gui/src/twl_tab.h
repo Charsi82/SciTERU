@@ -18,10 +18,10 @@ public:
 	int fixedwidth();
 	void fixedwidth(int flag);
 	void set_item_size(int w, int h);
-	void set_image_list(bool small_size) override;
 	int getRowCount() const;
 	int handle_notify(void* p) override;
 
 private:
+	void set_image_list(bool bSmallIcon) override;
 	virtual void handle_select(int id) = 0;
 };

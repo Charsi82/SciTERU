@@ -799,7 +799,7 @@ BarButton bbs[] = {
 #endif
 
 WNDPROC stDefaultTabProc = nullptr;
-LRESULT PASCAL TabWndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam) {
+LRESULT CALLBACK TabWndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam) {
 
 	static bool bDragBegin = false;
 	static int iDraggingTab = -1;
@@ -1229,10 +1229,10 @@ void SciTEWin::Creation() {
 //!-start-[user.toolbar]
 struct BarButtonIn
 {
-	BarButtonIn() :id(0), cmd(0) {};
+	BarButtonIn() = default;
 	BarButtonIn(int _id, int _cmd) : id(_id), cmd(_cmd) {};
-	int id;
-	int cmd;
+	int id = 0;
+	int cmd = 0;
 };
 
 void SciTEWin::SetToolBar()

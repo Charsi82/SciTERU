@@ -12,11 +12,11 @@
 // lua_absindex
 
 
-#define lua_objlen      lua_rawlen
+//#define lua_objlen      lua_rawlen
 
-int   luaL_typerror (lua_State *L, int narg, const char *tname);
+//int   luaL_typerror (lua_State *L, int narg, const char *tname);
 
-void luaL_register (lua_State *L, const char *libname, const luaL_Reg *l);
+//void luaL_register (lua_State *L, const char *libname, const luaL_Reg *l);
 
 #else                      // lua 5.1
 

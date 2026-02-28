@@ -278,7 +278,7 @@ protected:
 	void LocaliseControl(HWND w);
 	void LocaliseDialog(HWND wDialog);
 
-	int DoDialog(const TCHAR *resName, DLGPROC lpProc);
+	INT_PTR DoDialog(const TCHAR *resName, DLGPROC lpProc);
 	HWND CreateParameterisedDialog(LPCWSTR lpTemplateName, DLGPROC lpProc) noexcept;
 	GUI::gui_string DialogFilterFromProperty(const GUI::gui_string &filterProperty);
 	void CheckCommonDialogError();
@@ -454,7 +454,7 @@ public:
 
 	uintptr_t GetInstance() override;
 	static void Register(HINSTANCE hInstance_) noexcept;
-	static LRESULT PASCAL TWndProc(
+	static LRESULT CALLBACK TWndProc(
 		HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
 
 	friend class UniqueInstance;

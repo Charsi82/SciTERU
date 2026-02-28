@@ -1,44 +1,65 @@
-#include <string>
 #include <windows.h>
-#include "log.h"
+#include <string>
+#include <fstream>
+#include <format>
 
-Log::Log()
+//#define GUILIB_LOG_ON
+namespace
 {
-	char pFilename[MAX_PATH]{};
-	GetModuleFileNameA(NULL, pFilename, sizeof(pFilename));
-	std::string path(pFilename);
-	path.erase(path.find_last_of("\\"));
-	outf.open(path.append("\\log.txt"));
-}
+	class Log
+	{
+		std::ofstream outf;
+		void add_time(const char* txt);
 
-Log::~Log()
-{
-	SYSTEMTIME currentTime{};
-	GetLocalTime(&currentTime);
-	char tmp[32]{};
-	sprintf_s(tmp, "[ %02d:%02d:%02d %02d.%02d.%d ]",
-		currentTime.wHour, currentTime.wMinute, currentTime.wSecond,
-		currentTime.wDay, currentTime.wMonth, currentTime.wYear);
-	add(tmp);
-	outf.close();
-}
+	public:
+		Log();
+		~Log();
+		static Log& Instance();
+		void add(const char* txt);
+	};
 
-void Log::add(const char* txt)
-{
-	outf << txt << std::endl;
-	outf.flush();
-}
+	Log::Log()
+	{
+		std::string path(MAX_PATH, '\0');
+		GetModuleFileNameA(NULL, path.data(), static_cast<DWORD>(path.size()));
+		path.erase(path.find_last_of("\\"));
+		outf.open(path.append("\\gui_log.txt"));
+		add_time("log started:");
+	};
 
-Log& log_instance()
-{
-	static Log _log;
-	return _log;
+	Log::~Log()
+	{
+		add_time("log closed:");
+		outf.close();
+	}
+
+	void Log::add_time(const char* txt)
+	{
+		SYSTEMTIME currentTime{};
+		GetLocalTime(&currentTime);
+		const std::string tmp = std::format("{} {:02d}:{:02d}:{:02d} {:02d}.{:02d}.{} \n", txt,
+			currentTime.wHour, currentTime.wMinute, currentTime.wSecond,
+			currentTime.wDay, currentTime.wMonth, currentTime.wYear);
+		outf << tmp << std::flush;
+	}
+
+	void Log::add(const char* txt)
+	{
+		outf << txt << std::endl;
+		outf.flush();
+	}
+
+	Log& Log::Instance()
+	{
+		static Log _log;
+		return _log;
+	}
 }
 
 void log_add(const char* s)
 {
-#ifdef LOG_ON
+#if defined(GUILIB_LOG_ON) || defined(_DEBUG)
 	if (s && *s)
-		log_instance().add(s);
+		Log::Instance().add(s);
 #endif
 }

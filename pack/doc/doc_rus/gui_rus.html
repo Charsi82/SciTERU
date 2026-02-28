@@ -976,7 +976,7 @@ end
 <table width="100%" cellpadding="1" cellspacing="0" border="1">
 <tr><td>
 	<p class="head">
-		<dfn id="tree:set_tree_colour">tree:set_tree_colour("#RRGGBB", "#RRGGBB")</dfn>
+		<dfn id="tree:tree_set_colour">tree:tree_set_colour("#RRGGBB", "#RRGGBB")</dfn>
 	</p>
 	<p>
 		<b>Описание:</b><br />
@@ -985,7 +985,7 @@ end
 
 <tr><td>
 	<p class="head">
-		<dfn id="tree:set_tree_editable">tree:set_tree_editable()</dfn>
+		<dfn id="tree:tree_set_editable">tree:tree_set_editable()</dfn>
 	</p>
 	<p>
 		<b>Описание:</b><br />
@@ -1134,11 +1134,11 @@ end
 
 <tr><td>
 	<p class="head">
-		<dfn id="trackbar:select">trackbar:select(min, max)</dfn>
+		<dfn id="trackbar:select">trackbar:selection(from, to)<br />local from, to = trackbar:selection()</dfn>
 	</p>
 	<p>
 		<b>Описание:</b><br />
-		&nbsp;&nbsp;Выделить диапазон.<br />
+		&nbsp;&nbsp;Установить или получить выделенный диапазон.<br />
 </td></tr>
 
 <tr><td>

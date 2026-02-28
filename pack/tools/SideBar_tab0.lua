@@ -420,7 +420,7 @@ return function(tabs, panel_width, colorback, colorfore)
 		if favorites_file then
 			for fpath in favorites_file:lines() do
 				if fpath ~= '' then
-					fpath = ReplaceWithoutCase(fpath, '$(SciteDefaultHome)', props['SciteDefaultHome'])
+					local fpath = ReplaceWithoutCase(fpath, '$(SciteDefaultHome)', props['SciteDefaultHome'])
 					local fname = fpath:gsub('.+\\','')
 					if fname == '' then fname = fpath:gsub('.+\\(.-)\\',' [%1]') end
 					list_fav_table[#list_fav_table+1] = {fname, fpath}

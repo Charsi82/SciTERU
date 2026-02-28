@@ -14,6 +14,7 @@
 #include <commctrl.h>
 #include "twl_cntrls.h"
 #include "twl_notify.h"
+#include <format>
 
 constexpr wchar_t EW_CLASSNAME[] = L"EVNTWNDCLSS";
 
@@ -87,7 +88,8 @@ void Rect::offset_by(int dx, int dy)
 
 //TDC::TDC(TWin* ptr) :m_hdc(NULL), m_pen(NULL), m_font(NULL), m_brush(NULL), m_twin(ptr)
 TDC::TDC(TWin* ptr) :m_hdc(NULL), m_pen(NULL), m_brush(NULL), m_twin(ptr)
-{ }
+{
+}
 
 TDC::~TDC()
 {
@@ -173,7 +175,7 @@ void TDC::set_pen(COLORREF rgb, int width, DWORD style)
 
 // after selecting stock pen
 void TDC::reset_pen()
-{	
+{
 	get();
 	select(m_pen);
 	release();
@@ -188,7 +190,7 @@ void TDC::set_text_align(int flags)
 
 SIZE TDC::get_text_extent(const wchar_t* text)
 {
-	SIZE sz {0,0};
+	SIZE sz{ 0,0 };
 	//HFONT oldfont = NULL;
 	get();
 	//if (font) oldfont = select(*font);
@@ -281,7 +283,10 @@ TWin::TWin(TEventWindow* parent, const wchar_t* winclss, const wchar_t* text, in
 	if (hwndChild == NULL)
 	{
 		err = GetLastError();
-		log_add("TWin::TWin can't create window error:%d", err);
+		char tmp[MAX_PATH];
+		strerror_s(tmp, MAX_PATH, err);
+		std::string errstr = std::format("TWin::TWin can't create window error: {}", tmp);
+		log_add(errstr.c_str());
 	}
 	set(hwndChild);
 	set_parent_win(parent);
@@ -618,6 +623,7 @@ TEventWindow::TEventWindow(const wchar_t* caption, TWin* parent, DWORD style_ext
 	enable_resize(true);
 	m_old_cursor = LoadCursor(NULL, IDC_ARROW);
 	cursor(CursorType::ARROW);
+	log_add(std::format(" TEventWindow 0x{}", (size_t)this).c_str());
 }
 
 void TEventWindow::create_window(const wchar_t* caption, TWin* parent, bool is_child)
@@ -770,7 +776,7 @@ void TEventWindow::cursor(CursorType curs)
 bool TEventWindow::check_notify(LPARAM lParam, int& ret)
 {
 	LPNMHDR ph = reinterpret_cast<LPNMHDR>(lParam);
-	for (TWin* win : m_children)
+	for (const auto win : m_children)
 	{
 		if (ph->hwndFrom == win->handle())
 			if (TNotifyWin* pnw = dynamic_cast<TNotifyWin*>(win))
@@ -894,14 +900,21 @@ void TEventWindow::quit(int retcode)
 
 TEventWindow::~TEventWindow()
 {
-	//log_add("~TEventWindow 0x%p", this);
+	//log_add(std::format("~TEventWindow 0x{}", (size_t)this).c_str());
 	DestroyAcceleratorTable(m_hACCEL);
 	if (m_timer) kill_timer();
-	//int i = 0;
-	for (TWin* win : m_children)
+	int i = 0;
+	for (const auto win : m_children)
 	{
-		//log_add("del list item %d [0x%p]", ++i, p);
-		delete win;
+		try
+		{
+			delete win;
+		}
+		catch (const std::exception& ex)
+		{
+			//std::string fmt = std::format("del list item {} 0x{:x} : {}", ++i, (size_t)win, ex.what());
+			//log_add(fmt.c_str());
+		};
 	}
 	m_children.clear();
 	DestroyMenu(m_hpopup_menu);
@@ -933,11 +946,11 @@ void TEventWindow::size()
 	get_client_rect(m);
 	//if (m_tool_bar) m.top += m_tool_bar->height();  //*6
 	// we will only be resizing _visible_ windows with explicit alignments.
-	for (TWin* win : m_children)
+	for (const auto win : m_children)
 		if (win->align() == Alignment::alNone || !win->visible()) n--;
 	if (n == 0) return;
 	HDWP hdwp = BeginDeferWindowPos(n);
-	for (TWin* win : m_children)
+	for (const auto win : m_children)
 	{
 		if (!win->visible()) continue; //*new
 		Rect wrt;
@@ -1029,17 +1042,17 @@ void TEventWindow::focus()
 void TEventWindow::paint(TDC* pTDC) {}
 bool TEventWindow::command(int, int) { return true; }
 bool TEventWindow::sys_command(int) { return false; }
-void TEventWindow::ncpaint(TDC*) { }
-void TEventWindow::mouse_down(Point&) { }
-void TEventWindow::mouse_up(Point&) { }
-void TEventWindow::right_mouse_down(Point&) { }
-void TEventWindow::mouse_move(Point&) { }
-void TEventWindow::keydown(int) { }
-void TEventWindow::destroy() { }
-void TEventWindow::timer() { }
+void TEventWindow::ncpaint(TDC*) {}
+void TEventWindow::mouse_down(Point&) {}
+void TEventWindow::mouse_up(Point&) {}
+void TEventWindow::right_mouse_down(Point&) {}
+void TEventWindow::mouse_move(Point&) {}
+void TEventWindow::keydown(int) {}
+void TEventWindow::destroy() {}
+void TEventWindow::timer() {}
 int  TEventWindow::notify(int id, void* ph) { return 0; }
-void TEventWindow::scroll(int code, int posn) { };
-void TEventWindow::move() { };
+void TEventWindow::scroll(int code, int posn) {};
+void TEventWindow::move() {};
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -1090,7 +1103,7 @@ BOOL APIENTRY DllMain(
 	{
 		std::wstring tmp(MAX_PATH, 0);
 		auto ret = GetModuleFileName(NULL, tmp.data(), MAX_PATH);
-		if(tmp.erase(ret).ends_with(L"SciTE.exe"))
+		if (tmp.erase(ret).ends_with(L"SciTE.exe"))
 		{
 			hInst = hinstDLL;
 			RegisterEventWindow();

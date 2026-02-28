@@ -32,11 +32,7 @@
 #include "SciTEKeys.h"
 #include "LuaExtension.h"
 
-#ifdef RB_BUILD
-#define LUA_COMPAT_5_3
-#else
 #define LUA_COMPAT_5_1
-#endif
 extern "C" {
 #include "lua.h"
 #include "lualib.h"
@@ -61,6 +57,11 @@ void lua_utf8_register_libs(lua_State* L);
 #define lua_getglobal(L,s) (lua_getfield(L, LUA_GLOBALSINDEX, s), lua_type(L, -1))
 #else
 #define LUA_GLOBALSINDEX LUA_RIDX_GLOBALS
+#endif
+
+// LUA_COMPAT_APIINTCASTS Lua 5.5
+#ifndef luaL_checkint
+#define luaL_checkint(L,n)	(static_cast<int>(luaL_checkinteger(L, (n))))
 #endif
 
 #if defined(_WIN32) && defined(_MSC_VER)
@@ -2527,11 +2528,9 @@ bool LuaExtension::OnStyle(SA::Position startPos, SA::Position lengthDoc, int in
 
 #ifdef RB_ODBCLK
 namespace {
-
 	constexpr bool CheckModifiers(int modifiers, SA::KeyMod mod) noexcept {
 		return (static_cast<int>(mod) & modifiers) != 0;
 	}
-
 }
 
 //!-start-[OnDoubleClick]
@@ -2661,8 +2660,8 @@ bool LuaExtension::OnKey(int keyval, int modifiers, char ch) { //!-change-[OnKey
 			handled = call_function(luaState, 5);
 		} else {
 			lua_pop(luaState, 1);
-}
-}
+		}
+	}
 	return handled;
 }
 #else
@@ -2726,10 +2725,10 @@ bool LuaExtension::OnMenuCommand(int cmd, int source) {
 
 //!-start-[OnSendEditor]
 const char* LuaExtension::OnSendEditor(Scintilla::Message msg, uintptr_t wp, const char* lp) {
-	return CallNamedFunction("OnSendEditor", (lua_Integer)msg, wp, lp);
+	return CallNamedFunction("OnSendEditor", static_cast<lua_Integer>(msg), wp, lp);
 }
 const char* LuaExtension::OnSendEditor(Scintilla::Message msg, uintptr_t wp, long lp) {
-	return CallNamedFunction("OnSendEditor", (lua_Integer)msg, wp, lp);
+	return CallNamedFunction("OnSendEditor", static_cast<lua_Integer>(msg), wp, lp);
 }
 //!-end-[OnSendEditor]
 #endif //RB_OnSendEditor
