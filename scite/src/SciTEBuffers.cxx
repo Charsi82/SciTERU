@@ -1327,6 +1327,18 @@ GUI::gui_string BufferTitle([[maybe_unused]] int pos, const Buffer &buffer, Titl
 		}
 	}
 
+#ifdef RB_TTML
+	//!-start-[TabbarTitleMaxLength]
+	int tabsTitleMaxLength = std::max(props.GetInt("tabbar.title.maxlength"), 6); //!-add-[TabbarTitleMaxLength]
+	if (buffer.isReadOnly && props.GetInt("read.only.indicator")) tabsTitleMaxLength -= 2;
+	if (buffer.DocumentNotSaved()) tabsTitleMaxLength -= 2;
+	if (tabsTitleMaxLength > 0 && title.length() - tabsTitleMaxLength > 3) {
+		title.resize(tabsTitleMaxLength, L'\0');
+		title.append(GUI_TEXT("..."));
+	}
+	//!-end-[TabbarTitleMaxLength]
+#endif
+
 	// Read only indicator
 	if (buffer.isReadOnly && props.GetInt("read.only.indicator")) {
 #ifdef RB_ROTM
@@ -1336,15 +1348,7 @@ GUI::gui_string BufferTitle([[maybe_unused]] int pos, const Buffer &buffer, Titl
 		title += GUI_TEXT(" |");
 #endif // RB_ROTM
 	}
-#ifdef RB_TTML
-	//!-start-[TabbarTitleMaxLength]
-	unsigned tabsTitleMaxLength = props.GetInt("tabbar.title.maxlength", 0); //!-add-[TabbarTitleMaxLength]
-	if (tabsTitleMaxLength > 0 && title.length() > tabsTitleMaxLength + 3) {
-		title.resize(tabsTitleMaxLength, L'\0');
-		title.append(GUI_TEXT("..."));
-	}
-	//!-end-[TabbarTitleMaxLength]
-#endif
+
 	// Dirty indicator
 #ifdef RB_ONE
 	if (buffer.DocumentNotSaved()) {
