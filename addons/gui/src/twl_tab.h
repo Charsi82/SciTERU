@@ -22,6 +22,6 @@ public:
 	int handle_notify(void* p) override;
 
 private:
-	void set_image_list(bool bSmallIcon) override;
+	void set_image_list(bool bSmallIcon, HIMAGELIST hImageList) override;
 	virtual void handle_select(int id) = 0;
 };

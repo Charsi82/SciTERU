@@ -40,6 +40,12 @@ mingw32-make test
 mingw32-make clean
 mingw32-make test
 @popd
+@pushd lexilla\test\Metadata
+mingw32-make clean
+mingw32-make
+Metadata -check
+python CheckMeta.py
+@popd
 @rem
 rem ************************************************************
 rem Target 3: Normal gcc build

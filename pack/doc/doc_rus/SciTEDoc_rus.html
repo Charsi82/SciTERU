@@ -1344,7 +1344,7 @@ NameError: mistake
 		
 		<tr>
 			<td><dfn><a name="undo.selection.history">undo.selection.history</a></dfn></td>
-			<td>Установка этого значения на 0 останавливает сбор выделенного для каждого действия, которое будет восстановлено при отмене и повторе. Это уменьшает объем используемой памяти.</td>
+			<td>Установка этого значения на <var>0</var> останавливает сбор выделенного для каждого действия, которое будет восстановлено при отмене и повторе. Это уменьшает объем используемой памяти.</td>
 		</tr>
 		
 		<tr id='property-change.history'>
@@ -1366,8 +1366,8 @@ NameError: mistake
 		<td>
 			 Свойство <dfn>change.history</dfn> определяет, будут ли изменения в документе (вставки, удаления, сохраненные изменения и т. д.)
 			 отображаются в виде маркеров полей или индикаторов в тексте.<br .>
-			 Это набор битовых флагов (1=включить, 2=маркеры полей, 4=индикаторы в тексте), поэтому наиболее вероятные настройки
-			 0=отключено; 3=включено с метками на полях или 7=включено с метками на полях и внутритекстовыми индикаторами.<br />
+			 Это набор битовых флагов (1 - включить, 2 - маркеры полей, 4 - индикаторы в тексте), поэтому наиболее вероятные настройки
+			 0 - отключено; 3 - включено с метками на полях или 7 - включено с метками на полях и внутритекстовыми индикаторами.<br />
 			 Для этой функции существует набор визуальных элементов по умолчанию, но их можно изменить с помощью свойств <dfn>marker.*</dfn> и <dfn>indicator.*</dfn>.<br />
 			 Поскольку история изменений может быть включена только тогда, когда файл находится в исходном состоянии, это свойство вступает в силу только тогда, когда
 			 загружается файл.
@@ -1376,12 +1376,12 @@ NameError: mistake
 			
 		<tr>
 			<td><dfn><a name="statusbar.visible">statusbar.visible</a></dfn></td>
-			<td>Задайте данной переменной значение 1 для того, чтобы сделать видимой строку состояния.</td>
+			<td>Задайте данной переменной значение <var>1</var> для того, чтобы сделать видимой строку состояния.</td>
 		</tr>
 			
 		<tr class="gtkonly">
 			<td><dfn><a name="statusbar.minimum.height">statusbar.minimum.height</a></dfn></td>
-			<td>В MacOS, когда строка состояния отключена, она по-прежнему видна, но только для этой высоты, которая по умолчанию равна 4 пикселям. Это связано с ошибкой, из-за которой при прокрутке на полях появляются угловые части окна. Этот параметр может быть установлен на 0, если части не появляется на определенной установке.</td>
+			<td>В MacOS, когда строка состояния отключена, она по-прежнему видна, но только для этой высоты, которая по умолчанию равна 4 пикселям. Это связано с ошибкой, из-за которой при прокрутке на полях появляются угловые части окна. Этот параметр может быть установлен на <var>0</var>, если части не появляется на определенной установке.</td>
 		</tr>
 
 		<tr>
@@ -1408,7 +1408,7 @@ NameError: mistake
 
 		<tr>
 				<td><dfn><a name="technology">technology</a></dfn></td>
-			<td>Для этого параметра можно установить значение 1, 2 или 3, чтобы использовать API-интерфейсы Direct2D и DirectWrite для более качественного отрисовки сглаживания, или 0, чтобы использовать старый GDI. Значение по умолчанию — 1. Значение 2 заставляет кадр сохраняться после презентации, что может предотвратить сбои рисования на некоторых картах и драйверах. 3 также может предотвращать сбои прорисовки на некоторых картах и драйверах, но с более низкой скоростью.</td>
+			<td>Для этого параметра можно установить значение <var>1</var>, <var>2</var> или <var>3</var>, чтобы использовать API-интерфейсы Direct2D и DirectWrite для более качественного отрисовки сглаживания, или 0, чтобы использовать старый GDI. Значение по умолчанию — 1. Значение 2 заставляет кадр сохраняться после презентации, что может предотвратить сбои рисования на некоторых картах и драйверах. 3 также может предотвращать сбои прорисовки на некоторых картах и драйверах, но с более низкой скоростью.</td>
 		</tr>
 		<tr>
 			<td><dfn><a name="load.on.activate">load.on.activate<br>
@@ -1584,7 +1584,7 @@ NameError: mistake
 
 		<tr>
 			<td><dfn><a name="caret.line.frame">caret.line.frame</a></dfn></td>
-			<td>Этот параметр позволяет рисовать линию вставки в виде прямоугольника внутри строки, а не всей строки. Устанавливает ширину сторон прямоугольника. Значение 0 возвращает к рисованию всей линии.</td>
+			<td>Этот параметр позволяет рисовать линию вставки в виде прямоугольника внутри строки, а не всей строки. Устанавливает ширину сторон прямоугольника. Значение <var>0</var> возвращает к рисованию всей линии.</td>
 		</tr>
 
 		<tr>
@@ -1891,7 +1891,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 		</tr>
 		<tr>
 				<td><dfn><a name="autocomplete.multi">autocomplete.multi</a></dfn></td>
-				<td>Если установлено значение 1, вариант автозавершения вставляется во все варианты выделения.</td>
+				<td>Если установлено значение <var>1</var>, вариант автозавершения вставляется во все варианты выделения.</td>
 		</tr>
 
 		<tr>
@@ -1981,118 +1981,119 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 		</tr>
 
 		<tr>
-		<td>fold.abl.comment.multiline</td>
-		<td>Set this property to 0 to disable folding multi-line comments when fold.comment=1.</td>
+		<td><dfn><a name="fold.abl.comment.multiline">fold.abl.comment.multiline</a></dfn></td>
+		<td>Установите это свойство в значение 0, чтобы отключить сворачивание многострочных комментариев, когда fold.comment=1.</td>
 		</tr>
 
 		<tr>
-		<td>fold.abl.syntax.based</td>
-		<td>Set this property to 0 to disable syntax based folding.</td>
+		<td><dfn><a name="fold.abl.syntax.based">fold.abl.syntax.based</a></dfn></td>
+		<td>Установите для этого свойства значение 0, чтобы отключить свертывание на основе синтаксиса.</td>
 		</tr>
 
 		<tr>
-		<td>fold.asm.comment.explicit</td>
-		<td>This option enables folding explicit fold points when using the Asm lexer. Explicit fold points allows adding extra folding by placing a ;{ comment at the start and a ;} at the end of a section that should fold.</td>
+		<td><dfn><a name="fold.asm.comment.explicit">fold.asm.comment.explicit</a></dfn></td>
+		<td>Эта опция позволяет явно указывать точки свертывания при использовании лексера Asm. Явные точки свертывания позволяют добавить дополнительное свертывание, разместив комментарий ;{ в начале и ;} в конце раздела, который должен быть свернут.</td>
 		</tr>
 
 		<tr>
-		<td>fold.asm.comment.multiline</td>
-		<td>Set this property to 1 to enable folding multi-line comments.</td>
+		<td><dfn><a name="fold.asm.comment.multiline">fold.asm.comment.multiline</a></dfn></td>
+		<td>Установите для этого свойства значение 1, чтобы включить сворачивание многострочных комментариев.</td>
 		</tr>
 
 		<tr>
-		<td>fold.asm.explicit.anywhere</td>
-		<td>Set this property to 1 to enable explicit fold points anywhere, not just in line comments.</td>
+		<td><dfn><a name="fold.asm.explicit.anywhere">fold.asm.explicit.anywhere</a></dfn></td>
+		<td>Установите для этого свойства значение 1, чтобы разрешить явное указание точек сгиба в любом месте, а не только в комментариях к строкам.</td>
 		</tr>
 
 		<tr>
-		<td>fold.asm.explicit.end</td>
-		<td>The string to use for explicit fold end points, replacing the standard ;}.</td>
+		<td><dfn><a name="fold.asm.explicit.end">fold.asm.explicit.end</a></dfn></td>
+		<td>Строка, используемая для явного указания конечных точек свертывания, заменяющая стандартный символ ;}.</td>
 		</tr>
 
 		<tr>
-		<td>fold.asm.explicit.start</td>
-		<td>The string to use for explicit fold start points, replacing the standard ;{.</td>
+		<td><dfn><a name="fold.asm.explicit.start">fold.asm.explicit.start</a></dfn></td>
+		<td>Строка, используемая для указания начальных точек свертывания, заменяющая стандартный символ ;{.</td>
 		</tr>
 
 		<tr>
-		<td>fold.asm.syntax.based</td>
-		<td>Set this property to 0 to disable syntax based folding.</td>
+		<td><dfn><a name="fold.asm.syntax.based">fold.asm.syntax.based</a></dfn></td>
+		<td>Установите для этого свойства значение 0, чтобы отключить свертывание на основе синтаксиса.</td>
 		</tr>
 
 		<tr>
-		<td>fold.at.else</td>
+		<td><dfn><a name="fold.at.else">fold.at.else</a></dfn></td>
 		<td>Эта опция включает фолдинг C++ в строке "} else {" оператора if.</td>
 		</tr>
 
 		<tr>
-				<td>
-						<dfn><a name="fold.baan.inner.level">fold.baan.inner.level</a></dfn>
-				</td>
-				<td>
-						Установите это свойство на 1, чтобы включить свёртывание внутренних уровней операторов select. По умолчанию отключено. Операторы case и if также допустимы.
-				</td>
+			<td>
+				<dfn><a name="fold.baan.inner.level">fold.baan.inner.level</a></dfn>
+			</td>
+			<td>
+				Установите это свойство на <var>1</var>, чтобы включить свёртывание внутренних уровней операторов select. По умолчанию отключено. Операторы case и if также допустимы.
+			</td>
 		</tr>
 
 		<tr>
-				<td>
-						<dfn><a name="fold.baan.keywords.based">fold.baan.keywords.based</a></dfn>
-				</td>
-				<td>
-						Установите это свойство на 0, чтобы отключить свёртывание на основе ключевых слов, которое выполняется на основе for, if, on (case), repeat, select, while и fold ends на основе endfor, endif, endcase, until, endselect, endwhile соответственно. Также сворачивает объявления, которые сгруппированы вместе.
-				</td>
+			<td>
+				<dfn><a name="fold.baan.keywords.based">fold.baan.keywords.based</a></dfn>
+			</td>
+			<td>
+				Установите это свойство на <var>0</var>, чтобы отключить свёртывание на основе ключевых слов, которое выполняется на основе for, if, on (case), repeat, select, while и fold ends на основе endfor, endif, endcase, until, endselect, endwhile соответственно. Также сворачивает объявления, которые сгруппированы вместе.
+			</td>
 		</tr>
 
 		<tr>
-				<td>
-						<dfn><a name="fold.baan.sections">fold.baan.sections</a></dfn>
-				</td>
-				<td>
-						Установите это свойство на 0, чтобы отключить сворачивание основных разделов, а также подразделов.
-				</td>
+			<td>
+				<dfn><a name="fold.baan.sections">fold.baan.sections</a></dfn>
+			</td>
+			<td>
+				Установите это свойство на <var>0</var>, чтобы отключить сворачивание основных разделов, а также подразделов.
+			</td>
 		</tr>
 
 		<tr>
-				<td>
-						<dfn><a name="fold.baan.syntax.based">fold.baan.syntax.based</a></dfn>
-				</td>
-				<td>
-						Установите это свойство на 0, чтобы отключить свертку на основе синтаксиса, которая представляет собой свертку на основе '{' и '('.
-				</td>
+			<td>
+				<dfn><a name="fold.baan.syntax.based">fold.baan.syntax.based</a></dfn>
+			</td>
+			<td>
+				Установите это свойство на <var>0</var>, чтобы отключить свертку на основе синтаксиса, которая представляет собой свертку на основе '{' и '('.
+			</td>
 		</tr>
 
 <tr>
-		<td>fold.basic.comment.explicit</td>
-		<td>This option enables folding explicit fold points when using the Basic lexer. Explicit fold points allows adding extra folding by placing a ;{ (BB/PB) or '{ (FB) comment at the start and a ;} (BB/PB) or '} (FB) at the end of a section that should be folded.</td>
+		<td><dfn><a name="fold.basic.comment.explicit">fold.basic.comment.explicit</a></dfn></td>
+		<td>Эта опция позволяет явно указывать точки свертывания при использовании базового лексера.
+Явные точки свертывания позволяют добавить дополнительное свертывание, разместив комментарий ;{ (BB/PB) или '{ (FB) в начале и ;} (BB/PB) или '} (FB) в конце раздела, который должен быть свернут.</td>
 		</tr>
 
 		<tr>
-		<td>fold.basic.explicit.anywhere</td>
-		<td>Set this property to 1 to enable explicit fold points anywhere, not just in line comments.</td>
+		<td><dfn><a name="fold.basic.explicit.anywhere">fold.basic.explicit.anywhere</a></dfn></td>
+		<td>Установите для этого свойства значение 1, чтобы разрешить явное указание точек сгиба в любом месте, а не только в комментариях к строкам.</td>
 		</tr>
 
 		<tr>
-		<td>fold.basic.explicit.end</td>
-		<td>The string to use for explicit fold end points, replacing the standard ;} (BB/PB) or '} (FB).</td>
+		<td><dfn><a name="fold.basic.explicit.end">fold.basic.explicit.end</a></dfn></td>
+		<td>Строка, используемая для явного указания конечных точек свёртывания, заменяющая стандартные ;} (BB/PB) или '} (FB).</td>
 		</tr>
 
 		<tr>
-		<td>fold.basic.explicit.start</td>
-		<td>The string to use for explicit fold start points, replacing the standard ;{ (BB/PB) or '{ (FB).</td>
+		<td><dfn><a name="fold.basic.explicit.start">fold.basic.explicit.start</a></dfn></td>
+		<td>TСтрока, используемая для указания точек начала свертывания, заменяет стандартные ;{ (BB/PB) или '{ (FB).</td>
 		</tr>
 
 		<tr>
-		<td>fold.basic.syntax.based</td>
-		<td>Установите это свойство на 0, чтобы отключить свёртывание на основе синтаксиса.</td>
+		<td><dfn><a name="fold.basic.syntax.based">fold.basic.syntax.based</a></dfn></td>
+		<td>Установите это свойство на <var>0</var>, чтобы отключить свёртывание на основе синтаксиса.</td>
 		</tr>
 
 		<tr>
-				<td>
-						<dfn><a name="fold.cil.comment.multiline">fold.cil.comment.multiline</a></dfn>
-				</td>
-				<td>
-						Установите это свойство на 0, чтобы отключить сворачивание многострочных комментариев, если <dfn>fold.comment</dfn>=1.
-				</td>
+			<td>
+				<dfn><a name="fold.cil.comment.multiline">fold.cil.comment.multiline</a></dfn>
+			</td>
+			<td>
+				Установите это свойство на <var>0</var>, чтобы отключить сворачивание многострочных комментариев, если <dfn>fold.comment</dfn>=1.
+			</td>
 		</tr>
 		
 		<tr>
@@ -2112,134 +2113,130 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 
 		<tr>
 			<td><dfn><a name="fold.cpp.comment.explicit">fold.cpp.comment.explicit</a></dfn></td>
-			<td>Set this property to 0 to disable folding explicit fold points when fold.comment=1.</td>
+			<td>Установите это свойство в значение 0, чтобы отключить сворачивание явных точек сворачивания, когда fold.comment=1.</td>
 		</tr>
 
 		<tr>
 			<td><dfn><a name="fold.cpp.comment.multiline">fold.cpp.comment.multiline</a></dfn></td>
-			<td>Set this property to 0 to disable folding multi-line comments when fold.comment=1.</td>
+			<td>Установите это свойство в значение 0, чтобы отключить сворачивание многострочных комментариев, когда fold.comment=1.</td>
 		</tr>
 
 		<tr>
 			<td><dfn><a name="fold.cpp.explicit.anywhere">fold.cpp.explicit.anywhere</a></dfn></td>
-			<td>Set this property to 1 to enable explicit fold points anywhere, not just in line comments.</td>
+			<td>Установите для этого свойства значение 1, чтобы разрешить явное указание точек сгиба в любом месте, а не только в комментариях к строкам.</td>
 		</tr>
 
 		<tr>
 			<td><dfn><a name="fold.cpp.explicit.end">fold.cpp.explicit.end</a></dfn></td>
-			<td>The string to use for explicit fold end points, replacing the standard //}.</td>
+			<td>Строка, используемая для указания конечных точек свертывания, заменяющая стандартный символ //}.</td>
 		</tr>
 
 		<tr>
 			<td><dfn><a name="fold.cpp.explicit.start">fold.cpp.explicit.start</a></dfn></td>
-			<td>The string to use for explicit fold start points, replacing the standard //{.</td>
+			<td>Строка, используемая для указания начальных точек свертывания, заменяющая стандартную //{.</td>
 		</tr>
 
 		<tr>
-				<td>
-						<dfn><a name="fold.cpp.preprocessor.at.else">fold.cpp.preprocessor.at.else</a></dfn>
-				</td>
-				<td>
-						Эта опция включает свертку в препроцессоре строки #else или #endif оператора #if.
-				</td>
+			<td><dfn><a name="fold.cpp.preprocessor.at.else">fold.cpp.preprocessor.at.else</a></dfn></td>
+			<td>Эта опция включает свертку в препроцессоре строки #else или #endif оператора #if.</td>
 		</tr>
 		
 		<tr>
 			<td><dfn><a name="fold.cpp.syntax.based">fold.cpp.syntax.based</a></dfn></td>
-			<td>Set this property to 0 to disable syntax based folding.</td>
+			<td>Установите для этого свойства значение 0, чтобы отключить свёртывание на основе синтаксиса.</td>
 		</tr>
 
 		<tr>
-		<td>fold.d.comment.explicit</td>
-		<td>Set this property to 0 to disable folding explicit fold points when fold.comment=1.</td>
+		<td><dfn><a name="fold.d.comment.explicit">fold.d.comment.explicit</a></dfn></td>
+		<td>Установите это свойство в значение 0, чтобы отключить сворачивание явных точек сворачивания, когда fold.comment=1.</td>
 		</tr>
 
 		<tr>
-		<td>fold.d.comment.multiline</td>
-		<td>Set this property to 0 to disable folding multi-line comments when fold.comment=1.</td>
+		<td><dfn><a name="fold.d.comment.multiline">fold.d.comment.multiline</a></dfn></td>
+		<td>Установите это свойство в значение 0, чтобы отключить сворачивание многострочных комментариев, когда fold.comment=1.</td>
 		</tr>
 
 		<tr>
-		<td>fold.d.explicit.anywhere</td>
-		<td>Set this property to 1 to enable explicit fold points anywhere, not just in line comments.</td>
+		<td><dfn><a name="fold.d.explicit.anywhere">fold.d.explicit.anywhere</a></dfn></td>
+		<td>Установите для этого свойства значение 1, чтобы разрешить явное указание точек сгиба в любом месте, а не только в комментариях к строкам.</td>
 		</tr>
 
 		<tr>
-		<td>fold.d.explicit.end</td>
-		<td>The string to use for explicit fold end points, replacing the standard //}.</td>
+		<td><dfn><a name="fold.d.explicit.end">fold.d.explicit.end</a></dfn></td>
+		<td>Строка, используемая для указания конечных точек свертывания, заменяющая стандартный символ //}.</td>
 		</tr>
 
 		<tr>
-		<td>fold.d.explicit.start</td>
-		<td>The string to use for explicit fold start points, replacing the standard //{.</td>
+		<td><dfn><a name="fold.d.explicit.start">fold.d.explicit.start</a></dfn></td>
+		<td>Строка, используемая для указания начальных точек свертывания, заменяющая стандартную //{.</td>
 		</tr>
 		
 		<tr>
-		<td>fold.d.syntax.based</td>
-		<td>Set this property to 0 to disable syntax based folding.</td>
+		<td><dfn><a name="fold.d.syntax.based">fold.d.syntax.based</a></dfn></td>
+		<td>Установите для этого свойства значение 0, чтобы отключить свёртывание на основе синтаксиса.</td>
 		</tr>
 		
 		<tr>
-				<td>
-						<dfn><a name="fold.dataflex.compilerlist">fold.dataflex.compilerlist</a></dfn>
-				</td>
-				<td>
-						Установите значение 1 для включения функции сворачивания кода в файлах *.prn.
-				</td>
+			<td>
+				<dfn><a name="fold.dataflex.compilerlist">fold.dataflex.compilerlist</a></dfn>
+			</td>
+			<td>
+				Установите значение <var>1</var> для включения функции сворачивания кода в файлах *.prn.
+			</td>
 		</tr>
 
 		<tr>
-				<td>
-						<dfn><a name="fold.fsharp.comment.multiline">fold.fsharp.comment.multiline</a></dfn>
-				</td>
-				<td>
-						Установка этого параметра в значение 0 отключает сворачивание сгруппированных строчных комментариев в файлах F#, если <dfn>fold.comment</dfn>=1.
-				</td>
+			<td>
+				<dfn><a name="fold.fsharp.comment.multiline">fold.fsharp.comment.multiline</a></dfn>
+			</td>
+			<td>
+				Установка этого параметра в значение <var>0</var> отключает сворачивание сгруппированных строчных комментариев в файлах F#, если <dfn>fold.comment</dfn>=1.
+			</td>
 		</tr>
 
 		<tr>
-				<td>
-						<dfn><a name="fold.fsharp.comment.stream">fold.fsharp.comment.stream</a></dfn>
-				</td>
-				<td>
-						Установка этого параметра в значение 0 отключает сворачивание комментариев в стиле ML в файлах F#, если <dfn>fold.comment</dfn>=1.
-				</td>
+			<td>
+				<dfn><a name="fold.fsharp.comment.stream">fold.fsharp.comment.stream</a></dfn>
+			</td>
+			<td>
+				Установка этого параметра в значение <var>0</var> отключает сворачивание комментариев в стиле ML в файлах F#, если <dfn>fold.comment</dfn>=1.
+			</td>
 		</tr>
 
 		<tr>
-				<td>
-						<dfn><a name="fold.fsharp.imports">fold.fsharp.imports</a></dfn>
-				</td>
-				<td>
-						Установка этого параметра в значение 0 отключает сворачивание объявлений импорта F#.
-				</td>
+			<td>
+				<dfn><a name="fold.fsharp.imports">fold.fsharp.imports</a></dfn>
+			</td>
+			<td>
+				Установка этого параметра в значение <var>0</var> отключает сворачивание объявлений импорта F#.
+			</td>
 		</tr>
 
 		<tr>
-				<td>
-						<dfn><a name="fold.fsharp.preprocessor">fold.fsharp.preprocessor</a></dfn>
-				</td>
-				<td>
-						Установка этого параметра в значение 1 включает сворачивание директив компилятора F#.
-				</td>
+			<td>
+				<dfn><a name="fold.fsharp.preprocessor">fold.fsharp.preprocessor</a></dfn>
+			</td>
+			<td>
+				Установка этого параметра в значение <var>1</var> включает сворачивание директив компилятора F#.
+			</td>
 		</tr>
 		
 		<tr>
-				<td>
-						<dfn><a name="fold.gdscript.quotes">fold.gdscript.quotes</a></dfn>
-				</td>
-				<td>
-						Эта опция позволяет сворачивать многострочные строки в кавычках при использовании лексера GDScript.
-				</td>
+			<td>
+				<dfn><a name="fold.gdscript.quotes">fold.gdscript.quotes</a></dfn>
+			</td>
+			<td>
+				Эта опция позволяет сворачивать многострочные строки в кавычках при использовании лексера GDScript.
+			</td>
 		</tr>
 
 		<tr>
-				<td>
-						<dfn><a name="fold.haskell.imports">fold.haskell.imports</a></dfn>
-				</td>
-				<td>
-						Установите значение 1, чтобы включить сворачивание объявлений импорта.
-				</td>
+			<td>
+				<dfn><a name="fold.haskell.imports">fold.haskell.imports</a></dfn>
+			</td>
+			<td>
+				Установите значение <var>1</var>, чтобы включить сворачивание объявлений импорта.
+			</td>
 		</tr>
 		
 <tr>
@@ -2266,35 +2263,34 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<td>
 				<dfn><a name="fold.julia.docstring">fold.julia.docstring</a></dfn>
 			</td>
-			<td>Сворачивать многострочные строки из тройных-двойных кавычек, обычно используемые для документирования функции или типа над определением.
-			</td>
+			<td>Сворачивать многострочные строки из тройных-двойных кавычек, обычно используемые для документирования функции или типа над определением.			</td>
 		</tr>
 
 		<tr>
 			<td>
-					<dfn><a name="fold.julia.syntax.based">fold.julia.syntax.based</a></dfn>
+				<dfn><a name="fold.julia.syntax.based">fold.julia.syntax.based</a></dfn>
 			</td>
-			<td>Установите это свойство на 0, чтобы отключить свёртывание на основе синтаксиса.
-			</td>
+			<td>Установите это свойство на <var>0</var>, чтобы отключить свёртывание на основе синтаксиса.			</td>
 		</tr>
+		
 		<tr>
-		<td>fold.perl.at.else</td>
-		<td>This option enables Perl folding on a "} else {" line of an if statement.</td>
+			<td><dfn><a name="fold.perl.at.else">fold.perl.at.else</a></dfn></td>
+			<td>Эта опция включает свёртывание Perl в строке <code>"} else {"</code> оператора if.</td>
 		</tr>
 
 		<tr>
-		<td>fold.perl.comment.explicit</td>
-		<td>Set to 0 to disable explicit folding.</td>
+			<td><dfn><a name="fold.perl.comment.explicit">fold.perl.comment.explicit</a></dfn></td>
+			<td>Установите значение <var>0</var>, чтобы отключить явное свёртывание.</td>
 		</tr>
 
 		<tr>
 			<td><dfn><a name="fold.perl.package">fold.perl.package</a></dfn></td>
-			<td>Значение 0 запрещает фолдинг для packages в Perl.</td>
+			<td>Значение <var>0</var> запрещает фолдинг для packages в Perl.</td>
 		</tr>
 
 		<tr>
 			<td><dfn><a name="fold.perl.pod">fold.perl.pod</a></dfn></td>
-			<td>Значение 0 запрещает фолдинг для POD-блоков в Perl.</td>
+			<td>Значение <var>0</var> запрещает фолдинг для POD-блоков в Perl.</td>
 		</tr>
 
 		<tr>
@@ -2306,12 +2302,13 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<td><dfn><a name="fold.quotes.python">fold.quotes.python</a></dfn></td>
 			<td>При использовании лексера Python данная переменная разрешает использовать фолдинг для многострочных фрагментов текста, заключенных в кавычки.</td>
 		</tr>
+	
 	<tr>
 		<td>
 			<dfn><a name="fold.raku.comment.multiline">fold.raku.comment.multiline</a></dfn>
 		</td>
 		<td>
-			Установите это свойство на 0, чтобы отключить сворачивание многострочных комментариев, если <dfn>fold.comment</dfn>=1.
+			Установите это свойство на <var>0</var>, чтобы отключить сворачивание многострочных комментариев, если <dfn>fold.comment</dfn>=1.
 		</td>
 	</tr>
 
@@ -2320,7 +2317,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="fold.raku.comment.pod">fold.raku.comment.pod</a></dfn>
 		</td>
 		<td>
-			Установите это свойство на 0, чтобы отключить сворачивание комментариев POD, когда <dfn>fold.comment</dfn>=1
+			Установите это свойство на <var>0</var>, чтобы отключить сворачивание комментариев POD, когда <dfn>fold.comment</dfn>=1
 		</td>
 	</tr>
 
@@ -2328,7 +2325,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 		<td>
 			<dfn><a name="fold.rust.comment.explicit">fold.rust.comment.explicit</a></dfn>
 		</td>
-		<td>Установите это свойство на 0, чтобы отключить свертывание явных точек сгиба, если <dfn>fold.comment</dfn>=1.
+		<td>Установите это свойство на <var>0</var>, чтобы отключить свертывание явных точек сгиба, если <dfn>fold.comment</dfn>=1.
 		</td>
 	</tr>
 
@@ -2336,7 +2333,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 		<td>
 			<dfn><a name="fold.rust.comment.multiline">fold.rust.comment.multiline</a></dfn>
 		</td>
-		<td>Установите это свойство на 0, чтобы отключить сворачивание многострочных комментариев, если <dfn>fold.comment</dfn>=1.
+		<td>Установите это свойство на <var>0</var>, чтобы отключить сворачивание многострочных комментариев, если <dfn>fold.comment</dfn>=1.
 		</td>
 	</tr>
 
@@ -2344,7 +2341,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 		<td>
 			<dfn><a name="fold.rust.explicit.anywhere">fold.rust.explicit.anywhere</a></dfn>
 		</td>
-		<td>Установите это свойство на 1, чтобы включить явные точки сгиба в любом месте, а не только в комментариях.
+		<td>Установите это свойство на <var>1</var>, чтобы включить явные точки сгиба в любом месте, а не только в комментариях.
 		</td>
 	</tr>
 
@@ -2352,7 +2349,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 		<td>
 			<dfn><a name="fold.rust.explicit.end">fold.rust.explicit.end</a></dfn>
 		</td>
-		<td>Строка, используемая для явных конечных точек сгиба, заменяющая стандартную //}.
+		<td>Строка, используемая для явных конечных точек сгиба, заменяющая стандартную <code>//}</code>.
 		</td>
 	</tr>
 
@@ -2360,7 +2357,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 		<td>
 			<dfn><a name="fold.rust.explicit.start">fold.rust.explicit.start</a></dfn>
 		</td>
-		<td>Строка, используемая для явных начальных точек сгиба, заменяющая стандартную //{.
+		<td>Строка, используемая для явных начальных точек сгиба, заменяющая стандартную <code>//{</code>.
 		</td>
 	</tr>
 
@@ -2368,18 +2365,18 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 		<td>
 			<dfn><a name="fold.rust.syntax.based">fold.rust.syntax.based</a></dfn>
 		</td>
-		<td>Установите это свойство на 0, чтобы отключить свертывание на основе синтаксиса.
+		<td>Установите это свойство на <var>0</var>, чтобы отключить свертывание на основе синтаксиса.
 		</td>
 	</tr>
 
 		<tr>
 			<td><dfn><a name="fold.sql.at.else">fold.sql.at.else</a></dfn></td>
-			<td>Эта опция включает в SQL сворачивание для "ELSE" and "ELSIF" строк как для IF выражения.</td>
+			<td>Эта опция включает в SQL сворачивание для <code>"ELSE"</code> and <code>"ELSIF"</code> строк как для IF выражения.</td>
 		</tr>
 
 		<tr>
 			<td><dfn><a name="fold.sql.only.begin">fold.sql.only.begin</a></dfn></td>
-			<td>Установите значение 1, чтобы сворачивать только по «BEGIN», но не по другим ключевым словам.</td>
+			<td>Установите значение <var>1</var>, чтобы сворачивать только по <code>«BEGIN»</code>, но не по другим ключевым словам.</td>
 		</tr>
 
 	<tr>
@@ -2422,7 +2419,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 		
 		<tr>
 			<td><dfn><a name="lexer.bash.nested.backticks">lexer.bash.nested.backticks</a></dfn></td>
-			<td>Установите для этого свойства значение 0, чтобы отключить вложенную подстановку команд в обратных кавычках.</td>
+			<td>Установите для этого свойства значение <var>0</var>, чтобы отключить вложенную подстановку команд в обратных кавычках.</td>
 		</tr>
 		
 		<tr>
@@ -2432,22 +2429,22 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 
 		<tr>
 			<td><dfn><a name="lexer.bash.styling.inside.backticks">lexer.bash.styling.inside.backticks</a></dfn></td>
-			<td>Установите для этого свойства значение 1, чтобы выделить расширения оболочки внутри обратных кавычек.</td>
+			<td>Установите для этого свойства значение <var>1</var>, чтобы выделить расширения оболочки внутри обратных кавычек.</td>
 		</tr>
 		
 		<tr>
 			<td><dfn><a name="lexer.bash.styling.inside.heredoc">lexer.bash.styling.inside.heredoc</a></dfn></td>
-			<td>Установите для этого свойства значение 1, чтобы выделить расширения оболочки внутри этого документа.</td>
+			<td>Установите для этого свойства значение <var>1</var>, чтобы выделить расширения оболочки внутри этого документа.</td>
 		</tr>
 		
 		<tr>
 			<td><dfn><a name="lexer.bash.styling.inside.parameter">lexer.bash.styling.inside.parameter</a></dfn></td>
-			<td>Установите для этого свойства значение 1, чтобы выделить расширения оболочки внутри расширения параметра ${}.</td>
+			<td>Установите для этого свойства значение <var>1</var>, чтобы выделить расширения оболочки внутри расширения параметра ${}.</td>
 		</tr>
 		
 		<tr>
 			<td><dfn><a name="lexer.bash.styling.inside.string">lexer.bash.styling.inside.string</a></dfn></td>
-			<td>Установите для этого свойства значение 1, чтобы выделить расширения оболочки внутри строки.</td>
+			<td>Установите для этого свойства значение <var>1</var>, чтобы выделить расширения оболочки внутри строки.</td>
 		</tr>
 
 		<tr>
@@ -2461,38 +2458,48 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 		</tr>
  
 		<tr>
+			<td><dfn><a name="lexer.cpp.allow.hashes">lexer.cpp.allow.hashes</a></dfn></td>
+			<td>Установите значение <var>1</var>, чтобы разрешить символ &#39;<code>#</code>&#39; в идентификаторах.</td>
+		</tr>
+		
+		<tr>
 			<td><dfn><a name="lexer.cpp.backquoted.strings">lexer.cpp.backquoted.strings</a></dfn></td>
 			<td>Установите способ выделения строк в обратных кавычках. 0 (по умолчанию) без выделения. 1 выделена как необработанная строка Go. 2 выделен как литерал шаблона JavaScript.</td>
+		</tr>
+		
+		<tr>
+			<td><dfn><a name="lexer.cpp.enable.preprocessor">lexer.cpp.enable.preprocessor</a></dfn></td>
+			<td>Установите значение <var>0</var>, чтобы отключить распознавание директив препроцессора.</td>
 		</tr>
 
 		<tr>
 			<td><dfn><a name="lexer.cpp.escape.sequence">lexer.cpp.escape.sequence</a></dfn></td>
-			<td>Установите значение 1, чтобы включить выделение escape-последовательностей в строках.</td>
+			<td>Установите значение <var>1</var>, чтобы включить выделение escape-последовательностей в строках.</td>
 		</tr>
 
 		<tr>
 			<td><dfn><a name="lexer.cpp.hashquoted.strings">lexer.cpp.hashquoted.strings</a></dfn></td>
-			<td>Установите значение 1, чтобы включить подсветку строк в хеш-кавычках.</td>
+			<td>Установите значение <var>1</var>, чтобы включить подсветку строк в хеш-кавычках.</td>
 		</tr>
 
 		<tr>
 			<td><dfn><a name="lexer.cpp.track.preprocessor">lexer.cpp.track.preprocessor</a></dfn></td>
-			<td>Set to 1 to interpret #if/#else/#endif to grey out code that is not active.</td>
+			<td>Установите значение <var>1</var>, чтобы интерпретировать <code>#if/#else/#endif</code> код как неактивный</td>
 		</tr>
 
 		<tr>
 			<td><dfn><a name="lexer.cpp.triplequoted.strings">lexer.cpp.triplequoted.strings</a></dfn></td>
-			<td>Установите значение 1, чтобы включить подсветку строк в тройных кавычках.</td>
+			<td>Установите значение <var>1</var>, чтобы включить подсветку строк в тройных кавычках.</td>
 		</tr>
 
 		<tr>
 			<td><dfn><a name="lexer.cpp.update.preprocessor">lexer.cpp.update.preprocessor</a></dfn></td>
-			<td>Установите значение 1, чтобы обновлять определения препроцессора при обнаружении #define.</td>
+			<td>Установите значение <var>1</var>, чтобы обновлять определения препроцессора при обнаружении #define.</td>
 		</tr>
 
 		<tr>
 			<td><dfn><a name="lexer.cpp.verbatim.strings.allow.escapes">lexer.cpp.verbatim.strings.allow.escapes</a></dfn></td>
-			<td>Установите значение 1, чтобы дословные строки могли содержать escape-последовательности.</td>
+			<td>Установите значение <var>1</var>, чтобы дословные строки могли содержать escape-последовательности.</td>
 		</tr>
 
 	<tr>
@@ -2523,8 +2530,10 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 	</tr>
 	
 		<tr>
-		<td>lexer.d.fold.at.else</td>
-		<td>This option enables D folding on a "} else {" line of an if statement.</td>
+		<td>
+			<dfn><a name="lexer.d.fold.at.else">lexer.d.fold.at.else</a></dfn>
+		</td>
+		<td>This option enables D folding on a <code>"} else {"</code> line of an if statement.</td>
 		</tr>
 
 	<tr>
@@ -2532,7 +2541,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.edifact.highlight.un.all">lexer.edifact.highlight.un.all</a></dfn>
 		</td>
 		<td>
-			Установите значение 0, чтобы выделить только сегменты UNA, или 1, чтобы выделить все сегменты UNx.
+			Установите значение <var>0</var>, чтобы выделить только сегменты UNA, или 1, чтобы выделить все сегменты UNx.
 		</td>
 	</tr>
 
@@ -2541,7 +2550,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.errorlist.escape.sequences">lexer.errorlist.escape.sequences</a></dfn>
 		</td>
 		<td>
-			Установите значение 1 для интерпретации escape-последовательностей.
+			Установите значение <var>1</var> для интерпретации escape-последовательностей.
 		</td>
 	</tr>
 
@@ -2553,7 +2562,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 	
 	<tr>
 		<td><dfn><a name="lexer.escseq.colour.text">lexer.escseq.colour.text</a></dfn></td>
-		<td>Установите значение 1, чтобы раскрасить текст в соответствии с управляющими последовательностями.</td>
+		<td>Установите значение <var>1</var>, чтобы раскрасить текст в соответствии с управляющими последовательностями.</td>
 	</tr>
 
 	<tr>
@@ -2575,7 +2584,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.gdscript.literals.binary">lexer.gdscript.literals.binary</a></dfn>
 		</td>
 		<td>
-			Установите значение 0, чтобы не распознавать двоичные и восьмеричные литералы: 0b1011 0o712.
+			Установите значение <var>0</var>, чтобы не распознавать двоичные и восьмеричные литералы: 0b1011 0o712.
 		</td>
 	</tr>
 
@@ -2584,7 +2593,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.gdscript.strings.over.newline">lexer.gdscript.strings.over.newline</a></dfn>
 		</td>
 		<td>
-			Установите значение 1, чтобы разрешить строкам охватывать символы новой строки.
+			Установите значение <var>1</var>, чтобы разрешить строкам охватывать символы новой строки.
 		</td>
 	</tr>
 
@@ -2593,7 +2602,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.gdscript.unicode.identifiers">lexer.gdscript.unicode.identifiers</a></dfn>
 		</td>
 		<td>
-			Установите значение 0, чтобы не распознавать идентификаторы Unicode.
+			Установите значение <var>0</var>, чтобы не распознавать идентификаторы Unicode.
 		</td>
 	</tr>
 
@@ -2611,7 +2620,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.haskell.allow.hash">lexer.haskell.allow.hash</a></dfn>
 		</td>
 		<td>
-			Установите значение 0, чтобы запретить символ «#» в конце идентификаторов и литералов с помощью лексера Haskell (расширение GHC -XMagicHash)
+			Установите значение <var>0</var>, чтобы запретить символ «#» в конце идентификаторов и литералов с помощью лексера Haskell (расширение GHC -XMagicHash)
 		</td>
 	</tr>
 
@@ -2620,7 +2629,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.haskell.allow.questionmark">lexer.haskell.allow.questionmark</a></dfn>
 		</td>
 		<td>
-			Установите значение 1, чтобы разрешить символ «?» в начале идентификаторов с помощью лексера Haskell (расширение GHC и Hugs -XImplicitParams)
+			Установите значение <var>1</var>, чтобы разрешить символ «?» в начале идентификаторов с помощью лексера Haskell (расширение GHC и Hugs -XImplicitParams)
 		</td>
 	</tr>
 
@@ -2629,7 +2638,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.haskell.allow.quotes">lexer.haskell.allow.quotes</a></dfn>
 		</td>
 		<td>
-			Установите значение 0, чтобы отключить подсветку кавычек имен Template Haskell и расширенных конструкторов (расширения GHC -XTemplateHaskell и -XDataKinds)
+			Установите значение <var>0</var>, чтобы отключить подсветку кавычек имен Template Haskell и расширенных конструкторов (расширения GHC -XTemplateHaskell и -XDataKinds)
 		</td>
 	</tr>
 
@@ -2638,7 +2647,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.haskell.cpp">lexer.haskell.cpp</a></dfn>
 		</td>
 		<td>
-			Установите значение 0, чтобы отключить подсветку препроцессора C (расширение -XCPP)
+			Установите значение <var>0</var>, чтобы отключить подсветку препроцессора C (расширение -XCPP)
 		</td>
 	</tr>
 
@@ -2647,7 +2656,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.haskell.import.safe">lexer.haskell.import.safe</a></dfn>
 		</td>
 		<td>
-			Установите значение 0, чтобы запретить ключевое слово «safe» в импорте (расширения GHC -XSafe, -XTrustworthy, -XUnsafe)
+			Установите значение <var>0</var>, чтобы запретить ключевое слово «safe» в импорте (расширения GHC -XSafe, -XTrustworthy, -XUnsafe)
 		</td>
 	</tr>
 
@@ -2656,7 +2665,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.html.allow.asp">lexer.html.allow.asp</a></dfn>
 		</td>
 		<td>
-			Установите значение 0, чтобы отключить ASP в HTML.
+			Установите значение <var>0</var>, чтобы отключить ASP в HTML.
 		</td>
 	</tr>
 
@@ -2665,7 +2674,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.html.allow.php">lexer.html.allow.php</a></dfn>
 		</td>
 		<td>
-			Установите значение 0, чтобы отключить PHP в HTML, 1, чтобы принимать &lt;?php и &lt;?=, 2, чтобы также принимать &lt;?. Значение по умолчанию — 2.
+			Установите значение <var>0</var>, чтобы отключить PHP в HTML, 1, чтобы принимать &lt;?php и &lt;?=, 2, чтобы также принимать &lt;?. Значение по умолчанию — 2.
 		</td>
 	</tr>
 
@@ -2684,7 +2693,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.json.allow.comments">lexer.json.allow.comments</a></dfn>
 		</td>
 		<td>
-			Установите значение 1, чтобы включить подсветку строк/блоков комментариев в JSON.
+			Установите значение <var>1</var>, чтобы включить подсветку строк/блоков комментариев в JSON.
 		</td>
 	</tr>
 
@@ -2693,7 +2702,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.json.escape.sequence">lexer.json.escape.sequence</a></dfn>
 		</td>
 		<td>
-			Установите значение 1, чтобы включить подсветку escape-последовательностей в строках.
+			Установите значение <var>1</var>, чтобы включить подсветку escape-последовательностей в строках.
 		</td>
 	</tr>
 
@@ -2720,7 +2729,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.nim.raw.strings.highlight.ident">lexer.nim.raw.strings.highlight.ident</a></dfn>
 		</td>
 		<td>
-			Для файлов свойств установите значение 0, чтобы применить стиль ко всем строкам, начинающимся с пробела, в стиле по умолчанию. Это не подходит для файлов SciTE .properties, которые используют отступы для управления потоком, но может использоваться для текста RFC2822, где отступы используются для продолжения строк.
+			Для файлов свойств установите значение <var>0</var>, чтобы применить стиль ко всем строкам, начинающимся с пробела, в стиле по умолчанию. Это не подходит для файлов SciTE .properties, которые используют отступы для управления потоком, но может использоваться для текста RFC2822, где отступы используются для продолжения строк.
 		</td>
 	</tr>
 
@@ -2734,7 +2743,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.python.decorator.attributes">lexer.python.decorator.attributes</a></dfn>
 		</td>
 		<td>
-			Установите значение 1, чтобы распознавать атрибуты декоратора Python.
+			Установите значение <var>1</var>, чтобы распознавать атрибуты декоратора Python.
 		</td>
 	</tr>
 
@@ -2743,7 +2752,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.python.identifier.attributes">lexer.python.identifier.attributes</a></dfn>
 		</td>
 		<td>
-			Установите значение 1, чтобы распознавать атрибуты идентификатора Python.
+			Установите значение <var>1</var>, чтобы распознавать атрибуты идентификатора Python.
 		</td>
 	</tr>
 
@@ -2796,7 +2805,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.python.unicode.identifiers">lexer.python.unicode.identifiers</a></dfn>
 		</td>
 		<td>
-			Установите значение 0, чтобы не распознавать идентификаторы Unicode Python 3.
+			Установите значение <var>0</var>, чтобы не распознавать идентификаторы Unicode Python 3.
 		</td>
 	</tr>
 
@@ -2805,7 +2814,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.r.escape.sequence">lexer.r.escape.sequence</a></dfn>
 		</td>
 		<td>
-			Установите значение 1, чтобы включить подсветку escape-последовательностей в строках.
+			Установите значение <var>1</var>, чтобы включить подсветку escape-последовательностей в строках.
 		</td>
 	</tr>
 
@@ -2843,7 +2852,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.verilog.allupperkeywords">lexer.verilog.allupperkeywords</a></dfn>
 		</td>
 		<td>
-			Установите значение 1, чтобы оформить идентификаторы, все регистры которых указаны в верхнем регистре, как ключевые слова документации.
+			Установите значение <var>1</var>, чтобы оформить идентификаторы, все регистры которых указаны в верхнем регистре, как ключевые слова документации.
 		</td>
 	</tr>
 
@@ -2861,7 +2870,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.verilog.portstyling">lexer.verilog.portstyling</a></dfn>
 		</td>
 		<td>
-			Установите значение 1, чтобы стилизовать порты ввода, вывода и inout иначе, чем обычные ключевые слова.
+			Установите значение <var>1</var>, чтобы стилизовать порты ввода, вывода и inout иначе, чем обычные ключевые слова.
 		</td>
 	</tr>
 
@@ -2870,7 +2879,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.verilog.track.preprocessor">lexer.verilog.track.preprocessor</a></dfn>
 		</td>
 		<td>
-			Установите значение 1, чтобы интерпретировать `if/`else/`endif как серый код, который неактивен.
+			Установите значение <var>1</var>, чтобы интерпретировать `if/`else/`endif как серый код, который неактивен.
 		</td>
 	</tr>
 
@@ -2879,17 +2888,17 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.verilog.update.preprocessor">lexer.verilog.update.preprocessor</a></dfn>
 		</td>
 		<td>
-			Установите значение 1, чтобы обновить определения препроцессора при обнаружении `define, `undef или `undefineall.
+			Установите значение <var>1</var>, чтобы обновить определения препроцессора при обнаружении `define, `undef или `undefineall.
 		</td>
 	</tr>
 		<tr>
 			<td><dfn><a name="lexer.visualprolog.backquoted.strings">lexer.visualprolog.backquoted.strings</a></dfn></td>
-			<td>Установите значение 1, чтобы разрешить использование обратных кавычек (``) для разделения строк.</td>
+			<td>Установите значение <var>1</var>, чтобы разрешить использование обратных кавычек (``) для разделения строк.</td>
 		</tr>
 		
 		<tr>
 			<td><dfn><a name="lexer.visualprolog.verbatim.strings">lexer.visualprolog.verbatim.strings</a></dfn></td>
-			<td>Установите значение 0, чтобы отключить выделение дословных строк с помощью '@'.</td>
+			<td>Установите значение <var>0</var>, чтобы отключить выделение дословных строк с помощью '@'.</td>
 		</tr>
 
 	<tr>
@@ -2897,7 +2906,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.xml.allow.asp">lexer.xml.allow.asp</a></dfn>
 		</td>
 		<td>
-			Установите значение 0, чтобы отключить ASP в XML.
+			Установите значение <var>0</var>, чтобы отключить ASP в XML.
 		</td>
 	</tr>
 
@@ -2906,12 +2915,12 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 			<dfn><a name="lexer.xml.allow.php">lexer.xml.allow.php</a></dfn>
 		</td>
 		<td>
-			Установите значение 0, чтобы отключить PHP в XML, 1, чтобы принимать &lt;?php и &lt;?=, 2, чтобы также принимать &lt;?. Значение по умолчанию — 2.
+			Установите значение <var>0</var>, чтобы отключить PHP в XML, 1, чтобы принимать &lt;?php и &lt;?=, 2, чтобы также принимать &lt;?. Значение по умолчанию — 2.
 		</td>
 	</tr>
 		<tr>
 			<td><dfn><a name="lexer.xml.allow.scripts">lexer.xml.allow.scripts</a></dfn></td>
-			<td>Установите значение 0, чтобы отключить сценарии в XML.</td>
+			<td>Установите значение <var>0</var>, чтобы отключить сценарии в XML.</td>
 		</tr>
 
 		<tr>
@@ -2921,7 +2930,7 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 
 		<tr>
 			<td><dfn><a name="nsis.uservars">nsis.uservars</a></dfn></td>
-			<td>Установите значение 1, чтобы распознавать пользовательские переменные в NSIS.</td>
+			<td>Установите значение <var>1</var>, чтобы распознавать пользовательские переменные в NSIS.</td>
 		</tr>
 
 		<tr>
@@ -3857,7 +3866,7 @@ if&nbsp;"Language:Korean"&nbsp;in&nbsp;open(sys.argv[1]).read():<br>
 				export.tex.title.fullpath
 				</a></dfn></td>
 				<td>
-				Полный путь к файлу помещается в заголовок, а не просто имя файла, когда для параметра export.tex.title.fullpath установлено значение 1.
+				Полный путь к файлу помещается в заголовок, а не просто имя файла, когда для параметра export.tex.title.fullpath установлено значение <var>1</var>.
 				</td>
 			</tr>
 
@@ -3884,7 +3893,7 @@ if&nbsp;"Language:Korean"&nbsp;in&nbsp;open(sys.argv[1]).read():<br>
 
 		<tr>
 			<td><dfn><a name="fold.fore">fold.fore<br>fold.back</a></dfn></td>
-			<td>Параметр fold.symbols выбирает один из четырех способов отображения сворачивания кода. Установите значение 0 (по умолчанию), чтобы стрелки в стиле macOS отображали сжатые (направленные вправо) и развернутые (направленные вниз); 1, чтобы отображать сжатые складки с помощью «+» и расширенные с «-»; 2 для управления плоским деревом с круглыми заголовками и закругленными соединениями; 3 для плоского элемента управления деревом с квадратными заголовками.</td>
+			<td>Параметр fold.symbols выбирает один из четырех способов отображения сворачивания кода. Установите значение <var>0</var> (по умолчанию), чтобы стрелки в стиле macOS отображали сжатые (направленные вправо) и развернутые (направленные вниз); 1, чтобы отображать сжатые складки с помощью «+» и расширенные с «-»; 2 для управления плоским деревом с круглыми заголовками и закругленными соединениями; 3 для плоского элемента управления деревом с квадратными заголовками.</td>
 		</tr>
 
 		<tr>
@@ -4124,7 +4133,7 @@ if&nbsp;"Language:Korean"&nbsp;in&nbsp;open(sys.argv[1]).read():<br>
 				<td><dfn><a name="create.hidden.console">create.hidden.console</a></dfn>
 				</td>
 				<td>В Windows, чтобы окно консоли не появлялось на мгновение всякий раз, когда Lua
-					 Функции os.execute или io.popen вызываются для выполнения программ, установите для <dfn>create.hidden.console</dfn> значение 1.
+					 Функции os.execute или io.popen вызываются для выполнения программ, установите для <dfn>create.hidden.console</dfn> значение <var>1</var>.
 					 Это свойство считывается только при запуске, поэтому изменение поведения требует перезапуска SciTE.
 				</td>
 			</tr>

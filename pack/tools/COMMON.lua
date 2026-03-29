@@ -138,11 +138,12 @@ function IsComment(pos)
 	}
 
 	-- Для лексеров, перечисленных в массиве:
-	for l, ts in pairs(comment) do
-		if l == lexer then
-			for _, s in ipairs(ts) do if s == style then return true end end
-			return false
+	local ts = comment[lexer]
+	if ts then
+		for _, s in ipairs(ts) do
+			if s == style then return true end
 		end
+		return false
 	end
 	-- Для остальных лексеров:
 	-- asn1, ave, blitzbasic, cmake, conf, eiffel, eiffelkw, erlang, euphoria, fortran, f77, freebasic, kix, lisp, lout, octave, matlab, metapost, nncrontab, props, batch, makefile, diff, purebasic, vb, yaml

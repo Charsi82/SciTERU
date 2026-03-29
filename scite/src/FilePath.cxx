@@ -375,6 +375,10 @@ FilePath FilePath::GetWorkingDirectory() {
 #ifdef _WIN32
 	GUI::gui_char *pdir = _wgetcwd(nullptr, 0);
 #else
+#if defined(__clang__)
+	// Suppress incorrect warning about NULL argument to getcwd
+	[[clang::suppress]]
+#endif
 	GUI::gui_char *pdir = getcwd(nullptr, 0);
 #endif
 	if (pdir) {

@@ -93,8 +93,7 @@ for header in headerPaths:
 		guard = header.name.upper().replace(".", "_")
 		if "lua" in str(header.parent):
 			guard = guard.lower()
-		lines = f.readlines()
-		matches = [line.strip() for line in lines if guard in line.split() and "#endif" not in line]
+		matches = [line.strip() for line in f if guard in line.split() and "#endif" not in line]
 		#ifndef XPM_H:#define XPM_H
 		standardGuardSet = "#ifndef " + guard + ":#define " + guard
 		if ":".join(matches) != standardGuardSet:

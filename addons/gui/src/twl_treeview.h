@@ -35,7 +35,7 @@ public:
 	int handle_notify(void* p) override;
 
 private:
-	void set_image_list(bool iconSize) override;
+	void set_image_list(bool iconSize, HIMAGELIST hImageList) override;
 	virtual void clean_data(int) = 0;
 	virtual void handle_select(HANDLE) = 0;
 	virtual void handle_dbclick(HANDLE) = 0;

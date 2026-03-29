@@ -346,6 +346,8 @@ std::string UTF8FromUTF32(unsigned int uch) {
 	return result;
 }
 
+// NOLINTBEGIN(*-magic-numbers)
+
 bool IsDBCSLeadByte(int codePage, char ch) noexcept {
 	// Byte ranges found in Wikipedia articles with relevant search strings in each case
 	const unsigned char uch = ch;
@@ -375,6 +377,8 @@ bool IsDBCSLeadByte(int codePage, char ch) noexcept {
 	}
 	return false;
 }
+
+// NOLINTEND(*-magic-numbers)
 
 /**
  * Convert a string into C string literal form using \a, \b, \f, \n, \r, \t, \v, and \ooo.
@@ -562,18 +566,16 @@ void ComboMemory::InsertDeletePrefix(std::string_view item) {
 	Insert(item);
 }
 
-bool ComboMemory::Present(const std::string_view sv) const noexcept {
-	for (const std::string &e : entries) {
-		if (e == sv) {
-			return true;
-		}
+void ComboMemory::Append(std::string_view item) {
+	const bool missing = std::ranges::find(entries, item) == entries.end();
+	if (missing && entries.size() < sz) {
+		entries.emplace_back(item);
 	}
-	return false;
 }
 
-void ComboMemory::Append(std::string_view item) {
-	if (!Present(item) && entries.size() < sz) {
-		entries.emplace_back(item);
+void ComboMemory::AppendList(const std::vector<std::string> &items) {
+	for (const std::string &item : items) {
+		Append(item);
 	}
 }
 

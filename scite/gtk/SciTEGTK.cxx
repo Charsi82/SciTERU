@@ -159,7 +159,7 @@ constexpr double doubleFromPangoUnits(int pu) noexcept {
 }
 
 GtkWidget *pixmap_new(const char **xpm) {
-	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_xpm_data(xpm);
+	GdkPixbuf *pixbuf = PixBuffer(xpm);
 	return gtk_image_new_from_pixbuf(pixbuf);
 }
 
@@ -4115,7 +4115,7 @@ void SciTEGTK::SetIcon() {
 	if (!gtk_window_set_icon_from_file(
 		GTK_WINDOW(PWidget(wSciTE)), pathPixmap.AsInternal(), &err)) {
 		// Failed to load from file so use backup inside executable
-		UniquePixbuf pixbufIcon(gdk_pixbuf_new_from_xpm_data(SciIcon_xpm));
+		UniquePixbuf pixbufIcon(PixBuffer(SciIcon_xpm));
 		gtk_window_set_icon(GTK_WINDOW(PWidget(wSciTE)), pixbufIcon.get());
 	}
 }
@@ -4195,18 +4195,28 @@ void SciTEGTK::SendFileName(int sendPipe, const char* filename) {
 		perror("Unable to write to pipe");
 }
 
+namespace {
+
+// GLib 2.70 changed the name of g_pattern_match_string to g_pattern_spec_match_string
+// and produces deprecation warnings when old name used.
+gboolean pattern_match_string(GPatternSpec *pspec, const gchar *string) {
+#if GLIB_CHECK_VERSION(2,70,0)
+	return g_pattern_spec_match_string(pspec, string);
+#else
+	return g_pattern_match_string(pspec, string);
+#endif
+}
+
+}
+
 bool SciTEGTK::CheckForRunningInstance(int argc, char *argv[]) {
 
 	const gchar *tmpdir = g_get_tmp_dir();
 	GDir *dir = g_dir_open(tmpdir, 0, NULL);
-	if (dir == NULL) {
+	if (!dir) {
 		return false; // Couldn't open the directory
 	}
 
-	GPatternSpec *pattern = g_pattern_spec_new("SciTE.*.in");
-
-	char *pipeFileName = NULL;
-	const char *filename;
 	uniqueInstance = g_get_tmp_dir();
 	uniqueInstance += "/SciTE.ensure.unique.instance.for.";
 	uniqueInstance += getenv("USER");
@@ -4229,9 +4239,13 @@ bool SciTEGTK::CheckForRunningInstance(int argc, char *argv[]) {
 	} while (isLocked);
 	if (fd != -1)
 		close(fd);
+
+	GPatternSpec *pattern = g_pattern_spec_new("SciTE.*.in");
+	char *pipeFileName = NULL;
+	const char *filename;
 	// Find a working pipe in our temporary directory
 	while ((filename = g_dir_read_name(dir))) {
-		if (g_pattern_match_string(pattern, filename)) {
+		if (pattern_match_string(pattern, filename)) {
 			pipeFileName = g_build_filename(tmpdir, filename, NULL);
 
 			// Attempt to open the pipe as a writer to send out data.
@@ -4267,7 +4281,7 @@ bool SciTEGTK::CheckForRunningInstance(int argc, char *argv[]) {
 	g_pattern_spec_free(pattern);
 	g_dir_close(dir);
 
-	if (pipeFileName != NULL) {
+	if (pipeFileName) {
 		// We need to call this since we're not displaying a window
 		unlink(uniqueInstance.c_str()); // Unlock.
 		gdk_notify_startup_complete();

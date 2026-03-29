@@ -52,16 +52,14 @@ unsigned int IntFromHexBytes(std::string_view hexBytes) noexcept;
 constexpr char MakeUpperCase(char ch) noexcept {
 	if (ch < 'a' || ch > 'z')
 		return ch;
-	else
-		return ch - 'a' + 'A';
+	return ch - 'a' + 'A';
 }
 
 constexpr char MakeLowerCase(char c) noexcept {
 	if (c >= 'A' && c <= 'Z') {
 		return c - 'A' + 'a';
-	} else {
-		return c;
 	}
+	return c;
 }
 
 constexpr bool IsASCII(int ch) noexcept {
@@ -112,11 +110,11 @@ constexpr bool IsAlphaNumeric(int ch) noexcept {
 template <typename T>
 std::vector<T> StringSplit(const T &text, int separator) {
 	std::vector<T> vs(text.empty() ? 0 : 1);
-	for (typename T::const_iterator it=text.begin(); it!=text.end(); ++it) {
-		if (*it == separator) {
-			vs.push_back(T());
+	for (const typename T::value_type ch: text) {
+		if (ch == separator) {
+			vs.emplace_back();
 		} else {
-			vs.back() += *it;
+			vs.back() += ch;
 		}
 	}
 	return vs;
@@ -184,7 +182,7 @@ std::string UnicodeUnEscape(std::string_view s);
 
 class ILocalize {
 public:
-	virtual GUI::gui_string Text(std::string_view sv, bool retainIfNotFound=true) const = 0;
+	[[nodiscard]] virtual GUI::gui_string Text(std::string_view sv, bool retainIfNotFound=true) const = 0;
 };
 
 /**
@@ -197,15 +195,15 @@ constexpr size_t comboMemorySize = 10;
 class ComboMemory {
 	size_t sz;
 	std::vector<std::string> entries;
-	bool Present(std::string_view sv) const noexcept;
 public:
 	explicit ComboMemory(size_t sz_=comboMemorySize);
 	void Insert(std::string_view item);
 	void InsertDeletePrefix(std::string_view item);
 	void Append(std::string_view item);
-	size_t Length() const noexcept;
-	std::string At(size_t n) const;
-	std::vector<std::string> AsVector() const;
+	void AppendList(const std::vector<std::string> &items);
+	[[nodiscard]] size_t Length() const noexcept;
+	[[nodiscard]] std::string At(size_t n) const;
+	[[nodiscard]] std::vector<std::string> AsVector() const;
 };
 
 #endif

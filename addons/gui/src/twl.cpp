@@ -88,8 +88,7 @@ void Rect::offset_by(int dx, int dy)
 
 //TDC::TDC(TWin* ptr) :m_hdc(NULL), m_pen(NULL), m_font(NULL), m_brush(NULL), m_twin(ptr)
 TDC::TDC(TWin* ptr) :m_hdc(NULL), m_pen(NULL), m_brush(NULL), m_twin(ptr)
-{
-}
+{}
 
 TDC::~TDC()
 {

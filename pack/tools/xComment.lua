@@ -61,7 +61,7 @@ local function FirstLetterFromBlock()
 		text_line = editor:GetLine(line_sel_start)
 		sel_start = editor:PositionFromLine(line_sel_start)
 	end
-	local first_letter, _, _ = string.find(text_line, "[^%s]", 1)
+	local first_letter = string.find(text_line, "%S")
 	if first_letter ~= nil then
 			first_letter = sel_start + first_letter - 1
 	else
@@ -158,7 +158,12 @@ local function LineUnComment()
 	else
 		local cur_pos = editor.CurrentPos
 		local text_line = editor:GetCurLine()
-		local comment_pos, _ = string.find(text_line,Pattern(comment_block).."~? ?", 1)
+		local comment_pos = string.find(text_line,Pattern(comment_block).."~? ?", 1)
+		if not comment_pos then
+			comment_block = comment_block:lower() -- BAT: REM -> rem
+			comment_pos = string.find(text_line,Pattern(comment_block).."~? ?", 1)
+			if not comment_pos then print("! xComment: LineUnComment() failed with '"..comment_block.."'") end
+		end
 		local line_uncomment = string.gsub(text_line,Pattern(comment_block).."~? ?","",1)
 		local line_pos_start = editor:PositionFromLine(line_sel_start)
 -- 		local line_pos_end = line_pos_start + string.len(text_line)
@@ -185,7 +190,11 @@ local function BlockUnComment()
 		local text_uncomment = ""
 		for i = line_sel_start, line_sel_end-1 do
 			local text_line = editor:GetLine(i)
-			local line_uncomment = string.gsub(text_line,Pattern(comment_block).."~? ?","",1)
+			local line_uncomment, cnt = string.gsub(text_line,Pattern(comment_block).."~? ?","",1)
+			if cnt == 0 then
+				line_uncomment, cnt = string.gsub(text_line,Pattern(comment_block:lower()).."~? ?","",1)
+				if cnt == 0 then print("! xComment: BlockUnComment() failed with '"..comment_block.."'") end
+			end
 			text_uncomment = text_uncomment..line_uncomment
 			if line_uncomment ~= text_line then
 				sel_end = sel_end - string.len(text_line) + string.len(line_uncomment)

@@ -2,8 +2,8 @@
 /** @file LexBatch.cxx
  ** Lexer for batch files.
  **/
-// Copyright 1998-2001 by Neil Hodgson <neilh@scintilla.org>
-// The License.txt file describes the conditions under which this software may be distributed.
+ // Copyright 1998-2001 by Neil Hodgson <neilh@scintilla.org>
+ // The License.txt file describes the conditions under which this software may be distributed.
 
 #include <cstdlib>
 #include <cassert>
@@ -14,6 +14,7 @@
 
 #include <string>
 #include <string_view>
+#include <map>
 #include <initializer_list>
 
 #include "ILexer.h"
@@ -27,884 +28,808 @@
 #include "StyleContext.h"
 #include "CharacterSet.h"
 #include "LexerModule.h"
+#include "OptionSet.h"
+#include "DefaultLexer.h"
 
 using namespace Lexilla;
 
 namespace {
 
-constexpr bool Is0To9(char ch) noexcept {
-	return (ch >= '0') && (ch <= '9');
-}
+	const char* const batchWordListDesc[] = {
+		"Internal Commands",
+		"External Commands",
+		nullptr
+	};
 
-bool IsAlphabetic(int ch) noexcept {
-	return IsASCII(ch) && isalpha(ch);
-}
+	const LexicalClass lexicalClasses[] = {
+		// Lexer batch SCLEX_BATCH SCE_BAT_
+		0, "SCE_BAT_DEFAULT", "default", "White space",
+		1, "SCE_BAT_COMMENT", "comment", "Line comment",
+		2, "SCE_BAT_WORD", "keyword", "Keyword",
+		3, "SCE_BAT_LABEL", "label", "Label",
+		4, "SCE_BAT_HIDE", "preprocessor", "Hide line @",
+		5, "SCE_BAT_COMMAND", "identifier", "Command",
+		6, "SCE_BAT_IDENTIFIER", "identifier", "Identifier",
+		7, "SCE_BAT_OPERATOR", "operator", "Operator",
+		8, "SCE_BAT_AFTER_LABEL", "comment","After label",
+#ifdef RB_LEX_BATCH_EXP
+		9, "SCE_BAT_ENVIRONMENT", "comment", "environment %variable%",
+		10, "SCE_BAT_EXPANSION", "comment", "environment !variable!",
+		11, "SCE_BAT_CLABEL", "comment", "pointers to :label",
+#endif // RB_LEX_BATCH_EXP
+	};
 
-inline bool AtEOL(Accessor &styler, Sci_PositionU i) {
-	return (styler[i] == '\n') ||
-	       ((styler[i] == '\r') && (styler.SafeGetCharAt(i + 1) != '\n'));
-}
+#ifdef RB_LEX_BATCH_OPTS
+	struct OptionsBatch {
+		bool isDelayedExpansion = false;
+		bool fold = false;
+	};
 
-// Tests for BATCH Operators
-constexpr bool IsBOperator(char ch) noexcept {
-	return (ch == '=') || (ch == '+') || (ch == '>') || (ch == '<') ||
-		(ch == '|') || (ch == '?') || (ch == '*')||
-		(ch == '&') || (ch == '(') || (ch == ')');
-}
+	struct OptionSetBatch : public OptionSet<OptionsBatch> {
+		OptionSetBatch() {
+			DefineProperty("fold", &OptionsBatch::fold,
+				"folding");
+			DefineProperty("lexer.batch.enabledelayedexpansion", &OptionsBatch::isDelayedExpansion,
+				"lexer.batch !x..! colorizing");
+		}
+	};
+#endif // RB_LEX_BATCH_OPTS
 
-// Tests for BATCH Separators
-constexpr bool IsBSeparator(char ch) noexcept {
-	return (ch == '\\') || (ch == '.') || (ch == ';') ||
-		(ch == '\"') || (ch == '\'') || (ch == '/');
-}
+	class LexerBatch : public DefaultLexer {
+		WordList keywords;
+		WordList keywords2;
+		std::string wordLists;
+#ifdef RB_LEX_BATCH_OPTS
+		OptionsBatch options;
+		OptionSetBatch osBatch;
+#endif
+	public:
+		explicit LexerBatch() :
+			DefaultLexer("batch", SCLEX_BATCH, lexicalClasses, std::size(lexicalClasses)) {
+			wordLists = JoinWordListDescriptions(batchWordListDesc);
+		}
+		LexerBatch(const LexerBatch&) = delete;
+		LexerBatch(LexerBatch&&) = delete;
+		LexerBatch& operator=(const LexerBatch&) = delete;
+		LexerBatch& operator=(LexerBatch&&) = delete;
+		~LexerBatch() override = default;
 
-// Tests for escape character
-constexpr bool IsEscaped(const char* wordStr, Sci_PositionU pos) noexcept {
-	bool isQoted=false;
-	while (pos>0){
-		pos--;
-		if (wordStr[pos]=='^')
-			isQoted=!isQoted;
-		else
+		const char* SCI_METHOD DescribeWordListSets() override {
+			return wordLists.c_str();
+		}
+		Sci_Position SCI_METHOD WordListSet(int n, const char* wl) override;
+		void SCI_METHOD Lex(Sci_PositionU startPos, Sci_Position length, int initStyle, Scintilla::IDocument* pAccess) override;
+#ifdef RB_LEX_BATCH_FOLD
+		void SCI_METHOD Fold(Sci_PositionU startPos,
+			Sci_Position length,
+			int initStyle,
+			Scintilla::IDocument* pAccess) override;
+#endif // RB_LEX_BATCH_FOLD
+
+		static ILexer5* LexerFactoryBatch() {
+			return new LexerBatch();
+		}
+
+#ifdef RB_LEX_BATCH_OPTS
+		const char* SCI_METHOD PropertyNames() override {
+			return osBatch.PropertyNames();
+		}
+		int SCI_METHOD PropertyType(const char* name) override {
+			return osBatch.PropertyType(name);
+		}
+		const char* SCI_METHOD DescribeProperty(const char* name) override {
+			return osBatch.DescribeProperty(name);
+		}
+		Sci_Position SCI_METHOD PropertySet(const char* key, const char* val) override
+		{
+			if (osBatch.PropertySet(&options, key, val)) {
+				return 0;
+			}
+			return -1;
+		}
+#endif
+	};
+
+	constexpr bool Is0To9(char ch) noexcept {
+		return (ch >= '0') && (ch <= '9');
+	}
+
+	constexpr bool IsAlphabetic(int ch) noexcept {
+		return IsUpperOrLowerCase(ch);
+	}
+
+	bool AtEOL(LexAccessor& styler, Sci_PositionU i) {
+		return (styler[i] == '\n') ||
+			((styler[i] == '\r') && (styler.SafeGetCharAt(i + 1) != '\n'));
+	}
+
+	// Tests for BATCH Operators
+	constexpr bool IsBOperator(char ch) noexcept {
+		return AnyOf(ch, '=', '+', '>', '<', '|', '?', '*', '&', '(', ')');
+	}
+
+	// Tests for BATCH Separators
+	constexpr bool IsBSeparator(char ch) noexcept {
+		return AnyOf(ch, '\\', '.', ';', '\"', '\'', '/');
+	}
+
+	// Both operators and separators -- words often ended with these characters.
+	constexpr bool IsBPunctuation(char ch) noexcept {
+		return IsBOperator(ch) || IsBSeparator(ch);
+	}
+
+	// These characters end words.
+	constexpr bool IsBEndWord(char ch) noexcept {
+		return IsBPunctuation(ch) || AnyOf(ch, '%', '!');
+	}
+
+	constexpr void SkipSpace(Sci_PositionU& i, std::string_view sv) noexcept {
+		while (i < sv.length() && isspacechar(sv[i])) {
+			i++;
+		}
+	}
+
+	constexpr void SkipNonSpace(Sci_PositionU& i, std::string_view sv) noexcept {
+		while (i < sv.length() && !isspacechar(sv[i])) {
+			i++;
+		}
+	}
+
+	constexpr Sci_PositionU WordLength(std::string_view word) {
+		Sci_PositionU i = 0;
+		while ((i < word.length()) && (!IsBEndWord(word[i]))) {
+			i++;
+		}
+		return i;
+	}
+
+	// Tests for escape character
+	constexpr bool IsEscaped(std::string_view wordStr, Sci_PositionU pos) noexcept {
+		bool isQoted = false;
+		while (pos > 0) {
+			pos--;
+			if (wordStr[pos] == '^')
+				isQoted = !isQoted;
+			else
+				break;
+		}
+		return isQoted;
+	}
+
+	constexpr bool IsQuotedBy(std::string_view svBuffer, char quote) noexcept {
+		bool CurrentStatus = false;
+		size_t pQuote = svBuffer.find(quote);
+		while (pQuote != std::string_view::npos) {
+			if (!IsEscaped(svBuffer, pQuote)) {
+				CurrentStatus = !CurrentStatus;
+			}
+			pQuote = svBuffer.find(quote, pQuote + 1);
+		}
+		return CurrentStatus;
+	}
+
+	// Tests for quote character
+	constexpr bool textQuoted(std::string_view lineBuffer, Sci_PositionU endPos) noexcept {
+		const std::string_view svBuffer = lineBuffer.substr(0, endPos);
+		return IsQuotedBy(svBuffer, '\"') || IsQuotedBy(svBuffer, '\'');
+	}
+
+	bool IsContinuation(const std::string& lineBuffer) noexcept {
+		if ((lineBuffer.length() <= 1) || (lineBuffer == "\r\n")) // empty line on Unix and Mac or on Windows
+			return false;
+		Sci_PositionU lineContinuationPos = lineBuffer.length() - 2; // Unix or Mac EOL
+		if ((lineBuffer.length() > 2) && lineBuffer[lineBuffer.length() - 2] == '\r') // Windows EOL
+			lineContinuationPos = lineBuffer.length() - 3;
+		// Reset continueProcessing if line continuation was not found
+		if ((lineBuffer[lineContinuationPos] != '^')
+			|| IsEscaped(lineBuffer, lineContinuationPos)
+			|| textQuoted(lineBuffer, lineContinuationPos))
+			return false;
+		return true;
+	}
+
+	Sci_Position SCI_METHOD LexerBatch::WordListSet(int n, const char* wl) {
+		WordList* wordListN = nullptr;
+		switch (n) {
+		case 0:
+			wordListN = &keywords;
 			break;
-	}
-	return isQoted;
-}
-
-constexpr bool IsQuotedBy(std::string_view svBuffer, char quote) noexcept {
-	bool CurrentStatus = false;
-	size_t pQuote = svBuffer.find(quote);
-	while (pQuote != std::string_view::npos) {
-		if (!IsEscaped(svBuffer.data(), pQuote)) {
-			CurrentStatus = !CurrentStatus;
+		case 1:
+			wordListN = &keywords2;
+			break;
+		default:
+			break;
 		}
-		pQuote = svBuffer.find(quote, pQuote + 1);
-	}
-	return CurrentStatus;
-}
-
-// Tests for quote character
-constexpr bool textQuoted(const char *lineBuffer, Sci_PositionU endPos) noexcept {
-	const std::string_view svBuffer(lineBuffer, endPos);
-	return IsQuotedBy(svBuffer, '\"') || IsQuotedBy(svBuffer, '\'');
-}
-
-#ifdef RB_BALI
-//!-start-[BatchLexerImprovement]
-// Tests for Environment Variable simbol
-inline bool IsEnvironmentVar(char ch)
-{
-	return isalpha(ch) || Is0To9(ch) || (ch == '_');
-}
-
-// Tests for BATCH Variable simbol
-inline bool IsBatchVar(char ch)
-{
-	return isalpha(ch) || Is0To9(ch);
-}
-
-// Find length of BATCH Variable with modifier (%~...) or return 0
-Sci_PositionU GetBatchVarLen(char* wordBuffer, Sci_PositionU wbl)
-{
-	if (wbl > 2 && wordBuffer[0] == '%' && wordBuffer[1] == '~') {
-		wordBuffer += 2;
-		if (wbl > 5 && wordBuffer[0] == '$' && isalpha(wordBuffer[1])) {
-			unsigned int l = 2;
-			while (IsEnvironmentVar(wordBuffer[l])) l++;
-			if (wordBuffer[l] == ':' && IsBatchVar(wordBuffer[l + 1]))
-				return l + 4;
+		Sci_Position firstModification = -1;
+		if (wordListN) {
+			if (wordListN->Set(wl)) {
+				firstModification = 0;
+			}
 		}
-		else
-			if (wbl > 7 && 0 == CompareNCaseInsensitive(wordBuffer, "dp$", 3) &&
-				isalpha(wordBuffer[3])) {
-				unsigned int l = 4;
+		return firstModification;
+	}
+
+#ifdef RB_LEX_BATCH_EXP
+	//!-start-[BatchLexerImprovement]
+	// Tests for Environment Variable simbol
+	bool IsEnvironmentVar(char ch) noexcept
+	{
+		return isalpha(ch) || Is0To9(ch) || (ch == '_');
+	}
+
+	// Tests for BATCH Variable simbol
+	bool IsBatchVar(char ch) noexcept
+	{
+		return isalpha(ch) || Is0To9(ch);
+	}
+
+	// Find length of BATCH Variable with modifier (%~...) or return 0
+	Sci_PositionU GetBatchVarLen(std::string_view wordBuffer, Sci_PositionU wbl)
+	{
+		if (wbl > 2 && wordBuffer[0] == '%' && wordBuffer[1] == '~') {
+			wordBuffer.remove_prefix(2);
+			if (wbl > 5 && wordBuffer[0] == '$' && isalpha(wordBuffer[1])) {
+				size_t l = 2;
 				while (IsEnvironmentVar(wordBuffer[l])) l++;
 				if (wordBuffer[l] == ':' && IsBatchVar(wordBuffer[l + 1]))
 					return l + 4;
 			}
 			else
-				if (wbl > 6 && 0 == CompareNCaseInsensitive(wordBuffer, "ftza", 4) &&
-					IsBatchVar(wordBuffer[4])) {
-					return 7;
+				if (wbl > 7 && 0 == CompareNCaseInsensitive(wordBuffer.data(), "dp$", 3) &&
+					isalpha(wordBuffer[3])) {
+					size_t l = 4;
+					while (IsEnvironmentVar(wordBuffer[l])) l++;
+					if (wordBuffer[l] == ':' && IsBatchVar(wordBuffer[l + 1]))
+						return l + 4;
 				}
 				else
-					if (wbl > 4 &&
-						(0 == CompareNCaseInsensitive(wordBuffer, "dp", 2) ||
-							0 == CompareNCaseInsensitive(wordBuffer, "nx", 2) ||
-							0 == CompareNCaseInsensitive(wordBuffer, "fs", 2)) &&
-						IsBatchVar(wordBuffer[2])) {
-						return 5;
+					if (wbl > 6 && 0 == CompareNCaseInsensitive(wordBuffer.data(), "ftza", 4) &&
+						IsBatchVar(wordBuffer[4])) {
+						return 7;
 					}
 					else
-						if (wbl > 3 &&
-							(wordBuffer[0] == 'f' || wordBuffer[0] == 'F' ||
-							wordBuffer[0] == 'd' || wordBuffer[0] == 'D' ||
-							wordBuffer[0] == 'p' || wordBuffer[0] == 'P' ||
-							wordBuffer[0] == 'n' || wordBuffer[0] == 'N' ||
-							wordBuffer[0] == 'x' || wordBuffer[0] == 'X' ||
-							wordBuffer[0] == 's' || wordBuffer[0] == 'S' ||
-							wordBuffer[0] == 'a' || wordBuffer[0] == 'A' ||
-							wordBuffer[0] == 't' || wordBuffer[0] == 'T' ||
-							wordBuffer[0] == 'z' || wordBuffer[0] == 'Z')
-							&& IsBatchVar(wordBuffer[1])) {
-							return 4;
+						if (wbl > 4 &&
+							(0 == CompareNCaseInsensitive(wordBuffer.data(), "dp", 2) ||
+								0 == CompareNCaseInsensitive(wordBuffer.data(), "nx", 2) ||
+								0 == CompareNCaseInsensitive(wordBuffer.data(), "fs", 2)) &&
+							IsBatchVar(wordBuffer[2])) {
+							return 5;
 						}
 						else
-							if (IsBatchVar(wordBuffer[0])) {
-								return 3;
+							if (wbl > 3 &&
+								AnyOf(wordBuffer[0],
+									'f', 'd', 'p', 'n', 'x', 's', 'a', 't', 'z',
+									'F', 'D', 'P', 'N', 'X', 'S', 'A', 'T', 'Z')
+								&& IsBatchVar(wordBuffer[1])) {
+								return 4;
 							}
-	}
-	return 0;
-}
-//!-end-[BatchLexerImprovement]
-#endif // RB_BALI
-
-void ColouriseBatchDoc(
-    Sci_PositionU startPos,
-    Sci_Position length,
-    int /*initStyle*/,
-    WordList *keywordlists[],
-    Accessor &styler) {
-	// Always backtracks to the start of a line that is not a continuation
-	// of the previous line
-	if (startPos > 0) {
-		Sci_Position ln = styler.GetLine(startPos); // Current line number
-		while (startPos > 0) {
-			ln--;
-			if ((styler.SafeGetCharAt(startPos-3) == '^' && styler.SafeGetCharAt(startPos-2) == '\r' && styler.SafeGetCharAt(startPos-1) == '\n')
-			|| styler.SafeGetCharAt(startPos-2) == '^') {	// handle '^' line continuation
-				// When the line continuation is found,
-				// set the Start Position to the Start of the previous line
-				length+=startPos-styler.LineStart(ln);
-				startPos=styler.LineStart(ln);
-			}
-			else
-				break;
+							else
+								if (IsBatchVar(wordBuffer[0])) {
+									return 3;
+								}
 		}
+		return 0;
 	}
+	//!-end-[BatchLexerImprovement]
+#endif // RB_LEX_BATCH_EXP
 
-	char lineBuffer[1024] {};
+	void LexerBatch::Lex(Sci_PositionU startPos, Sci_Position length, int, Scintilla::IDocument* pAccess) {
+		LexAccessor styler(pAccess);
 
-	styler.StartAt(startPos);
-	styler.StartSegment(startPos);
-	Sci_PositionU linePos = 0;
-	Sci_PositionU startLine = startPos;
-	bool continueProcessing = true;	// Used to toggle Regular Keyword Checking
-	bool isNotAssigned=false; // Used to flag Assignment in Set operation
-
-	for (Sci_PositionU i = startPos; i < startPos + length; i++) {
-		lineBuffer[linePos++] = styler[i];
-		if (AtEOL(styler, i) || (linePos >= sizeof(lineBuffer) - 1) || (i==startPos + length-1)) {
-			// End of line (or of line buffer) (or End of Last Line) met, colourise it
-			lineBuffer[linePos] = '\0';
-			const Sci_PositionU lengthLine=linePos;
-			const Sci_PositionU endPos=i;
-			const WordList &keywords = *keywordlists[0];      // Internal Commands
-			const WordList &keywords2 = *keywordlists[1];     // External Commands (optional)
-#ifdef RB_BALI
-			bool isDelayedExpansion = styler.GetPropertyInt("lexer.batch.enabledelayedexpansion") != 0; //!-add-[BatchLexerImprovement]
-			bool inString = false; // Used for processing while "" //!-add-[BatchLexerImprovement]
-#endif // RB_BALI
-
-			// CHOICE, ECHO, GOTO, PROMPT and SET have Default Text that may contain Regular Keywords
-			//   Toggling Regular Keyword Checking off improves readability
-			// Other Regular Keywords and External Commands / Programs might also benefit from toggling
-			//   Need a more robust algorithm to properly toggle Regular Keyword Checking
-			bool stopLineProcessing=false;  // Used to stop line processing if Comment or Drive Change found
-
-			Sci_PositionU offset = 0;	// Line Buffer Offset
-			// Skip initial spaces
-			while ((offset < lengthLine) && (isspacechar(lineBuffer[offset]))) {
-				offset++;
+		// Always backtracks to the start of a line that is not a continuation
+		// of the previous line
+		if (startPos > 0) {
+			Sci_Position ln = styler.GetLine(startPos); // Current line number
+			while (startPos > 0) {
+				ln--;
+				if ((styler.SafeGetCharAt(startPos - 3) == '^' && styler.SafeGetCharAt(startPos - 2) == '\r' && styler.SafeGetCharAt(startPos - 1) == '\n')
+					|| styler.SafeGetCharAt(startPos - 2) == '^') {	// handle '^' line continuation
+					// When the line continuation is found,
+					// set the Start Position to the Start of the previous line
+					length += startPos - styler.LineStart(ln);
+					startPos = styler.LineStart(ln);
+				}
+				else
+					break;
 			}
-			// Colorize Default Text
-			styler.ColourTo(startLine + offset - 1, SCE_BAT_DEFAULT);
-			// Set External Command / Program Location
-			Sci_PositionU cmdLoc = offset;
+		}
 
-			// Check for Fake Label (Comment) or Real Label - return if found
-			if (lineBuffer[offset] == ':') {
-				if (lineBuffer[offset + 1] == ':') {
-					// Colorize Fake Label (Comment) - :: is similar to REM, see http://content.techweb.com/winmag/columns/explorer/2000/21.htm
-					styler.ColourTo(endPos, SCE_BAT_COMMENT);
-				} else {
-					// Colorize Real Label
-					// :[\t ]*[^\t &+:<>|]+
-					const char *startLabelName = lineBuffer + offset + 1;
-					const size_t whitespaceLength = strspn(startLabelName, "\t ");
-					// Set of label-terminating characters determined experimentally
-					const char *endLabel = strpbrk(startLabelName + whitespaceLength, "\t &+:<>|");
-					if (endLabel) {
-						styler.ColourTo(startLine + offset + endLabel - startLabelName, SCE_BAT_LABEL);
-						styler.ColourTo(endPos, SCE_BAT_AFTER_LABEL);	// New style
-					} else {
-						styler.ColourTo(endPos, SCE_BAT_LABEL);
-					}
-				}
-				stopLineProcessing=true;
-#ifdef RB_BALI
-			//!-start-[BatchLexerImprovement]
-			// Check for Comment - return if found
-			} else if (CompareNCaseInsensitive(lineBuffer + offset, "rem", 3) == 0 &&
-				isspacechar(lineBuffer[offset + 3])) {
-				styler.ColourTo(endPos, SCE_BAT_COMMENT);
-				stopLineProcessing = true;  //return;
-			//!-end-[BatchLexerImprovement]
-#endif // RB_BALI
+		std::string lineBuffer;
+		std::string word;
 
-			// Check for Drive Change (Drive Change is internal command) - return if found
-			} else if ((IsAlphabetic(lineBuffer[offset])) &&
-				(lineBuffer[offset + 1] == ':') &&
-				((isspacechar(lineBuffer[offset + 2])) ||
-				(((lineBuffer[offset + 2] == '\\')) &&
-				(isspacechar(lineBuffer[offset + 3]))))) {
-				// Colorize Regular Keyword
-				styler.ColourTo(endPos, SCE_BAT_WORD);
-				stopLineProcessing=true;
-			}
+		styler.StartAt(startPos);
+		styler.StartSegment(startPos);
+		Sci_PositionU startLine = startPos;
+		bool continueProcessing = true;	// Used to toggle Regular Keyword Checking
+		bool isNotAssigned = false; // Used to flag Assignment in Set operation
+		for (Sci_PositionU i = startPos; i < startPos + length; i++) {
+			// All testing is performed on a lower case version of the line since batch is case-insensitive
+			lineBuffer.push_back(MakeLowerCase(styler[i]));
+			if (AtEOL(styler, i) || (i == startPos + length - 1)) {
+				// End of line (or of line buffer) (or End of Last Line) met, colourise it
+				const Sci_PositionU lengthLine = lineBuffer.length();
+				const Sci_PositionU endPos = i;
 
-			// Check for Hide Command (@ECHO OFF/ON)
-			if (lineBuffer[offset] == '@') {
-				styler.ColourTo(startLine + offset, SCE_BAT_HIDE);
-				offset++;
-			}
-			// Skip next spaces
-			while ((offset < lengthLine) && (isspacechar(lineBuffer[offset]))) {
-				offset++;
-			}
+				// CHOICE, ECHO, GOTO, PROMPT and SET have Default Text that may contain Regular Keywords
+				//   Toggling Regular Keyword Checking off improves readability
+				// Other Regular Keywords and External Commands / Programs might also benefit from toggling
+				//   Need a more robust algorithm to properly toggle Regular Keyword Checking
+				bool stopLineProcessing = false;  // Used to stop line processing if Comment or Drive Change found
 
-			// Read remainder of line word-at-a-time or remainder-of-word-at-a-time
-			while (offset < lengthLine  && !stopLineProcessing) {
-				if (offset > startLine) {
-					// Colorize Default Text
-					styler.ColourTo(startLine + offset - 1, SCE_BAT_DEFAULT);
-				}
-				char wordBuffer[81]{};		// Word Buffer - large to catch long paths
-				// Copy word from Line Buffer into Word Buffer and convert to lower case
-				Sci_PositionU wbl = 0;		// Word Buffer Length
-				for (; offset < lengthLine && wbl < 80 &&
-						!isspacechar(lineBuffer[offset]); wbl++, offset++) {
-					wordBuffer[wbl] = MakeLowerCase(lineBuffer[offset]);
-				}
-				wordBuffer[wbl] = '\0';
-				const std::string_view wordView(wordBuffer);
-				Sci_PositionU wbo = 0;		// Word Buffer Offset - also Special Keyword Buffer Length
+				Sci_PositionU offset = 0;	// Line Buffer Offset
+				// Skip initial spaces
+				SkipSpace(offset, lineBuffer);
+				// Colorize Default Text
+				styler.ColourTo(startLine + offset - 1, SCE_BAT_DEFAULT);
+				// Set External Command / Program Location
+				Sci_PositionU cmdLoc = offset;
 
-				// Check for Comment - return if found
-#ifndef RB_BALI
-				if (continueProcessing) {
-					if ((wordView == "rem") || (wordBuffer[0] == ':' && wordBuffer[1] == ':')) {
-						if ((offset == wbl) || !textQuoted(lineBuffer, offset - wbl)) {
-							styler.ColourTo(startLine + offset - wbl - 1, SCE_BAT_DEFAULT);
-							styler.ColourTo(endPos, SCE_BAT_COMMENT);
-							break;
-						}
-					}
-				}
-#endif
-				// Check for Separator
-				if (IsBSeparator(wordBuffer[0])) {
-					// Check for External Command / Program
-					if ((cmdLoc == offset - wbl) &&
-						((wordBuffer[0] == ':') ||
-						(wordBuffer[0] == '\\') ||
-						(wordBuffer[0] == '.'))) {
-						// Reset Offset to re-process remainder of word
-						offset -= (wbl - 1);
-						// Colorize External Command / Program
-						if (!keywords2) {
-							styler.ColourTo(startLine + offset - 1, SCE_BAT_COMMAND);
-						} else if (keywords2.InList(wordBuffer)) {
-							styler.ColourTo(startLine + offset - 1, SCE_BAT_COMMAND);
-						} else {
-							styler.ColourTo(startLine + offset - 1, SCE_BAT_DEFAULT);
-						}
-						// Reset External Command / Program Location
-						cmdLoc = offset;
-					} else {
-						// Reset Offset to re-process remainder of word
-						offset -= (wbl - 1);
-						// Colorize Default Text
-						styler.ColourTo(startLine + offset - 1, SCE_BAT_DEFAULT);
-#ifdef RB_BALI
-						//!-start-[BatchLexerImprovement]
-						if (wordBuffer[0] == '"')
-							inString = !inString;
-						//!-end-[BatchLexerImprovement]
-#endif // RB_BALI
-
-					}
-#ifdef RB_BALI
-//!-start-[BatchLexerImprovement]
-				// Check for Labels in text (... :label)
-					}
-				else if (wordBuffer[0] == ':' && isspacechar(lineBuffer[offset - wbl - 1])) {
-					// Colorize Default Text
-					styler.ColourTo(startLine + offset - 1 - wbl, SCE_BAT_DEFAULT);
-					// Colorize Label
-					styler.ColourTo(startLine + offset - 1, SCE_BAT_CLABEL);
-					// No need to Reset Offset
-				// Check for SetLocal Variable (!x...!)
-				}
-				else if (isDelayedExpansion && wordBuffer[0] == '!') {
-					// Colorize Default Text
-					styler.ColourTo(startLine + offset - 1 - wbl, SCE_BAT_DEFAULT);
-					wbo++;
-					// Search to end of word for second !
-					while ((wbo < wbl) &&
-						(wordBuffer[wbo] != '!') &&
-						(!IsBOperator(wordBuffer[wbo])) &&
-						(!IsBSeparator(wordBuffer[wbo]))) {
-						wbo++;
-					}
-					if (wordBuffer[wbo] == '!') {
-						wbo++;
-						// Colorize Environment Variable
-						styler.ColourTo(startLine + offset - 1 - (wbl - wbo), SCE_BAT_EXPANSION);
+				// Check for Fake Label (Comment) or Real Label - return if found
+				if (lineBuffer[offset] == ':') {
+					if (lineBuffer[offset + 1] == ':') {
+						// Colorize Fake Label (Comment) - :: is similar to REM, see http://content.techweb.com/winmag/columns/explorer/2000/21.htm
+						styler.ColourTo(endPos, SCE_BAT_COMMENT);
 					}
 					else {
-						wbo = 1;
-						// Colorize Simbol
-						styler.ColourTo(startLine + offset - 1 - (wbl - 1), SCE_BAT_DEFAULT);
-					}
-					// Check for External Command / Program
-					if (cmdLoc == offset - wbl) {
-						cmdLoc = offset - (wbl - wbo);
-					}
-					// Reset Offset to re-process remainder of word
-					offset -= (wbl - wbo);
-//!-end-[BatchLexerImprovement]
-#endif // RB_BALI
-				// Check for Regular Keyword in list
-				} else if ((keywords.InList(wordBuffer)) &&
-#ifdef RB_BALI
-					(!inString) && //!-add-[BatchLexerImprovement]
-#endif // RB_BALI
-					(continueProcessing)) {
-					// ECHO, GOTO, PROMPT and SET require no further Regular Keyword Checking
-					if (InList(wordView, {"echo", "goto", "prompt"})) {
-						continueProcessing = false;
-					}
-					// SET requires additional processing for the assignment operator
-					if (wordView == "set") {
-						continueProcessing = false;
-						isNotAssigned=true;
-					}
-					// Identify External Command / Program Location for ERRORLEVEL, and EXIST
-					if (InList(wordView, {"errorlevel", "exist"})) {
-						// Reset External Command / Program Location
-						cmdLoc = offset;
-						// Skip next spaces
-						while ((cmdLoc < lengthLine) &&
-							(isspacechar(lineBuffer[cmdLoc]))) {
-							cmdLoc++;
+						// Colorize Real Label
+						// :[\t ]*[^\t &+:<>|]+
+						const size_t whitespaceEnd = lineBuffer.find_first_not_of("\t ", offset + 1);
+						const size_t whitespaceLength = (whitespaceEnd == std::string::npos) ? 0 : whitespaceEnd;
+						// Set of label-terminating characters determined experimentally
+						const size_t labelEnd = lineBuffer.find_first_of("\t &+:<>|", whitespaceLength);
+						if (labelEnd != std::string::npos) {
+							styler.ColourTo(startLine + labelEnd - 1, SCE_BAT_LABEL);
+							styler.ColourTo(endPos, SCE_BAT_AFTER_LABEL);
 						}
-						// Skip comparison
-						while ((cmdLoc < lengthLine) &&
-							(!isspacechar(lineBuffer[cmdLoc]))) {
-							cmdLoc++;
-						}
-						// Skip next spaces
-						while ((cmdLoc < lengthLine) &&
-							(isspacechar(lineBuffer[cmdLoc]))) {
-							cmdLoc++;
-						}
-					// Identify External Command / Program Location for CALL, DO, LOADHIGH and LH
-					} else if (InList(wordView, {"call", "do", "loadhigh", "lh"})) {
-						// Reset External Command / Program Location
-						cmdLoc = offset;
-						// Skip next spaces
-						while ((cmdLoc < lengthLine) &&
-							(isspacechar(lineBuffer[cmdLoc]))) {
-							cmdLoc++;
-						}
-						// Check if call is followed by a label
-						if ((lineBuffer[cmdLoc] == ':') &&
-							(wordView == "call")) {
-							continueProcessing = false;
+						else {
+							styler.ColourTo(endPos, SCE_BAT_LABEL);
 						}
 					}
-					// Colorize Regular keyword
-					styler.ColourTo(startLine + offset - 1, SCE_BAT_WORD);
-					// No need to Reset Offset
-				// Check for Special Keyword in list, External Command / Program, or Default Text
-				} else if ((wordBuffer[0] != '%') &&
-						   (wordBuffer[0] != '!') &&
-#ifdef RB_BALI
-						   (!inString) && //!-add-[BatchLexerImprovement]
-#endif // RB_BALI
-					(!IsBOperator(wordBuffer[0])) &&
-					(continueProcessing)) {
-					// Check for Special Keyword
-					//     Affected Commands are in Length range 2-6
-					//     Good that ERRORLEVEL, EXIST, CALL, DO, LOADHIGH, and LH are unaffected
-					bool sKeywordFound = false;		// Exit Special Keyword for-loop if found
-					for (Sci_PositionU keywordLength = 2; keywordLength < wbl && keywordLength < 7 && !sKeywordFound; keywordLength++) {
-						// Special Keywords are those that allow certain characters without whitespace after the command
-						// Examples are: cd. cd\ md. rd. dir| dir> echo: echo. path=
-						// Special Keyword Buffer used to determine if the first n characters is a Keyword
-						char sKeywordBuffer[10]{};	// Special Keyword Buffer
-						wbo = 0;
-						// Copy Keyword Length from Word Buffer into Special Keyword Buffer
-						for (; wbo < keywordLength; wbo++) {
-							sKeywordBuffer[wbo] = wordBuffer[wbo];
-						}
-						sKeywordBuffer[wbo] = '\0';
-						// Check for Special Keyword in list
-						if ((keywords.InList(sKeywordBuffer)) &&
-							((IsBOperator(wordBuffer[wbo])) ||
-							(IsBSeparator(wordBuffer[wbo])) ||
-							(wordBuffer[wbo] == ':' &&
-							(InList(sKeywordBuffer, {"call", "echo", "goto"}) )))) {
-							sKeywordFound = true;
-							// ECHO requires no further Regular Keyword Checking
-							if (std::string_view(sKeywordBuffer) == "echo") {
-								continueProcessing = false;
-							}
-							// Colorize Special Keyword as Regular Keyword
-							styler.ColourTo(startLine + offset - 1 - (wbl - wbo), SCE_BAT_WORD);
-							// Reset Offset to re-process remainder of word
-							offset -= (wbl - wbo);
-						}
-					}
-					// Check for External Command / Program or Default Text
-					if (!sKeywordFound) {
-						wbo = 0;
-						// Check for External Command / Program
-						if (cmdLoc == offset - wbl) {
-							// Read up to %, Operator or Separator
-							while ((wbo < wbl) &&
-								(((wordBuffer[wbo] != '%') &&
-#ifdef RB_BALI
-								(!isDelayedExpansion || wordBuffer[wbo] != '!') && //!-change-[BatchLexerImprovement]
-#else
-								(wordBuffer[wbo] != '!') &&
-#endif // RB_BALI
-								(!IsBOperator(wordBuffer[wbo])) &&
-								(!IsBSeparator(wordBuffer[wbo]))))) {
-								wbo++;
-							}
-							// Reset External Command / Program Location
-							cmdLoc = offset - (wbl - wbo);
-							// Reset Offset to re-process remainder of word
-							offset -= (wbl - wbo);
-							// CHOICE requires no further Regular Keyword Checking
-							if (wordView == "choice") {
-								continueProcessing = false;
-							}
-							// Check for START (and its switches) - What follows is External Command \ Program
-							if (wordView == "start") {
-								// Reset External Command / Program Location
-								cmdLoc = offset;
-								// Skip next spaces
-								while ((cmdLoc < lengthLine) &&
-									(isspacechar(lineBuffer[cmdLoc]))) {
-									cmdLoc++;
-								}
-								// Reset External Command / Program Location if command switch detected
-								if (lineBuffer[cmdLoc] == '/') {
-									// Skip command switch
-									while ((cmdLoc < lengthLine) &&
-										(!isspacechar(lineBuffer[cmdLoc]))) {
-										cmdLoc++;
-									}
-									// Skip next spaces
-									while ((cmdLoc < lengthLine) &&
-										(isspacechar(lineBuffer[cmdLoc]))) {
-										cmdLoc++;
-									}
-								}
-							}
-							// Colorize External Command / Program
-							if (!keywords2) {
-								styler.ColourTo(startLine + offset - 1, SCE_BAT_COMMAND);
-							} else if (keywords2.InList(wordBuffer)) {
-								styler.ColourTo(startLine + offset - 1, SCE_BAT_COMMAND);
-							} else {
-								styler.ColourTo(startLine + offset - 1, SCE_BAT_DEFAULT);
-							}
-							// No need to Reset Offset
-						// Check for Default Text
-						} else {
-							// Read up to %, Operator or Separator
-							while ((wbo < wbl) &&
-								(((wordBuffer[wbo] != '%') &&
-#ifdef RB_BALI
-								(!isDelayedExpansion || wordBuffer[wbo] != '!') && //!-change-[BatchLexerImprovement]
-#else
-								(wordBuffer[wbo] != '!') &&
-#endif // RB_BALI
-								(!IsBOperator(wordBuffer[wbo])) &&
-								(!IsBSeparator(wordBuffer[wbo]))))) {
-								wbo++;
-							}
-							// Colorize Default Text
-							styler.ColourTo(startLine + offset - 1 - (wbl - wbo), SCE_BAT_DEFAULT);
-							// Reset Offset to re-process remainder of word
-							offset -= (wbl - wbo);
-						}
-					}
-				// Check for Argument  (%n), Environment Variable (%x...%) or Local Variable (%%a)
-				} else if (wordBuffer[0] == '%') {
-#ifdef RB_BALI
-					Sci_PositionU varlen; //!-add-[BatchLexerImprovement]
-#endif // RB_BALI
-
-					// Colorize Default Text
-					styler.ColourTo(startLine + offset - 1 - wbl, SCE_BAT_DEFAULT);
-					wbo++;
-					// Search to end of word for second % (can be a long path)
-					while ((wbo < wbl) &&
-						(wordBuffer[wbo] != '%')) {
-						wbo++;
-					}
-					// Check for Argument (%n) or (%*)
-					if (((Is0To9(wordBuffer[1])) || (wordBuffer[1] == '*')) &&
-						(wordBuffer[wbo] != '%')) {
-						// Check for External Command / Program
-						if (cmdLoc == offset - wbl) {
-							cmdLoc = offset - (wbl - 2);
-						}
-						// Colorize Argument
-						styler.ColourTo(startLine + offset - 1 - (wbl - 2), SCE_BAT_IDENTIFIER);
-						// Reset Offset to re-process remainder of word
-						offset -= (wbl - 2);
-					// Check for Expanded Argument (%~...) / Variable (%%~...)
-					// Expanded Argument: %~[<path-operators>]<single digit>
-					// Expanded Variable: %%~[<path-operators>]<single identifier character>
-					// Path operators are exclusively alphabetic.
-					// Expanded arguments have a single digit at the end.
-					// Expanded variables have a single identifier character as variable name.
-					} else if (((wbl > 1) && (wordBuffer[1] == '~')) ||
-						((wbl > 2) && (wordBuffer[1] == '%') && (wordBuffer[2] == '~'))) {
-						// Check for External Command / Program
-						if (cmdLoc == offset - wbl) {
-							cmdLoc = offset - (wbl - wbo);
-						}
-						const bool isArgument = (wordBuffer[1] == '~');
-						if (isArgument) {
-							Sci_PositionU expansionStopOffset = 2;
-							bool isValid = false;
-							for (; expansionStopOffset < wbl; expansionStopOffset++) {
-								if (Is0To9(wordBuffer[expansionStopOffset])) {
-									expansionStopOffset++;
-									isValid = true;
-									wbo = expansionStopOffset;
-									// Colorize Expanded Argument
-									styler.ColourTo(startLine + offset - 1 - (wbl - wbo), SCE_BAT_IDENTIFIER);
-									break;
-								}
-							}
-							if (!isValid) {
-								// not a valid expanded argument or variable
-								styler.ColourTo(startLine + offset - 1 - (wbl - wbo), SCE_BAT_DEFAULT);
-							}
-						// Expanded Variable
-						} else {
-							// start after ~
-							wbo = 3;
-							// Search to end of word for another % (can be a long path)
-							while ((wbo < wbl) &&
-								(wordBuffer[wbo] != '%') &&
-								(!IsBOperator(wordBuffer[wbo])) &&
-								(!IsBSeparator(wordBuffer[wbo]))) {
-								wbo++;
-							}
-							if (wbo > 3) {
-								// Colorize Expanded Variable
-								styler.ColourTo(startLine + offset - 1 - (wbl - wbo), SCE_BAT_IDENTIFIER);
-							} else {
-								// not a valid expanded argument or variable
-								styler.ColourTo(startLine + offset - 1 - (wbl - wbo), SCE_BAT_DEFAULT);
-							}
-						}
-						// Reset Offset to re-process remainder of word
-						offset -= (wbl - wbo);
-					// Check for Environment Variable (%x...%)
-					} else if ((wordBuffer[1] != '%') &&
-						(wordBuffer[wbo] == '%')) {
-						wbo++;
-						// Check for External Command / Program
-						if (cmdLoc == offset - wbl) {
-							cmdLoc = offset - (wbl - wbo);
-						}
-						// Colorize Environment Variable
-#ifdef RB_BALI
-						styler.ColourTo(startLine + offset - 1 - (wbl - wbo), SCE_BAT_ENVIRONMENT); //!-change-[BatchLexerImprovement]
-#else
-						styler.ColourTo(startLine + offset - 1 - (wbl - wbo), SCE_BAT_IDENTIFIER);
-#endif // RB_BALI
-						// Reset Offset to re-process remainder of word
-						offset -= (wbl - wbo);
-#ifdef RB_BALI
-					//!-start-[BatchLexerImprovement]
-					// Check for Variable with modifiers (%~...)
-					}
-					else if ((varlen = GetBatchVarLen(wordBuffer, wbl)) != 0) {
-						// Check for External Command / Program
-						if (cmdLoc == offset - wbl) {
-							cmdLoc = offset - (wbl - varlen);
-						}
-						// Colorize Variable
-						styler.ColourTo(startLine + offset - 1 - (wbl - varlen), SCE_BAT_IDENTIFIER);
-						// Reset Offset to re-process remainder of word
-						offset -= (wbl - varlen);
-						// Check for Local Variable with modifiers (%%~...)
-					}
-					else if ((wordBuffer[1] == '%') &&
-						((varlen = GetBatchVarLen(wordBuffer + 1, wbl - 1)) != 0)) {
-						// Check for External Command / Program
-						if (cmdLoc == offset - wbl) {
-							cmdLoc = offset - (wbl - varlen - 1);
-						}
-						// Colorize Local Variable
-						styler.ColourTo(startLine + offset - 1 - (wbl - varlen - 1), SCE_BAT_IDENTIFIER);
-						// Reset Offset to re-process remainder of word
-						offset -= (wbl - varlen - 1);
-					//!-end-[BatchLexerImprovement]
-#endif // RB_BALI
-
-					// Check for Local Variable (%%a)
-					} else if (
-						(wbl > 2) &&
-						(wordBuffer[1] == '%') &&
-						(wordBuffer[2] != '%') &&
-						(!IsBOperator(wordBuffer[2])) &&
-						(!IsBSeparator(wordBuffer[2]))) {
-						// Check for External Command / Program
-						if (cmdLoc == offset - wbl) {
-							cmdLoc = offset - (wbl - 3);
-						}
-						// Colorize Local Variable
-						styler.ColourTo(startLine + offset - 1 - (wbl - 3), SCE_BAT_IDENTIFIER);
-						// Reset Offset to re-process remainder of word
-						offset -= (wbl - 3);
-#ifdef RB_BALI
-						//!-start-[BatchLexerImprovement]
-					// Check for %%
-					} else if (
-							(wbl > 1) &&
-							(wordBuffer[1] == '%')) {
-							// Check for External Command / Program
-							if (cmdLoc == offset - wbl) {
-								cmdLoc = offset - (wbl - 2);
-							}
-							// Colorize Simbols
-							styler.ColourTo(startLine + offset - 1 - (wbl - 2), SCE_BAT_DEFAULT);
-							// Reset Offset to re-process remainder of word
-							offset -= (wbl - 2);
-					} else {
-						// Check for External Command / Program
-						if (cmdLoc == offset - wbl) {
-							cmdLoc = offset - (wbl - 1);
-						}
-						// Colorize Simbol
-						styler.ColourTo(startLine + offset - 1 - (wbl - 1), SCE_BAT_DEFAULT);
-						// Reset Offset to re-process remainder of word
-						offset -= (wbl - 1);
-					//!-end-[BatchLexerImprovement]
-#else
-					// escaped %
-					} else if (
-						(wbl > 1) &&
-						(wordBuffer[1] == '%')) {
-
-						// Reset Offset to re-process remainder of word
-						styler.ColourTo(startLine + offset - 1 - (wbl - 2), SCE_BAT_DEFAULT);
-						offset -= (wbl - 2);
-#endif // RB_BALI
-					}
-				// Check for Environment Variable (!x...!)
-				} else if (wordBuffer[0] == '!') {
-					// Colorize Default Text
-					styler.ColourTo(startLine + offset - 1 - wbl, SCE_BAT_DEFAULT);
-					wbo++;
-					// Search to end of word for second ! (can be a long path)
-					while ((wbo < wbl) &&
-						(wordBuffer[wbo] != '!')) {
-						wbo++;
-					}
-					if (wordBuffer[wbo] == '!') {
-						wbo++;
-						// Check for External Command / Program
-						if (cmdLoc == offset - wbl) {
-							cmdLoc = offset - (wbl - wbo);
-						}
-						// Colorize Environment Variable
-						styler.ColourTo(startLine + offset - 1 - (wbl - wbo), SCE_BAT_IDENTIFIER);
-						// Reset Offset to re-process remainder of word
-						offset -= (wbl - wbo);
-					}
-				// Check for Operator
-				} else if (IsBOperator(wordBuffer[0])) {
-					// Colorize Default Text
-					styler.ColourTo(startLine + offset - 1 - wbl, SCE_BAT_DEFAULT);
-					// Check for Comparison Operator
-					if ((wordBuffer[0] == '=') && (wordBuffer[1] == '=')) {
-						// Identify External Command / Program Location for IF
-						cmdLoc = offset;
-						// Skip next spaces
-						while ((cmdLoc < lengthLine) &&
-							(isspacechar(lineBuffer[cmdLoc]))) {
-							cmdLoc++;
-						}
-						// Colorize Comparison Operator
-						if (continueProcessing)
-							styler.ColourTo(startLine + offset - 1 - (wbl - 2), SCE_BAT_OPERATOR);
-						else
-							styler.ColourTo(startLine + offset - 1 - (wbl - 2), SCE_BAT_DEFAULT);
-						// Reset Offset to re-process remainder of word
-						offset -= (wbl - 2);
-					// Check for Pipe Operator
-					} else if ((wordBuffer[0] == '|') &&
-								!(IsEscaped(lineBuffer,offset - wbl + wbo) || textQuoted(lineBuffer, offset - wbl) )) {
-						// Reset External Command / Program Location
-						cmdLoc = offset - wbl + 1;
-						// Skip next spaces
-						while ((cmdLoc < lengthLine) &&
-							(isspacechar(lineBuffer[cmdLoc]))) {
-							cmdLoc++;
-						}
-						// Colorize Pipe Operator
-						styler.ColourTo(startLine + offset - 1 - (wbl - 1), SCE_BAT_OPERATOR);
-						// Reset Offset to re-process remainder of word
-						offset -= (wbl - 1);
-						continueProcessing = true;
-					// Check for Other Operator
-					} else {
-						// Check for Operators: >, |, &
-						if (((wordBuffer[0] == '>')||
-						   (wordBuffer[0] == ')')||
-						   (wordBuffer[0] == '(')||
-						   (wordBuffer[0] == '&' )) &&
-						   !(!continueProcessing && (IsEscaped(lineBuffer,offset - wbl + wbo)
-						   || textQuoted(lineBuffer, offset - wbl) ))){
-							// Turn Keyword and External Command / Program checking back on
-							continueProcessing = true;
-							isNotAssigned=false;
-						}
-						// Colorize Other Operators
-						// Do not Colorize Parenthesis, quoted text and escaped operators
-						if (((wordBuffer[0] != ')') && (wordBuffer[0] != '(')
-						&& !textQuoted(lineBuffer, offset - wbl)  && !IsEscaped(lineBuffer,offset - wbl + wbo))
-						&& !((wordBuffer[0] == '=') && !isNotAssigned ))
-#ifdef RB_BALI
-						if (!inString || !(wordBuffer[0] == '(' || wordBuffer[0] == ')')) //!-add-[BatchLexerImprovement]
-#endif // RB_BALI
-							styler.ColourTo(startLine + offset - 1 - (wbl - 1), SCE_BAT_OPERATOR);
-						else
-							styler.ColourTo(startLine + offset - 1 - (wbl - 1), SCE_BAT_DEFAULT);
-						// Reset Offset to re-process remainder of word
-						offset -= (wbl - 1);
-
-						if ((wordBuffer[0] == '=') && isNotAssigned ){
-							isNotAssigned=false;
-						}
-					}
-				// Check for Default Text
-				} else {
-					// Read up to %, Operator or Separator
-					while ((wbo < wbl) &&
-						((wordBuffer[wbo] != '%') &&
-#ifdef RB_BALI
-						(!isDelayedExpansion || wordBuffer[wbo] != '!') && //!-change-[BatchLexerImprovement]
-#else
-						(wordBuffer[wbo] != '!') &&
-#endif // RB_BALI
-						(!IsBOperator(wordBuffer[wbo])) &&
-						(!IsBSeparator(wordBuffer[wbo])))) {
-						wbo++;
-					}
-					// Colorize Default Text
-					styler.ColourTo(startLine + offset - 1 - (wbl - wbo), SCE_BAT_DEFAULT);
-					// Reset Offset to re-process remainder of word
-					offset -= (wbl - wbo);
+					stopLineProcessing = true;
+					// Check for Drive Change (Drive Change is internal command) - return if found
 				}
-				// Skip next spaces - nothing happens if Offset was Reset
-				while ((offset < lengthLine) && (isspacechar(lineBuffer[offset]))) {
+				else if ((IsAlphabetic(lineBuffer[offset])) &&
+					(lineBuffer[offset + 1] == ':') &&
+					((isspacechar(lineBuffer[offset + 2])) ||
+						(((lineBuffer[offset + 2] == '\\')) &&
+							(isspacechar(lineBuffer[offset + 3]))))) {
+					// Colorize Regular Keyword
+					styler.ColourTo(endPos, SCE_BAT_WORD);
+					stopLineProcessing = true;
+				}
+
+				// Check for Hide Command (@ECHO OFF/ON)
+				if (lineBuffer[offset] == '@') {
+					styler.ColourTo(startLine + offset, SCE_BAT_HIDE);
 					offset++;
 				}
-			}
-			// Colorize Default Text for remainder of line - currently not lexed
-			styler.ColourTo(endPos, SCE_BAT_DEFAULT);
+				// Skip next spaces
+				SkipSpace(offset, lineBuffer);
 
-			// handle line continuation for SET and ECHO commands except the last line
-			if (!continueProcessing && (i<startPos + length-1)) {
-				if (linePos==1 || (linePos==2 && lineBuffer[1]=='\r')) // empty line on Unix and Mac or on Windows
-					continueProcessing=true;
-				else {
-					Sci_PositionU lineContinuationPos;
-					if ((linePos>2) && lineBuffer[linePos-2]=='\r') // Windows EOL
-						lineContinuationPos=linePos-3;
-					else
-						lineContinuationPos=linePos-2; // Unix or Mac EOL
-					// Reset continueProcessing	if line continuation was not found
-					if ((lineBuffer[lineContinuationPos]!='^')
-							|| IsEscaped(lineBuffer, lineContinuationPos)
-							|| textQuoted(lineBuffer, lineContinuationPos))
-						continueProcessing=true;
+				// Read remainder of line word-at-a-time or remainder-of-word-at-a-time
+				while (offset < lengthLine && !stopLineProcessing) {
+					if (offset > startLine) {
+						// Colorize Default Text
+						styler.ColourTo(startLine + offset - 1, SCE_BAT_DEFAULT);
+					}
+					// Copy word from Line Buffer
+					const Sci_PositionU wordStart = offset;
+					SkipNonSpace(offset, lineBuffer);
+					const Sci_PositionU wbl = offset - wordStart;		// Word Buffer Length
+					// Using assign to prevent new allocations
+					word.assign(lineBuffer, wordStart, wbl);
+					const char first = word.front();
+					Sci_PositionU wbo = 0;		// Word Buffer Offset - also Special Keyword Buffer Length
+
+					// Check for Comment - return if found
+					if (continueProcessing) {
+						if ((word == "rem") || (word.substr(0, 2) == "::")) {
+							if ((offset == wbl) || !textQuoted(lineBuffer, wordStart)) {
+								styler.ColourTo(startLine + wordStart - 1, SCE_BAT_DEFAULT);
+								styler.ColourTo(endPos, SCE_BAT_COMMENT);
+								break;
+							}
+						}
+					}
+					// Check for Separator
+					if (IsBSeparator(first)) {
+						// Check for External Command / Program
+						int style = SCE_BAT_DEFAULT;
+						if ((cmdLoc == wordStart) &&
+							(AnyOf(first, ':', '\\', '.'))) {
+							// Reset Offset to re-process remainder of word
+							offset = wordStart + 1;
+							// Colorize External Command / Program
+							if ((!keywords2) || (keywords2.InList(word))) {
+								style = SCE_BAT_COMMAND;
+							}
+							// Reset External Command / Program Location
+							cmdLoc = offset;
+						}
+						else {
+							// Reset Offset to re-process remainder of word
+							offset = wordStart + 1;
+						}
+						// Colorize Text
+						styler.ColourTo(startLine + offset - 1, style);
+
+#ifdef RB_LEX_BATCH_EXP
+						//!-start-[BatchLexerImprovement]
+						// Check for Labels in text (... :label)
+					}
+					else if (first == ':' && isspacechar(lineBuffer[offset - wbl - 1])) {
+						// Colorize Default Text
+						styler.ColourTo(startLine + offset - 1 - wbl, SCE_BAT_DEFAULT);
+						// Colorize Label
+						styler.ColourTo(startLine + offset - 1, SCE_BAT_CLABEL);
+						// No need to Reset Offset
+#endif // RB_LEX_BATCH_EXP
+						// Check for Regular Keyword in list
+					}
+					else if ((keywords.InList(word)) && (continueProcessing)) {
+						// ECHO, GOTO, PROMPT and SET require no further Regular Keyword Checking
+						if (InList(word, { "echo", "goto", "prompt" })) {
+							continueProcessing = false;
+						}
+						// SET requires additional processing for the assignment operator
+						if (word == "set") {
+							continueProcessing = false;
+							isNotAssigned = true;
+						}
+						// Identify External Command / Program Location for ERRORLEVEL, and EXIST
+						if (InList(word, { "errorlevel", "exist" })) {
+							// Reset External Command / Program Location
+							cmdLoc = offset;
+							// Skip next spaces
+							SkipSpace(cmdLoc, lineBuffer);
+							// Skip comparison
+							SkipNonSpace(cmdLoc, lineBuffer);
+							// Skip next spaces
+							SkipSpace(cmdLoc, lineBuffer);
+							// Identify External Command / Program Location for CALL, DO, LOADHIGH and LH
+						}
+						else if (InList(word, { "call", "do", "loadhigh", "lh" })) {
+							// Reset External Command / Program Location
+							cmdLoc = offset;
+							// Skip next spaces
+							SkipSpace(cmdLoc, lineBuffer);
+							// Check if call is followed by a label
+							if ((lineBuffer[cmdLoc] == ':') &&
+								(word == "call")) {
+								continueProcessing = false;
+							}
+						}
+						// Colorize Regular keyword
+						styler.ColourTo(startLine + offset - 1, SCE_BAT_WORD);
+						// No need to Reset Offset
+					// Check for Special Keyword in list, External Command / Program, or Default Text
+					}
+					else if (
+						(!(IsBOperator(first) || AnyOf(first, '%', '!'))) &&
+						(continueProcessing)) {
+						// Check for Special Keyword
+						//     Affected Commands are in Length range 2-6
+						//     Good that ERRORLEVEL, EXIST, CALL, DO, LOADHIGH, and LH are unaffected
+						bool sKeywordFound = false;		// Exit Special Keyword for-loop if found
+						for (Sci_PositionU keywordLength = 2; keywordLength < wbl && keywordLength < 7 && !sKeywordFound; keywordLength++) {
+							// Special Keywords are those that allow certain characters without whitespace after the command
+							// Examples are: cd. cd\ md. rd. dir| dir> echo: echo. path=
+							// Special Keyword used to determine if the first n characters is a Keyword
+							wbo = keywordLength;
+							const std::string sKeyword = word.substr(0, keywordLength);
+							// Check for Special Keyword in list
+							if ((keywords.InList(sKeyword)) &&
+								((IsBPunctuation(word[wbo])) ||
+									(word[wbo] == ':' && (InList(sKeyword, { "call", "echo", "goto" }))))) {
+								sKeywordFound = true;
+								// ECHO requires no further Regular Keyword Checking
+								if (sKeyword == "echo") {
+									continueProcessing = false;
+								}
+								// Colorize Special Keyword as Regular Keyword
+								styler.ColourTo(startLine + wordStart + wbo - 1, SCE_BAT_WORD);
+								// Reset Offset to re-process remainder of word
+								offset = wordStart + wbo;
+							}
+						}
+						// Check for External Command / Program or Default Text
+						if (!sKeywordFound) {
+							int style = SCE_BAT_DEFAULT;
+							// Read up to %, !, Operator or Separator
+							const Sci_PositionU lengthWord = WordLength(word);
+							// Check for External Command / Program
+							if (cmdLoc == wordStart) {
+								// Reset External Command / Program Location
+								cmdLoc = wordStart + lengthWord;
+								// CHOICE requires no further Regular Keyword Checking
+								if (word == "choice") {
+									continueProcessing = false;
+								}
+								// Check for START (and its switches) - What follows is External Command \ Program
+								if (word == "start") {
+									// Skip next spaces
+									SkipSpace(cmdLoc, lineBuffer);
+									// Reset External Command / Program Location if command switch detected
+									if (lineBuffer[cmdLoc] == '/') {
+										// Skip command switch
+										SkipNonSpace(cmdLoc, lineBuffer);
+										// Skip next spaces
+										SkipSpace(cmdLoc, lineBuffer);
+									}
+								}
+								// Colorize External Command / Program
+								if ((!keywords2) || (keywords2.InList(word))) {
+									style = SCE_BAT_COMMAND;
+								}
+							}
+							styler.ColourTo(startLine + wordStart + lengthWord - 1, style);
+							// Reset Offset to re-process remainder of word
+							offset = wordStart + lengthWord;
+						}
+						// Check for Argument  (%n), Environment Variable (%x...%) or Local Variable (%%a)
+					}
+					else if (first == '%') {
+						// Colorize Default Text
+						styler.ColourTo(startLine + wordStart - 1, SCE_BAT_DEFAULT);
+						wbo++;
+						// Search to end of word for second % (can be a long path)
+						while ((wbo < wbl) && (word[wbo] != '%')) {
+							wbo++;
+						}
+						// Check for Argument (%n) or (%*)
+						if (((Is0To9(word[1])) || (word[1] == '*')) &&
+							(word[wbo] != '%')) {
+							// Check for External Command / Program
+							if (cmdLoc == wordStart) {
+								cmdLoc = wordStart + 2;
+							}
+							// Colorize Argument
+							styler.ColourTo(startLine + wordStart + 1, SCE_BAT_IDENTIFIER);
+							// Reset Offset to re-process remainder of word
+							offset = wordStart + 2;
+							// Check for Expanded Argument (%~...) / Variable (%%~...)
+							// Expanded Argument: %~[<path-operators>]<single digit>
+							// Expanded Variable: %%~[<path-operators>]<single identifier character>
+							// Path operators are exclusively alphabetic.
+							// Expanded arguments have a single digit at the end.
+							// Expanded variables have a single identifier character as variable name.
+						}
+						else if (((wbl > 1) && (word[1] == '~')) ||
+							((wbl > 2) && (word[1] == '%') && (word[2] == '~'))) {
+							// Check for External Command / Program
+							if (cmdLoc == wordStart) {
+								cmdLoc = wordStart + wbo;
+							}
+							const bool isArgument = (word[1] == '~');
+							if (isArgument) {
+								Sci_PositionU expansionStopOffset = 2;
+								bool isValid = false;
+								for (; expansionStopOffset < wbl; expansionStopOffset++) {
+									if (Is0To9(word[expansionStopOffset])) {
+										expansionStopOffset++;
+										isValid = true;
+										wbo = expansionStopOffset;
+										// Colorize Expanded Argument
+										styler.ColourTo(startLine + wordStart + wbo - 1, SCE_BAT_IDENTIFIER);
+										break;
+									}
+								}
+								if (!isValid) {
+									// not a valid expanded argument or variable
+									styler.ColourTo(startLine + wordStart + wbo - 1, SCE_BAT_DEFAULT);
+								}
+								// Expanded Variable
+							}
+							else {
+								// start after ~
+								wbo = 3;
+								// Search to end of word for another % (can be a long path)
+								while ((wbo < wbl) && (!(IsBPunctuation(word[wbo]) || (word[wbo] == '%')))) {
+									wbo++;
+								}
+								if (wbo > 3) {
+									// Colorize Expanded Variable
+									styler.ColourTo(startLine + wordStart + wbo - 1, SCE_BAT_IDENTIFIER);
+								}
+								else {
+									// not a valid expanded argument or variable
+									styler.ColourTo(startLine + wordStart + wbo - 1, SCE_BAT_DEFAULT);
+								}
+							}
+							// Reset Offset to re-process remainder of word
+							offset = wordStart + wbo;
+							// Check for Environment Variable (%x...%)
+						}
+						else if ((word[1] != '%') && (word[wbo] == '%')) {
+							wbo++;
+							// Check for External Command / Program
+							if (cmdLoc == wordStart) {
+								cmdLoc = wordStart + wbo;
+							}
+							// Colorize Environment Variable
+#ifdef RB_LEX_BATCH_EXP
+							//!-change-[BatchLexerImprovement]
+							//! colorize !variable!
+							styler.ColourTo(startLine + wordStart + wbo - 1, SCE_BAT_ENVIRONMENT);
+#else // RB_LEX_BATCH_EXP
+							styler.ColourTo(startLine + wordStart + wbo - 1, SCE_BAT_IDENTIFIER);
+#endif // RB_LEX_BATCH_EXP
+							// Reset Offset to re-process remainder of word
+							offset = wordStart + wbo;
+							// Check for Local Variable (%%a)
+						}
+						else if (
+							(wbl > 2) &&
+							(word[1] == '%') &&
+							(word[2] != '%') &&
+							(!IsBPunctuation(word[2]))) {
+							// Check for External Command / Program
+							if (cmdLoc == wordStart) {
+								cmdLoc = wordStart + 3;
+							}
+							// Colorize Local Variable
+							styler.ColourTo(startLine + wordStart + 2, SCE_BAT_IDENTIFIER);
+							// Reset Offset to re-process remainder of word
+							offset = wordStart + 3;
+							// escaped %
+						}
+						else if (
+							(wbl > 1) &&
+							(word[1] == '%')) {
+
+							// Reset Offset to re-process remainder of word
+							styler.ColourTo(startLine + wordStart + 1, SCE_BAT_DEFAULT);
+							offset = wordStart + 2;
+						}
+						// Check for Environment Variable (!x...!)
+					}
+					else if (first == '!') {
+						// Colorize Default Text
+						styler.ColourTo(startLine + wordStart - 1, SCE_BAT_DEFAULT);
+						const size_t nextExclamation = word.find('!', 1);
+						if (nextExclamation != std::string::npos) {
+							// Check for External Command / Program
+							if (cmdLoc == wordStart) {
+								cmdLoc = wordStart + nextExclamation + 1;
+							}
+							// Colorize Environment Variable
+#ifdef RB_LEX_BATCH_EXP
+							styler.ColourTo(startLine + wordStart + nextExclamation, options.isDelayedExpansion ? SCE_BAT_EXPANSION : SCE_BAT_IDENTIFIER);
+#endif // RB_LEX_BATCH_EXP
+							styler.ColourTo(startLine + wordStart + nextExclamation, SCE_BAT_IDENTIFIER);
+							// Reset Offset to re-process remainder of word
+							offset = wordStart + nextExclamation + 1;
+						}
+						// Check for Operator
+					}
+					else if (IsBOperator(first)) {
+						// Colorize Default Text
+						styler.ColourTo(startLine + wordStart - 1, SCE_BAT_DEFAULT);
+						// Check for Comparison Operator
+						if ((first == '=') && (word[1] == '=')) {
+							// Identify External Command / Program Location for IF
+							cmdLoc = offset;
+							// Skip next spaces
+							SkipSpace(cmdLoc, lineBuffer);
+							// Colorize Comparison Operator
+							if (continueProcessing)
+								styler.ColourTo(startLine + wordStart + 1, SCE_BAT_OPERATOR);
+							else
+								styler.ColourTo(startLine + wordStart + 1, SCE_BAT_DEFAULT);
+							// Reset Offset to re-process remainder of word
+							offset = wordStart + 2;
+							// Check for Pipe Operator
+						}
+						else if ((first == '|') &&
+							!(IsEscaped(lineBuffer, wordStart + wbo) || textQuoted(lineBuffer, wordStart))) {
+							// Reset External Command / Program Location
+							cmdLoc = wordStart + 1;
+							// Skip next spaces
+							SkipSpace(cmdLoc, lineBuffer);
+							// Colorize Pipe Operator
+							styler.ColourTo(startLine + wordStart, SCE_BAT_OPERATOR);
+							// Reset Offset to re-process remainder of word
+							offset = wordStart + 1;
+							continueProcessing = true;
+							// Check for Other Operator
+						}
+						else {
+							// Check for Operators: >, |, &
+							if ((AnyOf(first, '>', ')', '(', '&')) &&
+								!(!continueProcessing && (IsEscaped(lineBuffer, wordStart + wbo)
+									|| textQuoted(lineBuffer, wordStart)))) {
+								// Turn Keyword and External Command / Program checking back on
+								continueProcessing = true;
+								isNotAssigned = false;
+							}
+#ifdef RB_LEX_BATCH_FOLD
+							//!-change-[BatchLexerImprovement]
+							//! fix brackets colorize
+							if (/*!inString ||*/ AnyOf(first, ')', '(') && !textQuoted(lineBuffer, wordStart)) //!-add-[BatchLexerImprovement]
+								styler.ColourTo(startLine + wordStart, SCE_BAT_OPERATOR);
+							else
+#endif // RB_LEX_BATCH_FOLD
+								// Colorize Other Operators
+								// Do not Colorize Parenthesis, quoted text and escaped operators
+								if ((!AnyOf(first, ')', '(')
+									&& !textQuoted(lineBuffer, wordStart) && !IsEscaped(lineBuffer, wordStart + wbo))
+									&& !((first == '=') && !isNotAssigned))
+									styler.ColourTo(startLine + wordStart, SCE_BAT_OPERATOR);
+								else
+									styler.ColourTo(startLine + wordStart, SCE_BAT_DEFAULT);
+							// Reset Offset to re-process remainder of word
+							offset = wordStart + 1;
+
+							if ((first == '=') && isNotAssigned) {
+								isNotAssigned = false;
+							}
+						}
+						// Check for Default Text
+					}
+					else {
+						// Read up to %, !, Operator or Separator
+						const Sci_PositionU lengthWord = WordLength(word);
+						// Colorize Default Text
+						styler.ColourTo(startLine + wordStart + lengthWord - 1, SCE_BAT_DEFAULT);
+						// Reset Offset to re-process remainder of word
+						offset = wordStart + lengthWord;
+					}
+					// Skip next spaces - nothing happens if Offset was Reset
+					SkipSpace(offset, lineBuffer);
+				}
+				// Colorize Default Text for remainder of line - currently not lexed
+				styler.ColourTo(endPos, SCE_BAT_DEFAULT);
+
+				// handle line continuation for SET and ECHO commands except the last line
+				if (!continueProcessing && (i < startPos + length - 1)) {
+					// Reset continueProcessing if line continuation was not found
+					continueProcessing = !IsContinuation(lineBuffer);
+				}
+
+				lineBuffer.clear();
+				startLine = i + 1;
+			}
+		}
+		styler.Flush();
+	}
+
+#ifdef RB_LEX_BATCH_FOLD
+	void SCI_METHOD LexerBatch::Fold(Sci_PositionU startPos, Sci_Position length, int, Scintilla::IDocument* pAccess)
+	{
+		if (!options.fold) return;
+		LexAccessor styler(pAccess);
+		Sci_PositionU currLine = styler.GetLine(startPos);
+		const Sci_PositionU endPos = startPos + length;
+		int currLevel = SC_FOLDLEVELBASE;
+		if (currLine > 0)
+			currLevel = styler.LevelAt(currLine - 1) >> 16;
+		int nextLevel = currLevel;
+		for (Sci_PositionU i = startPos; i < endPos; i++) {
+			const char curr = styler.SafeGetCharAt(i);
+			const char next = styler.SafeGetCharAt(i + 1);
+			const bool atEOL = (curr == '\r' && next != '\n') || (curr == '\n');
+			if (styler.StyleAt(i) == SCE_BAT_OPERATOR) {
+				if (curr == '(') {
+					nextLevel++;
+				}
+				else if (curr == ')') {
+					nextLevel--;
 				}
 			}
-
-			linePos = 0;
-			startLine = i + 1;
-		}
-	}
-}
-
-#ifdef RB_BALI
-//!-start-[BatchLexerImprovement]
-void FoldBatchDoc(Sci_PositionU startPos, Sci_Position length, int,
-	WordList* [], Accessor& styler)
-{
-	int line = styler.GetLine(startPos);
-	int level = styler.LevelAt(line);
-	int levelIndent = 0;
-	Sci_PositionU endPos = startPos + length;
-	// Scan for ( and )
-	for (Sci_PositionU i = startPos; i < endPos; i++) {
-		int c = styler.SafeGetCharAt(i, '\n');
-		int style = styler.StyleAt(i);
-		if (style == SCE_BAT_OPERATOR) {
-			// CheckFoldPoint
-			if (c == '(') {
-				levelIndent += 1;
-			}
-			else
-				if (c == ')') {
-					levelIndent -= 1;
+			if (atEOL || i == (endPos - 1)) {
+				int level = currLevel | nextLevel << 16;
+				if (nextLevel > currLevel) {
+					level |= SC_FOLDLEVELHEADERFLAG;
 				}
-		}
-		if (c == '\n') { // line end
-			if (levelIndent > 0) {
-				level |= SC_FOLDLEVELHEADERFLAG;
+				if (level != styler.LevelAt(currLine)) {
+					styler.SetLevel(currLine, level);
+				}
+				currLine++;
+				currLevel = nextLevel;
 			}
-			if (level != styler.LevelAt(line))
-				styler.SetLevel(line, level);
-			level += levelIndent;
-			if ((level & SC_FOLDLEVELNUMBERMASK) < SC_FOLDLEVELBASE)
-				level = SC_FOLDLEVELBASE;
-			line++;
-			// reset state
-			levelIndent = 0;
-			level &= ~SC_FOLDLEVELHEADERFLAG;
-			level &= ~SC_FOLDLEVELWHITEFLAG;
 		}
 	}
-}
-//!-end-[BatchLexerImprovement]
-#endif
-
-const char *const batchWordListDesc[] = {
-	"Internal Commands",
-	"External Commands",
-	nullptr
-};
-
+#endif // RB_LEX_BATCH_FOLD
 }
 
-#ifdef RB_BALI
-extern const LexerModule lmBatch(SCLEX_BATCH, ColouriseBatchDoc, "batch", FoldBatchDoc, batchWordListDesc); //!-change-[BatchLexerImprovement]
-#else
-extern const LexerModule lmBatch(SCLEX_BATCH, ColouriseBatchDoc, "batch", nullptr, batchWordListDesc);
-#endif // RB_BALI
+extern const LexerModule lmBatch(SCLEX_BATCH, LexerBatch::LexerFactoryBatch, "batch", batchWordListDesc);

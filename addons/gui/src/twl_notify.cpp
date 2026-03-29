@@ -42,8 +42,7 @@ namespace
 //////////////////////
 // TNotifyWin
 TNotifyWin::TNotifyWin(TEventWindow* form) :TWin(form), m_hpopup_menu(NULL)
-{
-}
+{}
 
 TNotifyWin::~TNotifyWin()
 {
@@ -351,7 +350,7 @@ TTabControl::~TTabControl()
 	for (int idx = 0; idx < m_index; ++idx)
 		if (idx != m_last_selected_idx)
 			if (TWin* p = panels[idx]) delete p;
-	panels.clear();	   
+	panels.clear();
 }
 
 void TTabControl::add(wchar_t* caption, TWin* data, int image_idx /*= -1*/)
@@ -456,9 +455,9 @@ int TTabControl::handle_notify(void* p)
 	return 0;
 }
 
-void TTabControl::set_image_list(bool bSmallIcon)
+void TTabControl::set_image_list(bool bSmallIcon, HIMAGELIST hImageList)
 {
-	TabCtrl_SetImageList(handle(), get_image_list());
+	TabCtrl_SetImageList(handle(), hImageList);
 }
 
 //////////////////////////
@@ -489,9 +488,9 @@ TListView::TListView(TEventWindow* form, bool multiple_columns, bool single_sele
 	send_msg(LVM_SETEXTENDEDLISTVIEWSTYLE, 0, LVS_EX_FULLROWSELECT); // Set style
 }
 
-void TListView::set_image_list(bool iconSize)
+void TListView::set_image_list(bool iconSize, HIMAGELIST hImageList)
 {
-	send_msg(LVM_SETIMAGELIST, iconSize ? LVSIL_SMALL : LVSIL_NORMAL, (LPARAM)get_image_list());
+	send_msg(LVM_SETIMAGELIST, iconSize ? LVSIL_SMALL : LVSIL_NORMAL, (LPARAM)hImageList);
 }
 
 void TListView::add_column(const wchar_t* label, int width)
@@ -740,9 +739,9 @@ void TTreeView::makeLabelEditable(bool toBeEnabled)
 	::SetWindowLongPtr(handle(), GWL_STYLE, dwNewStyle);
 }
 
-void TTreeView::set_image_list(bool iconSize)
+void TTreeView::set_image_list(bool iconSize, HIMAGELIST hImageList)
 {
-	send_msg(TVM_SETIMAGELIST, iconSize ? TVSIL_NORMAL : TVSIL_STATE, (LPARAM)get_image_list());
+	send_msg(TVM_SETIMAGELIST, iconSize ? TVSIL_NORMAL : TVSIL_STATE, (LPARAM)hImageList);
 }
 
 void TTreeView::set_foreground(COLORREF clr)

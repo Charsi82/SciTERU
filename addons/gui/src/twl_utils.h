@@ -45,15 +45,16 @@ public:
 
 class THasIconWin
 {
-	TImageList iList{};
-
+	//TImageList* iList{};
+	bool _has_image = false;
 public:
 	int load_icons(const wchar_t* path, bool small_size);
 
 protected:
-	HIMAGELIST get_image_list() const { return iList.handle(); }
-	bool has_image() const { return iList.handle() != NULL; }
+	//HIMAGELIST get_image_list() const { return iList ? iList->handle() : 0; }
+	//bool has_image() const { return iList ? iList->handle() != NULL : 0; }
+	bool has_image() const { return _has_image; }
 
 private:
-	virtual void set_image_list(bool small_size) = 0;
+	virtual void set_image_list(bool small_size, HIMAGELIST hImageList) = 0;
 };

@@ -1227,16 +1227,16 @@ void SciTEWin::Creation() {
 
 #ifdef RB_UT
 //!-start-[user.toolbar]
-struct BarButtonIn
-{
-	BarButtonIn() = default;
-	BarButtonIn(int _id, int _cmd) : id(_id), cmd(_cmd) {};
-	int id = 0;
-	int cmd = 0;
-};
-
 void SciTEWin::SetToolBar()
 {
+	struct BarButtonIn
+	{
+		BarButtonIn() = default;
+		BarButtonIn(int _id, int _cmd) : id(_id), cmd(_cmd) {};
+		int id = 0;
+		int cmd = 0;
+	};
+
 	HWND hwndToolBar = HwndOf(wToolBar);
 	if (!hwndToolBar) return;
 

@@ -5,7 +5,14 @@ SciTE Ru-Board additions defines
 //-------------------------------------------------------------------------
 
 // [BatchLexerImprovement]
-#define RB_BALI
+// исправляет раскраску скобок и добавляет фолдинг в лексер batch
+#define RB_LEX_BATCH_FOLD
+
+// добавляет в лексер batch	лексические классы SCE_BAT_ENVIRONMENT SCE_BAT_EXPANSION SCE_BAT_CLABEL
+#define RB_LEX_BATCH_EXP
+
+// добавляет в лексер batch	чтение опций из props
+#define RB_LEX_BATCH_OPTS
 
 // [BetterCalltips]
 #define RB_BTCT1 // Ctrl + Up/Down for switch tooltip pages
@@ -152,7 +159,7 @@ SciTE Ru-Board additions defines
 
 // [PropsColouriseFix]
 #define RB_PCF
- 
+
 // [PropsKeysSets]
 #define RB_PKS
 

@@ -4,6 +4,7 @@
 // The License.txt file describes the conditions under which this software may be distributed.
 
 #include <cstdlib>
+#include <cassert>
 #include <cstring>
 
 #include <tuple>
@@ -22,6 +23,54 @@
 #include "GUI.h"
 #include "StringHelpers.h"
 #include "Widget.h"
+
+GdkPixbuf *PixBuffer(const char **xpm) {
+	// Replace gdk_pixbuf_new_from_xpm_data which may be deprecated or removed.
+	// Only handles images that are a static part of this executable and have the same format.
+	constexpr size_t bytesPerPixel = 4;
+	
+	// Read the XPM parameters
+	int height = 1;
+	int width = 1;
+	int nColours = 1;
+	int charPerPixel = 1;
+	sscanf(xpm[0], "%d%d%d%d", &width, &height, &nColours, &charPerPixel);
+	assert(charPerPixel == 1);
+
+	GdkPixbuf *pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, width, height);
+
+	// Read the palette
+	guchar palette[bytesPerPixel*256]{};
+	for (int c = 0; c<nColours; c++) {
+		const char *colDef = xpm[1+c];
+		// Format for hexadecimal colour palette entry
+		//%c\tc #%6X,
+		//+	c #6E6E6E",
+		const guchar index = *colDef;
+		colDef += 4;
+		if (*colDef == '#') {
+			guchar *col = palette + index * bytesPerPixel;
+			// Only handle absolute hex colours. Treat all others as transparent.
+			col[0] = IntFromHexByte(colDef+1);
+			col[1] = IntFromHexByte(colDef+3);
+			col[2] = IntFromHexByte(colDef+5);
+			col[3] = 0xffU;
+		}
+	}
+	
+	// Read the pixels
+	const int stride = gdk_pixbuf_get_rowstride(pixbuf);
+	guchar *pixels = gdk_pixbuf_get_pixels(pixbuf);
+	for (int y = 0; y<height; y++) {
+		for (int x = 0; x<width; x++) {
+			const guchar index = xpm[1+nColours+y][x];
+			guchar *p = pixels + y * stride + x * bytesPerPixel;
+			const guchar *col = palette + index * bytesPerPixel;
+			memcpy(p, col, 4);
+		}
+	}
+	return pixbuf;
+}
 
 WBase::operator GtkWidget*() const {
 	return GTK_WIDGET(GetID());
@@ -211,7 +260,7 @@ void WCheckDraw::Create(int cmd_, const char **xpmImage, const GUI::gui_string &
 	gtk_button_set_relief(GTK_BUTTON(button), GTK_RELIEF_NONE);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), FALSE);
 
-	UniquePixbuf pbGrey(gdk_pixbuf_new_from_xpm_data(xpmImage));
+	UniquePixbuf pbGrey(PixBuffer(xpmImage));
 	UniquePixbuf pbAlpha(gdk_pixbuf_add_alpha(pbGrey.get(), TRUE, 0xff, 0xff, 0));
 
 #if GTK_CHECK_VERSION(3, 0, 0)

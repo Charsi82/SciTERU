@@ -38,30 +38,6 @@ import gtk.AppDepGen
 
 neutralEncoding = "iso-8859-1"	# Each byte value is valid in iso-8859-1
 
-def FindCredits(historyFile, removeLinks=True):
-    credits = []
-    stage = 0
-    with historyFile.open(encoding="utf-8") as f:
-        for line in f.readlines():
-            s = line.strip()
-            if stage == 0 and s == "<table>":
-                stage = 1
-            elif stage == 1 and s == "</table>":
-                stage = 2
-            if stage == 1 and s.startswith("<td>"):
-                credit = s[4:-5]
-                if removeLinks and "<a" in s:
-                    title, _a, rest = credit.partition("<a href=")
-                    urlplus, _bracket, end = rest.partition(">")
-                    name = end.split("<")[0]
-                    url = urlplus[1:-1]
-                    credit = title.strip()
-                    if credit:
-                        credit += " "
-                    credit += name + " " + url
-                credits.append(credit)
-    return credits
-
 def DottedVersion(version):
     return version[0:-2] + '.' + version[-2] + '.' + version[-1]
 
@@ -77,7 +53,7 @@ class SciTEData:
         self.lexillaVersion = self.lexillaVersionFile.read_text().strip()
 
         with (sciteRoot / "doc" / "SciTE.html").open() as f:
-            self.dateModified = [d for d in f.readlines() if "Date.Modified" in d]\
+            self.dateModified = [d for d in f if "Date.Modified" in d]\
                 [0].split('\"')[3]
             # 20130602
             # index.html, SciTE.html
@@ -93,7 +69,7 @@ class SciTEData:
             # ScintillaHistory.html -- only first should change
             self.myModified = monthModified + " " + self.yearModified
 
-        self.credits = FindCredits(sciteRoot / "doc" / "SciTEHistory.html")
+        self.credits = ScintillaData.FindCredits(sciteRoot / "doc" / "SciTEHistory.html")
 
 def UpdateVersionNumbers(sci, pathSciTE, lexVersion, scintillaVersion):
     pathHeader = pathSciTE / "src" / "SciTE.h"
@@ -232,15 +208,11 @@ def ExtractItems(pathHistory):
 def CondenseItem(item):
     return " ".join(line.strip() for line in item.splitlines())
 
-def NewItems(sciteHistory, items):
-    condensedHistory = [CondenseItem(i) for i in sciteHistory]
-    #~ print("SciTE condensed=\n   ", "\n    ".join(condensedHistory), "\n")
-    #~ print("Other condensed=\n   ", "\n    ".join([CondenseItem(i) for i in items]), "\n")
+def NewItems(sciteHistorySet, items):
     new = []
     for item in items:
         condensed = CondenseItem(item)
-        if condensed not in condensedHistory:
-            #~ print(f"New item:\n{condensed}\n{item}")
+        if condensed not in sciteHistorySet:
             new.append(item)
     return new
 
@@ -406,8 +378,10 @@ def RegenerateAll():
     sciteCredits = ScintillaData.FindCredits(pathHistory, False)
     sciteItems = ExtractItems(pathHistory)
 
-    newFromSci = NewItems(sciteItems, sciItems)
-    newFromLex = NewItems(sciteItems, lexItems)
+    sciteHistorySet = {CondenseItem(i) for i in sciteItems}
+
+    newFromSci = NewItems(sciteHistorySet, sciItems)
+    newFromLex = NewItems(sciteHistorySet, lexItems)
     if newFromSci or newFromLex:
         news = ""
         if newFromLex:

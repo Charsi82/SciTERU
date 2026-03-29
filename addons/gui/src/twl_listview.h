@@ -31,7 +31,7 @@ public:
 	void clear();
 
 private:
-	void set_image_list(bool bSmallIcon) override;
+	void set_image_list(bool bSmallIcon, HIMAGELIST hImageList) override;
 	virtual void handle_select(int id) = 0;
 	virtual void handle_double_click(int id, int j, const char* s) = 0;
 	virtual void handle_onkey(int id) = 0;

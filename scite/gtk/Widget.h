@@ -46,6 +46,8 @@ public:
 #define GKEY_Void GDK_VoidSymbol
 #endif
 
+GdkPixbuf *PixBuffer(const char **xpm);
+
 class WBase : public GUI::Window {
 public:
 	operator GtkWidget*() const;

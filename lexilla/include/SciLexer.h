@@ -724,7 +724,7 @@
 #define SCE_ERR_FIND_VALUE 30
 #endif // RB_FRLS
 
-#ifdef RB_BALI
+#ifdef RB_LEX_BATCH_FOLD
 #define SCE_BAT_ENVIRONMENT 9
 #define SCE_BAT_EXPANSION 10
 #define SCE_BAT_CLABEL 11

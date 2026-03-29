@@ -70,9 +70,7 @@ GUI::gui_string GetErrorMessage(DWORD nRet) {
 
 #ifdef RB_GAP
 //!-add-[GetApplicationProps]
-SciTEBase* SciTEBase::GetApplicationInstance() {
-	return SciTEWin::app;
-}
+SciTEBase* SciTEBase::GetApplicationInstance() { return SciTEWin::app; }
 #endif
 
 long SciTEKeys::ParseKeyCode(std::string_view mnemonic) {
@@ -828,8 +826,6 @@ void SciTEWin::FullScreenToggle() {
 		int topStuff = ::GetSystemMetrics(SM_CYSIZEFRAME) + ::GetSystemMetrics(SM_CYCAPTION);
 		if (props.GetInt("full.screen.hides.menu"))
 			topStuff += ::GetSystemMetrics(SM_CYMENU);
-		::SetWindowLongPtr(HwndOf(wContent),
-				   GWL_EXSTYLE, 0);
 		::SetWindowPos(MainHWND(), HWND_TOP,
 			       -::GetSystemMetrics(SM_CXSIZEFRAME),
 			       -topStuff,
@@ -840,8 +836,6 @@ void SciTEWin::FullScreenToggle() {
 		::ShowWindow(wTaskBar, SW_SHOW);
 		if (wStartButton)
 			::ShowWindow(wStartButton, SW_SHOW);
-		::SetWindowLongPtr(HwndOf(wContent),
-				   GWL_EXSTYLE, WS_EX_CLIENTEDGE);
 		if (winPlace.length) {
 			::SystemParametersInfo(SPI_SETWORKAREA, 0, &rcWorkArea, 0);
 			if (winPlace.showCmd == SW_SHOWMAXIMIZED) {
@@ -1188,7 +1182,6 @@ DWORD SciTEWin::ExecuteOne(const Job &jobToRun) {
 			OutputAppendStringSynchronised(input);
 			OutputAppendStringSynchronised("\n");
 		}
-
 #ifdef RB_IERR
 		//!-start-[InputErr]
 		if (totalBytesToWrite <= 0)
@@ -1203,7 +1196,7 @@ DWORD SciTEWin::ExecuteOne(const Job &jobToRun) {
 		//!-end-[InputErr]
 #endif // RB_IERR
 
-		unsigned writingPosition = 0;
+		size_t writingPosition = 0;
 
 		int countPeeks = 0;
 		bool processDead = false;

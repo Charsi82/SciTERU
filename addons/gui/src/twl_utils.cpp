@@ -2,42 +2,6 @@
 #include "log.h"
 #include <format>
 
-/*
-DWORD shell_execute_sync(const wchar_t* _command, const wchar_t* _args = nullptr, const wchar_t* _curDir = nullptr)
-{
-	SHELLEXECUTEINFO ShExecInfo{};
-	ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
-	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-	ShExecInfo.hwnd = NULL;
-	ShExecInfo.lpVerb = L"open";
-	ShExecInfo.lpFile = _command;
-	ShExecInfo.lpParameters = _args;
-	ShExecInfo.lpDirectory = _curDir;
-	ShExecInfo.nShow = SW_SHOWDEFAULT;
-	ShExecInfo.hInstApp = NULL;
-
-	ShellExecuteEx(&ShExecInfo);
-	if (!ShExecInfo.hProcess)
-	{
-		// throw exception
-		//throw GetLastErrorAsString(GetLastError());
-		return GetLastError();
-	}
-
-	WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
-
-	DWORD exitCode = 0;
-	if (::GetExitCodeProcess(ShExecInfo.hProcess, &exitCode) == FALSE)
-	{
-		// throw exception
-		//throw GetLastErrorAsString(GetLastError());
-		return GetLastError();
-	}
-
-	return exitCode;
-}
-*/
-
 DWORD shell_execute(const wchar_t* _command, const wchar_t* _args, const wchar_t* _curDir)
 {
 	SHELLEXECUTEINFO ShExecInfo{};
@@ -66,8 +30,10 @@ DWORD shell_execute(const wchar_t* _command, const wchar_t* _args, const wchar_t
 
 int THasIconWin::load_icons(const wchar_t* path, bool bSmallIcon)
 {
+	TImageList iList;
 	const int icons_loaded = iList.load_icons_from_module(path);
-	if (icons_loaded) set_image_list(bSmallIcon);
+	if (icons_loaded) set_image_list(bSmallIcon, iList.handle());
+	if (icons_loaded) _has_image = true;
 	return icons_loaded;
 }
 
@@ -86,7 +52,7 @@ HBITMAP load_bitmap(const wchar_t* file)
 ////////////////////////////
 // TImageList class
 TImageList::TImageList(bool s) : m_small_icons(s), m_handle(NULL)
-{ 
+{
 	log_add("TImageList::TImageList");
 }
 
@@ -108,7 +74,7 @@ int TImageList::add(const wchar_t* bitmapfile, COLORREF mask_clr)
 TImageList::~TImageList()
 {
 	log_add("TImageList::~TImageList");
-	destroy();
+	//destroy();
 }
 
 void TImageList::create()

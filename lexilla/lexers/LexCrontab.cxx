@@ -48,12 +48,12 @@ static void ColouriseNncrontabDoc(Sci_PositionU startPos, Sci_Position length, i
 	WordList &modifier = *keywordLists[2];
 #ifdef RB_FRIM
 	//!-start-[ForthImprovement]
-	WordList& word1 = *keywordLists[5];
-	WordList& word2 = *keywordLists[6];
-	WordList& word3 = *keywordLists[7];
-	WordList& word4 = *keywordLists[8];
-	WordList& word5 = *keywordLists[9];
-	WordList& word6 = *keywordLists[10];
+	WordList &word1 = *keywordLists[5];
+	WordList &word2 = *keywordLists[6];
+	WordList &word3 = *keywordLists[7];
+	WordList &word4 = *keywordLists[8];
+	WordList &word5 = *keywordLists[9];
+	WordList &word6 = *keywordLists[10];
 	//!-end-[ForthImprovement]
 #endif // RB_FRIM
 
