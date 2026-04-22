@@ -4822,3 +4822,15 @@ SciteUserHome \n directory in which the User Options file is found
 SciteDirectoryHome \n directory in which the Directory Options file is found
 APIPath \n full path of the current api file
 AbbrevPath \n full path of the current abbrev file
+
+#$menu=:context_menu
+menu:count
+menu:command_id
+menu:check_item
+menu:enable_item
+menu:modify_item
+menu:set_icon
+menu:insert_item
+menu:remove_item
+menu:insert_submenu
+menu:get_submenu

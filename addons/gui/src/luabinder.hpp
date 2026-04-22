@@ -4,10 +4,6 @@
 //  http://lua-users.org/lists/lua-l/2013-06/msg00492.html
 ///////////////////////////////////////////////////////////
 
-#include <vector>
-#include <string>
-#include "lua.hpp"
-
 int lookup(lua_State* L);
 
 template<class T>
@@ -16,6 +12,7 @@ class LuaBinder
 	static const luaL_Reg metamethods[];
 	static const luaL_Reg methods[];
 	static std::vector<std::string> inherits;
+
 public:
 	void createClass(lua_State* L)
 	{
@@ -67,20 +64,12 @@ template<class T>
 std::vector<std::string> LuaBinder<T>::inherits{};
 //////////////////////////////////////////////////////
 
-//template<class T>
-//inline void lua_push_newobject(lua_State* L, T* pObj)
-//{
-//	T** data = reinterpret_cast<T**>(lua_newuserdata(L, sizeof(T*)));
-//	*data = pObj;
-//	luaL_getmetatable(L, T::classname());
-//	lua_setmetatable(L, -2);
-//}
-
 template<class T, typename... Args>
 inline void lua_push_newobject(lua_State* L, Args... args)
 {
 	T** data = reinterpret_cast<T**>(lua_newuserdata(L, sizeof(T*))); // alloc memory for poiner to object T
 	*data = new T(args...);
+	//new (*data) T(args...);
 	luaL_getmetatable(L, T::classname());
 	lua_setmetatable(L, -2);
 }
@@ -88,7 +77,6 @@ inline void lua_push_newobject(lua_State* L, Args... args)
 template<class T>
 inline T* check_udata(lua_State* L, int n = 1)
 {
-	//T** obj = reinterpret_cast<T**>(lua_touserdata(L, n));
 	T** obj = reinterpret_cast<T**>(luaL_checkudata(L, n, T::classname()));
 	return obj ? *obj : nullptr;
 }

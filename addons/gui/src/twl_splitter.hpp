@@ -1,5 +1,4 @@
 #pragma once
-#include "twl.h"
 
 class TSplitterB : public TEventWindow
 {

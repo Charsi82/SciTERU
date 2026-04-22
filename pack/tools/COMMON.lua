@@ -368,15 +368,6 @@ AddEventHandler("OnMenuCommand", function(msg, source)
 	end
 end)
 
-function LSTBC()
-	local links = {}
-	local text = shell.getclipboardtext()
-	for s in text:gmatch("[0-9A-Z]+") do table.insert(links, "https://lesta.ru/shop/redeem/?bonus_mode=" .. s) end
-	local text = table.concat(links, "\n")
-	print(text)
-	editor:CopyText(text)
-end
-
 function run_script(path)
 	local secs = tonumber(props['lua.runtime.quota']) or 0
 	if secs > 0 then
@@ -397,3 +388,48 @@ end
 function PathCollapse(s) return (s:gsub(props['SciteDefaultHome'], "$SciteDefaultHome", 1)) end
 
 function PathExpand(s) return (s:gsub("$SciteDefaultHome", props['SciteDefaultHome'], 1)) end
+
+
+local function orderedPairs(t)
+	if type(t) ~= "table" then return function() end end
+    local len = #t
+	local index = 0
+    local keys = {}
+    for k in pairs(t) do keys[k] = true end
+	return function()
+		index = index + 1
+		if index <= len then keys[index] = nil return index, t[index] end
+        local next_key = next(keys)
+        if next_key then keys[next_key] = nil return next_key, t[next_key] end
+        return nil
+	end
+end
+
+function serializeTable(t, indent)
+	indent = indent or 0
+	local spacing = string.rep("  ", indent)
+	local result = {}
+
+	-- Проверяем, пустая ли таблица
+	if next(t) == nil then return "{}" end
+
+	table.insert(result, spacing .. "{\n")
+
+	for k, v in orderedPairs(t) do
+		table.insert(result, spacing .. "  [" .. tostring(k) .. "] = ")
+		if type(v) == "table" then
+			-- Если таблица пустая — выводим в строку
+			if next(v) == nil then
+				table.insert(result, "{}")
+			else
+				table.insert(result, "\n" .. serializeTable(v, indent + 1))
+			end
+		else
+			table.insert(result, type(v) == "string" and string.format("%q", v) or tostring(v))
+		end
+		table.insert(result, ",\n")
+	end
+
+	table.insert(result, spacing .. "}")
+	return table.concat(result)
+end

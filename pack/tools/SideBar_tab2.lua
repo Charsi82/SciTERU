@@ -88,6 +88,6 @@ return function(tabs, panel_width, colorback, colorfore)
 	AddEventHandler("OnSave", OnSwitch)
 	event('sb_tab_selected'):register(function(e, tab_id) if tab_id == 2 then OnSwitch() end end)
 	-------------------------
-	tabs:add_tab("Сокращения", tab2, 22) -- caption, wnd, icon_index
+	tabs:add_tab("Сокращения", tab2, props['ICO_READONLY']) -- caption, wnd, icon_index
 	return tab2
 end

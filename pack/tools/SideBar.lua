@@ -53,6 +53,14 @@ if #props['sidebar.posx']>0 and #props['sidebar.posy']>0 then
 	sb_window:position(tonumber(props['sidebar.posx']) or 0, tonumber(props['sidebar.posy']) or 0)
 end
 sb_window:on_move(function() props['sidebar.posx'], props['sidebar.posy'] = sb_window:position() end)
+
+if tonumber(props['sidebar.status.show']) == 1 then
+	sb_window:statusbar(110, -1)
+	sb_window:on_timer(function() sb_window:status_setpart(0, os.date(" %x %H:%M:%S")) end)
+	local sb_color = props['sidebar.status.color']
+	if sb_color:match("^#%x%x%x%x%x%x") then sb_window:status_bkcolor(sb_color) end
+end
+
 local sb_panel = gui.panel(panel_width)
 local base_panel = gui.panel(panel_width)
 
@@ -120,19 +128,23 @@ function SideBar_ShowHide()
 	end
 end
 
+local tabs_menu = nil
 local function ResetTabsMenu()
+	if not tabs_menu then
+		tabs_menu = tabs:context_menu {
+				'Переместить панель|MoveSideBarMove',
+			}
+		
+	end
 	if tonumber(props['sidebar.win']) == 1 then
-		tabs:context_menu{} -- clear menu for window mode
+		tabs_menu:enable_item(0, false)
 	else
-		if props['sidebar.position'] == 'left' then
-			tabs:context_menu {
-				'Панель справа|MoveSideBarRight',
-			}
-		else
-			tabs:context_menu {
-				'Панель слева|MoveSideBarLeft',
-			}
-		end
+		tabs_menu:enable_item(0, true)
+	end
+	if props['sidebar.position'] == 'right' then
+		tabs_menu:set_icon(0, 8)
+	else
+		tabs_menu:set_icon(0, 9)
 	end
 end
 
@@ -153,6 +165,7 @@ function SideBar_SwitchMode()
 			props['sidebar.win'] = 1
 			sb_panel:remove_child(base_panel)
 			sb_window:client(base_panel)
+			sb_window:size(base_panel:size())
 		end
 		props['sidebar.win'] = 1
 		if sb_shown then gui.set_panel() SideBar_Show() end
@@ -160,25 +173,43 @@ function SideBar_SwitchMode()
 	ResetTabsMenu()
 end
 
-function MoveSideBarLeft()
+function MoveSideBarMove()
 	if tonumber(props['sidebar.win']) ~= 1 then
+		if props['sidebar.position'] == 'right' then
 		props['sidebar.position'] = 'left'
 		sidebar_position = 'left'
 		gui.set_panel()
 		gui.set_panel(sb_panel, 'left')
 		ResetTabsMenu()
-	end
-end
-
-function MoveSideBarRight()
-	if tonumber(props['sidebar.win']) ~= 1 then
+	else
 		props['sidebar.position'] = 'right' 
 		sidebar_position = 'right'
 		gui.set_panel()
 		gui.set_panel(sb_panel, 'right')
 		ResetTabsMenu()
+		end
 	end
 end
+
+-- function MoveSideBarLeft()
+	-- if tonumber(props['sidebar.win']) ~= 1 then
+		-- props['sidebar.position'] = 'left'
+		-- sidebar_position = 'left'
+		-- gui.set_panel()
+		-- gui.set_panel(sb_panel, 'left')
+		-- ResetTabsMenu()
+	-- end
+-- end
+
+-- function MoveSideBarRight()
+	-- if tonumber(props['sidebar.win']) ~= 1 then
+		-- props['sidebar.position'] = 'right' 
+		-- sidebar_position = 'right'
+		-- gui.set_panel()
+		-- gui.set_panel(sb_panel, 'right')
+		-- ResetTabsMenu()
+	-- end
+-- end
 ------------------------------------------
 ResetTabsMenu()
 -- now show SideBar:

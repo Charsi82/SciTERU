@@ -9,7 +9,7 @@ for=for i = _start, _end, _step do\n\t|\nend\n
 fork=for k, v in pairs(|) do\n\t\nend\n
 fori=for k, v in ipairs(|) do\n\t\nend\n
 tabc=print(table.concat(|, ","))\n
-tabprint=print(table_to_string(|))\n
+printt=print(serializeTable(|))\n
 while=while x ~= 0 do\n\t\nend\n
 rep=repeat\n\t\nuntil x == 0\n
 tabf=for param, value in pairs(tbl) do\n\t|\nend\n

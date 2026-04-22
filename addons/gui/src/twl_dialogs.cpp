@@ -1,12 +1,13 @@
 // twl_dialogs.cpp
 
-#include "twl_utils.h"
 #include <shlobj.h>
 #include <algorithm>
+#include <string>
 
-bool run_ofd(HWND win, wchar_t* result, const std::wstring& caption, std::wstring filter, bool multi)
+#include "twl_utils.hpp"
+
+bool run_open_file_dialog(HWND win, wchar_t* result, const std::wstring& caption, std::wstring filter, bool multi)
 {
-	//std::wstring filter(fltr);
 	filter += L"||";
 	std::replace(filter.begin(), filter.end(), L'|', L'\0');
 	*result = 0;
@@ -22,7 +23,7 @@ bool run_ofd(HWND win, wchar_t* result, const std::wstring& caption, std::wstrin
 	return GetOpenFileName(&ofn);
 }
 
-bool run_colordlg(HWND win, COLORREF& cl)
+bool run_color_dlg(HWND win, COLORREF& cl)
 {
 	static COLORREF custom_colours[16]{};
 	CHOOSECOLOR m_choose_color{};
@@ -36,17 +37,17 @@ bool run_colordlg(HWND win, COLORREF& cl)
 	return true;
 }
 
-bool run_seldirdlg(HWND win, wchar_t* result, const wchar_t* descr, const wchar_t* initial_dir)
+bool run_selelect_dir_dialog(HWND win, wchar_t* result, const wchar_t* descr, const wchar_t* initial_dir)
 {
 	BROWSEINFO bi{};
 	bi.hwndOwner = win;
 	bi.lpszTitle = descr;
 	bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
 	bi.lpfn = [](HWND hwnd, UINT uMsg, LPARAM lParam, LPARAM lpData)
-	{
-		if (uMsg == BFFM_INITIALIZED) SendMessage(hwnd, BFFM_SETSELECTION, TRUE, lpData);
-		return 0;
-	};
+		{
+			if (uMsg == BFFM_INITIALIZED) SendMessage(hwnd, BFFM_SETSELECTION, TRUE, lpData);
+			return 0;
+		};
 	bi.lParam = (LPARAM)initial_dir;
 
 	LPITEMIDLIST pidl = SHBrowseForFolder(&bi);
@@ -122,4 +123,30 @@ std::wstring GetKnownFolder(int folder_id)
 		SHGetPathFromIDList(pidl, res.data());
 	}
 	return res;
+}
+
+DWORD shell_execute(const wchar_t* _command, const wchar_t* _args, const wchar_t* _curDir)
+{
+	SHELLEXECUTEINFO ShExecInfo{};
+	ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+	ShExecInfo.hwnd = NULL;
+	ShExecInfo.lpVerb = L"open";
+	ShExecInfo.lpFile = _command;
+	ShExecInfo.lpParameters = _args;
+	ShExecInfo.lpDirectory = _curDir;
+	ShExecInfo.nShow = SW_SHOWDEFAULT;
+	ShExecInfo.hInstApp = NULL;
+
+	ShellExecuteEx(&ShExecInfo);
+	if (!ShExecInfo.hProcess)
+	{
+		// throw exception
+		//throw GetLastErrorAsString(GetLastError());
+		return GetLastError();
+	}
+
+	WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
+	CloseHandle(ShExecInfo.hProcess);
+	return 0;
 }

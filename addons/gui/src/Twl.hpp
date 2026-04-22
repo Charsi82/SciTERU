@@ -5,13 +5,6 @@
 //////////////////////////////////
 
 #pragma once
-#include <windows.h>
-#include "windowsx.h"
-#include <memory>
-#include <list>
-#include "utf.h"
-#include "log.h"
-
 // int to void*
 #pragma warning (disable: 4312)
 // lua_integer to int
@@ -52,12 +45,12 @@ enum class Alignment { alNone, alTop, alBottom, alLeft, alRight, alClient };
 class TWin
 {
 public:
-	TWin(TEventWindow* parent, const wchar_t* winclss, const wchar_t* text, int id, DWORD style = 0);
+	TWin(TEventWindow* parent, const wchar_t* winclss, const wchar_t* text, DWORD style);
 	explicit TWin(HWND hwnd = NULL);
 	explicit TWin(TEventWindow* form);
-	void set(HWND hwnd);
-	//std::unique_ptr<TWin> create_child(const wchar_t* winclss, const wchar_t* text, int id, DWORD styleEx = 0);
 	virtual ~TWin();
+
+	void set(HWND hwnd);
 	virtual void update();
 	HWND handle() const { return m_hwnd; }
 	HWND parent_handle() const;
@@ -67,13 +60,15 @@ public:
 	int   width() const;
 	int   height() const;
 	virtual void set_text(const wchar_t* str);
-	void  get_text(std::wstring& str) const;
+	std::wstring get_text() const;
 	void  set_text(int id, const wchar_t* str) const;
-	void  get_text(int id, std::wstring& str);
+	std::wstring get_text(int id) const;
 	void  set_int(int id, int val) const;
 	int   get_int(int id) const;
 	int   get_ctrl_id() const;
-	std::unique_ptr<TWin> get_active_window();
+	//std::unique_ptr<TWin> get_active_window();
+	//std::unique_ptr<TWin> get_foreground_window();
+	//void  to_foreground() const;
 	int   get_id() const;
 	void  set_focus() const;
 	void  mouse_capture(bool do_grab) const;
@@ -83,7 +78,6 @@ public:
 	void  move(int x0, int y0) const;
 	void  map_points(Point* pt, int n, TWin* target_wnd = nullptr) const;
 	void  on_top() const;
-	void  to_foreground() const;
 	virtual void  show(int how = SW_SHOW);
 	virtual void  hide();
 	bool  visible() const;
@@ -95,19 +89,16 @@ public:
 	static int message(const wchar_t* msg, int type = 0);
 	Alignment align() const { return m_align; }
 	void align(Alignment a, int size = 0);
-	std::unique_ptr<TWin> get_foreground_window();
 	bool set_enable(bool state) const;
 	TEventWindow* get_parent_win() const { return m_form; };
 	void set_parent_win(TEventWindow* form) { m_form = form; };
 	void remove_transparent() const;
 	void set_transparent(int);
 
-protected:
-	HWND m_hwnd;
-	Alignment m_align;
-
 private:
 	TEventWindow* m_form;
+	HWND m_hwnd;
+	Alignment m_align;
 };
 
 ///// Wrapping up the Windows Device Context
@@ -121,7 +112,7 @@ public:
 	void set_twin(TWin* w) { m_twin = w; }
 	void get(TWin* pw = nullptr);
 	void release(TWin* pw = nullptr);
-	void kill() const;
+	void kill();
 
 	HGDIOBJ select(HGDIOBJ obj) const;
 	void select_stock(int val);
@@ -153,7 +144,7 @@ public:
 	void draw_focus_rect(const Rect& rt) const;
 	void draw_line(const Point& p1, const Point& p2) const;
 	void set_pixel(int x, int y, COLORREF clr) const;
-												
+
 private:
 	//Handle m_hdc, m_pen, m_font, m_brush;
 	HDC m_hdc;
@@ -166,17 +157,26 @@ enum class CursorType { RESTORE, ARROW, HOURGLASS, SIZE_VERT, SIZE_HORZ, CROSS, 
 
 class TEventWindow : public TWin
 {
-	bool m_do_resize;
 	POINT m_fixed_size;
-	std::unique_ptr<MessageHandler> m_dispatcher;
 	//Handle m_accel;
-	HMENU m_hpopup_menu;
 	//std::unique_ptr<TDC> m_dc;
-	bool m_child_messages;
 	DWORD m_style_extra;
+	int statusbar_id;
 	HCURSOR m_old_cursor;
 	ChildList m_children;
-	UINT statusbar_id;
+	bool m_do_resize;
+	bool m_child_messages;
+	std::unique_ptr<MessageHandler> m_dispatcher;
+
+protected:
+	HBRUSH m_bkgnd_brush;
+	HMENU m_hmenu;
+	HMENU m_hpopup_menu;
+	UINT_PTR m_timer;
+	DWORD m_style;
+	COLORREF m_bk_color;
+	TWin* m_client;
+	//HACCEL m_hACCEL;
 
 public:
 	enum
@@ -191,44 +191,45 @@ public:
 	virtual ~TEventWindow();
 
 	POINT fixed_size() const;
+	POINT get_cursor_position() const;
 	void enable_resize(bool do_resize, int w = 0, int h = 0);
 	bool cant_resize() const;
-	//TDC* get_dc();
-	std::unique_ptr<TDC> get_dc();
+	//std::unique_ptr<TDC> get_dc();
 	bool child_messages() const { return m_child_messages; }
 	void view_child_messages(bool yesno) { m_child_messages = yesno; }
 	virtual void client_resize(int cwidth, int cheight);
 	void set_statusbar(int parts, int* widths);
 	void set_statusbar_text(int part_id, const wchar_t* str);
+	void set_statusbar_bkcolor(COLORREF clr);
 	void set_tooltip(int id, const wchar_t* tiptext, const wchar_t* caption, bool balloon, bool close_btn, int icon);
 	void add(TWin* win);
 	void remove(TWin* win);
 	void set_client(TWin* cli);
 
 	void set_defaults();
-	void set_window();
+	//void set_window();
 	//void add_accelerator(Handle accel);
-	void set_icon(const wchar_t* file);
+	void set_icon(const wchar_t* file, int small_icon);
 	void set_icon_from_window(TWin* win);
 
 	bool check_notify(LPARAM lParam, int& ret);
 	void create_window(const wchar_t* caption, TWin* parent, bool is_child);
 	void create_timer(int msec);
 	void kill_timer();
-	void set_menu(const wchar_t* res);
+
 	void set_menu(HMENU menu);
 	void set_popup_menu(HMENU menu);
+
 	HMENU get_popup_menu() const;
-	void last_mouse_pos(int& x, int& y);
-	HMENU get_menu() { return m_hmenu; }
-	void check_menu(int id, bool check) const;
-	void add_handler(MessageHandler* m_hand);
+	HMENU get_main_menu();
 	MessageHandler* get_handler();
+
+	LRESULT run();
 	void quit(int retcode = 0);
 	int metrics(int ntype);
 	void cursor(CursorType curs);
-	LRESULT run();
-	HACCEL GetAcceleratorTable() { return m_hACCEL; }
+	UINT next_id() const;
+	//HACCEL GetAcceleratorTable() const { return m_hACCEL; }
 
 	//-----------Event Handling-------------------
 	  //virtual void show() {}
@@ -267,16 +268,11 @@ public:
 	virtual void destroy();
 	void show(int how = 0) override;
 
-	void set_background(float r, float g, float b); // how to spec. colour??
+	void set_background(COLORREF rgb); // how to spec. colour??
 	HBRUSH get_bkgnd_brush() const { return m_bkgnd_brush; }
-	COLORREF get_bk_color() const { return m_bk_color; }
+	COLORREF get_background() const;
+	LRESULT run_wndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-protected:
-	HBRUSH m_bkgnd_brush;
-	HMENU m_hmenu;
-	DWORD m_style;
-	UINT_PTR m_timer;
-	COLORREF m_bk_color;
-	TWin* m_client;
-	HACCEL m_hACCEL;
+private:
+	void set_icon_impl(HICON hIcon, int small_icon);
 };

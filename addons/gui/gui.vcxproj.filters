@@ -23,40 +23,40 @@
     <ClInclude Include="resource.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="src\log.h">
+    <ClInclude Include="src\log.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="src\luabinder.h">
+    <ClInclude Include="src\luabinder.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="src\Twl.h">
+    <ClInclude Include="src\Twl.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="src\twl_cntrls.h">
+    <ClInclude Include="src\twl_cntrls.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="src\twl_listview.h">
+    <ClInclude Include="src\twl_listview.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="src\twl_menu.h">
+    <ClInclude Include="src\twl_menu.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="src\twl_notify.h">
+    <ClInclude Include="src\twl_notify.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="src\twl_splitter.h">
+    <ClInclude Include="src\twl_splitter.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="src\twl_tab.h">
+    <ClInclude Include="src\twl_tab.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="src\twl_treeview.h">
+    <ClInclude Include="src\twl_treeview.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="src\twl_utils.h">
+    <ClInclude Include="src\twl_utils.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="src\twl_custom_paint.h">
+    <ClInclude Include="src\utf.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>
@@ -97,7 +97,7 @@
     <ClCompile Include="src\twl_tooltip.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\twl_utils.cpp">
+    <ClCompile Include="src\twl_tdc.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>

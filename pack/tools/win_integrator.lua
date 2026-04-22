@@ -16,21 +16,11 @@ do
 		return
 	end
 	hkey:close()
-	-- generator for controls IDs
-	local id = 0
-	function next_id()
-		id = id + 1
-		return id
-	end
 end
 
 -- win version
-local winold = true
-do
-	local f = io.popen("ver")
-	winold = (tonumber(f:read("a"):match("%d+")) or 6) < 10
-	f:close()
-end
+local winver = gui.run_cmd("ver") 
+local winold = (tonumber(winver:match("%d+")) or 6) < 10
 
 local function get_backup_key(mode)
 	-- local reg_backup = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\SciTE\\Script\\WinIntegrator'
@@ -100,16 +90,15 @@ local grbox3 = panel_3:add_groupbox(' Интеграция в Windows: ')
 grbox3:position(5, 5)
 grbox3:size(wnd_w - 30, 90)
 
-local RadioBtn1_ID = next_id()
 -- local RadioBtn1 = wnd:add_radiobutton("Английский", RadioBtn1_ID, true) -- caption, id, auto
-local RadioBtn1 = panel_lang:add_radiobutton("Английский", RadioBtn1_ID, true) -- caption, id, auto
+local RadioBtn1 = panel_lang:add_radiobutton("Английский", true) -- caption, id, auto
+local RadioBtn1_ID = RadioBtn1:get_ctrl_id()
 RadioBtn1:position(20, 20)
 callbacks[RadioBtn1_ID] = function() SetLang('eng') end
 local RadioBtn1_tt = panel_lang:add_tooltip(RadioBtn1_ID) -- CtrlID[, bBaloonStyle = false]
 
-local RadioBtn2_ID = next_id()
--- local RadioBtn2 = wnd:add_radiobutton("Русский", RadioBtn2_ID, true) -- caption, id, auto
-local RadioBtn2 = panel_lang:add_radiobutton("Русский", RadioBtn2_ID, true) -- caption, id, auto
+local RadioBtn2 = panel_lang:add_radiobutton("Русский", true) -- caption, id, auto
+local RadioBtn2_ID = RadioBtn2:get_ctrl_id()
 RadioBtn2:position(155, 20)
 callbacks[RadioBtn2_ID] = function() SetLang('ru') end
 local RadioBtn2_tt = panel_lang:add_tooltip(RadioBtn2_ID)
@@ -120,8 +109,8 @@ else
 	RadioBtn1:check(1)
 end
 
-local btnOK_ID = next_id()
-local btnOK = wnd:add_button(btnOK_ID, "OK")
+local btnOK = wnd:add_button("OK")
+local btnOK_ID = btnOK:get_ctrl_id()
 btnOK:position(155, 330)
 btnOK:size(70, 25)
 wnd:center_h(btnOK)
@@ -132,9 +121,9 @@ local label1 = panel_expl:add_label(0, "Связать файлы заданны
 label1:position(15, cb3_posy - 25)
 label1:size(200, 20)
 
-local ComboBox1_ID = next_id()
-local cbbox = panel_expl:add_combobox(ComboBox1_ID, 0 -- id, style
+local cbbox = panel_expl:add_combobox( 0 -- id, style
 + 0x0002 + 0x0040 + 0x0100)
+local ComboBox1_ID = cbbox:get_ctrl_id()
 -- wnd:add(cbbox, "none")
 cbbox:position(15, cb3_posy)
 cbbox:size(80, 20)
@@ -217,8 +206,8 @@ local function RemoveAssoc(ext)
 	hkey_ext:close()
 end
 
-local btnADD_ID = next_id()
-local btnADD = panel_expl:add_button(btnADD_ID, "+")
+local btnADD = panel_expl:add_button("+")
+local btnADD_ID = btnADD:get_ctrl_id()
 local btnADD_tt = panel_expl:add_tooltip(btnADD_ID)
 btnADD:position(110, cb3_posy)
 btnADD:size(20, 20)
@@ -231,8 +220,8 @@ callbacks[btnADD_ID] = function()
 	end
 end
 
-local btnDEL_ID = next_id()
-local btnDEL = panel_expl:add_button(btnDEL_ID, "-")
+local btnDEL = panel_expl:add_button("-")
+local btnDEL_ID = btnDEL:get_ctrl_id()
 local btnDEL_tt = panel_expl:add_tooltip(btnDEL_ID)
 btnDEL:position(140, cb3_posy)
 btnDEL:size(20, 20)
@@ -246,8 +235,8 @@ callbacks[btnDEL_ID] = function()
 	end
 end
 
-local ResetBtn_ID = next_id()
-local btn_reset = panel_expl:add_button(ResetBtn_ID, "Default")
+local btn_reset = panel_expl:add_button("Default")
+local ResetBtn_ID = btn_reset:get_ctrl_id()
 local ResetBtn_tt = panel_expl:add_tooltip(ResetBtn_ID)
 btn_reset:position(170, cb3_posy)
 btn_reset:size(90, 20)
@@ -268,8 +257,8 @@ callbacks[ResetBtn_ID] = function()
 	end
 end
 
-local ResetBtnW10_ID = next_id()
-local btn_param = panel_expl:add_button(ResetBtnW10_ID, "Параметры")
+local btn_param = panel_expl:add_button("Параметры")
+local ResetBtnW10_ID = btn_param:get_ctrl_id()
 btn_param:position(270, cb3_posy)
 btn_param:size(90, 20)
 callbacks[ResetBtnW10_ID] = function()
@@ -303,8 +292,8 @@ local function UnsetSession()
 	end
 end
 
-local CheckBox2_ID = next_id()
 local CheckBox2 = panel_expl:add_checkbox('Открывать файлы *.session как файлы сессий SciTE', CheckBox2_ID)
+local CheckBox2_ID = CheckBox2:get_ctrl_id()
 local CheckBox2_tt = panel_expl:add_tooltip(CheckBox2_ID)
 CheckBox2:position(15, cb3_posy + 30)
 CheckBox2:size(300, 20)
@@ -320,8 +309,8 @@ end
 local hkey = winreg.openkey("HKCR\\.session")
 if hkey and hkey:getvalue("") == "SciTE.Session" then CheckBox2:check(1) end
 
-local CheckBox3_ID = next_id()
 local CheckBox3 = panel_expl:add_checkbox('Добавить SciTE в контекстное меню "Отправить"', CheckBox3_ID)
+local CheckBox3_ID = CheckBox3:get_ctrl_id()
 local CheckBox3_tt = panel_expl:add_tooltip(CheckBox3_ID)
 CheckBox3:position(15, cb3_posy + 60)
 CheckBox3:size(300, 20)
@@ -355,8 +344,8 @@ remove_link()
 if link_exit then create_link() end
 CheckBox3:check(link_exit and 1 or 0)
 
-local CheckBox4_ID = next_id()
 local CheckBox4 = panel_expl:add_checkbox("Установить SciTE в качестве дефолтового HTML редактора", CheckBox4_ID)
+local CheckBox4_ID = CheckBox4:get_ctrl_id()
 local CheckBox4_tt = panel_expl:add_tooltip(CheckBox4_ID)
 CheckBox4:position(15, cb3_posy + 90)
 CheckBox4:size(350, 20)
@@ -388,9 +377,9 @@ local label2 = panel_3:add_label(0, "Установить SciTE.Helper (COM-се
 label2:position(15, 25)
 
 -- register Helper
-local RegSrvBtn_ID = next_id()
 local regbtns_posy = 50
-local RegSrvBtn = panel_3:add_button(RegSrvBtn_ID, "Зарегистрировать")
+local RegSrvBtn = panel_3:add_button("Зарегистрировать")
+local RegSrvBtn_ID = RegSrvBtn:get_ctrl_id()
 RegSrvBtn:position(50, regbtns_posy)
 RegSrvBtn:size(110, 30)
 callbacks[RegSrvBtn_ID] = function()
@@ -401,15 +390,15 @@ callbacks[RegSrvBtn_ID] = function()
 end
 
 -- unregister Helper
-local UnRegSrvBtn_ID = next_id()
-local UnRegSrvBtn = panel_3:add_button(UnRegSrvBtn_ID, "Удалить")
+local UnRegSrvBtn = panel_3:add_button("Удалить")
+local UnRegSrvBtn_ID = UnRegSrvBtn:get_ctrl_id()
 UnRegSrvBtn:position(210, regbtns_posy)
 UnRegSrvBtn:size(110, 30)
 callbacks[UnRegSrvBtn_ID] = function()
 	local cmd = string.format('regsvr32 /u /s "%s%s"', props['SciteDefaultHome']:from_utf8(0), "\\tools\\Helper\\SciTE.dll")
 	local isOK = os.execute(cmd)
 	local lng = current_lng == "ru"
-	set_status(isOK and (lng and "Отмена регистрация успешна завершена" or "Unregisteration success") or (lng and "Ошибка отмены регистрации" or "Unregisteration failed"))
+	set_status(isOK and (lng and "Отмена регистрации успешна завершена" or "Unregisteration success") or (lng and "Ошибка отмены регистрации" or "Unregisteration failed"))
 end
 
 wnd:on_focus(function(focus)

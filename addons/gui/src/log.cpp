@@ -9,11 +9,11 @@ namespace
 	class Log
 	{
 		std::ofstream outf;
-		void add_time(const char* txt);
+		void output(const char* txt);
 
-	public:
 		Log();
 		~Log();
+	public:
 		static Log& Instance();
 		void add(const char* txt);
 	};
@@ -24,29 +24,28 @@ namespace
 		GetModuleFileNameA(NULL, path.data(), static_cast<DWORD>(path.size()));
 		path.erase(path.find_last_of("\\"));
 		outf.open(path.append("\\gui_log.txt"));
-		add_time("log started:");
+		output("log started:");
 	};
 
 	Log::~Log()
 	{
-		add_time("log closed:");
+		output("log closed:");
 		outf.close();
 	}
 
-	void Log::add_time(const char* txt)
+	void Log::output(const char* txt)
 	{
 		SYSTEMTIME currentTime{};
 		GetLocalTime(&currentTime);
-		const std::string tmp = std::format("{} {:02d}:{:02d}:{:02d} {:02d}.{:02d}.{} \n", txt,
+		const std::string tmp = std::format("[{:02d}:{:02d}:{:02d} {:02d}.{:02d}.{}] {}",
 			currentTime.wHour, currentTime.wMinute, currentTime.wSecond,
-			currentTime.wDay, currentTime.wMonth, currentTime.wYear);
-		outf << tmp << std::flush;
+			currentTime.wDay, currentTime.wMonth, currentTime.wYear, txt);
+		outf << tmp << std::endl;
 	}
 
 	void Log::add(const char* txt)
 	{
-		outf << txt << std::endl;
-		outf.flush();
+		output(txt);
 	}
 
 	Log& Log::Instance()

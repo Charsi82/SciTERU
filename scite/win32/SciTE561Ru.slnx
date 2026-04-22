@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="SciTE.vcxproj" Id="5641ea06-a73c-4297-b287-48b40850c708" />
+</Solution>

@@ -228,7 +228,7 @@ end]]
 		if colorback then tree:tree_set_colour(colorfore, colorback) end
 		-- tab4:add(tree, "none")
 		tree:position(550, 5)
-		tree:size(170, 370)
+		tree:size(170, 378)
 		-- local itm1 = tree:add_item("item1", nil, 1) -- ("caption" [, parent_item = root][, icon_idx=-1][, sel_icon_idx=-1][, data=nil])
 		--[[tree:add_item("item2", itm1, 1)
 tree:add_item("item3")
@@ -242,7 +242,7 @@ local itm7 = tree:add_item("item7", itm6,0)]]
 		--[[tree:add_item("qwerty", nil, 1)
 tree:add_item("qwerty2", nil, 1)
 tree:add_item("qwerty3", nil, 1)]]
-
+		tree:on_tip(function(item) return 'tip for '..tree:tree_get_item_text(item) end)
 		local imgcnt = tree:set_iconlib([[toolbar\cool.dll]]) -- path [, small_size = true] return count of loaded icons
 		-- local imgcnt = tree:set_iconlib([[%windir%\system32\shell32.dll]] )
 		local lib1_itm = tree:add_item("cool icons", nil, 16)
@@ -264,7 +264,7 @@ tree:add_item("qwerty3", nil, 1)]]
 			label_text:set_text('db click tree:' .. tostring(data))
 			label_icon:set_icon([[toolbar\cool.dll]], data)
 		end)
-		tab4:set_tiptext(tree:get_ctrl_id(), 'tips tree')
+		--tab4:set_tiptext(tree:get_ctrl_id(), 'tips tree')
 		-- tree:tree_set_editable(true)
 		function tree_test_menu() label_text:set_text('menu for tree ' .. (tree:get_ctrl_id() or '[none]') .. ' clicked') end -- ok
 
@@ -273,8 +273,8 @@ tree:add_item("qwerty3", nil, 1)]]
 	-------------------
 	-- listbox
 	-- local listbox1 = nil
-	local ListBoxID = 77
-	local listbox = tab4:add_listbox(ListBoxID)
+	local listbox = tab4:add_listbox(false) -- isSorted
+	local ListBoxID = listbox:get_ctrl_id()
 	do
 		listbox:position(730, 5)
 		listbox:size(75, 145)
@@ -306,8 +306,8 @@ tree:add_item("qwerty3", nil, 1)]]
 	end
 	-------------------
 	local trbar1
-	local Button1_ID = 11
-	local btn = tab4:add_button(Button1_ID, "btn1")
+	local btn = tab4:add_button("btn1")
+	local Button1_ID = btn:get_ctrl_id()
 	btn:position(290, 260)
 	btn:size(40, 30)
 	callbacks[Button1_ID] = function(state)
@@ -315,10 +315,10 @@ tree:add_item("qwerty3", nil, 1)]]
 		trbar1:selection(30, 60)
 	end
 
-	local Button2_ID = 12
-	local btn2 = tab4:add_button(Button2_ID, "btn2")
+	local btn2 = tab4:add_button("btn2")
+	local Button2_ID = btn2:get_ctrl_id()
 	-- tab4:add(btn2, "none")
-	btn2:position(290 + 5 + btn:size(), 260)
+	btn2:position(290 + 10 + btn:size(), 260)
 	btn2:size(40, 30)
 	tab4:set_tiptext(Button2_ID, "кнопка с текстом")
 	callbacks[Button2_ID] = function(state)
@@ -326,42 +326,55 @@ tree:add_item("qwerty3", nil, 1)]]
 		trbar1:sel_clear()
 	end
 
-	local Button9_ID = 99
-	local btn9 = tab4:add_button(Button9_ID, "btn9")
+	local btn9 = tab4:add_button("btn9")
+	local Button9_ID = btn9:get_ctrl_id()
 	-- tab4:add(btn9, "none")
-	btn9:position(btn2:position() + 5 + btn2:size(), 260)
+	btn9:position(btn2:position() + 10 + btn2:size(), 260)
 	btn9:size(40, 30)
 	btn9:set_icon([[toolbar\cool.dll]], 59)
 	tab4:set_tiptext(Button9_ID, "кнопка с иконкой", '', true, true)
 
-	local Checkbox1_ID = 33
-	local chbox = tab4:add_checkbox("checkbox", Checkbox1_ID, false) -- caption, id, treestate
+	local chbox = tab4:add_checkbox("checkbox ", false) -- caption, id, treestate
+	local Checkbox1_ID = chbox:get_ctrl_id()
 
-	chbox:position(btn9:position() + 25 + btn9:size(), 260)
+	chbox:position(btn9:position() + 10 + btn9:size(), 258)
 	callbacks[Checkbox1_ID] = function(state) label_text:set_text('checkbox state:' .. (chbox:check())) end
 	chbox:check(1)
 
-	local Checkbox2_ID = 34
-	local chbox3 = tab4:add_checkbox("threestate", Checkbox2_ID, true) -- caption, id, treestate
-	chbox3:position(chbox:position(), 275)
-	callbacks[Checkbox2_ID] = function(state) label_text:set_text('check3box:' .. chbox3:check()) end
-	tab4:set_tiptext(Checkbox2_ID, "checkbox 3-state")
+	local chbox3 = tab4:add_checkbox("threestate", true) -- caption, id, treestate
+	local Checkbox3_ID = chbox3:get_ctrl_id()
+	chbox3:position(chbox:position(), 278)
+	callbacks[Checkbox3_ID] = function(state) label_text:set_text('check3box:' .. chbox3:check()) end
+	tab4:set_tiptext(Checkbox3_ID, "checkbox 3-state")
 
 	callbacks[Button9_ID] = function(state)
 		local sel_item = tree:tree_get_item_selected()
 		if sel_item then tree:tree_remove_item(sel_item) end
 	end
-
-	local RadioBtn1_ID = 44
-	local rbtn = tab4:add_radiobutton("radio_1", RadioBtn1_ID, true) -- caption, id, auto
-	rbtn:position(290, 295)
+	
+	------ radio buttons ------
+	
+	local rbtn = tab4:add_radiobutton("radio_11") -- caption, id, stop
+	local RadioBtn1_ID = rbtn:get_ctrl_id()
+	rbtn:position(550, 390)
 	rbtn:check(1)
-	callbacks[RadioBtn1_ID] = function(state) label_text:set_text('radio_1_clicked') end
+	callbacks[RadioBtn1_ID] = function(state) label_text:set_text('radio_11_clicked') end
 
-	local RadioBtn2_ID = 55
-	local rbtn2 = tab4:add_radiobutton("radio_2", RadioBtn2_ID, true)
-	rbtn2:position(290 + 5 + rbtn:size(), 295)
-	callbacks[RadioBtn2_ID] = function(state) label_text:set_text('radio_2_clicked') end
+	local rbtn2 = tab4:add_radiobutton("radio_12", true) -- caption, id, stop
+	local RadioBtn2_ID = rbtn2:get_ctrl_id()
+	rbtn2:position(550 + 5 + rbtn:size(), 390)
+	callbacks[RadioBtn2_ID] = function(state) label_text:set_text('radio_12_clicked') end
+	
+	local rbtn = tab4:add_radiobutton("radio_21") -- caption, id, stop
+	local RadioBtn3_ID = rbtn:get_ctrl_id()
+	rbtn:position(550, 410)
+	callbacks[RadioBtn3_ID] = function(state) label_text:set_text('radio_21_clicked') end
+
+	local rbtn2 = tab4:add_radiobutton("radio_22", true) -- caption, id, stop
+	local RadioBtn4_ID = rbtn2:get_ctrl_id()
+	rbtn2:check(1)
+	rbtn2:position(550 + 5 + rbtn:size(), 410)
+	callbacks[RadioBtn4_ID] = function(state) label_text:set_text('radio_22_clicked') end
 
 	-- LABEL --
 	--[[
@@ -399,7 +412,8 @@ right  2
 	-- + 0x0000000E
 	, "StaticText")
 	label_text:position(290 + 5 + label_icon:size(), 155)
-	--------------------------
+	
+	------- TrackBar -------
 	--[[ trackbar style option
 #define TBS_AUTOTICKS           0x0001
 #define TBS_VERT                0x0002
@@ -416,9 +430,9 @@ right  2
 #define TBS_TOOLTIPS            0x0100
 #define TBS_REVERSED            0x0200
 ]]
-	local TrackBarID = 777
-	trbar1 = tab4:add_trackbar(0x20 + 0x200, TrackBarID) -- style, id
-	trbar1:position(290, 235)
+	trbar1 = tab4:add_trackbar(0x20 + 0x200) -- style
+	local TrackBarID = trbar1:get_ctrl_id()
+	trbar1:position(290, 230)
 	trbar1:size(250, 20)
 	-- trbar1:size(20, 250) -- vert
 	-- trbar1:range(20,80)
@@ -429,12 +443,11 @@ trbar1:selection(20,80) -- set selection
 trbar1:sel_clear() -- clear selection
 ]]
 	local prog
-	tab4:on_scroll(function(id, pos)
-		if id == TrackBarID then
-			label_text:set_text("scroll to: " .. pos)
-			prog:set_progress_pos(pos)
-		end
-	end)
+	local on_scroll_handler = {}
+	on_scroll_handler[TrackBarID] = function(pos)
+		label_text:set_text("scroll to: " .. pos)
+		prog:set_progress_pos(pos)
+	end
 
 	--[[
 #define CBS_SIMPLE            0x0001L
@@ -452,25 +465,25 @@ trbar1:sel_clear() -- clear selection
 #define CBS_LOWERCASE         0x4000L
 ]]
 	-----------------------------------
-	local cbbox = tab4:add_combobox(90, 0 -- id, style
+	local cbbox = tab4:add_combobox( 0 -- style simple
 	+ 0x0001 + 0x0040)
 	cbbox:position(290, 5)
 	cbbox:size(250, 85)
 	for i = 1, 10 do cbbox:cb_append("text1_" .. i) end
 	cbbox:cb_setcursel(1)
 	-----------------------------------
-	local cbbox = tab4:add_combobox(89, 0 -- id, style
+	local cbbox = tab4:add_combobox( 0 -- style dropdown
 	+ 0x0002 + 0x0040)
 	cbbox:position(290, 90)
 	cbbox:size(250, 20)
 	for i = 1, 10 do cbbox:cb_append("text2_" .. i) end
 	cbbox:cb_setcursel(2)
 	------------------------------------
-	local ComboBox_ID = 88
-	local cbbox = tab4:add_combobox(ComboBox_ID, 0 -- id, style
+	local cbbox = tab4:add_combobox( 0 -- style dropdownlist
 	+ 0x0003 + 0x0040)
+	local ComboBox_ID = cbbox:get_ctrl_id()
 	cbbox:position(290, 120)
-	cbbox:size(250, 10)
+	cbbox:size(250, 20)
 	for i = 1, 10 do cbbox:cb_append("text3_" .. i) end
 
 	-- cbbox:cb_items_h(15) -- ok
@@ -486,8 +499,8 @@ trbar1:sel_clear() -- clear selection
 		end
 	end
 
-	local Button3_ID = 133
-	local btn3 = tab4:add_button(Button3_ID, "Tree 'Explorer'")
+	local btn3 = tab4:add_button("Tree 'Explorer'")
+	local Button3_ID = btn3:get_ctrl_id()
 	btn3:position(290, 200)
 	btn3:size(80, 20)
 	tab4:set_tiptext(Button3_ID, "Задает тему для дерева")
@@ -499,8 +512,8 @@ trbar1:sel_clear() -- clear selection
 		btn3:set_text(tree_explorer and "Tree 'Normal'" or "Tree 'Explorer'")
 	end
 
-	local Button4_ID = 134
-	local btn4 = tab4:add_button(Button4_ID, "Tree Edit ON")
+	local btn4 = tab4:add_button("Tree Edit ON")
+	local Button4_ID = btn4:get_ctrl_id()
 	btn4:position(btn3:position() + 5 + btn3:size(), 200)
 	btn4:size(80, 20)
 	tab4:set_tiptext(Button4_ID, "Вкл\\откл. редактирование дерева")
@@ -546,21 +559,75 @@ trbar1:sel_clear() -- clear selection
 	-- prog:progress_set_bkcolor( "#00FF00" )-- don't work
 
 	-- btn for test 'go' method
-	local Button5_ID = 135
-	local btn5 = tab4:add_button(Button5_ID, "Progress GO")
+	local btn5 = tab4:add_button("Progress GO")
+	local Button5_ID = btn5:get_ctrl_id()
 	btn5:position(btn4:position() + 5 + btn4:size(), 200)
 	btn5:size(70, 20)
 	callbacks[Button5_ID] = function() prog:progress_go() end
 
-	--------------------------------------------
-
-	tab4:context_menu{"Скрыть панель|" .. (IDM_TOOLS + tonumber(props['CN_SIDEBAR']))} -- run IDM_TOOLS+140
-
+	------------- меню панели ----------------
+	local tab4_menu = tab4:context_menu{
+	"Скрыть панель|" .. (IDM_TOOLS + tonumber(props['CN_SIDEBAR'])), -- run IDM_TOOLS+140
+	'',
+	"enabled|print('enabled')",
+	"disabled|print('enabled')",
+	"checked|print('checked')",
+	"with icon|print('checked')",
+	}
+	tab4_menu:enable_item(3, false)
+	tab4_menu:check_item(4, true)
+	tab4_menu:set_icon(5, props['ICO_FULLSCREEN']) -- from cool.dll
+	
+	---------- background color ------------
+	local r,g,b = tab4:get_background()
+	local label_R = tab4:add_label(0, "R:")
+	label_R:position(290, 390)
+	local label_G = tab4:add_label(0, "G:")
+	label_G:position(290, 410)
+	local label_B = tab4:add_label(0, "B:")
+	label_B:position(290, 430)
+	
+	function set_bk_color()
+		-- print(r,g,b)
+		tab4:set_background(string.format('#%02X%02X%02X',r,g,b))
+		label_R:set_text(('R: %03d'):format(r))
+		label_G:set_text(('G: %03d'):format(g))
+		label_B:set_text(('B: %03d'):format(b))
+	end
+	
+	-- initial demo setting
+	r,g,b = 190,215,200
+	set_bk_color()
+	
+	local trbar_R = tab4:add_trackbar(0x20 + 0x200) -- style
+	local TrackBarR_ID = trbar_R:get_ctrl_id()
+	trbar_R:position(340, 390)
+	trbar_R:size(200, 16)
+	trbar_R:range(0,255)
+	trbar_R:set_pos(r)
+	on_scroll_handler[TrackBarR_ID] = function(pos) r = pos set_bk_color() end
+	
+	local trbar_R = tab4:add_trackbar(0x20 + 0x200) -- style
+	local TrackBarG_ID = trbar_R:get_ctrl_id()
+	trbar_R:position(340, 410)
+	trbar_R:size(200, 16)
+	trbar_R:range(0,255)
+	trbar_R:set_pos(g)
+	on_scroll_handler[TrackBarG_ID] = function(pos) g = pos set_bk_color() end
+	
+	local trbar_R = tab4:add_trackbar(0x20 + 0x200) -- style
+	local TrackBarB_ID = trbar_R:get_ctrl_id()
+	trbar_R:position(340, 430)
+	trbar_R:size(200, 16)
+	trbar_R:range(0,255)
+	trbar_R:set_pos(b)
+	on_scroll_handler[TrackBarB_ID] = function(pos) b = pos set_bk_color() end
+	
 	----- iconed_list -------
 	local iconed_list = tab4:add_list(false, false, false) -- singlesel, multiline, large_icons
 	iconed_list:set_iconlib()
-	iconed_list:position(290, 315)
-	iconed_list:size(220, 55)
+	iconed_list:position(290, 300)
+	iconed_list:size(250, 85)
 	for i = 1, 10 do iconed_list:add_item("iconed_list_item" .. i, nil, i * 2) end
 
 	--------- updown ---------
@@ -574,14 +641,14 @@ trbar1:sel_clear() -- clear selection
 #define UDS_NOTHOUSANDS         0x0080
 #define UDS_HOTTRACK            0x0100
 ]]
-	local style = 0 + 0x0004 + 0x0020 + 0x0080
+	local style = 0 --+ 0x0004 + 0x0020 + 0x0080
 	-- +0x0100
 	-- +0x0001
 
 	local updown = tab4:add_updown(editbox, style) -- buddy, style
-	updown:set_range(-50, 50)
+	updown:set_range(-10, 10)
 	updown:set_current(7)
-	updown:on_updown( function() label_text:set_text("updown value:" .. updown:get_current()) end )
+	updown:on_updown( function(pos, delta) label_text:set_text("updown value:" .. pos) end )
 	-------- groupbox ---------
 	local grbox = tab4:add_groupbox('Дата и время')
 	grbox:position(20, 10)
@@ -597,8 +664,8 @@ trbar1:sel_clear() -- clear selection
 
 	-------- positioner ---------
 
-	local Button6_ID = 136
-	local btn3 = tab4:add_button(Button6_ID, "-><-")
+	local btn3 = tab4:add_button("-><-")
+	local Button6_ID = btn3:get_ctrl_id()
 	btn3:position(20, 395)
 	btn3:size(45, 20)
 
@@ -665,8 +732,8 @@ trbar1:sel_clear() -- clear selection
 		return false
 	end)
 	---------------------------------  
-	local Button99_ID = 99
-	local btn99 = tab4:add_button(Button99_ID, "tip test")
+	local btn99 = tab4:add_button("tip test")
+	local Button99_ID = btn99:get_ctrl_id()
 	btn99:position(20, 420)
 	btn99:size(100, 25)
 	-- tab4:set_tiptext(Button99_ID , 'tips', "caption", false, true, 2)
@@ -684,8 +751,8 @@ trbar1:sel_clear() -- clear selection
 		-- print('set tips: ', txt)
 	end
 
-	local Button999_ID = 199
-	local btn999 = tab4:add_button(Button999_ID, "restart")
+	local btn999 = tab4:add_button("restart")
+	local Button999_ID = btn999:get_ctrl_id()
 	btn999:position(20, 455)
 	btn999:size(100, 25)
 	callbacks[Button999_ID] = function(state)
@@ -703,7 +770,6 @@ trbar1:sel_clear() -- clear selection
 	
 	---------------------------------
 	tab4:on_paint(function(a)
-		-- print('paint')
 		-- print(a.rectangle, a.draw_text)
 		--[[
         #define PS_SOLID            0
@@ -822,9 +888,14 @@ trbar1:sel_clear() -- clear selection
 			local y = math_random(th)
 			a:set_pixel(x,y)
 		end]]
--- TODO перерисовать сайдбар при переключении в плавающее окно
+
+	end)
+	
+	tab4:on_scroll(function(id, pos)
+		local h = on_scroll_handler[id]
+		if h then h(pos) end
 	end)
 	---------------------------------
-	tabs:add_tab("Test", tab4, 37)
+	tabs:add_tab("Test", tab4, props['ICO_SELECTTOBRACE'])
 	return tab4
 end

@@ -31,6 +31,6 @@ return function(tabs, panel_width, colorback, colorfore)
 		gui.pass_focus()
 	end)
 	-------------------------
-	tabs:add_tab("ASCII", tab3, 21) -- caption, wnd, icon_index
+	tabs:add_tab("ASCII", tab3, props['ICO_MONOFONT']) -- caption, wnd, icon_index
 	return tab3
 end

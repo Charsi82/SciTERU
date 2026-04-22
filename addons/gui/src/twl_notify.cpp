@@ -1,10 +1,21 @@
 // TNotifyWin implementation
-#include "twl_notify.h"
-#include "twl_tab.h"
-#include "twl_listview.h"
-#include "twl_treeview.h"
-#include <Uxtheme.h> // SetWindowTheme
+#include <Windows.h>
 #include <commctrl.h>
+#include <Uxtheme.h> // SetWindowTheme
+#include <Richedit.h> 
+#include <list> 
+#include <string>
+#include <vector>
+#include <memory>
+#include <algorithm>
+
+#include "twl.hpp"
+#include "twl_utils.hpp"
+#include "twl_notify.hpp"
+#include "twl_tab.hpp"
+#include "twl_listview.hpp"
+#include "twl_treeview.hpp"
+#include "utf.h"
 
 /////////////////////
 // utils
@@ -12,23 +23,23 @@ extern HINSTANCE hInst;
 
 namespace
 {
-	struct id_generator
-	{
-		static int next() { return _id++; }
-		static int _id;
-	};
+	//struct id_generator
+	//{
+	//	static int next() { return _id++; }
+	//	static int _id;
+	//};
 
-	int id_generator::_id{ 445560 };
+	//int id_generator::_id{ 445560 };
 
-	HWND create_common_control(TWin* form, const wchar_t* winclass, DWORD style, int height = -1)
+	HWND create_common_control(TEventWindow* form, const wchar_t* winclass, DWORD style, int height = -1, DWORD exStyle = 0)
 	{
 		int w = CW_USEDEFAULT, h = CW_USEDEFAULT;
 		if (height != -1) { w = 100; h = height; }
-		return CreateWindowEx(0L,				// No extended styles.
-			winclass, nullptr, WS_CHILD | style,
+		return CreateWindowEx(exStyle,
+			winclass, nullptr, WS_CHILD | WS_VISIBLE | style,
 			0, 0, w, h,
 			form->handle(),               // Parent window of the control.
-			reinterpret_cast<HMENU>(id_generator::next()),
+			reinterpret_cast<HMENU>(form->next_id()),
 			GetModuleHandle(NULL), //hInst,								// Current instance.
 			NULL);
 	}
@@ -41,12 +52,9 @@ namespace
 
 //////////////////////
 // TNotifyWin
-TNotifyWin::TNotifyWin(TEventWindow* form) :TWin(form), m_hpopup_menu(NULL)
-{}
-
-TNotifyWin::~TNotifyWin()
+TNotifyWin::TNotifyWin(TEventWindow* form) :TWin(form)
 {
-	DestroyMenu(m_hpopup_menu);
+	if (m_hpopup_menu) DestroyMenu(m_hpopup_menu);
 }
 
 void TNotifyWin::set_popup_menu(HMENU menu)
@@ -60,7 +68,7 @@ void TNotifyWin::show_popup()
 	{
 		POINT p;
 		GetCursorPos(&p);
-		HWND hwnd = static_cast<HWND>(get_parent_win()->handle());
+		HWND hwnd = get_parent_win()->handle();
 		TrackPopupMenu(m_hpopup_menu, TPM_LEFTALIGN | TPM_TOPALIGN, p.x, p.y, 0, hwnd, NULL);
 	}
 }
@@ -94,37 +102,24 @@ int TSysLink::handle_notify(void* p)
 
 ////////////////////////////////
 // TMemo
-TMemo::TMemo(TEventWindow* form, int id, bool do_scroll, bool plain) : TNotifyWin(form), m_pfmt(nullptr)
+TMemo::TMemo(TEventWindow* form, int id, bool do_scroll, bool plain) : TNotifyWin(form) //, m_pfmt(nullptr)
 {
 	DWORD style = WS_CHILD | WS_BORDER | ES_AUTOVSCROLL | ES_LEFT;
 	if (do_scroll) style |= WS_HSCROLL | WS_VSCROLL;
 	set(create_common_control(form, plain ? WC_EDIT : L"RICHEDIT", style));
-	if (!plain)
-	{
-		m_pfmt = new CHARFORMAT{};
-		m_pfmt->cbSize = sizeof(CHARFORMAT);
-		m_pfmt->dwMask = 0;
-		m_pfmt->dwEffects = 0;
-	}
 	send_msg(EM_SETEVENTMASK, 0, ENM_KEYEVENTS | ENM_MOUSEEVENTS);
-}
-
-TMemo::~TMemo()
-{
-	if (m_pfmt) delete m_pfmt;
-	m_pfmt = nullptr;
 }
 
 void TMemo::set_font(const wchar_t* facename, int size, int flags, bool selection)
 {
-	m_pfmt->dwMask = CFM_FACE | CFM_BOLD | CFM_ITALIC;
-	wcscpy_s(m_pfmt->szFaceName, facename);
-	m_pfmt->dwEffects = 0;
-	if (flags & BOLD) m_pfmt->dwEffects = CFE_BOLD;
-	if (flags & ITALIC) m_pfmt->dwEffects |= CFE_ITALIC;
-	send_char_format();
-	m_pfmt->dwMask = 0;
-	m_pfmt->dwEffects = 0;
+	enum { NORMAL, BOLD = 2, ITALIC = 4 };
+	CHARFORMAT cf{ sizeof(CHARFORMAT) };
+	cf.dwMask = CFM_FACE | CFM_BOLD | CFM_ITALIC;
+	wcscpy_s(cf.szFaceName, facename);
+	cf.dwEffects = 0;
+	if (flags & BOLD) cf.dwEffects = CFE_BOLD;
+	if (flags & ITALIC) cf.dwEffects |= CFE_ITALIC;
+	send_msg(EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
 	send_msg(EM_SETMARGINS, EC_LEFTMARGIN | EC_USEFONTINFO, 5);
 }
 
@@ -190,7 +185,6 @@ int TMemo::line_size(int line)
 
 int TMemo::get_line_text(int line, char* buff, int sz)
 {
-	//*(short*)(void*)buff = (short)sz;
 	size_t len = send_msg(EM_GETLINE, line, (LPARAM)buff);
 	buff[len] = '\0';
 	return len;
@@ -236,31 +230,30 @@ void TMemo::auto_url_detect(bool yn)
 	send_msg(EM_AUTOURLDETECT, (WPARAM)yn, 0);
 }
 
-void TMemo::send_char_format()
-{
-	send_msg(EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)m_pfmt);
-}
-
-void TMemo::find_char_format()
-{
-	send_msg(EM_GETCHARFORMAT, SCF_SELECTION, (LPARAM)m_pfmt);
-}
+//void TMemo::send_char_format()
+//{
+//	send_msg(EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)m_pfmt);
+//}
+//
+//void TMemo::find_char_format()
+//{
+//	send_msg(EM_GETCHARFORMAT, SCF_SELECTION, (LPARAM)m_pfmt);
+//}
 
 COLORREF TMemo::get_text_colour()
 {
-	m_pfmt->dwMask = CFM_COLOR;
-	find_char_format();
-	m_pfmt->dwMask = 0;
-	m_pfmt->dwEffects = 0;
-	return m_pfmt->crTextColor;
+	CHARFORMAT cf{ sizeof(CHARFORMAT) };
+	cf.dwMask = CFM_COLOR;
+	send_msg(EM_GETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
+	return cf.crTextColor;
 }
 
 void TMemo::set_text_colour(COLORREF colour)
 {
-	m_pfmt->dwMask = CFM_COLOR;
-	m_pfmt->crTextColor = colour;
-	send_char_format();
-	m_pfmt->dwMask ^= CFM_COLOR;
+	CHARFORMAT cf{ sizeof(CHARFORMAT) };
+	cf.dwMask = CFM_COLOR;
+	cf.crTextColor = colour;
+	send_msg(EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
 }
 
 void TMemo::set_background_colour(COLORREF colour)
@@ -340,8 +333,7 @@ int TMemo::handle_notify(void* p)
 TTabControl::TTabControl(TEventWindow* form) :TNotifyWin(form), m_index(0), m_last_selected_idx(0)
 {
 	// Create the tab control.
-	DWORD style = WS_CHILD;
-	set(create_common_control(form, WC_TABCONTROL, style, 25));
+	set(create_common_control(form, WC_TABCONTROL, 0, 25));
 	send_msg(WM_SETFONT, (WPARAM)::GetStockObject(DEFAULT_GUI_FONT), (LPARAM)TRUE);
 }
 
@@ -464,7 +456,7 @@ void TTabControl::set_image_list(bool bSmallIcon, HIMAGELIST hImageList)
 // TListView
 TListView::TListView(TEventWindow* form, bool multiple_columns, bool single_select, bool large_icons) :TNotifyWin(form)
 {
-	DWORD style = WS_CHILD | LVS_SHOWSELALWAYS;
+	DWORD style = LVS_SHOWSELALWAYS;
 	if (large_icons)
 	{
 		style |= LVS_ICON | LVS_AUTOARRANGE;
@@ -485,7 +477,7 @@ TListView::TListView(TEventWindow* form, bool multiple_columns, bool single_sele
 	m_last_row = -1;
 	m_bg = 0;
 	m_fg = 0;
-	send_msg(LVM_SETEXTENDEDLISTVIEWSTYLE, 0, LVS_EX_FULLROWSELECT); // Set style
+	send_msg(LVM_SETEXTENDEDLISTVIEWSTYLE, 0, LVS_EX_FULLROWSELECT | LVS_EX_INFOTIP); // Set extra style
 }
 
 void TListView::set_image_list(bool iconSize, HIMAGELIST hImageList)
@@ -502,7 +494,7 @@ void TListView::add_column(const wchar_t* label, int width)
 	lvc.pszText = const_cast<wchar_t*>(label);
 	lvc.iSubItem = m_last_col;
 
-	ListView_InsertColumn(m_hwnd, m_last_col, &lvc);
+	ListView_InsertColumn(handle(), m_last_col, &lvc);
 	m_last_col++;
 }
 
@@ -521,7 +513,7 @@ void TListView::set_background(COLORREF colour)
 
 void TListView::set_theme(bool explorer)
 {
-	set_explorer(m_hwnd, explorer);
+	set_explorer(handle(), explorer);
 }
 
 unsigned int TListView::columns() const
@@ -531,7 +523,7 @@ unsigned int TListView::columns() const
 
 void TListView::autosize_column(int col, bool by_contents)
 {
-	ListView_SetColumnWidth(m_hwnd, col, by_contents ? LVSCW_AUTOSIZE : LVSCW_AUTOSIZE_USEHEADER);
+	ListView_SetColumnWidth(handle(), col, by_contents ? LVSCW_AUTOSIZE : LVSCW_AUTOSIZE_USEHEADER);
 }
 
 void TListView::start_items()
@@ -559,7 +551,7 @@ int TListView::add_item_at(int i, const wchar_t* text, int idx, int data)
 	lvi.iItem = i;
 	lvi.iSubItem = 0;
 
-	ListView_InsertItem(m_hwnd, &lvi);
+	ListView_InsertItem(handle(), &lvi);
 	return i;
 }
 
@@ -571,29 +563,29 @@ int TListView::add_item(const wchar_t* text, int idx, int data)
 
 void TListView::add_subitem(int i, wchar_t* text, int idx)
 {
-	ListView_SetItemText(m_hwnd, i, idx, text);
+	ListView_SetItemText(handle(), i, idx, text);
 }
 
 void TListView::remove_item(int i)
 {
 	remove_item_impl(i);
-	ListView_DeleteItem(m_hwnd, i);
+	ListView_DeleteItem(handle(), i);
 }
 
 void TListView::select_item(int i)
 {
 	if (i != -1)
 	{
-		ListView_SetItemState(m_hwnd, i, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
-		ListView_EnsureVisible(m_hwnd, i, true);
+		ListView_SetItemState(handle(), i, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+		ListView_EnsureVisible(handle(), i, true);
 	}
 	else
-		ListView_SetItemState(m_hwnd, i, 0, LVIS_SELECTED | LVIS_FOCUSED);
+		ListView_SetItemState(handle(), i, 0, LVIS_SELECTED | LVIS_FOCUSED);
 }
 
 void TListView::get_item_text(int i, wchar_t* buff, int buffsize)
 {
-	ListView_GetItemText(m_hwnd, i, 0, buff, buffsize);
+	ListView_GetItemText(handle(), i, 0, buff, buffsize);
 }
 
 int TListView::get_item_data(int i)
@@ -602,7 +594,7 @@ int TListView::get_item_data(int i)
 	lvi.mask = LVIF_PARAM;
 	lvi.iItem = i;
 	lvi.iSubItem = 0;
-	ListView_GetItem(m_hwnd, &lvi);
+	ListView_GetItem(handle(), &lvi);
 	return lvi.lParam;
 }
 
@@ -650,6 +642,33 @@ static int list_custom_draw(void* lParam, COLORREF fg, COLORREF bg)
 	return 0;
 }
 
+namespace
+{
+	int GetListViewItemUnderCursor(HWND hListView)
+	{
+		POINT pt;
+		// 1. Get current screen cursor position
+		GetCursorPos(&pt);
+
+		// 2. Convert screen coordinates to ListView client coordinates
+		ScreenToClient(hListView, &pt);
+
+		// 3. Prepare the hit test structure
+		LVHITTESTINFO lvhti;
+		lvhti.pt = pt;
+
+		// Send LVM_HITTEST or use the ListView_HitTest macro
+		int index = (int)SendMessage(hListView, LVM_HITTEST, 0, (LPARAM)&lvhti);
+
+		// Optional: Check if the cursor is specifically over an item's label or icon
+		if (index != -1 && (lvhti.flags & (LVHT_ONITEMICON | LVHT_ONITEMLABEL))) {
+			return index;
+		}
+
+		return index;
+	}
+}
+
 int TListView::handle_notify(void* lparam)
 {
 	LPNMHDR np = reinterpret_cast<LPNMHDR>(lparam);
@@ -661,10 +680,26 @@ int TListView::handle_notify(void* lparam)
 		return 1;
 	}
 
+	case LVN_GETINFOTIP:
+	{
+		if (int focused_id = GetListViewItemUnderCursor(handle()); focused_id != -1)
+		{
+			std::wstring tmp(MAX_PATH, 0);
+			handle_ontip(focused_id, tmp);
+			if (size_t len = tmp.size())
+			{
+				if (len > MAX_PATH) tmp = tmp.erase(MAX_PATH - 1);
+				LPNMLVGETINFOTIP pGetInfoTip = reinterpret_cast<LPNMLVGETINFOTIP>(lparam);
+				wcscpy_s(pGetInfoTip->pszText, MAX_PATH, tmp.c_str());
+			}
+		}
+		break;
+	}
+
 	case NM_DBLCLK:
 	{
 		LPNMITEMACTIVATE lpnmitem = reinterpret_cast<LPNMITEMACTIVATE>(lparam);
-		LVHITTESTINFO pInfo;
+		LVHITTESTINFO pInfo{};
 		pInfo.pt = lpnmitem->ptAction;
 		ListView_SubItemHitTest(handle(), &pInfo);
 
@@ -1042,16 +1077,14 @@ int TTreeView::handle_notify(void* p)
 
 	case TVN_GETINFOTIP:
 	{
-		LPNMTVGETINFOTIP lpGetInfoTip = (LPNMTVGETINFOTIP)p;
-		static TCHAR tips[MAX_PATH]{};
-		size_t len = handle_ontip(lpGetInfoTip->hItem, tips);
-		if (!len)
+		LPNMTVGETINFOTIP lpGetInfoTip = reinterpret_cast<LPNMTVGETINFOTIP>(p);
+		std::wstring tmp(MAX_PATH, 0);
+		handle_ontip(lpGetInfoTip->hItem, tmp);
+		if (size_t len = tmp.size())
 		{
-			const std::wstring tip = get_item_text(lpGetInfoTip->hItem);
-			wcscpy_s(tips, MAX_PATH, tip.data());
+			if (len > MAX_PATH) tmp = tmp.erase(MAX_PATH - 1);
+			wcscpy_s(lpGetInfoTip->pszText, MAX_PATH, tmp.c_str());
 		}
-		lpGetInfoTip->pszText = tips;
-		lpGetInfoTip->cchTextMax = MAX_PATH;
 		break;
 	}
 
@@ -1077,9 +1110,13 @@ int TTreeView::handle_notify(void* p)
 // TUpDownControl
 TUpDownControl::TUpDownControl(TEventWindow* form, TWin* buddy, DWORD style) : TNotifyWin(form)
 {
-	HWND hUDN = CreateUpDownControl(WS_CHILD | WS_VISIBLE | UDS_SETBUDDYINT | style,
-		0, 0, 0, 0, form->handle(), -1 /*id*/, hInst, buddy->handle(), 10, -10, 5);
-	set(hUDN);
+	auto hUpDown = create_common_control(form, UPDOWN_CLASS, UDS_ALIGNRIGHT | UDS_ARROWKEYS | UDS_SETBUDDYINT | style);
+	set_range(100, 0);
+	set_current(10);
+	SendMessage(hUpDown, UDM_SETBUDDY, (WPARAM)buddy->handle(), 0);
+	//HWND hUpDown = CreateUpDownControl(WS_CHILD | WS_VISIBLE | UDS_ALIGNRIGHT | UDS_ARROWKEYS | UDS_SETBUDDYINT | style,
+		//0, 0, 0, 0, form->handle(), form->next_id(), hInst, buddy->handle(), 10, -10, 5);
+	set(hUpDown);
 }
 
 void TUpDownControl::set_range(int nUpper, int nLower)
@@ -1105,7 +1142,10 @@ int TUpDownControl::handle_notify(void* p)
 	case UDN_DELTAPOS:
 	{
 		LPNMUPDOWN pNMLink = reinterpret_cast<LPNMUPDOWN>(p);
-		ud_clicked(pNMLink->iDelta);
+		int  nUpper{}, nLower{};
+		send_msg(UDM_GETRANGE32, (WPARAM)&nLower, (LPARAM)&nUpper);
+		int pos = pNMLink->iPos + pNMLink->iDelta;
+		ud_clicked(std::clamp(pos, nLower, nUpper), pNMLink->iDelta);
 		break;
 	}
 	}

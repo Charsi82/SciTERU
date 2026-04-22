@@ -30,28 +30,14 @@ local function SaveSettings()
 	local file = props["scite.userhome"]..'\\SciTE.session'
 	if not pcall(io.input, file) then return end
 	text = io.read('*a')
-	SaveKey('toolbar.visible')
-	SaveKey('tabbar.visible')
-	SaveKey('statusbar.visible')
-	SaveKey('view.whitespace')
-	SaveKey('view.eol')
-	SaveKey('view.indentation.guides')
-	SaveKey('line.margin.visible')
-	SaveKey('split.vertical')
-	SaveKey('wrap')
-	SaveKey('output.wrap')
-	SaveKey('magnification') -- параметр изменяется в Zoom.lua
-	SaveKey('output.magnification') -- параметр изменяется в Zoom.lua
-	SaveKey('print.magnification') -- параметр изменяется в Zoom.lua
-	SaveKey('sidebar.show') -- параметр изменяется в SideBar.lua
-	SaveKey('sidebar.active.tab') -- параметр изменяется в SideBar.lua
-	SaveKey('sidebar.position') -- 'left' or 'right' if sidebar as panel
-	SaveKey('sidebar.win') -- panel or window mode
-	SaveKey('output.code.page')
-	SaveKey('sidebar.posx') -- X position sidebar in window mode
-	SaveKey('sidebar.posy') -- Y position sidebar in window mode
-	SaveKey('highlighting.identical.text') -- параметр изменяется в highlighting_identical_text.lua
-	SaveKey('font.set') -- индекс набора шрифтов в FontChanger.lua
+	
+	local ini_file = props["scite.userhome"]..'\\props_settings.ini'
+	local ini = gui.ini_file(ini_file)
+	ini:set_section('main')
+	local tbl_keys = ini:get_keys()
+	for _, key in ipairs(tbl_keys) do
+		SaveKey(key)
+	end
 	if pcall(io.output, file) then
 		io.write(text)
 	end

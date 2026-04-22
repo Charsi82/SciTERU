@@ -38,4 +38,5 @@ private:
 	virtual void handle_onfocus(bool yes) = 0;
 	virtual void clear_impl() = 0;
 	virtual void remove_item_impl(int i) = 0;
+	virtual void handle_ontip(int id, std::wstring& buffer) = 0;
 };

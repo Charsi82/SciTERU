@@ -1,19 +1,21 @@
 // TWL_INI.CPP
 /////////////////////
 
-//#include "Twl.h"
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-#include "luabinder.h"
-#include "utf.h"
 #include <cmath>
+#include <vector>
+#include <string>
+#include "lua.hpp"
+#include "luabinder.hpp"
+#include "utf.h"
 
 class IniFile
 {
 private:
-	static constexpr size_t BUFSZ = MAX_PATH;
-	wchar_t m_file[BUFSZ];
-	wchar_t m_section[BUFSZ];
+	//static constexpr size_t BUFSZ = MAX_PATH;
+	std::wstring m_path{};
+	std::wstring m_section{};
 
 public:
 	explicit IniFile(const wchar_t* file, bool in_cwd = false);
@@ -22,26 +24,28 @@ public:
 	void write_string(const wchar_t* key, const wchar_t* value) const;
 	void remove_section(const wchar_t* sect_to_remove) const;
 	void remove_key(const wchar_t* key) const;
-	const std::wstring get_keys(const wchar_t* key) const;
-	const std::wstring get_sections() const;
-	const std::wstring read_string(const wchar_t* key, const wchar_t* def = nullptr) const;
+	std::wstring get_keys(const wchar_t* key) const;
+	std::wstring get_sections() const;
+	std::wstring read_string(const wchar_t* key, const wchar_t* def = nullptr) const;
 	double read_number(const wchar_t* key, double def = 0.0) const;
-	const wchar_t* get_path() const;
+	std::wstring get_path() const;
 	const wchar_t* get_section() const;
 };
 
 IniFile::IniFile(const wchar_t* file, bool in_cwd)
 {
-	ZeroMemory(m_file, BUFSZ);
-	if (!in_cwd)
-		wcscpy_s(m_file, file);
+	if (in_cwd)
+	{
+		m_path.reserve(MAX_PATH);
+		GetModuleFileName(NULL, m_path.data(), MAX_PATH);
+		m_path.erase(m_path.find_last_of(L"\\"));
+		m_path += file;
+	}
 	else
 	{
-		size_t nLen = GetModuleFileName(NULL, m_file, BUFSZ);
-		while (nLen > 0 && m_file[nLen] != L'\\') m_file[nLen--] = 0;
-		wcscat_s(m_file, file);
+		m_path = file;
 	}
-	wcscpy_s(m_section, get_sections().c_str());
+	m_section = get_sections().c_str();
 }
 
 double IniFile::read_number(const wchar_t* key, double def) const
@@ -52,177 +56,179 @@ double IniFile::read_number(const wchar_t* key, double def) const
 
 void IniFile::set_section(const wchar_t* section)
 {
-	wcscpy_s(m_section, section);
+	m_section = section;
 }
 
 void IniFile::write_string(const wchar_t* key, const wchar_t* value) const
 {
-	WritePrivateProfileString(m_section, key, value, m_file);
+	WritePrivateProfileString(m_section.c_str(), key, value, m_path.c_str());
 }
 
 void IniFile::remove_section(const wchar_t* sect_to_remove) const
 {
 	if (sect_to_remove && *sect_to_remove)
-		WritePrivateProfileString(sect_to_remove, nullptr, nullptr, m_file);
+		WritePrivateProfileString(sect_to_remove, nullptr, nullptr, m_path.c_str());
 	else
-		WritePrivateProfileString(m_section, nullptr, nullptr, m_file);
+		WritePrivateProfileString(m_section.c_str(), nullptr, nullptr, m_path.c_str());
 }
 
 void IniFile::remove_key(const wchar_t* key) const
 {
-	WritePrivateProfileString(m_section, key, nullptr, m_file);
+	WritePrivateProfileString(m_section.c_str(), key, nullptr, m_path.c_str());
 }
 
-const std::wstring IniFile::get_keys(const wchar_t* key) const
+std::wstring IniFile::get_keys(const wchar_t* key) const
 {
 	const size_t buffsize = 1024;
 	std::wstring tmp(buffsize, 0);
-	GetPrivateProfileString(key, 0, 0, tmp.data(), buffsize, m_file);
+	GetPrivateProfileString(key, 0, 0, tmp.data(), buffsize, m_path.c_str());
 	return tmp;
 }
 
-const std::wstring IniFile::get_sections() const
+std::wstring IniFile::get_sections() const
 {
 	const size_t buffsize = 1024;
 	std::wstring tmp(buffsize, 0);
-	GetPrivateProfileSectionNames(tmp.data(), buffsize, m_file);
+	GetPrivateProfileSectionNames(tmp.data(), buffsize, m_path.c_str());
 	return tmp;
 }
 
-const std::wstring IniFile::read_string(const wchar_t* key, const wchar_t* def) const
+std::wstring IniFile::read_string(const wchar_t* key, const wchar_t* def) const
 {
 	const size_t buffsize = 1024;
 	std::wstring tmp(buffsize, 0);
-	GetPrivateProfileString(m_section, key, def, tmp.data(), buffsize, m_file);
+	GetPrivateProfileString(m_section.c_str(), key, def, tmp.data(), buffsize, m_path.c_str());
 	return tmp;
 }
 
-const wchar_t* IniFile::get_path() const
+std::wstring IniFile::get_path() const
 {
-	return m_file;
+	return { m_path };
 }
 
 const wchar_t* IniFile::get_section() const
 {
-	return m_section;
+	return m_section.c_str();
 }
 
 //////////////////////////////////
-
+namespace
+{
 #define check_inifile check_arg<IniFile>
 
-// ini:set_section(sect)
-int do_set_section(lua_State* L)
-{
-	IniFile* pini = check_inifile(L);
-	auto sect = StringFromUTF8(luaL_checkstring(L, 2));
-	pini->set_section(sect.c_str());
-	return 0;
-}
-
-// ini:write_string(key, val)
-int do_write_string(lua_State* L)
-{
-	IniFile* pini = check_inifile(L);
-	auto key = StringFromUTF8(luaL_checkstring(L, 2));
-	auto val = StringFromUTF8(lua_tostring(L, 3));
-	pini->write_string(key.c_str(), val.c_str());
-	return 0;
-}
-
-// ini:read_string(key[, def_value=""])
-int do_read_string(lua_State* L)
-{
-	IniFile* pini = check_inifile(L);
-	auto key = StringFromUTF8(luaL_checkstring(L, 2));
-	auto def = luaL_optstring(L, 3, "");
-	std::wstring str = pini->read_string(key.c_str());
-	lua_pushstring(L, str.size() ? UTF8FromString(str).c_str() : def);
-	return 1;
-}
-
-// ini:read_number(key[, def_value=0])
-int do_read_number(lua_State* L)
-{
-	IniFile* pini = check_inifile(L);
-	auto key = StringFromUTF8(luaL_checkstring(L, 2));
-	lua_Number def = luaL_optnumber(L, 3, 0.0);
-	lua_Number fpRes = pini->read_number(key.c_str(), def);
-	if(std::floor(fpRes) == fpRes)
-		lua_pushinteger(L, static_cast<lua_Integer>(fpRes));
-	else
-		lua_pushnumber(L, fpRes);
-	return 1;
-}
-
-// ini:remove_section([sect_to_remove=curr_section])
-int do_remove_section(lua_State* L)
-{
-	IniFile* pini = check_inifile(L);
-	auto sect_to_remove = StringFromUTF8(luaL_optstring(L, 2, nullptr));
-	pini->remove_section(sect_to_remove.c_str());
-	return 0;
-}
-
-// ini:remove_key()
-int do_remove_key(lua_State* L)
-{
-	IniFile* pini = check_inifile(L);
-	auto key = StringFromUTF8(luaL_checkstring(L, 2));
-	pini->remove_key(key.c_str());
-	return 0;
-}
-
-// ini:get_path()
-int do_get_path(lua_State* L)
-{
-	const IniFile* pini = check_inifile(L);
-	std::wstring str = pini->get_path();
-	lua_pushstring(L, str.size() ? UTF8FromString(str).c_str() : "");
-	return 1;
-}
-
-static void push_items(lua_State* L, const std::wstring& str)
-{
-	const wchar_t* pNextKey = str.data();
-	int idx = 0;
-	while (pNextKey && *pNextKey)
+	// ini:set_section(sect)
+	int do_set_section(lua_State* L)
 	{
-		const std::wstring tmp(pNextKey);
-		lua_pushinteger(L, ++idx);
-		lua_pushstring(L, UTF8FromString(tmp).c_str());
-		lua_settable(L, -3);
-		pNextKey += tmp.size() + 1;
+		IniFile* pini = check_inifile(L);
+		auto sect = StringFromUTF8(luaL_checkstring(L, 2));
+		pini->set_section(sect.c_str());
+		return 0;
 	}
-}
 
-// ini:get_keys()
-int do_get_keys(lua_State* L)
-{
-	IniFile* pini = check_inifile(L);
-	const char* key = luaL_optstring(L, 2, nullptr);
-	const std::wstring str = pini->get_keys(key ? StringFromUTF8(key).c_str() : pini->get_section());
-	lua_newtable(L);
-	push_items(L, str);
-	return 1;
-}
+	// ini:write_string(key, val)
+	int do_write_string(lua_State* L)
+	{
+		IniFile* pini = check_inifile(L);
+		auto key = StringFromUTF8(luaL_checkstring(L, 2));
+		auto val = StringFromUTF8(lua_tostring(L, 3));
+		pini->write_string(key.c_str(), val.c_str());
+		return 0;
+	}
 
-// ini:get_sections()
-int do_get_sections(lua_State* L)
-{
-	IniFile* pini = check_inifile(L);
-	const std::wstring str = pini->get_sections();
-	lua_newtable(L);
-	push_items(L, str);
-	return 1;
-}
+	// ini:read_string(key[, def_value=""])
+	int do_read_string(lua_State* L)
+	{
+		IniFile* pini = check_inifile(L);
+		auto key = StringFromUTF8(luaL_checkstring(L, 2));
+		auto def = luaL_optstring(L, 3, "");
+		std::wstring str = pini->read_string(key.c_str());
+		lua_pushstring(L, str.size() ? UTF8FromString(str).c_str() : def);
+		return 1;
+	}
 
-// ini:get_section()
-int do_get_section(lua_State* L)
-{
-	IniFile* pini = check_inifile(L);
-	lua_pushstring(L, UTF8FromString(pini->get_section()).c_str());
-	return 1;
+	// ini:read_number(key[, def_value=0])
+	int do_read_number(lua_State* L)
+	{
+		IniFile* pini = check_inifile(L);
+		auto key = StringFromUTF8(luaL_checkstring(L, 2));
+		lua_Number def = luaL_optnumber(L, 3, 0.0);
+		lua_Number fpRes = pini->read_number(key.c_str(), def);
+		if (std::floor(fpRes) == fpRes)
+			lua_pushinteger(L, static_cast<lua_Integer>(fpRes));
+		else
+			lua_pushnumber(L, fpRes);
+		return 1;
+	}
+
+	// ini:remove_section([sect_to_remove=curr_section])
+	int do_remove_section(lua_State* L)
+	{
+		IniFile* pini = check_inifile(L);
+		auto sect_to_remove = StringFromUTF8(luaL_optstring(L, 2, nullptr));
+		pini->remove_section(sect_to_remove.c_str());
+		return 0;
+	}
+
+	// ini:remove_key()
+	int do_remove_key(lua_State* L)
+	{
+		IniFile* pini = check_inifile(L);
+		auto key = StringFromUTF8(luaL_checkstring(L, 2));
+		pini->remove_key(key.c_str());
+		return 0;
+	}
+
+	// ini:get_path()
+	int do_get_path(lua_State* L)
+	{
+		const IniFile* pini = check_inifile(L);
+		std::wstring str = pini->get_path();
+		lua_pushstring(L, str.size() ? UTF8FromString(str).c_str() : "");
+		return 1;
+	}
+
+	void push_items(lua_State* L, const std::wstring& str)
+	{
+		const wchar_t* pNextKey = str.data();
+		int idx = 0;
+		while (pNextKey && *pNextKey)
+		{
+			const std::wstring tmp(pNextKey);
+			lua_pushinteger(L, ++idx);
+			lua_pushstring(L, UTF8FromString(tmp).c_str());
+			lua_settable(L, -3);
+			pNextKey += tmp.size() + 1;
+		}
+	}
+
+	// ini:get_keys()
+	int do_get_keys(lua_State* L)
+	{
+		IniFile* pini = check_inifile(L);
+		const char* key = luaL_optstring(L, 2, nullptr);
+		const std::wstring str = pini->get_keys(key ? StringFromUTF8(key).c_str() : pini->get_section());
+		lua_newtable(L);
+		push_items(L, str);
+		return 1;
+	}
+
+	// ini:get_sections()
+	int do_get_sections(lua_State* L)
+	{
+		IniFile* pini = check_inifile(L);
+		const std::wstring str = pini->get_sections();
+		lua_newtable(L);
+		push_items(L, str);
+		return 1;
+	}
+
+	// ini:get_section()
+	int do_get_section(lua_State* L)
+	{
+		IniFile* pini = check_inifile(L);
+		lua_pushstring(L, UTF8FromString(pini->get_section()).c_str());
+		return 1;
+	}
 }
 
 const luaL_Reg LuaBinder<IniFile>::metamethods[] =
@@ -256,7 +262,6 @@ int new_inifile(lua_State* L)
 {
 	auto path = StringFromUTF8(luaL_checkstring(L, 1));
 	bool in_cwd = lua_toboolean(L, 2);
-	//lua_push_newobject(L, new IniFile(StringFromUTF8(path).c_str(), in_cwd));
 	lua_push_newobject<IniFile>(L, path.c_str(), in_cwd);
 	return 1;
 }

@@ -19,14 +19,25 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\lpeg.cpp" />
+    <ClCompile Include="src\lpcap.c" />
+    <ClCompile Include="src\lpcode.c" />
+    <ClCompile Include="src\lpcset.c" />
+    <ClCompile Include="src\lpprint.c" />
+    <ClCompile Include="src\lptree.c" />
+    <ClCompile Include="src\lpvm.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\lpeg.h" />
+    <ClInclude Include="src\lpcap.h" />
+    <ClInclude Include="src\lpcode.h" />
+    <ClInclude Include="src\lpcset.h" />
+    <ClInclude Include="src\lpprint.h" />
+    <ClInclude Include="src\lptree.h" />
+    <ClInclude Include="src\lptypes.h" />
+    <ClInclude Include="src\lpvm.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\lua_static\lua_static.vcxproj">
-      <Project>{586c538d-3251-4f5d-85b7-2f4fcde3aaab}</Project>
+    <ProjectReference Include="..\lua_staticlib\lua_staticlib.vcxproj">
+      <Project>{a2b543c4-8966-422f-87e8-5fdb54a28098}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -154,7 +165,7 @@ copy "$(TargetPath)" "$(SolutionDir)../pack\tools\LuaLib\"</Command>
       <PreprocessorDefinitions>_DEBUG;LPEG_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>../lua_dll\src\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../lua_src/src</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -177,7 +188,7 @@ copy "$(TargetPath)" "$(SolutionDir)../pack\tools\LuaLib\"</Command>
       <PreprocessorDefinitions>NDEBUG;LPEG_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>../lua_dll\src\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../lua_src\src\</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>

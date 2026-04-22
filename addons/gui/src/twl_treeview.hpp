@@ -40,5 +40,5 @@ private:
 	virtual void handle_select(HANDLE) = 0;
 	virtual void handle_dbclick(HANDLE) = 0;
 	virtual void handle_onkey(int id) = 0;
-	virtual size_t handle_ontip(void* item, TCHAR* str) = 0;
+	virtual void handle_ontip(void* item, std::wstring& str) = 0;
 };

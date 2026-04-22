@@ -1,5 +1,12 @@
 // twl_splitter.cpp
-#include "twl_splitter.h"
+#include <Windows.h>
+#include <list> 
+#include <string>
+#include <vector>
+#include <memory>
+
+#include "twl.hpp"
+#include "twl_splitter.hpp"
 
 Point TSplitterB::m_start{};
 
@@ -125,7 +132,7 @@ void TSplitterB::draw_line()
 
 TSplitter::TSplitter(TEventWindow* parent, TWin* control)
 	: TSplitterB(parent, control)
-{ }
+{}
 
 void TSplitter::on_resize(const Rect& rt)
 {

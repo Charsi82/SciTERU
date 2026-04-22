@@ -27,9 +27,8 @@ if not res then
 	return
 end
 
-local s = io.popen(string.format("%s %q %s 2>%s", lf_path, cur_file, options, err_file))
-if s then
-
+local text = gui.run_cmd(string.format("chcp 1251>nul && %s %q %s 2>%s", lf_path, cur_file, options, err_file))
+if #text > 0 then
 	local function get_bookmarks()
 		local res = {}
 		local line = 0
@@ -42,30 +41,25 @@ if s then
 		return res
 	end
 
-	local text = s:read("a")
-	s:close()
-	if #text > 0 then
-		local bookmarks = get_bookmarks()
-		local line = editor:LineFromPosition(editor.CurrentPos)
-		editor:SelectAll()
-		editor:ReplaceSel(text) -- set restyled text
-		editor:GotoLine(line)
-		for k, v in pairs(bookmarks) do
-			-- 			print('reset bookmark', v.line)
-			if editor:MarkerGet(v.line, 2) // 2 % 2 ~= 1 then editor:MarkerAdd(v.line, 1) end
-		end
-		scite.MenuCommand(IDM_SAVE)
-		print("LuaFormatter success:", cur_file)
-	else
-		local errf = io.open(err_file)
-		if errf then
-			local content = errf:read("a")
-			if #content > 0 then print("LuaFormatter info:\n", content) end
-			errf:close()
-		end
+	local bookmarks = get_bookmarks()
+	local line = editor:LineFromPosition(editor.CurrentPos)
+	editor:SelectAll()
+	editor:ReplaceSel(text) -- set restyled text
+	editor:GotoLine(line)
+	for k, v in pairs(bookmarks) do
+		-- 			print('reset bookmark', v.line)
+		if editor:MarkerGet(v.line, 2) // 2 % 2 ~= 1 then editor:MarkerAdd(v.line, 1) end
 	end
+	scite.MenuCommand(IDM_SAVE)
+	print("LuaFormatter success:", cur_file)
 else
-	print("LuaFormatter: call popen failed")
+	print("LuaFormatter failed:")
+	local errf = io.open(err_file)
+	if errf then
+		local content = errf:read("a")
+		if #content > 0 then print(content) end
+		errf:close()
+	end
 end
 
 --[[

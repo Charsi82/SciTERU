@@ -78,11 +78,8 @@ std::string getAscii(unsigned char value)
 		return ("DEL");
 	default:
 	{
-		//char ascii[2]{value, '\0'};
-		//return std::string(ascii);
-		return std::string({ (char)value, '\0' });
+		return { (char)value };
 	}
-
 	}
 }
 

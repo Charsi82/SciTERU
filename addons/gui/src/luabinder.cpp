@@ -1,4 +1,4 @@
-#include "luabinder.h"
+#include "lua.hpp"
 
 int lookup(lua_State* L)
 {

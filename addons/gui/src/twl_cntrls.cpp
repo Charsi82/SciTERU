@@ -6,15 +6,65 @@
 
 #include <windows.h>
 #include <commctrl.h>
-#include "twl_cntrls.h"
+#include <tuple>
+#include <string>
+#include <list>
+#include <vector>
+#include <memory>
 
-extern HINSTANCE hInst;
+#include "twl.hpp"
+#include "twl_cntrls.hpp"
+#include "twl_utils.hpp"
+
+///////////////////////////////////
+namespace
+{
+	HICON load_icon(const wchar_t* file, int idx = 0, bool small_icon = true)
+	{
+		HICON hIcon = NULL;
+		ExtractIconEx(file, idx, small_icon ? NULL : (&hIcon), small_icon ? (&hIcon) : NULL, 1);
+		return hIcon;
+	}
+
+	HBITMAP load_bitmap(const wchar_t* file)
+	{
+		return (HBITMAP)LoadImage(NULL, file, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_LOADTRANSPARENT);
+	}
+}
+
+auto load_icons_from(const wchar_t* path, bool bSmallIcon)
+{
+	const int nIconsize = bSmallIcon ? 16 : 32;
+	auto hImageList = ImageList_Create(nIconsize, nIconsize, ILC_COLOR32 | ILC_MASK, 0, 32);
+	ImageList_SetBkColor(hImageList, CLR_NONE);
+	const int icon_cnt = ExtractIconEx(path, -1, NULL, NULL, 1);
+	if (!icon_cnt) return std::make_tuple(0, hImageList);
+	std::vector<HICON> hIcon(icon_cnt);
+	ExtractIconEx(path, 0, NULL, hIcon.data(), icon_cnt);
+	for (auto item : hIcon)
+	{
+		ImageList_AddIcon(hImageList, item);
+		DeleteObject(item);
+	}
+	return std::make_tuple(icon_cnt, hImageList);
+}
+
+int THasIconWin::load_icons(const wchar_t* path, bool bSmallIcon)
+{
+	auto [icons_loaded, hImageList] = load_icons_from(path, bSmallIcon);
+	if (icons_loaded)
+	{
+		set_image_list(bSmallIcon, hImageList);
+		_has_image = true;
+	}
+	return icons_loaded;
+}
 
 ///////////////////////////////////
 /// Windows controls - TControl ///
 
-TControl::TControl(TEventWindow* parent, const wchar_t* classname, const wchar_t* text, int id, DWORD style)
-	:TWin(parent, classname, text, id, style)//, m_text_color(CLR_NONE)
+TControl::TControl(TEventWindow* parent, const wchar_t* classname, const wchar_t* caption, DWORD style)
+	:TWin(parent, classname, caption, style)//, m_text_color(CLR_NONE)
 {
 	send_msg(WM_SETFONT, (WPARAM)::GetStockObject(DEFAULT_GUI_FONT), (LPARAM)TRUE);
 	//SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LPARAM)this);
@@ -27,21 +77,25 @@ void TControl::calc_size()
 
 void TControl::calc_size_imp()
 {
-	if (auto dc = get_parent_win()->get_dc())
-	{
-		std::wstring tmp;
-		get_text(tmp);
-		SIZE p = dc->get_text_extent(tmp.c_str());
-		resize(static_cast<int>(1.05 * p.cx), static_cast<int>(1.05 * p.cy));
-	}
+	//if (auto dc = get_parent_win()->get_dc())
+	//{
+	//	std::wstring tmp = get_text();
+	//	SIZE p = dc->get_text_extent(tmp.c_str());
+	//	resize(static_cast<int>(1.05 * p.cx), static_cast<int>(1.05 * p.cy));
+	//}
+	TDC dc(get_parent_win());
+	std::wstring tmp = get_text();
+	SIZE p = dc.get_text_extent(tmp.c_str());
+	resize(static_cast<int>(1.05 * p.cx), static_cast<int>(1.05 * p.cy));
 }
 
 //////////////////////////////
 // EditControl
-TEdit::TEdit(TEventWindow* parent, const wchar_t* text, int id, DWORD style)
-//-----------------------------------------------
-	: TControl(parent, WC_EDIT, text, id, style | WS_BORDER | ES_AUTOHSCROLL)
-{ }
+TEdit::TEdit(TEventWindow* parent, const wchar_t* caption, DWORD style)
+	: TControl(parent, WC_EDIT, caption, style | WS_BORDER | ES_AUTOHSCROLL)
+{
+	resize(50, 18);
+}
 
 void TEdit::set_selection(int start, int finish)
 {
@@ -50,15 +104,15 @@ void TEdit::set_selection(int start, int finish)
 
 //////////////////////////////
 // ProgressControl
-TProgressControl::TProgressControl(TEventWindow* parent, int id, bool vertical, bool hasborder, bool smooth, bool smoothrevers)
-	: TControl(parent, PROGRESS_CLASS, NULL, id,
+TProgressControl::TProgressControl(TEventWindow* parent, bool vertical, bool hasborder, bool smooth, bool smoothrevers)
+	: TControl(parent, PROGRESS_CLASS, NULL,
 		WS_TABSTOP |
 		(vertical ? PBS_VERTICAL : 0) |
 		(hasborder ? WS_BORDER : 0) |
 		(smooth ? PBS_SMOOTH : 0) |
 		(smoothrevers ? PBS_SMOOTHREVERSE : 0)
 	)
-{ }
+{}
 
 void TProgressControl::set_range(int from, int to)
 {
@@ -77,7 +131,7 @@ void TProgressControl::go()
 
 void TProgressControl::get_range(int& low, int& hi)
 {
-	PBRANGE rng;
+	PBRANGE rng{};
 	send_msg(PBM_GETRANGE, 1, (LPARAM)&rng);
 	hi = rng.iHigh;
 	low = rng.iLow;
@@ -90,9 +144,9 @@ void TProgressControl::set_pos(int to)
 
 //////////////////////////////
 // TComboBox
-TComboBox::TComboBox(TEventWindow* parent, int id, DWORD style)
-	: TControl(parent, WC_COMBOBOX, nullptr, id, style | WS_VSCROLL | WS_TABSTOP)
-{ }
+TComboBox::TComboBox(TEventWindow* parent, DWORD style)
+	: TControl(parent, WC_COMBOBOX, nullptr, style | WS_VSCROLL | WS_TABSTOP)
+{}
 
 void TComboBox::reset()
 {
@@ -159,8 +213,8 @@ int TComboBox::count()
 
 //////////////////////////////////
 // TButton
-TButtonBase::TButtonBase(TEventWindow* parent, const wchar_t* caption, int id, DWORD style)
-	: TControl(parent, L"button", caption, id, style)
+TButtonBase::TButtonBase(TEventWindow* parent, const wchar_t* caption, DWORD style)
+	: TControl(parent, L"button", caption, style)
 {
 	calc_size();
 }
@@ -189,35 +243,35 @@ int TButtonBase::check() const
 
 /////////////////////////////////////
 /// Button
-TButton::TButton(TEventWindow* parent, int id, const wchar_t* caption, ButtonStyle style)
-	:TButtonBase(parent, caption, id, static_cast<DWORD>(style))
-{ }
+TButton::TButton(TEventWindow* parent, const wchar_t* caption, bool defpushbutton)
+	:TButtonBase(parent, caption, defpushbutton ? BS_DEFPUSHBUTTON : BS_PUSHBUTTON)
+{}
 
 void TButton::calc_size_imp()
 {
-	std::wstring tmp;
-	get_text(tmp);
-	SIZE p = get_parent_win()->get_dc()->get_text_extent(tmp.c_str());
+	std::wstring tmp = get_text();
+	TDC dc(get_parent_win());
+	SIZE p = dc.get_text_extent(tmp.c_str());
 	resize(p.cx + 10, p.cy + 10);
 }
 
-void TButton::set_icon(const wchar_t* mod, int icon_id)
+void TButton::set_icon(const wchar_t* path, int icon_idx)
 {
-	DWORD style = GetWindowLongPtr((HWND)handle(), GWL_STYLE);
-	SetWindowLongPtr((HWND)handle(), GWL_STYLE, style | (DWORD)ButtonStyle::ICON);
-	if (HICON hIcon = load_icon(mod, icon_id, true))
+	if (HICON hIcon = load_icon(path, icon_idx))
 	{
+		DWORD style = GetWindowLongPtr(handle(), GWL_STYLE);
+		SetWindowLongPtr(handle(), GWL_STYLE, style | BS_ICON);
 		send_msg(BM_SETIMAGE, IMAGE_ICON, (LPARAM)hIcon);
 		DeleteObject(hIcon);
 	}
 }
 
-void TButton::set_bitmap(const wchar_t* file)
+void TButton::set_bitmap(const wchar_t* path)
 {
-	DWORD style = GetWindowLongPtr((HWND)handle(), GWL_STYLE);
-	SetWindowLongPtr((HWND)handle(), GWL_STYLE, style | (DWORD)ButtonStyle::ICON);
-	if (HBITMAP hBitmap = load_bitmap(file))
+	if (HBITMAP hBitmap = load_bitmap(path))
 	{
+		DWORD style = GetWindowLongPtr(handle(), GWL_STYLE);
+		SetWindowLongPtr(handle(), GWL_STYLE, style | BS_ICON);
 		send_msg(BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
 		DeleteObject(hBitmap);
 	}
@@ -225,8 +279,8 @@ void TButton::set_bitmap(const wchar_t* file)
 
 //////////////////////////////
 //  TCheckBox
-TCheckBox::TCheckBox(TEventWindow* parent, const wchar_t* caption, int id, bool is3state)
-	: TButtonBase(parent, caption, id, DWORD(is3state ? ButtonStyle::AUTO3STATE : ButtonStyle::AUTOCHECKBOX))
+TCheckBox::TCheckBox(TEventWindow* parent, const wchar_t* caption, bool is3state)
+	: TButtonBase(parent, caption, is3state ? BS_AUTO3STATE : BS_AUTOCHECKBOX)
 {
 	if (caption && *caption)
 		calc_size();
@@ -237,48 +291,53 @@ TCheckBox::TCheckBox(TEventWindow* parent, const wchar_t* caption, int id, bool 
 void TButtonBase::calc_size_imp()
 {
 	// If the parent was a TComboBox, then it won't have a DC ready...
-	if (auto dc = get_parent_win()->get_dc())
-	{
-		std::wstring tmp;
-		get_text(tmp);
-		SIZE p = dc->get_text_extent(tmp.c_str());
-		resize(static_cast<int>(1.05 * p.cx + 30), static_cast<int>(1.05 * p.cy));
-	}
+	//if (auto dc = get_parent_win()->get_dc())
+	//{
+	//	std::wstring tmp = get_text();
+	//	SIZE p = dc->get_text_extent(tmp.c_str());
+	//	resize(static_cast<int>(1.05 * p.cx + 30), static_cast<int>(1.05 * p.cy));
+	//}
+	TDC dc(get_parent_win());
+	std::wstring tmp = get_text();
+	SIZE p = dc.get_text_extent(tmp.c_str());
+	resize(static_cast<int>(1.05 * p.cx + 30), static_cast<int>(1.05 * p.cy));
 }
 
 //////////////////////////////
 //  TGroupBox
 TGroupBox::TGroupBox(TEventWindow* parent, const wchar_t* caption, DWORD text_align)
-	:TControl(parent, L"button", caption, -1, (DWORD)TButtonBase::ButtonStyle::GROUPBOX |
-		((text_align == 1) ? BS_CENTER : 0) + ((text_align == 2) ? BS_RIGHT : 0))
-{ }
+	:TControl(parent, L"button", caption, BS_GROUPBOX |
+		((text_align == 1) ? BS_CENTER : 0) | ((text_align == 2) ? BS_RIGHT : 0))
+{}
 
 //////////////////////////////
 //  TRadioButton
-TRadioButton::TRadioButton(TEventWindow* parent, const wchar_t* caption, int id, bool is_auto)
-	:TButtonBase(parent, caption, id, DWORD(is_auto ? ButtonStyle::AUTORADIOBUTTON : ButtonStyle::RADIOBUTTON))
+TRadioButton::TRadioButton(TEventWindow* parent, const wchar_t* caption, bool stop_group)
+	:TButtonBase(parent, caption, BS_AUTORADIOBUTTON | (stop_group ? WS_GROUP : 0))
 {
 	calc_size();
 }
 
 //////////////////////////////
 // Label
-TLabel::TLabel(TEventWindow* parent, DWORD style)
-	: TControl(parent, WC_STATIC, nullptr, -1, style)
-{ }
-
-void TLabel::set_icon(const wchar_t* file, int icon_idx)
+TLabel::TLabel(TEventWindow* parent, DWORD style, const wchar_t* caption)
+	: TControl(parent, WC_STATIC, NULL, style)
 {
-	if (HICON hIcon = load_icon(file, icon_idx))
+	set_text(caption);
+}
+
+void TLabel::set_icon(const wchar_t* path, int icon_idx)
+{
+	if (HICON hIcon = load_icon(path, icon_idx))
 	{
 		send_msg(STM_SETIMAGE, IMAGE_ICON, (LPARAM)hIcon);
 		DeleteObject(hIcon);
 	}
 }
 
-void TLabel::set_bitmap(const wchar_t* file)
+void TLabel::set_bitmap(const wchar_t* path)
 {
-	if (HBITMAP hBitmap = load_bitmap(file))
+	if (HBITMAP hBitmap = load_bitmap(path))
 	{
 		send_msg(STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
 		DeleteObject(hBitmap);
@@ -294,8 +353,8 @@ void TLabel::set_text(const wchar_t* caption)
 
 //////////////////////////////
 //  TListBox
-TListBox::TListBox(TEventWindow* parent, int id, bool is_sorted)
-	: TControl(parent, L"listbox", nullptr, id,
+TListBox::TListBox(TEventWindow* parent, bool is_sorted)
+	: TControl(parent, L"listbox", nullptr,
 		LBS_NOTIFY | WS_VSCROLL | WS_BORDER | (is_sorted ? LBS_SORT : 0))
 {}
 
@@ -365,8 +424,8 @@ size_t TListBox::get_textlen(int idx)
 
 //////////////////////////////////////////
 // TTrackBar
-TTrackBar::TTrackBar(TEventWindow* parent, DWORD style, int id)
-	: TControl(parent, TRACKBAR_CLASS, nullptr, id, TBS_AUTOTICKS | TBS_TOOLTIPS | style), m_redraw(true)
+TTrackBar::TTrackBar(TEventWindow* parent, DWORD style)
+	: TControl(parent, TRACKBAR_CLASS, nullptr, TBS_AUTOTICKS | TBS_TOOLTIPS | style), m_redraw(true)
 {}
 
 void TTrackBar::selection(int lMin, int lMax)

@@ -2,7 +2,9 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
-    <LUA_DIR>..\..\addons\lua_dll\</LUA_DIR>
+    <LUA_SRC>..\..\addons\lua_src\src\</LUA_SRC>
+    <LUA_LIB>..\..\addons\lua_static\Intermediate\bin\</LUA_LIB>
+    <LUA_LIB_MT>..\..\addons\lualib_mt\Intermediate\bin\</LUA_LIB_MT>
   </PropertyGroup>
   <PropertyGroup>
     <OutDir>../Intermediate\bin\</OutDir>
@@ -10,21 +12,27 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <Link>
-      <AdditionalDependencies>lua55.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(LUA_DIR)lua\Intermediate\bin\</AdditionalLibraryDirectories>
+      <AdditionalDependencies>lua5.5.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(LUA_LIB)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(TargetPath)" "$(SolutionDir)../../pack\"</Command>
     </PostBuildEvent>
     <ClCompile>
-      <AdditionalIncludeDirectories>$(LUA_DIR)src\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(LUA_SRC)</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <BuildMacro Include="LUA_DIR">
-      <Value>$(LUA_DIR)</Value>
+    <BuildMacro Include="LUA_SRC">
+      <Value>$(LUA_SRC)</Value>
+    </BuildMacro>
+    <BuildMacro Include="LUA_LIB">
+      <Value>$(LUA_LIB)</Value>
+    </BuildMacro>
+    <BuildMacro Include="LUA_LIB_MT">
+      <Value>$(LUA_LIB_MT)</Value>
     </BuildMacro>
   </ItemGroup>
 </Project>

@@ -1,18 +1,13 @@
 #pragma once
-#include "Twl.h"
-#include <richedit.h>
-#include "twl_utils.h"
 
 class TNotifyWin : public TWin
 {
-	HMENU m_hpopup_menu;
+	HMENU m_hpopup_menu{};
+
 public:
 	TNotifyWin(TEventWindow* form);
-	~TNotifyWin();
-	void set_popup_menu(HMENU menu);
 	virtual int handle_notify(void* p) = 0;
-
-protected:
+	void set_popup_menu(HMENU menu);
 	void show_popup();
 };
 
@@ -25,14 +20,10 @@ public:
 
 class TMemo : public TNotifyWin
 {
-	enum { NORMAL, BOLD = 2, ITALIC = 4 };
-protected:
-	CHARFORMAT* m_pfmt;
 public:
 	TMemo(TEventWindow* form, int id, bool do_scroll = false, bool plain = false);
 	TMemo(TMemo& rhs) = delete;
 	TMemo& operator=(TMemo& rhs) = delete;
-	~TMemo();
 	void cut();
 	void copy();
 	void clear();
@@ -58,8 +49,6 @@ public:
 
 	// Rich edit interface!
 	void auto_url_detect(bool yn);
-	void send_char_format();
-	void find_char_format();
 	COLORREF get_text_colour();
 	void set_text_colour(COLORREF colour);
 	void set_font(const wchar_t* facename, int size, int flags, bool selection = false);
@@ -71,6 +60,7 @@ public:
 	void set_line_colour(int line, COLORREF colour);
 	void set_background_colour(COLORREF colour);
 	int handle_notify(void* p) override;
+
 private:
 	virtual void handle_onkey(int id) = 0;
 };
@@ -84,5 +74,5 @@ public:
 	void set_current(int _pos);
 	int get_current();
 private:
-	virtual void ud_clicked(int delta) = 0;
+	virtual void ud_clicked(int pos, int delta) = 0;
 };

@@ -1,0 +1,21 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/iconlibs/">
+    <Project Path="iconlib/cool/cool.vcxproj" Id="c0d28c74-0b2d-4530-abda-dc27e6ed558c" />
+    <Project Path="iconlib/gnome/gnome.vcxproj" Id="1c44478c-cc8a-49c7-a656-28b90ca022b9" />
+  </Folder>
+  <Folder Name="/lua_libs/">
+    <Project Path="events/events.vcxproj" Id="9131c4e6-7cff-4b9d-a2dc-22bcf566eb41" />
+    <Project Path="gui/gui.vcxproj" Id="a18f9f66-ae21-4db9-a770-43b282ee758d" />
+    <Project Path="lfs/lfs.vcxproj" Id="0bc1c22a-c9ff-4856-af72-84f999815acf" />
+    <Project Path="lpeg/lpeg.vcxproj" Id="0a89cb70-cd42-402a-9881-d3aa22ceb642" />
+    <Project Path="shell/shell.vcxproj" Id="2bb4b133-8ce4-4558-bf89-213568f15260" />
+    <Project Path="utf/utf.vcxproj" Id="dd56172c-c576-4710-8834-ec4bda9c449b" />
+    <Project Path="winreg/winreg.vcxproj" Id="4154efec-001d-4b5b-960b-64a3634010d5" />
+  </Folder>
+  <Project Path="lua/lua.vcxproj" Id="b945735c-1336-4b8e-8360-e08784226d0d" />
+  <Project Path="lua_staticlib/lua_staticlib.vcxproj" Id="a2b543c4-8966-422f-87e8-5fdb54a28098" />
+</Solution>

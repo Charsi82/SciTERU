@@ -7,6 +7,22 @@ return function(tabs, panel_width, colorback, colorfore)
 
 	local memo_path = tab0:add_memo()
 	memo_path:set_align("top", 22)
+
+	local function create_memo_menu()
+		local ret = {"Копировать путь|sb_memo_path_copy", "Вставить и перейти|sb_memo_path_paste"}
+		local result = gui.run_cmd("fsutil fsinfo drives")
+		local sep = false
+		for drive in result:gmatch("%a:\\") do
+			if not sep then
+				sep = true
+				table.insert(ret, '')
+			end
+			table.insert(ret, 'Перейти к диску ' .. drive .. "|sb_memo_goto('"..drive.."\\')")
+		end
+		return ret
+	end
+
+	memo_path:context_menu(create_memo_menu())
 	if colorback then memo_path:set_memo_colour('', colorback) end
 	local win_height = tonumber(props['position.height']) or 600
 	local list_dir_height = win_height // 3
@@ -35,6 +51,28 @@ return function(tabs, panel_width, colorback, colorfore)
 		local path = '\\cf1' .. current_path:gsub('\\', '\\\\')
 		local mask = '\\cf2' .. file_mask .. '}'
 		memo_path:set_text(rtf .. path .. mask)
+	end
+
+	-- memo context menu: copy
+	function sb_memo_path_copy()
+		local cpy = memo_path:get_text():gsub("%*%.%*", '')
+		editor:CopyText(cpy)
+	end
+
+	-- memo context menu: paste
+	function sb_memo_goto(path)
+		path = path:gsub('\\+$', '')
+		if #gui.files(path..'*', true) > 0 then
+			current_path = path .. '\\'
+			FileMan_ListFILL()
+		else
+			print('path not found:', path)
+		end
+	end
+	
+	function sb_memo_path_paste()
+		local clip = shell.getclipboardtext()
+		sb_memo_goto(clip)
 	end
 
 	memo_path:on_key(function(key)
@@ -336,15 +374,24 @@ return function(tabs, panel_width, colorback, colorfore)
 	function FileMan_CalcSHA1() crc_enum_selection('sha1') end
 	function FileMan_CalcSHA256() crc_enum_selection('sha256') end
 	function FileMan_CalcSHA512() crc_enum_selection('sha512') end
-
+	
+	local function isLuaScript(fn)
+		local fext = fn:gsub("^(.+%.)", "%%*%%.", 1)
+		return props['file.patterns.lua']:find(fext)~=nil
+	end
+	
+	local function CheckLuaScript(fn)
+		local res, err = loadfile(current_path .. fn)
+		print(res and (fn .. ' - ok') or err)
+	end
+	
 	function FileMan_LuaSyntax()
 		output:ClearAll()
 		local si = list_dir:get_selected_items()
 		for _, i in ipairs(si) do
 			local dir_or_file, attr = FileMan_GetSelectedItem(i)
-			if attr ~= 'd' then
-				local res, err = loadfile(current_path .. dir_or_file)
-				print(res and (dir_or_file .. '- ok') or err)
+			if attr ~= 'd' and isLuaScript(dir_or_file) then
+				CheckLuaScript(dir_or_file)
 			end
 		end
 	end
@@ -353,11 +400,9 @@ return function(tabs, panel_width, colorback, colorfore)
 		output:ClearAll()
 		local exts = props['file.patterns.lua']
 		for ext in exts:gmatch("[^;]+") do
-			-- local fnames = shell.findfiles(current_path.."\\"..ext) or {}
 			local fnames = gui.files(current_path .. "\\" .. ext)
 			for _, fname in ipairs(fnames) do
-				local res, err = loadfile(current_path .. fname)
-				print(res and (fname .. ' - ok') or err)
+				CheckLuaScript(fname)
 			end
 		end
 	end
@@ -384,13 +429,15 @@ return function(tabs, panel_width, colorback, colorfore)
 	end)
 
 	list_dir:context_menu{
-		'Выбрать папку...|FileMan_ChangeDir', 'Показать все файлы|FileMan_MaskAllFiles', 'C расширением выделенного файла|FileMan_MaskOnlyCurrentExt', 'Показать в Проводнике|FileMan_Explore',
+		'Выбрать папку...|FileMan_ChangeDir', 'Показать все файлы|FileMan_MaskAllFiles',
+  'C расширением выделенного файла|FileMan_MaskOnlyCurrentExt', 'Показать в Проводнике|FileMan_Explore',
   'Перейти к текущему файлу|FileMan_SelectCurrentFile', '', -- separator
 		'Проверить синтаксис Lua|FileMan_LuaSyntax', 'Проверить все в папке|FileMan_LuaSyntax_all', '', -- separator
 		'POPUPBEGIN|Посчитать CRC-сумму', -- submenu
-		'Посчитать MD5\tAlt+L|FileMan_CalcMD5', 'Посчитать SHA1|FileMan_CalcSHA1', 'Посчитать SHA-256|FileMan_CalcSHA256', 'Посчитать SHA-512|FileMan_CalcSHA512', 'POPUPEND', 'Открыть в SciTE|FileMan_OpenSelectedItems', 'Выполнить|FileMan_FileExec',
-  'Выполнить с параметрами|FileMan_FileExecWithParams', '', -- separator
-		'Копировать в...|FileMan_FileCopy', 'Переместить в...|FileMan_FileMove', 'Переименовать|FileMan_FileRename', 'Удалить файл\tDel|FileMan_FileDelete', '', -- separator
+		'Посчитать MD5\tAlt+L|FileMan_CalcMD5', 'Посчитать SHA1|FileMan_CalcSHA1', 'Посчитать SHA-256|FileMan_CalcSHA256', 'Посчитать SHA-512|FileMan_CalcSHA512', 'POPUPEND',
+  'Открыть в SciTE|FileMan_OpenSelectedItems', 'Выполнить|FileMan_FileExec', 'Выполнить с параметрами|FileMan_FileExecWithParams', '', -- separator
+		'Копировать в...|FileMan_FileCopy', 'Переместить в...|FileMan_FileMove', 'Переименовать|FileMan_FileRename', 'Удалить файл\tDel|FileMan_FileDelete',
+  '', -- separator
 		'Добавить в Избранное\tIns|Favorites_AddFile'
 	}
 
@@ -508,17 +555,8 @@ return function(tabs, panel_width, colorback, colorfore)
 		end
 	end
 
-	list_favorites:on_select(function()
-		local sel_item = list_favorites:get_selected_item()
-		if sel_item == -1 then
-			editor:CallTipCancel()
-			return
-		end
-		local expansion = list_favorites:get_item_data(sel_item)
-		tab0:on_timer(function()
-			editor:CallTipShow(-2, expansion:from_utf8(editor:codepage()))
-			tab0:stop_timer()
-		end, 0.1) -- 0.1 sec
+	list_favorites:on_tip(function(sel_item)
+		return list_favorites:get_item_data(sel_item)
 	end)
 
 	list_favorites:on_double_click(Favorites_OpenFile)
@@ -531,7 +569,11 @@ return function(tabs, panel_width, colorback, colorfore)
 		end
 	end)
 
-	list_favorites:context_menu{'Добавить текущий файл|Favorites_AddCurrentBuffer', 'Удалить\tDel|Favorites_DeleteItem'}
+	list_favorites:context_menu
+	{
+	'Добавить текущий файл|Favorites_AddCurrentBuffer',
+	'Исключить файл\tDel|Favorites_DeleteItem'
+	}
 
 	local function OnSwitch()
 		if tab0:bounds() then -- visible FileMan
@@ -548,6 +590,6 @@ return function(tabs, panel_width, colorback, colorfore)
 	AddEventHandler("OnSave", OnSwitch)
 	event('sb_tab_selected'):register(function(e, tab_id) if tab_id == 0 then OnSwitch() end end)
 	-------------------------
-	tabs:add_tab("Проводник", tab0, 57)
+	tabs:add_tab("Проводник", tab0, props['ICO_FAVORITE_FOLDERS'])
 	return tab0
 end
