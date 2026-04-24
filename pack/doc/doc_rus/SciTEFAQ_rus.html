@@ -315,30 +315,30 @@ sys.stdout.reconfigure(encoding='866')</div><br />
       Включить параметр:<br />
       <div class="example">lexer.errorlist.escape.sequences=1</div>
       Для примера запускаем тестовый Lua скрипт:<br />
-      <code>fg = {<br />
-&#160red='\27[31m',<br />
-&#160redbold='\27[31;1m',<br />
-&#160green='\27[32m',<br />
-&#160greenbold='\27[32;1m',<br />
-&#160yellow='\27[33m',<br />
-&#160yellowbold='\27[33;1m',<br />
-&#160blue='\27[34m',<br />
-&#160bluebold='\27[34;1m',<br />
-&#160pink='\27[35m',<br />
-&#160pinkbold='\27[35;1m',<br />
-&#160cyan='\27[36m',<br />
-&#160cyanbold='\27[36;1m',<br />
-&#160white='\27[37m',<br />
-&#160whitebold='\27[37;1m',<br />
-&#160def='\27[0m'<br />
+	  <div class="example">
+      <pre>local fg = {
+	red='\27[31m',
+	redbold='\27[31;1m',
+	green='\27[32m',
+	greenbold='\27[32;1m',
+	yellow='\27[33m',
+	yellowbold='\27[33;1m',
+	blue='\27[34m',
+	bluebold='\27[34;1m',
+	pink='\27[35m',
+	pinkbold='\27[35;1m',
+	cyan='\27[36m',
+	cyanbold='\27[36;1m',
+	white='\27[37m',
+	whitebold='\27[37;1m',
+	def='\27[0m'
 }<br />
-<br />
 print(fg.red..'List '..fg.cyan..'of '..fg.bluebold..'colors'..fg.pinkbold..'!\n'..fg.def)<br />
-<br />
-for color, seq in pairs (fg) do<br />
-&#160&#160&#160&#160if tostring(color) ~= 'def' then print(seq..tostring(color)..fg.def) end<br />
-end</code>
-    </p>
+for color, seq in pairs (fg) do
+	if tostring(color) ~= 'def' then print(seq..tostring(color)..fg.def) end<br />
+end</pre>
+</div>
+</p>
   </body>
 </html>
 
