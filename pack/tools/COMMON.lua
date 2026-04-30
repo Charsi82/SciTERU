@@ -430,7 +430,7 @@ function serializeTable(t, indent)
 	table.insert(result, spacing .. "{\n")
 
 	for k, v in orderedPairs(t) do
-		table.insert(result, spacing .. "  [" .. tostring(k) .. "] = ")
+		table.insert(result, spacing .. "  [" .. (type(k) == "string" and string.format("%q", k) or tostring(k)) .. "] = ")
 		if type(v) == "table" then
 			-- Если таблица пустая — выводим в строку
 			if next(v) == nil then

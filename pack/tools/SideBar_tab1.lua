@@ -802,8 +802,10 @@ return function(tabs, panel_width, colorback, colorfore)
 	----------------------------------------------------------
 	-- tree_bookmarks   Bookmarks
 	----------------------------------------------------------
-	local BM_FILE_IDX = 2
-	local BM_LINE_IDX = 13
+	-- индекс иконки для узла дерева с именем файла
+	local BM_FILE_IDX = props['ICO_SAVE']
+	-- индекс иконки для узла дерева с заголовком закладки
+	local BM_LINE_IDX = props['ICO_MACROPLAY']
 
 	local function get_or_add_parent_item()
 		local res = tree_bookmarks:tree_get_item(props['FileNameExt'])
@@ -907,12 +909,12 @@ return function(tabs, panel_width, colorback, colorfore)
 		local ELLIPSIS_LEN = 30
 		local line_text = editor:GetLine(line_number) or ""
 		line_text = line_text:gsub('^%s+', ''):gsub('%s+', ' ')
-		if line_text == '' then line_text = ' - empty line' end
-		line_text = "[" .. (line_number + 1) .. "] " .. line_text
-        if #line_text > ELLIPSIS_LEN then
-            line_text = line_text:sub(1, ELLIPSIS_LEN - 3) .. "..."
-        end
-		return line_text
+		local linenumber = "[" .. (line_number + 1) .. "] "
+		if line_text == '' then return linenumber .. ' - empty line' end
+		line_text = linenumber .. line_text
+  		local from, to = utf8.offset(line_text, ELLIPSIS_LEN)
+		if not from then return line_text end
+		return line_text:sub(1, to):to_utf8(editor.CodePage)..'..'
 	end
 
 	local line_count = 0
@@ -977,7 +979,7 @@ return function(tabs, panel_width, colorback, colorfore)
 		local parent_item = get_or_add_parent_item()
 		tree_bookmarks:tree_remove_childs(parent_item)
         for i = 0, editor.LineCount do
-            if (editor:MarkerGet(i) // 2 % 2 == 1) or (i == line) then
+            if (i == line) or (editor:MarkerGet(i) // 2 % 2 == 1) then
                 tree_bookmarks:add_item(GetLineText(i), parent_item, BM_LINE_IDX)
             end
         end

@@ -7,9 +7,9 @@ local path = props["SciteUserHome"].."\\RecentStorage.lua"
 ----------------------------------------------------------------
 RecentData = {}
 local isOk, res = pcall(dofile, path)
-if isOk and res and type(res)=='table' then RecentData = res else print('loading recent.lua failed') end
+if isOk and res and type(res)=='table' then RecentData = res else print('loading '..path..' failed') end
 
-for i=#RecentData,1,-1 do
+for i = #RecentData, 1, -1 do
 	if os.time()-RecentData[i].timestamp > LifeTime then
 		table.remove(RecentData, i)
 	end
@@ -39,7 +39,7 @@ end
 AddEventHandler("OnFinalise", function()
 	local f = io.open(path, "wb")
 	if f then
-		f:write("return \n"..table_to_string(RecentData))
+		f:write("return \n"..serializeTable(RecentData))
 		f:close()
 	end
 end)
@@ -102,12 +102,12 @@ local function GetLineText(line_number)
 	local ELLIPSIS_LEN = 30
 	local line_text = editor:GetLine(line_number) or ""
 	line_text = line_text:gsub('^%s+', ''):gsub('%s+', ' ')
-	if line_text == '' then
-		line_text = ' - empty line'
-	end
-	line_text = "["..(line_number+1).."] "..line_text
-	if #line_text > ELLIPSIS_LEN then line_text = line_text:sub(1, ELLIPSIS_LEN-3).."..." end
-	return line_text
+	local linenumber = "[" .. (line_number + 1) .. "] "
+	if line_text == '' then return linenumber .. ' - empty line' end
+	line_text = linenumber .. line_text
+	local from, to = utf8.offset(line_text, ELLIPSIS_LEN)
+	if not from then return line_text end
+	return line_text:sub(1, to):to_utf8(editor.CodePage)..'..'
 end
 
 AddEventHandler("OnClose", function(file)
@@ -120,8 +120,8 @@ AddEventHandler("OnClose", function(file)
 			line = editor:MarkerNext(line, 2)
 			if (line == -1) then break end
 			res[#res+1] = {
-			line = line,
-			caption = GetLineText(line)
+				line = line,
+				caption = GetLineText(line)
 			}
 			line = line + 1
 		end
@@ -154,4 +154,3 @@ AddEventHandler("OnClose", function(file)
 		caret = editor.CurrentPos
 	}
 end)
-

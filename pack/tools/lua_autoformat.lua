@@ -51,7 +51,7 @@ if #text > 0 then
 		if editor:MarkerGet(v.line, 2) // 2 % 2 ~= 1 then editor:MarkerAdd(v.line, 1) end
 	end
 	scite.MenuCommand(IDM_SAVE)
-	print("LuaFormatter success:", cur_file)
+	print("LuaFormatter success:", props['FilePath']:from_utf8(output.CodePage))
 else
 	print("LuaFormatter failed:")
 	local errf = io.open(err_file)
