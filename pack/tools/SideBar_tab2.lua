@@ -4,8 +4,6 @@
 return function(tabs, panel_width, colorback, colorfore)
 
 	local tab2 = gui.panel(panel_width)
-	-- local list_abbrev = gui.list(true)
-	-- tab2:client(list_abbrev)
 	local list_abbrev = tab2:add_list(true)
 	list_abbrev:set_align()
 	list_abbrev:add_column("Сокращения", 60)

@@ -30,7 +30,13 @@ local mark_num = props['highlighting.text.marker']
 if clear then
 	EditorClearMarks(mark_num)
 else
-	local err_start = editor.SelectionStart
-	local err_end = editor.SelectionEnd
-	EditorMarkText(err_start, err_end-err_start, mark_num)
+	-- local err_start = editor.SelectionStart
+	-- local err_end = editor.SelectionEnd
+	-- EditorMarkText(err_start, err_end-err_start, mark_num)
+	for i = 1, editor.Selections do 
+		local sel_idx = i - 1
+		local err_start = editor.SelectionNStart[sel_idx]
+		local err_end = editor.SelectionNEnd[sel_idx]
+		EditorMarkText(err_start, err_end - err_start, mark_num)
+	end
 end

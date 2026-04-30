@@ -86,29 +86,17 @@ namespace
 
 class Event
 {
-private:
-	bool m_break;
-	bool m_removeThisCallback;
-	int in_progress;
-	std::string finger_print;
-	std::string name;
-	std::vector<int> callbacks;
-	std::vector<int> to_remove;
-	static lua_State* m_L;
+	bool m_break{ false };
+	bool m_removeThisCallback{ false };
+	int in_progress{};
+	std::string finger_print{};
+	std::string name{};
+	std::vector<int> callbacks{};
+	std::vector<int> to_remove{};
 
 public:
-	explicit Event(const char* _name) :m_break(false), m_removeThisCallback(false),
-		in_progress(0), finger_print(""), name(_name), callbacks{}, to_remove{}
-	{
-	};
-
-	~Event()
-	{
-		//for (int callbackRef : callbacks)
-			//luaL_unref(m_L, LUA_REGISTRYINDEX, callbackRef);
-	}
-
-	static void set_state(lua_State* L) { m_L = L; };
+	explicit Event(const char* _name) : name(_name) {};
+	~Event() = default;
 
 	// methods
 	const char* get_name() const { return name.c_str(); }
@@ -120,63 +108,63 @@ public:
 	void insert_begin(int func_ref) { callbacks.emplace(callbacks.begin(), func_ref); }
 
 	// unregister callback by index
-	void unreg(int func_ref)
+	void unreg(lua_State* L, int func_ref)
 	{
-		luaL_unref(m_L, LUA_REGISTRYINDEX, func_ref);
+		luaL_unref(L, LUA_REGISTRYINDEX, func_ref);
 		callbacks.erase(std::remove(callbacks.begin(), callbacks.end(), func_ref));
 	}
 
 	// unreg function from top stack
-	void unreg()
+	void unreg(lua_State* L)
 	{
 		for (int callbackRef : callbacks)
 		{
-			lua_rawgeti(m_L, LUA_REGISTRYINDEX, callbackRef);
-			if (lua_compare(m_L, -1, -2, 0) == 1)
-				return unreg(callbackRef);
-			lua_pop(m_L, 1);
+			lua_rawgeti(L, LUA_REGISTRYINDEX, callbackRef);
+			if (lua_compare(L, -1, -2, 0) == 1)
+				return unreg(L, callbackRef);
+			lua_pop(L, 1);
 		}
 	}
 
 	// trigger
-	bool trigger()
+	bool trigger(lua_State* L)
 	{
 		if (++in_progress > 1)
 		{
-			//dump_stack(m_L);
-			int stack_size = lua_gettop(m_L);
-			lua_print(m_L, "recursive call trigger for event '%s'", name.c_str());
+			//dump_stack(L);
+			int stack_size = lua_gettop(L);
+			lua_print(L, "recursive call trigger for event '%s'", name.c_str());
 			//for (int i = 1; i <= stack_size; ++i)
-				//lua_print(m_L, "arg [%d] [%s]", i, luaL_tolstring(m_L, i, 0));
-			luaL_traceback(m_L, m_L, "callback removed", 1);
-			lua_print(m_L, lua_tostring(m_L, -1));
-			lua_settop(m_L, stack_size);
-			//dump_stack(m_L);
+				//lua_print(L, "arg [%d] [%s]", i, luaL_tolstring(L, i, 0));
+			luaL_traceback(L, L, "callback removed", 1);
+			lua_print(L, lua_tostring(L, -1));
+			lua_settop(L, stack_size);
+			//dump_stack(L);
 			m_removeThisCallback = true;
 			--in_progress;
 			return true;
 		}
 		bool result = false;
-		int stack_size = lua_gettop(m_L);
+		int stack_size = lua_gettop(L);
 		for (const int callbackRef : callbacks)
 		{
-			lua_rawgeti(m_L, LUA_REGISTRYINDEX, callbackRef);
-			if (lua_isfunction(m_L, -1))
+			lua_rawgeti(L, LUA_REGISTRYINDEX, callbackRef);
+			if (lua_isfunction(L, -1))
 			{
-				for (int i = stack_size; i; --i) lua_pushvalue(m_L, stack_size - i + 1);
-				lua_pushcfunction(m_L, errorHandler);
+				for (int i = stack_size; i; --i) lua_pushvalue(L, stack_size - i + 1);
+				lua_pushcfunction(L, errorHandler);
 				const int errorHandlerIndex = -(stack_size + 2);
-				lua_insert(m_L, errorHandlerIndex);
-				if (lua_pcall(m_L, stack_size, 1, errorHandlerIndex))
+				lua_insert(L, errorHandlerIndex);
+				if (lua_pcall(L, stack_size, 1, errorHandlerIndex))
 				{
-					lua_print(m_L, lua_tostring(m_L, -1));
-					lua_pop(m_L, 2); // pop errorHandler and error info
+					lua_print(L, lua_tostring(L, -1));
+					lua_pop(L, 2); // pop errorHandler and error info
 					m_removeThisCallback = true;
 				}
 				else
 				{
-					result = lua_toboolean(m_L, -1);
-					if (!result) lua_pop(m_L, 2); // pop errorHandler and result
+					result = lua_toboolean(L, -1);
+					if (!result) lua_pop(L, 2); // pop errorHandler and result
 				}
 				if (m_removeThisCallback)
 				{
@@ -187,10 +175,10 @@ public:
 			}
 			else
 			{
-				lua_pop(m_L, 1);
+				lua_pop(L, 1);
 			}
 		}
-		for (int ref : to_remove) unreg(ref);
+		for (int ref : to_remove) unreg(L, ref);
 		to_remove.clear();
 		finger_print = "";
 		--in_progress;
@@ -201,14 +189,14 @@ public:
 	void stop() { m_break = true; };
 
 	// print info
-	void print()
+	void print(lua_State* L)
 	{
-		lua_print(m_L, "event '%s' with %d callbacks", name.c_str(), callbacks.size());
+		lua_print(L, "event '%s' with %d callbacks", name.c_str(), callbacks.size());
 		if (finger_print.size())
-			lua_print(m_L, "fp = %s", finger_print.c_str());
-		lua_print(m_L, m_break ? "m_break:true" : "m_break:false");
-		lua_print(m_L, m_removeThisCallback ? "m_removeThisCallback:true" : "m_removeThisCallback:false");
-		lua_print(m_L, "in_progress = %d", in_progress);
+			lua_print(L, "fp = %s", finger_print.c_str());
+		lua_print(L, m_break ? "m_break:true" : "m_break:false");
+		lua_print(L, m_removeThisCallback ? "m_removeThisCallback:true" : "m_removeThisCallback:false");
+		lua_print(L, "in_progress = %d", in_progress);
 	};
 
 	// remove
@@ -218,27 +206,30 @@ public:
 	void set_fp(const char* fp_name) { finger_print = fp_name; };
 
 	// clear
-	void clear()
+	void clear(lua_State* L)
 	{
 		if (in_progress) m_break = true;
 		to_remove.clear();
-		for (int ref : callbacks) luaL_unref(m_L, LUA_REGISTRYINDEX, ref);
+		for (int ref : callbacks) luaL_unref(L, LUA_REGISTRYINDEX, ref);
 		callbacks.clear();
 	};
 };
 
-lua_State* Event::m_L = nullptr;
+//lua_State* Event::L = nullptr;
 
-class CEvtManager
+class CEventManager
 {
+	CEventManager() = default;
+	~CEventManager() { clear_all(); };
+	std::map<std::string, std::unique_ptr<Event>> map_events;
+	void clear_all() { map_events.clear(); }
+
 public:
-	static CEvtManager& Instance()
+	static CEventManager& Instance()
 	{
-		static CEvtManager Self;
+		static CEventManager Self;
 		return Self;
 	}
-
-	~CEvtManager() { clear_all(); };
 
 	Event* get(const char* name)
 	{
@@ -254,11 +245,7 @@ public:
 		return it->second.get();
 	}
 
-	void clear_all() { map_events.clear(); }
-
-private:
-	CEvtManager() = default;
-	std::map<std::string, std::unique_ptr<Event>> map_events;
+	static void reset() { Instance().clear_all(); }
 };
 
 namespace
@@ -274,7 +261,7 @@ namespace
 	{
 		const char* name = luaL_checkstring(L, 1);
 		if (!strlen(name)) throw_error(L, "empty name for event");
-		lua_pushlightuserdata(L, CEvtManager::Instance().get(name));
+		lua_pushlightuserdata(L, CEventManager::Instance().get(name));
 		luaL_getmetatable(L, EVENTS_CLASS);
 		lua_setmetatable(L, -2);
 		return 1;
@@ -296,19 +283,19 @@ namespace
 	int do_unregister(lua_State* L)
 	{
 		luaL_checktype(L, 2, LUA_TFUNCTION);
-		event_arg(L)->unreg();
+		event_arg(L)->unreg(L);
 		lua_settop(L, 1);
 		return 1;
 	}
 
 	int do_trigger(lua_State* L)
 	{
-		return event_arg(L)->trigger() ? 1 : 0;
+		return event_arg(L)->trigger(L) ? 1 : 0;
 	}
 
 	int do_print(lua_State* L)
 	{
-		event_arg(L)->print();
+		event_arg(L)->print(L);
 		lua_settop(L, 1);
 		return 1;
 	}
@@ -336,7 +323,7 @@ namespace
 
 	int do_clear(lua_State* L)
 	{
-		event_arg(L)->clear();
+		event_arg(L)->clear(L);
 		lua_settop(L, 1);
 		return 1;
 	}
@@ -355,17 +342,25 @@ namespace
 
 	const struct luaL_Reg event_methods[] =
 	{
-		{ "name",				do_name},
-		{ "register",			do_register},
-		{ "unregister",			do_unregister},
-		{ "trigger",			do_trigger},
-		{ "__call",				do_trigger},
-		{ "__tostring",			do_tostring},
-		{ "stop",				do_stop},
-		{ "setFingerprint",		do_setfp},
-		{ "removeThisCallback",	do_setRemove},
-		{ "clear",				do_clear},
-		{ "print",				do_print},
+		{ "name",				do_name			},
+		{ "register",			do_register		},
+		{ "unregister",			do_unregister	},
+		{ "trigger",			do_trigger		},
+		{ "stop",				do_stop			},
+		{ "setFingerprint",		do_setfp		},
+		{ "removeThisCallback",	do_setRemove	},
+		{ "clear",				do_clear		},
+		{ "print",				do_print		},
+		{ NULL, NULL }
+	};
+
+	const struct luaL_Reg event_metamethods[] =
+	{
+		{ "__call",				do_trigger	},
+		{ "__tostring",			do_tostring	},
+		{ "__name",				do_name		},
+		/* placeholders */
+		{ "__metatable",		NULL		},
 		{ NULL, NULL }
 	};
 }
@@ -373,17 +368,32 @@ namespace
 extern "C" __declspec(dllexport)
 int luaopen_events(lua_State* L)
 {
-	Event::set_state(L);
-	CEvtManager::Instance().clear_all();
-	luaL_newmetatable(L, EVENTS_CLASS);  // create metatable for event objects
-	lua_pushvalue(L, -1);  // copy metatable to top stack
-	lua_setfield(L, -2, "__index");  // metatable.__index = metatable
+	CEventManager::reset();
+
+	/* create metatable for event objects*/
+	luaL_newmetatable(L, EVENTS_CLASS);
+
+	/* add metamethods */
 #if LUA_VERSION_NUM < 502
-	luaL_register(L, NULL, event_methods);
+	luaL_register(L, NULL, event_metamethods);
 #else
-	luaL_setfuncs(L, event_methods, 0); // add methods
+	luaL_setfuncs(L, event_metamethods, 0);
 #endif
+	/* metatable.__metatable = dummy_str */
+	lua_pushstring(L, "metatable EVENTS is readonly");
+	lua_setfield(L, -2, "__metatable");
+
+	/* methods table */
+	luaL_newlib(L, event_methods);
+	//#if LUA_VERSION_NUM < 502
+	//	luaL_register(L, NULL, event_methods);
+	//#else
+	//	luaL_setfuncs(L, event_methods, 0);
+	//#endif
+	/* metatable.__index = methods table */
+	lua_setfield(L, -2, "__index");
+
 	lua_pushcfunction(L, do_event);
 	lua_setglobal(L, "event");
-	return 1;
+	return 0;
 }

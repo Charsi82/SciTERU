@@ -555,7 +555,7 @@ void LexerLua::Lex(Sci_PositionU startPos, Sci_Position length, int initStyle, I
 			} else if (sc.atLineStart && sc.Match('$')) {
 				sc.SetState(SCE_LUA_PREPROCESSOR);	// Obsolete since Lua 4.0, but still in old code
 			} else if (setLuaOperator.Contains(sc.ch)) {
-				sc.SetState(SCE_LUA_OPERATOR);	
+				sc.SetState(SCE_LUA_OPERATOR);
 
 #ifdef RB_FLLMODS
 				if (sc.ch == '<') {	// < const > forward scan

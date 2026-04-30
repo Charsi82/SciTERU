@@ -112,7 +112,7 @@ void ColourisePropsLine(
 			//!-end-[PropsKeywords]
 #endif // RB_PKW
 
-			} else {
+		} else {
 			// Search for the '=' character
 			while ((i < lengthLine) && !isAssignChar(lineBuffer[i]))
 				i++;

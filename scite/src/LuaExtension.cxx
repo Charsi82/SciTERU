@@ -333,148 +333,148 @@ int cf_scite_menu_command(lua_State *L) {
 }
 
 #ifdef RB_CheckMenus
-//!-start-[CheckMenus]
-int cf_scite_check_menus(lua_State*) {
-	host->CheckMenus();
-	return 0;
-}
-//!-end-[CheckMenus]
+	//!-start-[CheckMenus]
+	int cf_scite_check_menus(lua_State*) {
+		host->CheckMenus();
+		return 0;
+	}
+	//!-end-[CheckMenus]
 #endif // RB_CheckMenus
 
 #ifdef RB_LFL
 //!-start-[LocalizationFromLua]
-int cf_editor_get_translation(lua_State* L) {
-	const char* s = luaL_checkstring(L, 1);
-	std::string r;
-	if (lua_gettop(L) > 1) {
-		r = host->GetTranslation(s, (lua_toboolean(L, 2) != 0));
+	int cf_editor_get_translation(lua_State* L) {
+		const char* s = luaL_checkstring(L, 1);
+		std::string r;
+		if (lua_gettop(L) > 1) {
+			r = host->GetTranslation(s, (lua_toboolean(L, 2) != 0));
+		}
+		else {
+			r = host->GetTranslation(s);
+		}
+		lua_pushstring(L, r.c_str());
+		return 1;
 	}
-	else {
-		r = host->GetTranslation(s);
-	}
-	lua_pushstring(L, r.c_str());
-	return 1;
-}
-//!-end-[LocalizationFromLua]
+	//!-end-[LocalizationFromLua]
 #endif // RB_LFL
 
 #ifdef RB_Perform
 //!-start-[Perform]
-int cf_scite_perform(lua_State* L) {
-	const char* s = luaL_checkstring(L, 1);
-	if (s) {
-		host->Perform(s);
+	int cf_scite_perform(lua_State* L) {
+		const char* s = luaL_checkstring(L, 1);
+		if (s) {
+			host->Perform(s);
+		}
+		return 0;
 	}
-	return 0;
-}
-//!-end-[Perform]
+	//!-end-[Perform]
 #endif
 
 #ifdef RB_IA
 //!-start-[InsertAbbreviation]
-int get_codepage(ExtensionAPI::Pane p) {
-	int codePage = (int)host->Send(p, SA::Message::GetCodePage /*SCI_GETCODEPAGE*/);
-	if (codePage != SA::CpUtf8/*SC_CP_UTF8*/) {
-		std::string charSet = host->Property("character.set");
-		SA::CharacterSet cs = static_cast<SA::CharacterSet>(IntegerFromString(charSet, 1 /*SA::CharacterSet::Default*/));
-		codePage = GUI::CodePageFromCharSet(cs, codePage);
-	}
-	else { // temporary solution
-		const int unimode = IntegerFromString(host->Property("editor.unicode.mode"), 0);
-		switch (unimode) {
-		case 152: codePage = 1200; break; // UTF-16 LE
-		case 151: codePage = 1201; break; // UTF-16 BE
-		case 153: codePage = 65001; break; // UTF-8 BOM
-		case 154: codePage = 65001; break; // UTF-8 without BOM
-		default: codePage = SA::CpUtf8/*SC_CP_UTF8*/;
+	int get_codepage(ExtensionAPI::Pane p) {
+		int codePage = (int)host->Send(p, SA::Message::GetCodePage /*SCI_GETCODEPAGE*/);
+		if (codePage != SA::CpUtf8/*SC_CP_UTF8*/) {
+			std::string charSet = host->Property("character.set");
+			SA::CharacterSet cs = static_cast<SA::CharacterSet>(IntegerFromString(charSet, 1 /*SA::CharacterSet::Default*/));
+			codePage = GUI::CodePageFromCharSet(cs, codePage);
 		}
-	}
-	return codePage;
-}
-
-inline size_t get_next_p(GUI::gui_string& s, size_t pos = 0) {
-	pos = s.find(GUI_TEXT("%"), pos);
-	while ((pos != std::string::npos) && (pos != s.length() - 1)) {
-		if (s.at(pos + 1) == GUI::gui_char('%')) {
-			s.erase(pos + 1, 1);
-			pos = s.find(GUI_TEXT("%"), pos + 1);
-		}
-		else break;
-	}
-	return pos;
-}
-
-inline void str_replace(GUI::gui_string& str, GUI::gui_string f, GUI::gui_string r) {
-	GUI::gui_string::size_type pos = 0;
-	while (((pos = str.find(f, pos)) != GUI::gui_string::npos) && (pos < str.length()))
-	{
-		str.replace(pos, f.length(), r);
-		pos += r.length();
-
-	}
-}
-
-int cf_editor_insert_abbrev(lua_State* L) {
-	GUI::gui_string s = GUI::StringFromUTF8(luaL_checkstring(L, 1));
-	if (!s.empty()) {
-		host->Send(ExtensionAPI::paneEditor, SA::Message::BeginUndoAction/*SCI_BEGINUNDOACTION*/);
-		SA::Position sel_start = host->Send(ExtensionAPI::paneEditor, SA::Message::GetSelectionStart/*SCI_GETSELECTIONSTART*/);
-		SA::Position sel_end = host->Send(ExtensionAPI::paneEditor, SA::Message::GetSelectionEnd/*SCI_GETSELECTIONEND*/);
-		std::string ss = GUI::ConvertToUTF8(host->Range(ExtensionAPI::paneEditor, SA::Span( sel_start, sel_end)), get_codepage(ExtensionAPI::paneEditor));
-		size_t spos = 0;
-		size_t epos = 0;
-		GUI::gui_string tmp;
-		spos = get_next_p(s);
-		while (spos != std::string::npos) {
-			epos = s.find(GUI_TEXT("%"), spos + 1);
-			if (epos == std::string::npos) break;
-			tmp = s.substr(spos + 1, epos - spos - 1);
-			if (tmp.find_first_of(GUI_TEXT(" ")) == std::string::npos) {
-				GUI::gui_string r;
-				if (tmp == GUI_TEXT("SEL")) {
-					if (!ss.empty())
-						host->Send(ExtensionAPI::paneEditor, SA::Message::ReplaceSel/*SCI_REPLACESEL*/, 0, reinterpret_cast<intptr_t>(""));
-					r = GUI::StringFromUTF8(ss.c_str());
-				}
-				else if (tmp == GUI_TEXT("CLP")) {
-					bool IsOpen = OpenClipboard(0);
-					if (IsOpen) {
-						HANDLE Data = GetClipboardData(CF_UNICODETEXT);
-						if (Data != 0) {
-							if (const wchar_t* str = static_cast<const wchar_t*>(GlobalLock(Data)))
-								r = GUI::gui_string(str);
-							GlobalUnlock(Data);
-						}
-						CloseClipboard();
-					}
-				}
-				else {
-					std::string val = host->Property(GUI::UTF8FromString(tmp).c_str());
-					if (!val.empty())
-						r = GUI::StringFromUTF8(val);
-				}
-				str_replace(r, GUI_TEXT("\\"), GUI_TEXT("\\\\")); //TODO> Must be "Slash" from StringHelper.cxx
-				s.replace(spos, epos - spos + 1, r);
-				epos = spos + r.length();
+		else { // temporary solution
+			const int unimode = IntegerFromString(host->Property("editor.unicode.mode"), 0);
+			switch (unimode) {
+			case 152: codePage = 1200; break; // UTF-16 LE
+			case 151: codePage = 1201; break; // UTF-16 BE
+			case 153: codePage = 65001; break; // UTF-8 BOM
+			case 154: codePage = 65001; break; // UTF-8 without BOM
+			default: codePage = SA::CpUtf8/*SC_CP_UTF8*/;
 			}
-			spos = get_next_p(s, epos);
 		}
-		host->InsertAbbreviation(GUI::UTF8FromString(s).c_str());
-		host->Send(ExtensionAPI::paneEditor, SA::Message::EndUndoAction/*SCI_ENDUNDOACTION*/);
+		return codePage;
 	}
-	return 0;
-}
-//!-end-[InsertAbbreviation]
+
+	inline size_t get_next_p(GUI::gui_string& s, size_t pos = 0) {
+		pos = s.find(GUI_TEXT("%"), pos);
+		while ((pos != std::string::npos) && (pos != s.length() - 1)) {
+			if (s.at(pos + 1) == GUI::gui_char('%')) {
+				s.erase(pos + 1, 1);
+				pos = s.find(GUI_TEXT("%"), pos + 1);
+			}
+			else break;
+		}
+		return pos;
+	}
+
+	inline void str_replace(GUI::gui_string& str, GUI::gui_string f, GUI::gui_string r) {
+		GUI::gui_string::size_type pos = 0;
+		while (((pos = str.find(f, pos)) != GUI::gui_string::npos) && (pos < str.length()))
+		{
+			str.replace(pos, f.length(), r);
+			pos += r.length();
+
+		}
+	}
+
+	int cf_editor_insert_abbrev(lua_State* L) {
+		GUI::gui_string s = GUI::StringFromUTF8(luaL_checkstring(L, 1));
+		if (!s.empty()) {
+			host->Send(ExtensionAPI::paneEditor, SA::Message::BeginUndoAction/*SCI_BEGINUNDOACTION*/);
+			SA::Position sel_start = host->Send(ExtensionAPI::paneEditor, SA::Message::GetSelectionStart/*SCI_GETSELECTIONSTART*/);
+			SA::Position sel_end = host->Send(ExtensionAPI::paneEditor, SA::Message::GetSelectionEnd/*SCI_GETSELECTIONEND*/);
+			std::string ss = GUI::ConvertToUTF8(host->Range(ExtensionAPI::paneEditor, SA::Span(sel_start, sel_end)), get_codepage(ExtensionAPI::paneEditor));
+			size_t spos = 0;
+			size_t epos = 0;
+			GUI::gui_string tmp;
+			spos = get_next_p(s);
+			while (spos != std::string::npos) {
+				epos = s.find(GUI_TEXT("%"), spos + 1);
+				if (epos == std::string::npos) break;
+				tmp = s.substr(spos + 1, epos - spos - 1);
+				if (tmp.find_first_of(GUI_TEXT(" ")) == std::string::npos) {
+					GUI::gui_string r;
+					if (tmp == GUI_TEXT("SEL")) {
+						if (!ss.empty())
+							host->Send(ExtensionAPI::paneEditor, SA::Message::ReplaceSel/*SCI_REPLACESEL*/, 0, reinterpret_cast<intptr_t>(""));
+						r = GUI::StringFromUTF8(ss.c_str());
+					}
+					else if (tmp == GUI_TEXT("CLP")) {
+						bool IsOpen = OpenClipboard(0);
+						if (IsOpen) {
+							HANDLE Data = GetClipboardData(CF_UNICODETEXT);
+							if (Data != 0) {
+								if (const wchar_t* str = static_cast<const wchar_t*>(GlobalLock(Data)))
+									r = GUI::gui_string(str);
+								GlobalUnlock(Data);
+							}
+							CloseClipboard();
+						}
+					}
+					else {
+						std::string val = host->Property(GUI::UTF8FromString(tmp).c_str());
+						if (!val.empty())
+							r = GUI::StringFromUTF8(val);
+					}
+					str_replace(r, GUI_TEXT("\\"), GUI_TEXT("\\\\")); //TODO> Must be "Slash" from StringHelper.cxx
+					s.replace(spos, epos - spos + 1, r);
+					epos = spos + r.length();
+				}
+				spos = get_next_p(s, epos);
+			}
+			host->InsertAbbreviation(GUI::UTF8FromString(s).c_str());
+			host->Send(ExtensionAPI::paneEditor, SA::Message::EndUndoAction/*SCI_ENDUNDOACTION*/);
+		}
+		return 0;
+	}
+	//!-end-[InsertAbbreviation]
 #endif
 
 #ifdef RB_PDFL
 	//!-start-[ParametersDialogFromLua]
-int cf_scite_show_parameters_dialog(lua_State* L) {
-	const char* s = luaL_checkstring(L, 1);
-	lua_pushboolean(L, host->ShowParametersDialog(s));
-	return 1;
-}
-//!-end-[ParametersDialogFromLua]
+	int cf_scite_show_parameters_dialog(lua_State* L) {
+		const char* s = luaL_checkstring(L, 1);
+		lua_pushboolean(L, host->ShowParametersDialog(s));
+		return 1;
+	}
+	//!-end-[ParametersDialogFromLua]
 #endif // RB_PDFL
 
 int cf_scite_update_status_bar(lua_State *L) {
@@ -484,13 +484,13 @@ int cf_scite_update_status_bar(lua_State *L) {
 }
 
 #ifdef RB_ENCODING //!-start-[EncodingToLua]
-int cf_pane_get_codepage(lua_State* L) {
-	ExtensionAPI::Pane p = check_pane_object(L, 1);
-	int codePage = get_codepage(p);
-	lua_pushinteger(L, codePage);
-	return 1;
-}
-//!-end-[EncodingToLua]
+	int cf_pane_get_codepage(lua_State* L) {
+		ExtensionAPI::Pane p = check_pane_object(L, 1);
+		int codePage = get_codepage(p);
+		lua_pushinteger(L, codePage);
+		return 1;
+	}
+	//!-end-[EncodingToLua]
 #endif
 
 int cf_scite_strip_show(lua_State *L) {
@@ -511,14 +511,14 @@ int cf_scite_strip_set(lua_State *L) {
 }
 
 #ifdef RB_USBTT
-int cf_scite_strip_set_tip_text(lua_State *L) {
-	const int control = luaL_checkint(L, 1);
-	const char *value = luaL_checkstring(L, 2);
-	if (value) {
-		host->UserStripSetTipText(control, value);
+	int cf_scite_strip_set_tip_text(lua_State* L) {
+		const int control = luaL_checkint(L, 1);
+		const char* value = luaL_checkstring(L, 2);
+		if (value) {
+			host->UserStripSetTipText(control, value);
+		}
+		return 0;
 	}
-	return 0;
-}
 #endif
 
 int cf_scite_strip_set_list(lua_State *L) {
@@ -907,13 +907,13 @@ int cf_os_execute(lua_State *L) {
 */
 
 #ifdef RB_GETCURWORD
-int cf_get_current_word(lua_State* L) {
-	Scintilla::ScintillaCall& wEditor = host->PaneCaller(host->paneEditor);
-	SA::Position pos = wEditor.CurrentPos();
-	std::string cur_word = wEditor.StringOfSpan({ wEditor.WordStartPosition(pos,true), wEditor.WordEndPosition(pos,true) });
-	lua_pushstring(L, cur_word.c_str());
-	return 1;
-}
+	int cf_get_current_word(lua_State* L) {
+		Scintilla::ScintillaCall& wEditor = host->PaneCaller(host->paneEditor);
+		SA::Position pos = wEditor.CurrentPos();
+		std::string cur_word = wEditor.StringOfSpan({ wEditor.WordStartPosition(pos,true), wEditor.WordEndPosition(pos,true) });
+		lua_pushstring(L, cur_word.c_str());
+		return 1;
+	}
 #endif
 
 int cf_global_print(lua_State *L) {
@@ -1014,147 +1014,146 @@ bool call_function(lua_State *L, int nargs, bool ignoreFunctionReturnValue=false
 	}
 	return handled;
 }
-
 #ifdef RB_OnSendEditor
-//!-start-[macro] [OnSendEditor]
-const char* call_sfunction(lua_State* L, int nargs, bool ignoreFunctionReturnValue = false) {
-	const char* handled = NULL;
-	if (L) {
-		int traceback = 0;
-		if (tracebackEnabled) {
-			lua_getglobal(L, "print");
-			if (lua_isfunction(L, -1)) {
-				traceback = lua_gettop(L) - nargs - 1;
-				lua_insert(L, traceback);
+	//!-start-[macro] [OnSendEditor]
+	const char* call_sfunction(lua_State* L, int nargs, bool ignoreFunctionReturnValue = false) {
+		const char* handled = NULL;
+		if (L) {
+			int traceback = 0;
+			if (tracebackEnabled) {
+				lua_getglobal(L, "print");
+				if (lua_isfunction(L, -1)) {
+					traceback = lua_gettop(L) - nargs - 1;
+					lua_insert(L, traceback);
+				}
+				else {
+					lua_pop(L, 1);
+				}
+			}
+
+			int result = lua_pcall(L, nargs, ignoreFunctionReturnValue ? 0 : 1, traceback);
+
+			if (traceback) {
+				lua_remove(L, traceback);
+			}
+
+			if (0 == result) {
+				if (ignoreFunctionReturnValue) {
+					handled = "";
+				}
+				else {
+					handled = lua_tostring(L, -1);
+					lua_pop(L, 1);
+				}
+			}
+			else if (result == LUA_ERRRUN) {
+				lua_getglobal(L, "print");
+				lua_insert(L, -2); // use pushed error message
+				lua_pcall(L, 1, 0, 0);
 			}
 			else {
 				lua_pop(L, 1);
+				if (result == LUA_ERRMEM) {
+					host->Trace("> Lua: memory allocation error\n");
+				}
+				else if (result == LUA_ERRERR) {
+					host->Trace("> Lua: an error occurred, but cannot be reported due to failure in _TRACEBACK\n");
+				}
+				else {
+					host->Trace("> Lua: unexpected error\n");
+				}
 			}
 		}
+		return handled;
+	}
+	//!-end-[macro] [OnSendEditor]
 
-		int result = lua_pcall(L, nargs, ignoreFunctionReturnValue ? 0 : 1, traceback);
-
-		if (traceback) {
-			lua_remove(L, traceback);
-		}
-
-		if (0 == result) {
-			if (ignoreFunctionReturnValue) {
-				handled = "";
-			}
-			else {
-				handled = lua_tostring(L, -1);
-				lua_pop(L, 1);
-			}
-		}
-		else if (result == LUA_ERRRUN) {
-			lua_getglobal(L, "print");
-			lua_insert(L, -2); // use pushed error message
-			lua_pcall(L, 1, 0, 0);
-		}
-		else {
-			lua_pop(L, 1);
-			if (result == LUA_ERRMEM) {
-				host->Trace("> Lua: memory allocation error\n");
-			}
-			else if (result == LUA_ERRERR) {
-				host->Trace("> Lua: an error occurred, but cannot be reported due to failure in _TRACEBACK\n");
+	//!-start-[macro]
+	bool CallNamedFunction(const char* name, const char* stringArg, const char* stringArg2) {
+		bool handled = false;
+		if (luaState) {
+			lua_getglobal(luaState, name);
+			if (lua_isfunction(luaState, -1)) {
+				lua_pushstring(luaState, stringArg);
+				lua_pushstring(luaState, stringArg2);
+				handled = call_function(luaState, 2);
 			}
 			else {
-				host->Trace("> Lua: unexpected error\n");
+				lua_pop(luaState, 1);
 			}
 		}
+		return handled;
 	}
-	return handled;
-}
-//!-end-[macro] [OnSendEditor]
+	//!-end-[macro]
 
-//!-start-[macro]
-bool CallNamedFunction(const char* name, const char* stringArg, const char* stringArg2) {
-	bool handled = false;
-	if (luaState) {
-		lua_getglobal(luaState, name);
-		if (lua_isfunction(luaState, -1)) {
-			lua_pushstring(luaState, stringArg);
-			lua_pushstring(luaState, stringArg2);
-			handled = call_function(luaState, 2);
+	//!-start-[OnSendEditor]
+	const char* CallNamedFunction(const char* name, lua_Integer numberArg, lua_Integer numberArg2, const char* stringArg) {
+		const char* handled = NULL;
+		if (luaState) {
+			lua_getglobal(luaState, name);
+			if (lua_isfunction(luaState, -1)) {
+				lua_pushinteger(luaState, numberArg);
+				lua_pushinteger(luaState, numberArg2);
+				lua_pushstring(luaState, stringArg);
+				handled = call_sfunction(luaState, 3);
+			}
+			else {
+				lua_pop(luaState, 1);
+			}
 		}
-		else {
-			lua_pop(luaState, 1);
-		}
+		return handled;
 	}
-	return handled;
-}
-//!-end-[macro]
- 
-//!-start-[OnSendEditor]
-const char* CallNamedFunction(const char* name, lua_Integer numberArg, lua_Integer numberArg2, const char* stringArg) {
-	const char* handled = NULL;
-	if (luaState) {
-		lua_getglobal(luaState, name);
-		if (lua_isfunction(luaState, -1)) {
-			lua_pushinteger(luaState, numberArg);
-			lua_pushinteger(luaState, numberArg2);
-			lua_pushstring(luaState, stringArg);
-			handled = call_sfunction(luaState, 3);
-		}
-		else {
-			lua_pop(luaState, 1);
-		}
-	}
-	return handled;
-}
 
-const char* CallNamedFunction(const char* name, lua_Integer numberArg, const char* stringArg, lua_Integer numberArg2) {
-	const char* handled = NULL;
-	if (luaState) {
-		lua_getglobal(luaState, name);
-		if (lua_isfunction(luaState, -1)) {
-			lua_pushinteger(luaState, numberArg);
-			lua_pushstring(luaState, stringArg);
-			lua_pushinteger(luaState, numberArg2);
-			handled = call_sfunction(luaState, 3);
+	const char* CallNamedFunction(const char* name, lua_Integer numberArg, const char* stringArg, lua_Integer numberArg2) {
+		const char* handled = NULL;
+		if (luaState) {
+			lua_getglobal(luaState, name);
+			if (lua_isfunction(luaState, -1)) {
+				lua_pushinteger(luaState, numberArg);
+				lua_pushstring(luaState, stringArg);
+				lua_pushinteger(luaState, numberArg2);
+				handled = call_sfunction(luaState, 3);
+			}
+			else {
+				lua_pop(luaState, 1);
+			}
 		}
-		else {
-			lua_pop(luaState, 1);
-		}
+		return handled;
 	}
-	return handled;
-}
 
-const char* CallNamedFunction(const char* name, lua_Integer numberArg, lua_Integer numberArg2, lua_Integer numberArg3) {
-	const char* handled = NULL;
-	if (luaState) {
-		lua_getglobal(luaState, name);
-		if (lua_isfunction(luaState, -1)) {
-			lua_pushinteger(luaState, numberArg);
-			lua_pushinteger(luaState, numberArg2);
-			lua_pushinteger(luaState, numberArg3);
-			handled = call_sfunction(luaState, 3);
+	const char* CallNamedFunction(const char* name, lua_Integer numberArg, lua_Integer numberArg2, lua_Integer numberArg3) {
+		const char* handled = NULL;
+		if (luaState) {
+			lua_getglobal(luaState, name);
+			if (lua_isfunction(luaState, -1)) {
+				lua_pushinteger(luaState, numberArg);
+				lua_pushinteger(luaState, numberArg2);
+				lua_pushinteger(luaState, numberArg3);
+				handled = call_sfunction(luaState, 3);
+			}
+			else {
+				lua_pop(luaState, 1);
+			}
 		}
-		else {
-			lua_pop(luaState, 1);
-		}
+		return handled;
 	}
-	return handled;
-}
 
-std::string CallNamedFunction(const char* name, lua_Integer numberArg) {
-	std::string handled;
-	if (luaState) {
-		lua_getglobal(luaState, name);
-		if (lua_isfunction(luaState, -1)) {
-			lua_pushinteger(luaState, numberArg);
-			lua_call(luaState, 1, 1);
-			handled = lua_tostring(luaState, 1);;
+	std::string CallNamedFunction(const char* name, lua_Integer numberArg) {
+		std::string handled;
+		if (luaState) {
+			lua_getglobal(luaState, name);
+			if (lua_isfunction(luaState, -1)) {
+				lua_pushinteger(luaState, numberArg);
+				lua_call(luaState, 1, 1);
+				handled = lua_tostring(luaState, 1);;
+			}
+			else {
+				lua_pop(luaState, 1);
+			}
 		}
-		else {
-			lua_pop(luaState, 1);
-		}
+		return handled;
 	}
-	return handled;
-}
-//!-end-[OnSendEditor]
+	//!-end-[OnSendEditor]
 #endif // RB_OnSendEditor
 
 bool HasNamedFunction(const char *name) noexcept {
@@ -1533,10 +1532,10 @@ void push_pane_object(lua_State *L, ExtensionAPI::Pane p) noexcept {
 		lua_setfield(L, -2, "append");
 
 #ifdef  RB_ENCODING
-		//!-start-[EncodingToLua]
-		lua_pushcfunction(luaState, cf_pane_get_codepage);
-		lua_setfield(luaState, -2, "codepage");
-		//!-end-[EncodingToLua]
+			//!-start-[EncodingToLua]
+			lua_pushcfunction(luaState, cf_pane_get_codepage);
+			lua_setfield(luaState, -2, "codepage");
+			//!-end-[EncodingToLua]
 #endif
 		lua_pushcfunction(L, cf_pane_match_generator);
 		lua_pushcclosure(L, cf_pane_match, 1);
@@ -1634,7 +1633,7 @@ void PublishGlobalBufferData() noexcept {
 }
 
 #ifdef RB_SSR
-int cf_editor_reload_startup_script(lua_State*); //!-add-[StartupScriptReload]
+	int cf_editor_reload_startup_script(lua_State*); //!-add-[StartupScriptReload]
 #endif
 
 bool InitGlobalScope(bool checkProperties, bool forceReload = false) {
@@ -1718,11 +1717,11 @@ bool InitGlobalScope(bool checkProperties, bool forceReload = false) {
 	luaL_openlibs(luaState);
 
 #ifdef RB_UTF8
-	lua_utf8_register_libs(luaState); //!-change-[EncodingToLua]
+		lua_utf8_register_libs(luaState); //!-change-[EncodingToLua]
 #endif RB_UTF8
 
 #ifdef RB_GETCURWORD
-	lua_register(luaState, "GetCurrentWord", cf_get_current_word);
+		lua_register(luaState, "GetCurrentWord", cf_get_current_word);
 #endif
 
 	lua_register(luaState, "_ALERT", cf_global_print);
@@ -1779,45 +1778,45 @@ bool InitGlobalScope(bool checkProperties, bool forceReload = false) {
 	lua_setfield(luaState, -2, "MenuCommand");
 
 #ifdef RB_CheckMenus
-	//!-start-[CheckMenus]
-	lua_pushcfunction(luaState, cf_scite_check_menus);
-	lua_setfield(luaState, -2, "CheckMenus");
-	//!-end-[CheckMenus]
+		//!-start-[CheckMenus]
+		lua_pushcfunction(luaState, cf_scite_check_menus);
+		lua_setfield(luaState, -2, "CheckMenus");
+		//!-end-[CheckMenus]
 #endif // RB_CheckMenus
 
 #ifdef RB_LFL
 	//!-start-[LocalizationFromLua]
-	lua_pushcfunction(luaState, cf_editor_get_translation);
-	lua_setfield(luaState, -2, "GetTranslation");
-	//!-end-[LocalizationFromLua]
+		lua_pushcfunction(luaState, cf_editor_get_translation);
+		lua_setfield(luaState, -2, "GetTranslation");
+		//!-end-[LocalizationFromLua]
 #endif // RB_LFL
 
 #ifdef RB_Perform
 //!-start-[Perform]
-	lua_pushcfunction(luaState, cf_scite_perform);
-	lua_setfield(luaState, -2, "Perform");
-//!-end-[Perform]
+		lua_pushcfunction(luaState, cf_scite_perform);
+		lua_setfield(luaState, -2, "Perform");
+		//!-end-[Perform]
 #endif
 
 #ifdef RB_IA
 	//!-start-[InsertAbbreviation]
-	lua_pushcfunction(luaState, cf_editor_insert_abbrev);
-	lua_setfield(luaState, -2, "InsertAbbreviation");
-	//!-end-[InsertAbbreviation]
+		lua_pushcfunction(luaState, cf_editor_insert_abbrev);
+		lua_setfield(luaState, -2, "InsertAbbreviation");
+		//!-end-[InsertAbbreviation]
 #endif // RB_IA
 
 #ifdef RB_PDFL
 	//!-start-[ParametersDialogFromLua]
-	lua_pushcfunction(luaState, cf_scite_show_parameters_dialog);
-	lua_setfield(luaState, -2, "ShowParametersDialog");
-	//!-end-[ParametersDialogFromLua]
+		lua_pushcfunction(luaState, cf_scite_show_parameters_dialog);
+		lua_setfield(luaState, -2, "ShowParametersDialog");
+		//!-end-[ParametersDialogFromLua]
 #endif // RB_PDFL
 
 #ifdef RB_RSS
 	//!-start-[ReloadStartupScript]
-	lua_pushcfunction(luaState, cf_editor_reload_startup_script);
-	lua_setfield(luaState, -2, "ReloadStartupScript");
-	//!-end-[ReloadStartupScript]
+		lua_pushcfunction(luaState, cf_editor_reload_startup_script);
+		lua_setfield(luaState, -2, "ReloadStartupScript");
+		//!-end-[ReloadStartupScript]
 #endif // RB_RSS
 
 	lua_pushcfunction(luaState, cf_scite_update_status_bar);
@@ -1830,8 +1829,8 @@ bool InitGlobalScope(bool checkProperties, bool forceReload = false) {
 	lua_setfield(luaState, -2, "StripSet");
 
 #ifdef RB_USBTT
-	lua_pushcfunction(luaState, cf_scite_strip_set_tip_text);
-	lua_setfield(luaState, -2, "StripSetBtnTipText");
+		lua_pushcfunction(luaState, cf_scite_strip_set_tip_text);
+		lua_setfield(luaState, -2, "StripSetBtnTipText");
 #endif
 
 	lua_pushcfunction(luaState, cf_scite_strip_set_list);
@@ -1867,7 +1866,7 @@ bool InitGlobalScope(bool checkProperties, bool forceReload = false) {
 		if (fpTest.Exists()) {
 
 #ifdef RB_SF // fix encoding for startup path 
-			if (0 == luaL_loadfile(luaState, GUI::ConvertFromUTF8(startupScript, CP_ACP).c_str())) {
+				if (0 == luaL_loadfile(luaState, GUI::ConvertFromUTF8(startupScript, CP_ACP).c_str())) {
 #else
 			if (0 == luaL_loadfile(luaState, startupScript.c_str())) {
 #endif
@@ -1904,16 +1903,16 @@ bool InitGlobalScope(bool checkProperties, bool forceReload = false) {
 }
 
 #ifdef RB_SSR
-//!-start-[StartupScriptReload]
-int cf_editor_reload_startup_script(lua_State*) {
-	InitGlobalScope(false, true);
-	if (extensionScript.length()) {
-		reinterpret_cast<LuaExtension*>(host)->Load(extensionScript.c_str());
+	//!-start-[StartupScriptReload]
+	int cf_editor_reload_startup_script(lua_State*) {
+		InitGlobalScope(false, true);
+		if (extensionScript.length()) {
+			reinterpret_cast<LuaExtension*>(host)->Load(extensionScript.c_str());
+		}
+		CallNamedFunction("OnInit", static_cast<intptr_t>(1), static_cast<intptr_t>(0));
+		return 0;
 	}
-	CallNamedFunction("OnInit", static_cast<intptr_t>(1), static_cast<intptr_t>(0));
-	return 0;
-}
-//!-end-[StartupScriptReload]
+	//!-end-[StartupScriptReload]
 #endif // RB_SSR
 
 }
@@ -2658,7 +2657,8 @@ bool LuaExtension::OnKey(int keyval, int modifiers, char ch) { //!-change-[OnKey
 			const char str[2] = { ch, 0 };
 			lua_pushstring(luaState, str);
 			handled = call_function(luaState, 5);
-		} else {
+		}
+		else {
 			lua_pop(luaState, 1);
 		}
 	}
@@ -2698,13 +2698,6 @@ bool LuaExtension::NeedsOnClose() {
 	return HasNamedFunction("OnClose");
 }
 
-#ifdef RB_ONTABMOVE
-void LuaExtension::OnTabMove(int idx_from, int idx_to)
-{
-	CallNamedFunction("OnTabMove", idx_from + 1, idx_to + 1);
-}
-#endif //RB_ONTABMOVE
-
 #ifdef RB_MACRO
 //!-start-[macro]
 bool LuaExtension::OnMacro(const char* p, const char* q) {
@@ -2732,3 +2725,17 @@ const char* LuaExtension::OnSendEditor(Scintilla::Message msg, uintptr_t wp, lon
 }
 //!-end-[OnSendEditor]
 #endif //RB_OnSendEditor
+
+#ifdef RB_ONTABMOVE
+void LuaExtension::OnTabMove(int idx_from, int idx_to)
+{
+	CallNamedFunction("OnTabMove", idx_from + 1, idx_to + 1);
+}
+#endif //RB_ONTABMOVE
+
+#ifdef RB_OFP
+void LuaExtension::OnFindProperty(const char* msg)
+{
+	CallNamedFunction("OnFindProperty", msg);
+}
+#endif //RB_OFP

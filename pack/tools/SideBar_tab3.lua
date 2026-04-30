@@ -4,8 +4,6 @@
 return function(tabs, panel_width, colorback, colorfore)
 
 	local tab3 = gui.panel(panel_width)
-	-- local list_ascii = gui.list(true, true) -- multi column, single select, large_icons
-	-- tab3:client(list_ascii)
 	local list_ascii = tab3:add_list(true, true)
 	list_ascii:set_align() -- "client"
 	list_ascii:add_column("DEC", 20)

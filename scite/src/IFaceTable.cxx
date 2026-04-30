@@ -492,6 +492,7 @@ static IFaceConstant ifaceConstants[] = {
 	{"SCE_ASM_OPERATOR",4},
 	{"SCE_ASM_REGISTER",8},
 	{"SCE_ASM_STRING",3},
+	{"SCE_ASM_STRINGBACKQUOTE",16},
 	{"SCE_ASM_STRINGEOL",13},
 	{"SCE_ASN1_ATTRIBUTE",7},
 	{"SCE_ASN1_COMMENT",1},
@@ -1875,6 +1876,7 @@ static IFaceConstant ifaceConstants[] = {
 	{"SCE_PAS_DEFAULT",0},
 	{"SCE_PAS_HEXNUMBER",8},
 	{"SCE_PAS_IDENTIFIER",1},
+	{"SCE_PAS_MULTILINESTRING",15},
 	{"SCE_PAS_NUMBER",7},
 	{"SCE_PAS_OPERATOR",13},
 	{"SCE_PAS_PREPROCESSOR",5},
@@ -3526,6 +3528,7 @@ static IFaceConstant ifaceConstants[] = {
 	{"SC_STATUS_BADALLOC",2},
 	{"SC_STATUS_FAILURE",1},
 	{"SC_STATUS_OK",0},
+	{"SC_STATUS_OUTSIDE_DOCUMENT",3},
 	{"SC_STATUS_WARN_REGEX",1001},
 	{"SC_STATUS_WARN_START",1000},
 	{"SC_STRETCH_CONDENSED",3},
@@ -4215,7 +4218,7 @@ static IFaceProperty ifaceProperties[] = {
 
 enum {
 	ifaceFunctionCount = 333,
-	ifaceConstantCount = 3444,
+	ifaceConstantCount = 3447,
 	ifacePropertyCount = 280
 };
 

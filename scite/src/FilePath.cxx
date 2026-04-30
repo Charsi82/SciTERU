@@ -407,7 +407,7 @@ FilePath FilePath::UserHomeDirectory() {
 	return _wgetenv(GUI_TEXT("USERPROFILE"));
 #elif defined (__APPLE__)
 	// Normally sandboxed so $HOME points to sandbox directory not user home
-	struct passwd *pw = getpwuid(getuid());
+	const struct passwd *pw = getpwuid(getuid());
 	if (!pw) {
 		return {};
 	}

@@ -94,7 +94,7 @@ local function GetClickedText()
 	local cur_line, pos_cur = pane:GetCurLine()
 	local pos_start, pos_end = 0, 0
 	local q = "'"
-	local no_filepath_chars = '%s=:,*?<>|"' .. q -- символы, недопутимые в имени файла
+	local no_filepath_chars = '%s%)%(=%:%,%*%?%<%>%|"' .. q -- символы, недопутимые в имени файла
 	local no_filepath_end_char = '.\\/[(' -- символы, недопутимые в последнем символе имени файла
 	local re = '%a?:?\\?[^' .. no_filepath_chars .. ']+[^' .. no_filepath_chars .. no_filepath_end_char .. ']'
 	repeat

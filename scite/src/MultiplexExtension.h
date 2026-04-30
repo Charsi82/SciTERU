@@ -121,6 +121,10 @@ public:
 	void OnTabMove(int, int) override;
 #endif //RB_ONTABMOVE
 
+#ifdef RB_OFP
+	void OnFindProperty(const char*) override;
+#endif //RB_OFP
+
 	bool OnUserStrip(int control, int change) override;
 	bool NeedsOnClose() override;
 

@@ -3,8 +3,7 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
     <LUA_SRC>..\..\addons\lua_src\src\</LUA_SRC>
-    <LUA_LIB>..\..\addons\lua_static\Intermediate\bin\</LUA_LIB>
-    <LUA_LIB_MT>..\..\addons\lualib_mt\Intermediate\bin\</LUA_LIB_MT>
+    <LUA_LIB>..\..\addons\lua_staticlib\Intermediate\bin\</LUA_LIB>
   </PropertyGroup>
   <PropertyGroup>
     <OutDir>../Intermediate\bin\</OutDir>
@@ -30,9 +29,6 @@
     </BuildMacro>
     <BuildMacro Include="LUA_LIB">
       <Value>$(LUA_LIB)</Value>
-    </BuildMacro>
-    <BuildMacro Include="LUA_LIB_MT">
-      <Value>$(LUA_LIB_MT)</Value>
     </BuildMacro>
   </ItemGroup>
 </Project>

@@ -378,5 +378,8 @@ SciTE Ru-Board additions defines
 
 // добвляет свойство ZoomFactorPercent
 #define RB_ZFP
+
+// добвляет событие OnFindProperty, происходящее при смене своqства find.what
+#define RB_OFP
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 

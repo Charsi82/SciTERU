@@ -85,11 +85,11 @@ History:
 
 require 'events'
 
-function AddEventHandler(EventName, Handler, RunOnce)
+function AddEventHandler(EventName, Handler, RunOnce, ToBegin)
 	event(EventName):register(function(e, ...)
 		if RunOnce then e:removeThisCallback() end
 		return Handler(...)
-	end)
+	end, ToBegin)
 	if not _G[EventName] then
 		_G[EventName] = function(...) return event(EventName)(...) end
 	end

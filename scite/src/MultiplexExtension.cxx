@@ -218,7 +218,7 @@ bool MultiplexExtension::OnClick(int modifiers) {
 #ifdef RB_OMBU
 //!-start-[OnMouseButtonUp]
 bool MultiplexExtension::OnMouseButtonUp(int modifiers) {
-	for (Extension* pexp : extensions) 
+	for (Extension* pexp : extensions)
 		if (pexp->OnMouseButtonUp(modifiers))
 			return true;
 	return false;
@@ -229,7 +229,7 @@ bool MultiplexExtension::OnMouseButtonUp(int modifiers) {
 #ifdef RB_OHSC
 //!-start-[OnHotSpotReleaseClick]
 bool MultiplexExtension::OnHotSpotReleaseClick(int modifiers) {
-	for (Extension* pexp : extensions) 
+	for (Extension* pexp : extensions)
 		if (pexp->OnHotSpotReleaseClick(modifiers))
 			return true;
 	return false;
@@ -360,10 +360,18 @@ const char* MultiplexExtension::OnSendEditor(Scintilla::Message msg, uintptr_t w
 #ifdef RB_ONTABMOVE
 void MultiplexExtension::OnTabMove(int idx_from, int idx_to)
 {
-	for (Extension *pexp : extensions)
+	for (Extension* pexp : extensions)
 		pexp->OnTabMove(idx_from, idx_to);
 }
 #endif //RB_ONTABMOVE
+
+#ifdef RB_OFP
+void MultiplexExtension::OnFindProperty(const char* msg)
+{
+	for (Extension* pexp : extensions)
+		pexp->OnFindProperty(msg);
+}
+#endif
 
 bool MultiplexExtension::OnUserStrip(int control, int change) {
 	for (Extension *pexp : extensions)

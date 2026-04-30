@@ -523,6 +523,23 @@ return function(tabs, panel_width, colorback, colorfore)
 
 			Lang2lpeg['*'] = lpeg.Ct(patt)
 		end -- ^----- * ------^--
+		
+		do -- v----- ini ------v--
+			-- redefine common patterns
+			local SC = S " \t\160"
+			-- define local patterns
+			local section = C(P '[' * (ANY - P ']') ^ 1 * P ']')* cl
+			-- create flags
+			-- create additional captures
+			local tillNL = C((ANY - NL) ^ 0)
+			-- definitions to capture:
+			local def = (NL + BOF) * Ct(section * SC ^ 0 * tillNL)
+
+			-- resulting pattern, which does the work
+			local patt = (def + 1) ^ 0 * EOF
+
+			Lang2lpeg['ini'] = lpeg.Ct(patt)
+		end -- ^----- * ------^--
 
 		do -- v------- autohotkey -------v--
 			-- redefine
@@ -623,7 +640,8 @@ return function(tabs, panel_width, colorback, colorfore)
 			[props['file.patterns.rust']] = 'Rust',
 			[props['file.patterns.nemerle']] = 'Nemerle',
 			[props['file.patterns.nncron']] = 'nnCron',
-			['*.ahk'] = 'autohotkey'
+			['*.ahk'] = 'autohotkey',
+			['*.properties;*.ini;*.ltx'] = 'ini',
 		}
         for i, v in pairs(patterns) do
             for ext in (i .. ';'):gmatch("%*%.([^;]+);") do
@@ -638,7 +656,6 @@ return function(tabs, panel_width, colorback, colorfore)
 
 		local ext = props["FileExt"]:lower() -- a bit unsafe...
 		local lang = Ext2Lang[ext]
-
 		local start_code = Lang2CodeStart[lang]
 		local lpegPattern = Lang2lpeg[lang]
 		if not lpegPattern then
@@ -653,7 +670,6 @@ return function(tabs, panel_width, colorback, colorfore)
 		local textAll = editor:GetText()
 		local start_code_pos = start_code and editor:findtext(start_code, SCFIND_REGEXP) or 0
 
-		-- lpegPattern = nil
 		table_functions = lpegPattern:match(textAll, start_code_pos + 1) -- 2nd arg is the symbol index to start with
 	end
 
@@ -956,6 +972,7 @@ return function(tabs, panel_width, colorback, colorfore)
 	end)
 	
 	local function Bookmark_BeforeAdd(line)
+		if not shell.fileexists(props['FilePath']) then return end
 		-- print('tab1:local function Bookmark_BeforeAdd(line)')
 		local parent_item = get_or_add_parent_item()
 		tree_bookmarks:tree_remove_childs(parent_item)
@@ -968,6 +985,7 @@ return function(tabs, panel_width, colorback, colorfore)
 	end
 
 	local function Bookmark_BeforeDelete(line)
+		if not shell.fileexists(props['FilePath']) then return end
 		-- print('tab1:local function Bookmark_BeforeDelete(line)')
 		local parent_item = get_or_add_parent_item()
 		if not line then
@@ -987,9 +1005,9 @@ return function(tabs, panel_width, colorback, colorfore)
 
 	AddEventHandler("OnSendEditor", function(id_msg, wp, lp)
 		if id_msg == SCI_MARKERADD then -- wp = line_number, lp = marker_type
-			if lp == 1 then Bookmark_BeforeAdd(wp) end
+				if lp == 1 then Bookmark_BeforeAdd(wp) end
 		elseif id_msg == SCI_MARKERDELETE then -- wp = line_number, lp = marker_type
-			if lp == 1 then Bookmark_BeforeDelete(wp) end
+				if lp == 1 then Bookmark_BeforeDelete(wp) end
 		elseif id_msg == SCI_MARKERDELETEALL then -- wp = marker_type
 			if wp == 1 then Bookmark_BeforeDelete() end
 		end

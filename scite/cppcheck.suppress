@@ -1,6 +1,6 @@
 // File to suppress cppcheck warnings for files that will not be fixed.
 // Does not suppress warnings where an additional occurrence of the warning may be of interest.
-// Configured for cppcheck 2.15
+// Configured for cppcheck 2.20
 
 // Just a report of how many checkers are run
 checkersReport
@@ -47,6 +47,13 @@ stlcstrConstructor:scite/gtk/SciTEGTK.cxx
 // gtk_print_operation_set_default_page_setup takes a non const pointer so ancestor variables should be non-const
 constVariablePointer:scite/gtk/SciTEGTK.cxx
 
+// Send pipes code difficult to test so don't want to modify code
+noCopyConstructor:scite/gtk/DirectorExtension.cxx
+noOperatorEq:scite/gtk/DirectorExtension.cxx
+
+// Window::SetRedraw needs to be an instance method on Win32 so don't warn for empty on GTK
+functionStatic:scite/gtk/GUIGTK.cxx
+
 // Changing events to const pointers changes signature and would require casts when hooking up
 constParameterCallback:scite/gtk/SciTEGTK.cxx
 constParameterPointer:scite/gtk/SciTEGTK.cxx
@@ -54,6 +61,20 @@ constParameterCallback:scite/gtk/Widget.cxx
 constParameterCallback:scite/gtk/Strips.cxx
 // Since LuaPanicFunction is callback of form prescribed by Lua match signature exactly rather than add const
 constParameterCallback:scite/src/LuaExtension.cxx
+
+// Preprocessor #if with *_CHECK_VERSION(...)
+syntaxError:scite/gtk/Widget.h
+syntaxError:scite/gtk/SciTEGTK.cxx
+syntaxError:scite/gtk/GUIGTK.cxx
+unmatchedSuppression:scite/gtk/Widget.cxx
+unmatchedSuppression:scite/gtk/SciTEGTK.cxx
+unmatchedSuppression:scite/gtk/GUIGTK.cxx
+unmatchedSuppression:scite/gtk/Strips.cxx
+
+// can't handle *_CHECK_VERSION(...)
+noValidConfiguration:scite/gtk/Widget.cxx
+noValidConfiguration:scite/gtk/SciTEGTK.cxx
+noValidConfiguration:scite/gtk/Strips.cxx
 
 // A judgement call: value semantics avoids potential for lifetime bugs at cost of performance
 returnByReference:scite/src/StringHelpers.h
@@ -64,11 +85,17 @@ knownConditionTrueFalse:scite/src/SciTEBuffers.cxx
 // Not using const pointer as called method TextWritten may change to mutate argument
 constParameterPointer:scite/src/SciTEIO.cxx
 
+// Not using const pointer as may change to mutate argument
+constParameterPointer:scite/src/Extender.h
+
 // Menu::Show is cross-platform and may have to mutate its second argument
 constParameterReference:scite/win32/GUIWin.cxx
 
 // Prefer uniform use of | instead of special casing first which is just assignment
 badBitmaskCheck:scite/win32/SciTEWin.cxx
+
+// External header
+unusedFunction:scintilla/include/ScintillaTypes.h
 
 // Suppress everything in lua as that comes from the Lua distribution
 *:scite/lua/*
@@ -78,6 +105,21 @@ badBitmaskCheck:scite/win32/SciTEWin.cxx
 
 // cppcheck doesn't understand ""sv literals
 unknownMacro:scite/test/testUtf8_16.cxx
+
+// unread variables and overwritten without read in tests
+unreadVariable:scite/test/*.cxx
+
+// 'obviously' true tests are still useful
+knownConditionTrueFalse:scite/test/*.cxx
+
+// overwritten without read in tests
+redundantInitialization:scite/test/*.cxx
+
+// doesn't understand cppcheck TEST_CASE
+syntaxError:scite/test/*.cxx
+
+// doesn't understand cppcheck generated functions
+unusedFunction:scite/test/*.cxx
 
 // Testing code: cppcheck uses operators for boolean tests instead of omitting them
 comparisonOfFuncReturningBoolError:scite/test/*.cxx

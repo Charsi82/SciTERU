@@ -62,14 +62,15 @@ local function select_highlighted_link()
 	end
 	return false
 end
+
 AddEventHandler("OnDoubleClick", function(shift, ctrl, alt)
-	if editor.Focus then
-		if select_highlighted_link() and ctrl then
+	if ctrl and editor.Focus and select_highlighted_link() then
 			local url = editor:GetSelText()
 			shell.exec(url)
-		end
+			return true
 	end
-end)
+	return false
+end, false, true)
 
 local function auto_highlight()
 	local list_lexers = props['highlight.links.lexers']

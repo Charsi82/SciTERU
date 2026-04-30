@@ -3684,21 +3684,20 @@ int luaopen_gui(lua_State* L)
 	lua_openclass_CMenu(L);	// CMenu
 	lua_openclass_TDC(L);	// TDC
 
-	//init_tdc_metatable(L);
-
 	luaL_newmetatable(L, WINDOW_CLASS);  // create metatable for window objects
 	lua_pushvalue(L, -1);  // push metatable
 	lua_setfield(L, -2, "__index");  // metatable.__index = metatable
-
 #if LUA_VERSION_NUM < 502
 	luaL_register(L, NULL, window_methods);
-	//luaL_openlib(L, "gui", gui, 0);
-	luaL_register(L, "gui", gui);
 #else
 	luaL_setfuncs(L, window_methods, 0);
-	luaL_newlib(L, gui);
 #endif
 
+#if LUA_VERSION_NUM < 502
+	luaL_register(L, "gui", gui);
+#else
+	luaL_newlib(L, gui);
+#endif
 	lua_pushvalue(L, -1);  /* copy of module */
 	lua_setglobal(L, "gui");
 	return 1;

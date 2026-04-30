@@ -44,15 +44,15 @@ public:
 	virtual void UpdateStatusBar(bool bUpdateSlowData)=0;
 	virtual void UserStripShow(const char *description)=0;
 	virtual void UserStripSet(int control, const char *value)=0;
-	
+
 #ifdef RB_USBTT
-	virtual void UserStripSetTipText(int control, const char *value)=0;
+	virtual void UserStripSetTipText(int control, const char* value) = 0;
 #endif
 
 	virtual void UserStripSetList(int control, const char *value)=0;
 	virtual std::string UserStripValue(int control)=0;
 	virtual Scintilla::ScintillaCall &PaneCaller(Pane p) noexcept =0;
-	
+
 #ifdef RB_CheckMenus
 	virtual void CheckMenus() = 0; //!-add-[CheckMenus]
 #endif // RB_CheckMenus
@@ -140,7 +140,11 @@ public:
 #ifdef RB_ONTABMOVE
 	virtual void OnTabMove(int, int) {};
 #endif //RB_ONTABMOVE
-	
+
+#ifdef RB_OFP
+	virtual void OnFindProperty(const char*) {};
+#endif //RB_OFP
+
 #ifdef RB_ONKEY
 	virtual bool OnKey(int, int, char) { return false; } //!-change-[OnKey]
 #else

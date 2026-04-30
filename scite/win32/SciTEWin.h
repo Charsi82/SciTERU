@@ -244,7 +244,7 @@ protected:
 
 	void ReadLocalization() override;
 	void GetWindowPosition(int *left, int *top, int *width, int *height, int *maximize) override;
-	int GetScaleFactor() noexcept;
+	static int GetScaleFactor() noexcept;
 	bool SetScaleFactor(int scale);
 
 #ifdef RB_SUBMENU
@@ -255,7 +255,7 @@ protected:
 	void ReadPropertiesInitial() override;
 	void ReadProperties() override;
 
-	SystemAppearance WindowsAppearance() const noexcept;
+	static SystemAppearance WindowsAppearance() noexcept;
 	SystemAppearance CurrentAppearance() const noexcept override;
 
 	void TimerStart(int mask) override;

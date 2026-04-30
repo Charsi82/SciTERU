@@ -92,6 +92,10 @@ public:
 	void OnTabMove(int idx_from, int idx_to) override;
 #endif //RB_ONTABMOVE
 
+#ifdef RB_OFP
+	void OnFindProperty(const char*) override;
+#endif //RB_OFP
+
 };
 
 #endif

@@ -65,7 +65,7 @@
 #include "SciTEBase.h"
 
 #ifdef RB_OMC
-#define _MAX_EXTENSION_RECURSIVE_CALL 100 //!-add-[OnMenuCommand]
+constexpr int _MAX_EXTENSION_RECURSIVE_CALL = 100; //!-add-[OnMenuCommand]
 #endif // RB_OMC
 
 Searcher::Searcher() {
@@ -181,7 +181,7 @@ bool StyleAndWords::Includes(const std::string &value) const {
 		return false;
 	}
 	if (IsAlphabetic(first[0])) {
-		return words.count(value) != 0;
+		return words.contains(value);
 	}
 	// Set of individual characters. Only one character allowed for now
 	const char ch = first[0];
@@ -458,7 +458,7 @@ static bool isNotStringParams(unsigned int msg) {
 	case SCI_MARKERADD:
 	case SCI_MARKERDELETE:
 		return true;
-}
+	}
 	return false;
 }
 
@@ -823,7 +823,7 @@ constexpr bool IsBrace(char ch) noexcept {
 bool SciTEBase::FindMatchingBracePosition(bool editor, SA::Position &braceAtCaret, SA::Position &braceOpposite, bool sloppy) {
 	bool isInside = false;
 #ifdef RB_OnSendEditor
-	GUI::ScintillaWindow &win = editor ? reinterpret_cast<GUI::ScintillaWindow&>(wEditor) : wOutput; //!-change-[OnSendEditor]
+	GUI::ScintillaWindow& win = editor ? reinterpret_cast<GUI::ScintillaWindow&>(wEditor) : wOutput; //!-change-[OnSendEditor]
 #else
 	GUI::ScintillaWindow &win = editor ? wEditor : wOutput;
 #endif
@@ -898,7 +898,7 @@ void SciTEBase::BraceMatch(bool editor) {
 	SA::Position braceOpposite = -1;
 	FindMatchingBracePosition(editor, braceAtCaret, braceOpposite, bracesSloppy);
 #ifdef RB_OnSendEditor
-	GUI::ScintillaWindow &win = editor ? reinterpret_cast<GUI::ScintillaWindow&>(wEditor) : wOutput; //!-change-[OnSendEditor]
+	GUI::ScintillaWindow& win = editor ? reinterpret_cast<GUI::ScintillaWindow&>(wEditor) : wOutput; //!-change-[OnSendEditor]
 #else
 	GUI::ScintillaWindow &win = editor ? wEditor : wOutput;
 #endif
@@ -1223,8 +1223,8 @@ void SciTEBase::SelectionIntoFind(bool stripEol /*=true*/) {
 			sel = "";
 			break;
 		case 1:
- 			//fill with selection, if none leave blank
- 			sel = SelectionExtend(0, stripEol);
+			//fill with selection, if none leave blank
+			sel = SelectionExtend(0, stripEol);
 			break;
 		default:
 			//fill with word if no selection is present
@@ -1450,6 +1450,9 @@ SA::Position SciTEBase::FindInTarget(const std::string &findWhatText, SA::Span r
 void SciTEBase::SetFindText(std::string_view sFind) {
 	findWhat = sFind;
 	props.Set("find.what", findWhat);
+#ifdef RB_OFP
+	if (extender) extender->OnFindProperty(findWhat.c_str());
+#endif //RB_OFP
 }
 
 void SciTEBase::SetFind(std::string_view sFind) {
@@ -1672,7 +1675,6 @@ intptr_t SciTEBase::DoReplaceAll(bool inSelection) {
 			if (countSelections == 1)
 				SetSelection(rangeSearch.start, rangeSearch.end);
 		} else {
-
 #ifdef RB_RBAFALL
 			if (!props.GetInt("find.replace.return.to.start")) //!-add-[ReturnBackAfterRALL]
 #endif // RB_RBAFALL
@@ -2044,15 +2046,15 @@ void SciTEBase::ContinueCallTip() {
 	int braces = 0;
 	int commas = 0;
 #ifdef RB_BTCT3
-	if(FindLanguageProperty("calltip.*.fixcolorize", "0") == "1")
-	for (SA::Position i = startCalltipWord - 1; i>0 ; i--) {
-		if (line[i] == '.')
-			break;
-		if (line[i] == ':') {
-			commas++;
-			break;
+	if (FindLanguageProperty("calltip.*.fixcolorize", "0") == "1")
+		for (SA::Position i = startCalltipWord - 1; i > 0; i--) {
+			if (line[i] == '.')
+				break;
+			if (line[i] == ':') {
+				commas++;
+				break;
+			}
 		}
-	}
 #endif
 	for (SA::Position i = startCalltipWord; i < current; i++) {
 		if (Contains(calltipParametersStart, line[i]))
@@ -2221,7 +2223,7 @@ bool SciTEBase::PerformInsertAbbreviation() {
 	}
 #else
 	//!-start-[InsertAbbreviation]
-	return InsertAbbreviation (data.c_str());
+	return InsertAbbreviation(data.c_str());
 }
 
 bool SciTEBase::InsertAbbreviation(const char* _data) {
@@ -2231,7 +2233,7 @@ bool SciTEBase::InsertAbbreviation(const char* _data) {
 #endif // RB_IA
 
 #ifdef RB_ENCODING
-	const std::string expbuf = EncodeString( UnSlashString(data) );//>!-add-[FixEncoding]
+	const std::string expbuf = EncodeString(UnSlashString(data));//>!-add-[FixEncoding]
 #else
 	const std::string expbuf = UnSlashString(data);
 #endif //RB_ENCODING
@@ -2456,7 +2458,7 @@ bool SciTEBase::StartBlockComment() {
 	const bool placeCommentsAtLineStart = props.GetInt(commentAtLineStart) != 0;
 
 	std::string comment = props.GetString(base);
-	if (comment == "") { // user friendly error message box
+	if (comment.empty()) { // user friendly error message box
 		GUI::gui_string sBase = GUI::StringFromUTF8(base);
 		GUI::gui_string error = LocaliseMessage(
 						"Block comment variable '^0' is not defined in SciTE *.properties!", sBase.c_str());
@@ -2488,7 +2490,7 @@ bool SciTEBase::StartBlockComment() {
 		}
 		std::string linebuf = wEditor.StringOfRange(SA::Span(lineIndent, lineEnd));
 		// empty lines are not commented
-		if (linebuf.length() < 1)
+		if (linebuf.empty())
 			continue;
 		if (linebuf.starts_with(comment)) {
 			SA::Position commentLength = comment.length();
@@ -2553,7 +2555,7 @@ bool SciTEBase::StartBoxComment() {
 	std::string startComment = props.GetString(startBase);
 	std::string middleComment = props.GetString(middleBase);
 	std::string endComment = props.GetString(endBase);
-	if (startComment == "" || middleComment == "" || endComment == "") {
+	if (startComment.empty() || middleComment.empty() || endComment.empty()) {
 		GUI::gui_string sStart = GUI::StringFromUTF8(startBase);
 		GUI::gui_string sMiddle = GUI::StringFromUTF8(middleBase);
 		GUI::gui_string sEnd = GUI::StringFromUTF8(endBase);
@@ -2662,7 +2664,7 @@ bool SciTEBase::StartStreamComment() {
 	endBase += lexerName;
 	std::string startComment = props.GetString(startBase);
 	std::string endComment = props.GetString(endBase);
-	if (startComment == "" || endComment == "") {
+	if (startComment.empty() || endComment.empty()) {
 		GUI::gui_string sStart = GUI::StringFromUTF8(startBase);
 		GUI::gui_string sEnd = GUI::StringFromUTF8(endBase);
 		GUI::gui_string error = LocaliseMessage(
@@ -2793,7 +2795,7 @@ void SciTEBase::UpdateStatusBar(bool bUpdateSlowData) {
 
 		const std::string sbKey = "statusbar.text." + std::to_string(sbNum);
 		std::string msg = propsStatus.GetExpandedString(sbKey);
-		if (msg.size() && sbValue != msg) {	// To avoid flickering, update only if needed
+		if ((!msg.empty()) && (sbValue != msg)) {	// To avoid flickering, update only if needed
 			SetStatusBarText(msg.c_str());
 			sbValue = msg;
 		}
@@ -2905,19 +2907,19 @@ std::vector<std::string> SciTEBase::GetLinePartsInStyle(SA::Line line, const Sty
 		if (acc.StyleAt(pos) == saw.Style()) {
 			if (separateCharacters) {
 				// Add one character at a time, even if there is an adjacent character in the same style
-				if (s.length() > 0) {
-					sv.push_back(s);
+				if (!s.empty()) {
+					sv.push_back(std::move(s));
+					s = "";
 				}
-				s = "";
 			}
 			s += acc[pos];
-		} else if (s.length() > 0) {
-			sv.push_back(s);
+		} else if (!s.empty()) {
+			sv.push_back(std::move(s));
 			s = "";
 		}
 	}
-	if (s.length() > 0) {
-		sv.push_back(s);
+	if (!s.empty()) {
+		sv.push_back(std::move(s));
 	}
 	return sv;
 }
@@ -3133,11 +3135,13 @@ void SciTEBase::CharAdded(int utf32) {
 					StartAutoComplete();
 				}
 			} else if (autoCCausedByOnlyOne) {
+
 #ifdef RB_ACI
 				StartAutoCompleteWord(!props.GetInt("autocompleteword.incremental")); //!-change-[autocompleteword.incremental]
 #else
 				StartAutoCompleteWord(true);
 #endif // RB_ACI
+
 			}
 		} else if (HandleXml(ch)) {
 			// Handled in the routine
@@ -3157,6 +3161,7 @@ void SciTEBase::CharAdded(int utf32) {
 				if (Contains(autoCompleteStartCharacters, ch)) {
 					StartAutoComplete();
 				} else if (props.GetInt("autocompleteword.automatic") && Contains(wordCharacters, ch)) {
+
 #ifdef RB_ACI
 					StartAutoCompleteWord(!props.GetInt("autocompleteword.incremental")); //!-change-[autocompleteword.incremental]
 #else
@@ -4470,7 +4475,7 @@ void SciTEBase::Notify(SCNotification *notification) {
 		break;
 
 #ifdef RB_ACI
-		//!-start-[autocompleteword.incremental]
+	//!-start-[autocompleteword.incremental]
 	case SA::Notification::AutoCUpdated/*SCN_AUTOCUPDATED*/:
 		if (props.GetInt("autocompleteword.incremental"))
 		{
@@ -4520,8 +4525,8 @@ void SciTEBase::Notify(SCNotification *notification) {
 		break;
 
 #ifdef RB_MCH // ON DB CLICK
-	//!-start-[MouseClickHandled]
- 
+		//!-start-[MouseClickHandled]
+
 	case SA::Notification::DoubleClick:
 		if (extender)
 #ifdef RB_ODBCLK
@@ -4549,7 +4554,7 @@ void SciTEBase::Notify(SCNotification *notification) {
 		}
 		break;
 
-	//!-end-[MouseClickHandled]
+		//!-end-[MouseClickHandled]
 #else //RB_MCH 
 
 	case SA::Notification::DoubleClick:
@@ -4621,12 +4626,12 @@ void SciTEBase::Notify(SCNotification *notification) {
 				handled = extender->OnMarginClick();
 			if (!handled) {
 #ifdef RB_SB
-				//!-start-[SetBookmark]
-				if (notification->margin == 1) {
-					const auto lineClick = wEditor.LineFromPosition(notification->position);//int(wEditor.Call(SCI_LINEFROMPOSITION, notification->position));
-					BookmarkToggle(lineClick);
-				}
-				//!-end-[SetBookmark]
+			//!-start-[SetBookmark]
+			if (notification->margin == 1) {
+				const auto lineClick = wEditor.LineFromPosition(notification->position);//int(wEditor.Call(SCI_LINEFROMPOSITION, notification->position));
+				BookmarkToggle(lineClick);
+			}
+			//!-end-[SetBookmark]
 #endif
 				if (notification->margin == 2) {
 					MarginClick(notification->position, notification->modifiers);
@@ -4645,7 +4650,7 @@ void SciTEBase::Notify(SCNotification *notification) {
 				ContinueMacroList(notification->text);
 			else if (extender && notification->wParam > 2)
 #ifdef RB_ULID
-				extender->OnUserListSelection(static_cast<int>(notification->wParam), notification->text, notification->position + 1); //!-change-[UserListItemID]
+			extender->OnUserListSelection(static_cast<int>(notification->wParam), notification->text, notification->position + 1); //!-change-[UserListItemID]
 #else
 				extender->OnUserListSelection(static_cast<int>(notification->wParam), notification->text);
 #endif // RB_ULID
@@ -4797,14 +4802,14 @@ void SciTEBase::CheckMenus() {
 
 #ifdef RB_ECM
 //!-start-[ExtendedContextMenu]
-void SciTEBase::ContextMenu(GUI::ScintillaWindow& wSource, GUI::Point pt,GUI::Point ptClient, GUI::Window wCmd) {
+void SciTEBase::ContextMenu(GUI::ScintillaWindow& wSource, GUI::Point pt, GUI::Point ptClient, GUI::Window wCmd) {
 	int item = 0;
 	MenuEx subMenu[50];
 	subMenu[0].CreatePopUp(NULL);
 	bool isAdded = false;
 
 	contextSelection = wSource.SelectionFromPoint(ptClient.x, ptClient.y);
-	
+
 	if (wSource.GetID() == wOutput.GetID()) {
 		std::string userContextMenu = props.GetNewExpandString("user.outputcontext.menu.", ExtensionFileName());
 		std::replace(userContextMenu.begin(), userContextMenu.end(), '|', '\0');
@@ -4940,7 +4945,7 @@ void SciTEBase::GenerateMenu(MenuEx* subMenu, const char*& userContextItem,
 					subMenu[item].CreatePopUp(&subMenu[0]);
 					subMenu[parent].AddSubMenu(localiser.Text(caption).c_str(), subMenu[item]);
 					GenerateMenu(subMenu, userContextItem, endDefinition, item, isAdded, item);
-}
+				}
 			}
 			else if (strcmp(userContextItem, "POPUPEND") == 0) {
 				userContextItem += strlen(userContextItem) + 1;

@@ -19,6 +19,7 @@ __pycache__
 *.suo
 *.aps
 *.vcxproj.*
+*.slnx
 *.idb
 *.bsc
 *.intermediate.manifest

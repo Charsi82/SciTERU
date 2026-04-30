@@ -11,10 +11,8 @@ import pathlib
 downloadHome = "https://www.scintilla.org/"
 
 def ExtractFileName(s):
-    pre, _quote, rest = s.partition('"')
-    url, _quote, rest = rest.partition('"')
-    _domain, _slash, name = url.rpartition('/')
-    return name
+    url = s.split('"')[1]
+    return url.rpartition('/')[2]
 
 def FileSizeInMB(filePath):
     size = filePath.stat().st_size
@@ -45,20 +43,18 @@ def UpdateFileSizes(scriptsPath):
 
     for docFileName in uploadDocs:
         outLines = ""
-        changes = False
-        with docFileName.open() as docFile:
-            for line in docFile:
-                if downloadHome in line and '(' in line and ')' in line:
-                    fileName = ExtractFileName(line)
-                    if fileName in fileSizes:
-                        pre, bracket, rest = line.partition('(')
-                        size, rbracket, end = rest.partition(')')
-                        if size != fileSizes[fileName]:
-                            line = pre + bracket + fileSizes[fileName] + rbracket + end
-                            changes = True
-                            print(f"{size} -> {fileSizes[fileName]} {fileName}")
-                outLines += line
-        if changes:
+        original = docFileName.read_text()
+        for line in original.splitlines(keepends=True):
+            if downloadHome in line and '(' in line and ')' in line:
+                fileName = ExtractFileName(line)
+                if fileName in fileSizes:
+                    pre, _bracket, rest = line.partition('(')
+                    size, _rbracket, end = rest.partition(')')
+                    if size != fileSizes[fileName]:
+                        line = f"{pre}({fileSizes[fileName]}){end}"
+                        print(f"{size} -> {fileSizes[fileName]} {fileName}")
+            outLines += line
+        if outLines != original:
             print("Updating", docFileName)
             docFileName.write_text(outLines)
 

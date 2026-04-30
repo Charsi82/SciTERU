@@ -148,6 +148,7 @@ public:
 #endif
 
 	void DocumentModified() noexcept;
+	void WantReload() noexcept;
 	bool NeedsSave(int delayBeforeSave) const noexcept;
 
 	void CompleteLoading() noexcept;
@@ -758,7 +759,7 @@ protected:
 	SA::Span GetSelection();
 	SelectedRange GetSelectedRange();
 	void SetSelection(SA::Position anchor, SA::Position currentPos);
-	std::string GetCTag(GUI::ScintillaWindow *pw);
+	static std::string GetCTag(GUI::ScintillaWindow *pw);
 	static void DropSelectionAt(GUI::ScintillaWindow &win, int selection);
 	virtual std::string GetRangeInUIEncoding(GUI::ScintillaWindow &win, SA::Span span);
 	static std::string GetLine(GUI::ScintillaWindow &win, SA::Line line);
@@ -1128,7 +1129,7 @@ public:
 	//!-end-[GetApplicationProps]
 #endif
 
-	bool PerformOnNewThread(Worker *pWorker);
+	static bool PerformOnNewThread(Worker *pWorker);
 	// WorkerListener
 	void PostOnMainThread(int cmd, Worker *pWorker) override = 0;
 	virtual void WorkerCommand(int cmd, Worker *pWorker);

@@ -6,6 +6,7 @@
 -- Пути поиска подключаемых lua-библиотек и модулей
 package.path = props["SciteDefaultHome"] .. "\\tools\\LuaLib\\?.lua;" .. package.path
 package.cpath = props["SciteDefaultHome"] .. "\\tools\\LuaLib\\?.dll;" .. package.cpath
+
 --------------------------------------------------------
 -- Подключение пользовательского обработчика к событию SciTE
 -- dofile(props["SciteDefaultHome"]..'\\tools\\eventmanager.lua')
@@ -185,11 +186,14 @@ end
 
 -- Translate color from RGB to win
 local function encodeRGB2WIN(color)
-	if string.sub(color, 1, 1) == "#" and string.len(color) > 6 then
+--[[	if string.sub(color, 1, 1) == "#" and string.len(color) > 6 then
 		return tonumber(string.sub(color, 6, 7) .. string.sub(color, 4, 5) .. string.sub(color, 2, 3), 16)
 	else
 		return tonumber(color)
-	end
+	end]]
+	local conv_color, cnt = color:gsub("#(%x%x)(%x%x)(%x%x)", "%3%2%1", 1)
+	-- local conv_color, cnt = color:gsub("#(%x%x)(%x%x)(%x%x)", "%1%2%3", 1)
+	return (cnt == 1) and tonumber(conv_color, 16) or tonumber(color)
 end
 
 local function InitMarkStyle(indic_number, indic_style, indic_color, indic_alpha, indic_outlinealpha)
@@ -201,27 +205,33 @@ end
 
 local function EditorInitMarkStyles()
 	local string2value = {
-		plain = INDIC_PLAIN,
-		squiggle = INDIC_SQUIGGLE,
-		tt = INDIC_TT,
-		diagonal = INDIC_DIAGONAL,
-		strike = INDIC_STRIKE,
-		hidden = INDIC_HIDDEN,
-		roundbox = INDIC_ROUNDBOX,
-		box = INDIC_BOX,
-		dotbox = INDIC_DOTBOX,
-		straightbox = INDIC_STRAIGHTBOX,
-		squigglelow = INDIC_SQUIGGLELOW,
-		squigglepixmap = INDIC_SQUIGGLEPIXMAP,
-		compthick = INDIC_COMPOSITIONTHICK,
-		compthin = INDIC_COMPOSITIONTHIN,
-		fullbox = INDIC_FULLBOX,
-		pointchar = INDIC_POINTCHARACTER,
-		gradient = INDIC_GRADIENTCENTRE
-		-- 		hotspot  = INDIC_HOTSPOT
+		plain = INDIC_PLAIN, -- подчерквание прямой линией
+		squiggle = INDIC_SQUIGGLE, -- волнистое подчеркивание высотой 3 пикселя
+		tt = INDIC_TT, -- ряд т-образных фигур под строкой
+		diagonal = INDIC_DIAGONAL, -- подчеркивание штриховкой
+		strike = INDIC_STRIKE, -- зачеркнутый текст
+		hidden = INDIC_HIDDEN, -- не имеет эффекта
+		roundbox = INDIC_ROUNDBOX, -- рамка со скруглёнными углами
+		box = INDIC_BOX, -- рамка вокруг текста
+		dotbox = INDIC_DOTBOX, -- пунктирная обводка 
+		straightbox = INDIC_STRAIGHTBOX, -- прямоугольник с заливкой
+		squigglelow = INDIC_SQUIGGLELOW, -- волнистое подчеркивание высотой 2 пикселя
+		squigglepixmap = INDIC_SQUIGGLEPIXMAP, -- оптимизированная версия INDIC_SQUIGGLE
+		compthick = INDIC_COMPOSITIONTHICK, -- подчеркивание толщиной 2 пикселя
+		compthin = INDIC_COMPOSITIONTHIN, -- подчеркивание толщиной 1 пиксель
+		fullbox = INDIC_FULLBOX, -- рамка с заливкой
+		point = INDIC_POINT, -- треугольник под 1-м символом
+		pointtop = INDIC_POINT_TOP, -- треугольник над 1-м символом
+		pointchar = INDIC_POINTCHARACTER, -- треугольник под центром 1-го символа
+		gradient = INDIC_GRADIENT, -- заливка фона градиентом сверху вниз
+		gradientcentre = INDIC_GRADIENTCENTRE, -- заливка фона вертикальным градиентом от центра
+		dash = INDIC_DASH, -- пунктирное подчеркивание
+		dots = INDIC_DOTS, -- подчеркивание точками
+		textfore = INDIC_TEXTFORE, -- замена цвета текста на цвет индикатора
 	}
 	for indic_number = 0, 31 do
 		local mark = props["indic.style." .. indic_number]
+		-- indic.style.nn=#RRGGBB,style,@30,$50 -- цвет, стиль, прозрачность фона(0-255), прозрачность обводки(0-255)
 		if mark ~= "" then
 			local indic_color = mark:match("#%x%x%x%x%x%x") or (props["find.mark"]):match("#%x%x%x%x%x%x") or "#0F0F0F"
 			local indic_style = string2value[mark:match("%l+")] or INDIC_ROUNDBOX
@@ -359,6 +369,11 @@ AddEventHandler("OnOpen", function()
 	props["pane.accessible"] = '1'
 end, 'RunOnce')
 
+-- on change props['what.find'] = value
+AddEventHandler("OnFindProperty", function(value)
+	--print('OnFindProperty:', value)
+end)
+ 
 AddEventHandler("OnMenuCommand", function(msg, source)
 	if msg == IDM_FILTER then
 		if props["old.find.handler"] == "1" then
@@ -388,7 +403,6 @@ end
 function PathCollapse(s) return (s:gsub(props['SciteDefaultHome'], "$SciteDefaultHome", 1)) end
 
 function PathExpand(s) return (s:gsub("$SciteDefaultHome", props['SciteDefaultHome'], 1)) end
-
 
 local function orderedPairs(t)
 	if type(t) ~= "table" then return function() end end
