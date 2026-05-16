@@ -83,9 +83,8 @@ end
 function ifnil(val, default)
 	if val == nil then
 		return default
-	else
-		return val
 	end
+	return val
 end
 
 --------------------------------------------------------
@@ -183,27 +182,27 @@ end
 
 ----------------------------------------------------------------------------
 -- Задание стиля для маркеров (затем эти маркеры можно будет использовать в скриптах, вызывая их по номеру)
-
--- Translate color from RGB to win
-local function encodeRGB2WIN(color)
---[[	if string.sub(color, 1, 1) == "#" and string.len(color) > 6 then
-		return tonumber(string.sub(color, 6, 7) .. string.sub(color, 4, 5) .. string.sub(color, 2, 3), 16)
-	else
-		return tonumber(color)
-	end]]
-	local conv_color, cnt = color:gsub("#(%x%x)(%x%x)(%x%x)", "%3%2%1", 1)
-	-- local conv_color, cnt = color:gsub("#(%x%x)(%x%x)(%x%x)", "%1%2%3", 1)
-	return (cnt == 1) and tonumber(conv_color, 16) or tonumber(color)
-end
-
-local function InitMarkStyle(indic_number, indic_style, indic_color, indic_alpha, indic_outlinealpha)
-	editor.IndicStyle[indic_number] = indic_style
-	editor.IndicFore[indic_number] = encodeRGB2WIN(indic_color)
-	editor.IndicAlpha[indic_number] = indic_alpha
-	editor.IndicOutlineAlpha[indic_number] = indic_outlinealpha
-end
-
+-- Перенесено в ядро 02.05.2026
 local function EditorInitMarkStyles()
+	-- Translate color from RGB to win
+	local function encodeRGB2WIN(color)
+	--[[	if string.sub(color, 1, 1) == "#" and string.len(color) > 6 then
+			return tonumber(string.sub(color, 6, 7) .. string.sub(color, 4, 5) .. string.sub(color, 2, 3), 16)
+		else
+			return tonumber(color)
+		end]]
+		local conv_color, cnt = color:gsub("#(%x%x)(%x%x)(%x%x)", "%3%2%1", 1)
+		-- local conv_color, cnt = color:gsub("#(%x%x)(%x%x)(%x%x)", "%1%2%3", 1)
+		return (cnt == 1) and tonumber(conv_color, 16) or tonumber(color)
+	end
+
+	local function InitMarkStyle(indic_number, indic_style, indic_color, indic_alpha, indic_outlinealpha)
+		editor.IndicStyle[indic_number] = indic_style
+		editor.IndicFore[indic_number] = encodeRGB2WIN(indic_color)
+		editor.IndicAlpha[indic_number] = indic_alpha
+		editor.IndicOutlineAlpha[indic_number] = indic_outlinealpha
+	end
+
 	local string2value = {
 		plain = INDIC_PLAIN, -- подчерквание прямой линией
 		squiggle = INDIC_SQUIGGLE, -- волнистое подчеркивание высотой 3 пикселя
@@ -237,7 +236,7 @@ local function EditorInitMarkStyles()
 			local indic_style = string2value[mark:match("%l+")] or INDIC_ROUNDBOX
 			local indic_alpha = tonumber((mark:match("%@%d+") or ""):sub(2)) or 30
 			local indic_outlinealpha = tonumber((mark:match("$%d+") or ""):sub(2)) or 50
-			InitMarkStyle(indic_number, indic_style, indic_color, indic_alpha, indic_outlinealpha)
+			-- InitMarkStyle(indic_number, indic_style, indic_color, indic_alpha, indic_outlinealpha)
 		end
 	end
 end
@@ -364,7 +363,7 @@ AddEventHandler("OnOpen", function()
 	string.upper = StringUpper
 	string.len = StringLen
 	string.trim = function(s) return string.match(s, '^%s*(.*%S)') or '' end
-	EditorInitMarkStyles()
+	--EditorInitMarkStyles() -- перенесено в ядро
 	SetMarginTypeN()
 	props["pane.accessible"] = '1'
 end, 'RunOnce')
@@ -373,7 +372,7 @@ end, 'RunOnce')
 AddEventHandler("OnFindProperty", function(value)
 	--print('OnFindProperty:', value)
 end)
- 
+
 AddEventHandler("OnMenuCommand", function(msg, source)
 	if msg == IDM_FILTER then
 		if props["old.find.handler"] == "1" then
@@ -419,6 +418,7 @@ local function orderedPairs(t)
 	end
 end
 
+-- красивая сериализация таблицы
 function serializeTable(t, indent)
 	indent = indent or 0
 	local spacing = string.rep("  ", indent)
@@ -446,4 +446,59 @@ function serializeTable(t, indent)
 
 	table.insert(result, spacing .. "}")
 	return table.concat(result)
+end
+
+-- Установка выделений из строки созданной с помощью editor.SelectionSerialized
+function ApplySelection(selections)
+	if selections:match("^%d+%-?%d*$") or
+		selections:match("^#%d+,%d+%-?%d*") or
+		selections:match("^R#%d+,%d+v?%d*%-?%d*v?%d*$") or
+		selections:match("^R%d+v?%d*%-?%d*v?%d*$")
+	then
+		editor.SelectionSerialized = selections
+	else
+		print('ApplySelection failed with', selections)
+	end
+	do return end
+	if selections:match("^R") then
+		local patt = "R(%d+)v?(%d*)[%-]?(%d*)v?(%d*)"
+		if selections:match("^R#") then
+			patt = "R#%d+,(%d+)v?(%d*)[%-]?(%d*)v?(%d*)"
+		end
+		local anchor, v_anch, caret, v_car = selections:match(patt)
+
+		editor.RectangularSelectionAnchor = anchor
+		if #v_anch>0 then
+			editor.RectangularSelectionAnchorVirtualSpace = v_anch
+		end
+		if #caret>0 then
+			editor.RectangularSelectionCaret = caret
+			if #v_car>0 then
+				editor.RectangularSelectionCaretVirtualSpace = v_car
+			end
+		else
+			editor.RectangularSelectionCaret = anchor
+			if #v_anch>0 then
+				editor.RectangularSelectionCaretVirtualSpace = v_anch
+			end
+		end
+	else
+		local active_block = 0
+		local sactive_block, start_pos = selections:match("#(%d+)()")
+		if sactive_block then active_block = tonumber(sactive_block) end
+		if not start_pos then start_pos = 0 end
+		local nosel = true
+		for _start in selections:gmatch("[^,]+", start_pos) do
+			local anchor, caret = _start:match("(%d+)[%-]?(%d*)")
+			if not anchor then return end
+			if caret=='' then caret = anchor end
+			if nosel then
+				nosel = false
+				editor:SetSelection(caret, anchor)
+			else
+				editor:AddSelection(caret, anchor)
+			end
+		end
+		for i = 0, active_block do editor:RotateSelection() end
+	end
 end

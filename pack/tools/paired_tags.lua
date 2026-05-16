@@ -141,8 +141,7 @@ function SelectWithTags()
 end
 
 function highlighting_paired_tags_switch()
-	local prop_name = 'hypertext.highlighting.paired.tags'
-	props[prop_name] = 1 - tonumber(props[prop_name])
+	CheckChange('hypertext.highlighting.paired.tags')
 	EditorClearMarks(blue_indic)
 	EditorClearMarks(red_indic)
 end

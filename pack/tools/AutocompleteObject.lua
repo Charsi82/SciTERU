@@ -259,18 +259,16 @@ local function CreateAPITable()
 	local word_patt = props['CurrentWordCharacters']:pattern()
 	local word_extended_patt = '['..word_patt..auto_start_chars_patt..']'
 	for api_filename in props["APIPath"]:gmatch("[^;]+") do
-		if api_filename ~= nil then
-			local api_file = io.open(api_filename)
-			if api_file then
-				for line in api_file:lines() do
-					-- обрезаем комментарии, оставляя алиасы-паттерны без изменений
-					local line = line:match('^#$%s*'..word_extended_patt..'+=.+$') or line:match('^[^%s%(]+')
-					if line then
-						api_table[#api_table+1] = line
-					end
+		local api_file = io.open(api_filename)
+		if api_file then
+			for line in api_file:lines() do
+				-- обрезаем комментарии, оставляя алиасы-паттерны без изменений
+				local line = line:match('^#$%s*'..word_extended_patt..'+=.+$') or line:match('^[^%s%(]+')
+				if line then
+					api_table[#api_table+1] = line
 				end
-				api_file:close()
 			end
+			api_file:close()
 		end
 	end
 	get_api = false

@@ -83,8 +83,14 @@ local function Restore(file)
 	-- position
 -- 	print('restore position for', file)
 	if tonumber(props['save.position']) == 1 then
-		local pos = tonumber(RecentData[item].caret) or 0
-		editor:GotoPos(pos)
+		-- editor:GotoPos(pos)
+		local sel = RecentData[item].selectons
+		if sel and tonumber(props['save.selectons']) == 1 then
+			ApplySelection(sel)
+		else
+			local pos = tonumber(RecentData[item].caret) or 0
+			editor:GotoPos(pos)
+		end
 	end
 end
 
@@ -93,7 +99,6 @@ AddEventHandler("OnOpen", function(file)
 		event("OnUpdateUI"):register(function(e)
 			e:removeThisCallback()
 			Restore(PathCollapse(file))
-			-- print('rrecent: upd ui')
 		end)
 	end
 end)
@@ -112,7 +117,6 @@ end
 
 AddEventHandler("OnClose", function(file)
 	if file=='' then return end
-	-- gui.log("OnClose:"..file)
 	local function get_bookmarks()
 		local res = {}
 		local line = 0
@@ -151,6 +155,7 @@ AddEventHandler("OnClose", function(file)
 		path = pc,
 		bookmarks = get_bookmarks(),
 		folds = get_folds(),
-		caret = editor.CurrentPos
+		caret = editor.CurrentPos,
+		selectons = editor.SelectionSerialized,
 	}
 end)

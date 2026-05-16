@@ -21,7 +21,7 @@ function DEC_HEX(IN)
 	local B,K,OUT,I,D=16,"0123456789ABCDEF","",0
 	while IN>0 do
 		I=I+1
-		IN,D=math.floor(IN/B),math.mod(IN,B)+1
+		IN,D=math.floor(IN/B),(IN%B)+1
 		OUT=string.sub(K,D,D)..OUT
 	end
 	OUT = string.match("000000"..OUT,'%x%x%x%x%x%x$')

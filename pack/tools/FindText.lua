@@ -92,7 +92,7 @@ if sText ~= '' then
 				if bookmark then editor:MarkerAdd(l,1) end
 				local str = string.gsub(' '..editor:GetLine(l),'%s+',' '):to_utf8(props["editor.code.page"]):from_utf8(props["output.code.page"])
 				if isOutput then
-					print('./'..props['FileNameExt']..':'..(l + 1)..':\t'..str)
+					print('./'..props['FileNameExt']:from_utf8(props["output.code.page"])..':'..(l + 1)..':\t'..str)
 				end
 				m = l
 			end

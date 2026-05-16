@@ -426,8 +426,6 @@ void SciTEWin::Register(HINSTANCE hInstance_) noexcept {
 }
 
 namespace {
-
-#ifndef RB_ENCODING //!-remove-[FixEncoding]
 	int CodePageFromName(const std::string& encodingName) noexcept {
 		struct Encoding {
 			const char* name;
@@ -455,7 +453,6 @@ namespace {
 		}
 		return CP_UTF8;
 	}
-#endif // !RB_ENCODING
 
 	std::string StringEncode(std::wstring_view wsv, int codePage) {
 		if (wsv.empty()) {
@@ -491,16 +488,19 @@ namespace {
 #endif // !RB_ENCODING
 }
 
+#ifdef RB_ENCODING
+int GetCodePageFromName(const std::string& encodingName) noexcept
+{
+	return CodePageFromName(encodingName);
+}
+#endif
+
 void SciTEWin::ReadLocalization() {
 	SciTEBase::ReadLocalization();
 	std::string encoding = localiser.GetString("translation.encoding");
 	LowerCaseAZ(encoding);
 	if (!encoding.empty()) {
-#ifdef RB_ENCODING
-		const int codePageNamed = GUI::CodePageFromName(encoding);//!-change-[FixEncoding]
-#else
 		const int codePageNamed = CodePageFromName(encoding);
-#endif
 		const char* key = nullptr;
 		const char* val = nullptr;
 		// Get encoding
@@ -964,8 +964,7 @@ void SciTEWin::Command(WPARAM wParam, LPARAM lParam) {
 #ifndef RB_ENCODING
 //!-remove-[FixEncoding]
 namespace {
-
-	// from ScintillaWin.cxx
+#endif // !RB_ENCODING
 	UINT CodePageFromCharSet(SA::CharacterSet characterSet, UINT documentCodePage) noexcept {
 		CHARSETINFO ci{};
 		const BOOL bci = ::TranslateCharsetInfo(reinterpret_cast<DWORD*>(static_cast<uintptr_t>(characterSet)),
@@ -979,7 +978,7 @@ namespace {
 
 		return cp;
 	}
-
+#ifndef RB_ENCODING
 }
 #endif // !RB_ENCODING
 
@@ -1117,7 +1116,8 @@ DWORD SciTEWin::ExecuteOne(const Job& jobToRun) {
 	UINT codePageOutput = static_cast<UINT>(wOutput.Send(SCI_GETCODEPAGE));
 	if (codePageOutput != SA::CpUtf8) {
 #ifdef RB_ENCODING //!-change-[FixEncoding]
-		codePageOutput = GUI::CodePageFromCharSet(characterSet, codePageOutput);
+		//codePageOutput = GUI::CodePageFromCharSet(characterSet, codePageOutput);
+		codePageOutput = CodePageFromCharSet(characterSet, codePageOutput);
 #else
 		codePageOutput = CodePageFromCharSet(characterSet, codePageOutput);
 #endif
@@ -2595,7 +2595,8 @@ std::string SciTEWin::EncodeString(const std::string & s) {
 
 	if (codePageDocument != SA::CpUtf8) {
 #ifdef RB_ENCODING //!-change-[FixEncoding]
-		codePageDocument = GUI::CodePageFromCharSet(characterSet, codePageDocument);
+		//codePageDocument = GUI::CodePageFromCharSet(characterSet, codePageDocument);
+		codePageDocument = CodePageFromCharSet(characterSet, codePageDocument);
 #else
 		codePageDocument = CodePageFromCharSet(characterSet, codePageDocument);
 #endif
@@ -2613,7 +2614,8 @@ std::string SciTEWin::GetRangeInUIEncoding(GUI::ScintillaWindow & win, SA::Span 
 
 	if (codePageDocument != SA::CpUtf8) {
 #ifdef RB_ENCODING //!-change-[FixEncoding]
-		codePageDocument = GUI::CodePageFromCharSet(characterSet, codePageDocument);
+		//codePageDocument = GUI::CodePageFromCharSet(characterSet, codePageDocument);
+		codePageDocument = CodePageFromCharSet(characterSet, codePageDocument);
 #else
 		codePageDocument = CodePageFromCharSet(characterSet, codePageDocument);
 #endif

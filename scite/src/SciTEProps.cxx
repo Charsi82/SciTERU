@@ -1650,6 +1650,14 @@ void SciTEBase::ReadProperties() {
 	SetIndicatorFromProperty(wEditor, SA::IndicatorNumbers::HistoryRevertedToModifiedInsertion, "indicator.reverted.to.modified.insertion");
 	SetIndicatorFromProperty(wEditor, SA::IndicatorNumbers::HistoryRevertedToModifiedDeletion, "indicator.reverted.to.modified.deletion");
 
+#ifdef RB_InitIndicators
+	for (int i = 11; i < 31; ++i)
+	{
+		std::string value = std::format("indic.style.{}", i);
+		SetIndicatorFromProperty(wEditor, SA::IndicatorNumbers(i), value);
+	}
+#endif // RB_InitIndicators
+
 	constexpr size_t markerHistory = static_cast<size_t>(SA::MarkerOutline::HistoryRevertedToOrigin);
 	SetMarkerFromProperty(wEditor, markerHistory+0, "marker.reverted.to.origin");
 	SetMarkerFromProperty(wEditor, markerHistory+1, "marker.saved");

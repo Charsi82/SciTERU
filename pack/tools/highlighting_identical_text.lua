@@ -45,8 +45,7 @@ if max ~= '' then count_max = tonumber(max) end
 
 -- Переключатель подсветки (вкл/выкл) срабатывает из меню Tools
 function highlighting_identical_text_switch()
-	local prop_name = 'highlighting.identical.text'
-	props[prop_name] = 1 - tonumber(props[prop_name])
+	CheckChange('highlighting.identical.text')
 	EditorClearMarks(mark_ident)
 	store_pos, store_text = 0, ''
 end

@@ -36,6 +36,7 @@ return function(tabs, panel_width, colorback, colorfore)
 		local sel_item = list_abbrev:get_selected_item()
 		if sel_item == -1 then return end
 		local expansion = list_abbrev:get_item_data(sel_item)
+		if expansion:match("#########") then return end
 		scite_InsertAbbreviation(expansion)
 		gui.pass_focus() --don't need to call Abbreviations_HideExpansion(): on_focus will do
 	end

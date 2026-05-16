@@ -486,6 +486,7 @@ string_value:utf8len
 string_value:pack
 string_value:packsize
 string_value:unpack
+string_value:reverse
 string.byte
 string.char
 string.dump
@@ -508,6 +509,8 @@ string.utf8len
 string.pack
 string.packsize
 string.unpack
+string.reverse
+reverse ()\n возвращает строку, в которой символы идут в обратном порядке
 byte (s [, i])\n returns numerical code, nil if index out of range, default i=1
 char (i1, i2, ...)\n returns a string built from 0 or more integers
 dump (function)\n returns binary representation of function, used with loadstring
@@ -519,7 +522,7 @@ len (s)\n returns string length
 lower (s)\n returns string with letters in lower case
 rep (s, n)\n returns string with n copies of string s
 match (s, pattern [, init])\n looks for the first match of pattern in the string s \n {rus} поиск первого вхождения шаблона pattern в строку s
-gmatch (s, pattern)\n returns iterator function that returns next captures from pattern pat on s \n {rus} возвращает итератор, который, при каждом вызове, возвращает следующее захваченное значение
+gmatch (s, pattern [, init])\n returns iterator function that returns next captures from pattern pat on s \n {rus} возвращает итератор, который, при каждом вызове, возвращает следующее захваченное значение
 sub (s, i [, j])\n returns substring from index i to j of s, default j=-1 (string length)
 upper (s)\n returns string with letters in upper case
 to_utf8(string text, codePage in) = utf8text\n converts string from input codepage to UTF-8 (only SciTE-Ru)\n{rus} конвертирует переданную строку из указанной кодировки в UTF-8
@@ -669,7 +672,6 @@ editor:BraceMatch
 editor:BraceMatchNext
 editor:CallTipActive
 editor:CallTipCancel
-editor:CallTipPosStart
 editor:CallTipSetHlt
 editor:CallTipShow
 editor:CanPaste

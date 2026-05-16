@@ -15,6 +15,15 @@ Description:
 --]] --------------------------------------------------
 local copy = ...
 
+-- не работаем с прямоугольным выделением
+if editor.SelectionIsRectangle then
+	return
+end
+-- отменяем вторичные блоки выделения
+while editor.Selections > 1 do
+	editor:DropSelectionN(editor.MainSelection - 1)
+end
+
 local PIE_MOVE_TYPE = 2
 local sel_start_line = editor:LineFromPosition(editor.SelectionStart)
 local sel_end_line = editor:LineFromPosition(editor.SelectionEnd - 1)
@@ -46,11 +55,11 @@ if horizontal == 1 then
 			editor:InsertText(editor.SelectionStart, sel_txt)
 			if vertical == 1 then
 				editor.SelectionEnd = editor.SelectionStart - 1
-				editor.SelectionStart = editor.SelectionStart - string.len(sel_txt)
+				editor.SelectionStart = editor.SelectionStart - #sel_txt --string.len(sel_txt)
 			else
 				editor.SelectionStart = strt
 
-				editor.SelectionEnd = editor.SelectionStart + string.len(sel_txt)
+				editor.SelectionEnd = editor.SelectionStart + #sel_txt --string.len(sel_txt)
 			end
 		end
 	end

@@ -44,38 +44,38 @@ local function SaveSettings()
 	io.close()
 end
 
-local function ToggleProp(prop_name)
+--[[local function CheckChange(prop_name)
 	local prop_value = tonumber(props[prop_name])
 	if prop_value==0 then
 		props[prop_name] = '1'
 	elseif prop_value==1 then
 		props[prop_name] = '0'
 	end
-end
+end]]
 
 -- Добавляем свой обработчик события OnMenuCommand
 -- При изменении параметров через меню, меняются и соответствующие значения props[]
 AddEventHandler("OnMenuCommand", function(cmd, source)
 	if cmd == IDM_VIEWTOOLBAR then
-		ToggleProp('toolbar.visible')
+		CheckChange('toolbar.visible')
 	elseif cmd == IDM_VIEWTABBAR then
-		ToggleProp('tabbar.visible')
+		CheckChange('tabbar.visible')
 	elseif cmd == IDM_VIEWSTATUSBAR then
-		ToggleProp('statusbar.visible')
+		CheckChange('statusbar.visible')
 	elseif cmd == IDM_VIEWSPACE then
-		ToggleProp('view.whitespace')
+		CheckChange('view.whitespace')
 	elseif cmd == IDM_VIEWEOL then
-		ToggleProp('view.eol')
+		CheckChange('view.eol')
 	elseif cmd == IDM_VIEWGUIDES then
-		ToggleProp('view.indentation.guides')
+		CheckChange('view.indentation.guides')
 	elseif cmd == IDM_LINENUMBERMARGIN then
-		ToggleProp('line.margin.visible')
+		CheckChange('line.margin.visible')
 	elseif cmd == IDM_SPLITVERTICAL then
-		ToggleProp('split.vertical')
+		CheckChange('split.vertical')
 	elseif cmd == IDM_WRAP then
-		ToggleProp('wrap')
+		CheckChange('wrap')
 	elseif cmd == IDM_WRAPOUTPUT then
-		ToggleProp('output.wrap')
+		CheckChange('output.wrap')
 	end
 end)
 

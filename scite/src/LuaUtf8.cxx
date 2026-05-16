@@ -3,6 +3,12 @@
 #include "GUI.h"
 #include "lua.hpp"
 
+int GetCodePageFromName(const std::string& encodingName) noexcept;
+
+// export "fs_remove" "fs_rename"
+// #define RB_SYSEXPORT
+
+#ifdef RB_SYSEXPORT
 #ifdef _WIN32
 FILE* scite_lua_fopen(const char* filename, const char* mode) {
 	GUI::gui_string sFilename = GUI::StringFromUTF8(filename);
@@ -63,6 +69,7 @@ namespace {
 #endif
 
 // ============ SYSTEM ==================================
+
 namespace {
 	int impl_scite_lua_remove(lua_State* L) {
 		const char* fn = luaL_checkstring(L, 1);
@@ -77,7 +84,7 @@ namespace {
 		return 1;
 	}
 }
-
+#endif
 // ============ STRING ==================================
 namespace {
 	int lua_string_from_utf8(lua_State* L) {
@@ -85,7 +92,7 @@ namespace {
 		const std::string s = luaL_checkstring(L, 1);
 		int cp = 0;
 		if (!lua_isnumber(L, 2))
-			cp = GUI::CodePageFromName(lua_tostring(L, 2));
+			cp = GetCodePageFromName(lua_tostring(L, 2));
 		else
 			cp = static_cast<int>(lua_tointeger(L, 2));
 		std::string ss = GUI::ConvertFromUTF8(s, cp);
@@ -98,7 +105,7 @@ namespace {
 		const std::string s = luaL_checkstring(L, 1);
 		int cp = 0;
 		if (!lua_isnumber(L, 2))
-			cp = GUI::CodePageFromName(lua_tostring(L, 2));
+			cp = GetCodePageFromName(lua_tostring(L, 2));
 		else
 			cp = static_cast<int>(lua_tointeger(L, 2));
 		std::string ss = GUI::ConvertToUTF8(s, cp);
@@ -108,7 +115,6 @@ namespace {
 
 	int lua_string_utf8_to_upper(lua_State* L) {
 		const char* s = luaL_checkstring(L, 1);
-		//std::string ss = GUI::UTF8ToUpper(s);
 		std::string ss = GUI::UpperCaseUTF8(s);
 		lua_pushstring(L, ss.c_str());
 		return 1;
@@ -116,7 +122,6 @@ namespace {
 
 	int lua_string_utf8_to_lower(lua_State* L) {
 		const char* s = luaL_checkstring(L, 1);
-		//std::string ss = GUI::UTF8ToLower(s);
 		std::string ss = GUI::LowerCaseUTF8(s);
 		lua_pushstring(L, ss.c_str());
 		return 1;
@@ -402,7 +407,7 @@ namespace {
 		const char* name = luaL_checkstring(L, 1);
 		filename = findfile(L, name, "path", LUA_LSUBSEP);
 		if (filename == NULL) return 1;  /* module not found in this path */
-		std::string fn = GUI::ConvertFromUTF8(filename, 0);
+		std::string fn = GUI::ConvertFromUTF8(filename, CP_ACP);
 		return checkload(L, (luaL_loadfile(L, fn.c_str()) == LUA_OK), filename);
 		//return checkload(L, (luaL_loadfile(L, filename) == LUA_OK), filename);
 	}
@@ -518,31 +523,49 @@ namespace {
 #endif // LUA502
 // ==============================================================
 #endif // WIN32
+namespace {
+	// конвертируем 1-й аргумент dofile и loadstring
+	int cf_fix_encoding(lua_State* L)
+	{
+		const char* name = luaL_checkstring(L, 1); // stack: fn, args...
+		std::string ss = GUI::ConvertFromUTF8(name, CP_ACP);
+		lua_remove(L, 1);	 // stack: args
+		lua_pushstring(L, ss.c_str()); // stack: args..., convfn
+		lua_insert(L, 1);	  // stack: convfn, args...
+		lua_pushvalue(L, lua_upvalueindex(1));	// stack: convfn, args..., func
+		lua_insert(L, 1);		  // stack: func, convfn, args...
+		lua_call(L, lua_gettop(L) - 1, LUA_MULTRET);
+		return lua_gettop(L);
+	}
 
-// конвертируем 1-й аргумент dofile и loadstring
-int cf_global_dofile(lua_State* L)
-{
-	const char* name = luaL_checkstring(L, 1);
-	std::string ss = GUI::ConvertFromUTF8(name, 1251);
-	lua_remove(L, 1);
-	lua_pushstring(L, ss.c_str());
-	lua_insert(L, 1);
-	lua_pushvalue(L, lua_upvalueindex(1));
-	lua_insert(L, 1);
-	lua_call(L, lua_gettop(L) - 1, LUA_MULTRET);
-	return lua_gettop(L);
+	// конвертируем 1-й аргумент io.input, io.output и io.lines
+	int cf_fix_io_encoding(lua_State* L)
+	{
+		if (lua_isstring(L, 1)) // io.input(sFilePath)
+		{
+			const char* name = luaL_checkstring(L, 1); // stack: fn, args...
+			std::string ss = GUI::ConvertFromUTF8(name, CP_ACP);
+			lua_remove(L, 1);	 // stack: args
+			lua_pushstring(L, ss.c_str()); // stack: args..., convfn
+			lua_insert(L, 1);	  // stack: convfn, args...
+		}
+		lua_pushvalue(L, lua_upvalueindex(1));	// stack: convfn, args..., func
+		lua_insert(L, 1);		  // stack: func, convfn, args...
+		lua_call(L, lua_gettop(L) - 1, LUA_MULTRET);
+		return lua_gettop(L);
+	}
 }
 
 void lua_utf8_register_libs(lua_State* L) {
 
 	// register sting functions
 	const luaL_Reg utf8_string_funcs[] = {
-		{"to_utf8",		lua_string_to_utf8},
-		{"from_utf8",	lua_string_from_utf8},
+		{"to_utf8",		lua_string_to_utf8		},
+		{"from_utf8",	lua_string_from_utf8	},
 		{"utf8upper",	lua_string_utf8_to_upper},
 		{"utf8lower",	lua_string_utf8_to_lower},
-		{"utf8len",		lua_string_utf8len},
-		{NULL,			NULL}
+		{"utf8len",		lua_string_utf8len		},
+		{NULL,			NULL					}
 	};
 #if LUA_VERSION_NUM < 502
 	luaL_register(L, LUA_STRLIBNAME, utf8_string_funcs);
@@ -553,19 +576,53 @@ void lua_utf8_register_libs(lua_State* L) {
 	lua_pop(L, 1);
 
 	lua_getglobal(L, "dofile");
-	lua_pushcclosure(L, cf_global_dofile, 1);
+	lua_pushcclosure(L, cf_fix_encoding, 1);
 	lua_setglobal(L, "dofile");
 
+	lua_getglobal(L, "load");
+	lua_pushcclosure(L, cf_fix_encoding, 1);
+	lua_setglobal(L, "load"); 
+
 	lua_getglobal(L, "loadfile");
-	lua_pushcclosure(L, cf_global_dofile, 1);
+	lua_pushcclosure(L, cf_fix_encoding, 1);
 	lua_setglobal(L, "loadfile");
 
+	// io.open(filename [, mode])
+	lua_getglobal(L, "io");
+	lua_getfield(L, -1, "open");
+	lua_pushcclosure(L, cf_fix_encoding, 1);
+	lua_setfield(L, -2, "open");
+
+	// io.input()
+	// io.input(sPath)
+	// io.input(hFile)
+	lua_getglobal(L, "io");
+	lua_getfield(L, -1, "input");
+	lua_pushcclosure(L, cf_fix_io_encoding, 1);
+	lua_setfield(L, -2, "input");
+
+	// io.output()
+	// io.output(sPath)
+	// io.output(hFile)
+	lua_getglobal(L, "io");
+	lua_getfield(L, -1, "output");
+	lua_pushcclosure(L, cf_fix_io_encoding, 1);
+	lua_setfield(L, -2, "output");
+
+	// io.lines()
+	// io.lines(sPath)
+	lua_getglobal(L, "io");
+	lua_getfield(L, -1, "lines");
+	lua_pushcclosure(L, cf_fix_io_encoding, 1);
+	lua_setfield(L, -2, "lines");
+
+#ifdef RB_SYSEXPORT
 	lua_pushcfunction(L, impl_scite_lua_remove);
 	lua_setglobal(L, "fs_remove");
 
 	lua_pushcfunction(L, impl_scite_lua_rename);
 	lua_setglobal(L, "fs_rename");
-
+#endif
 #ifdef _WIN32
 
 	// register loaders

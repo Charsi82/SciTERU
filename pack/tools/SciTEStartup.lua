@@ -2,12 +2,6 @@
 -- Чтобы не забивать его его огромным количеством используемых скриптов, поскольку это затрудняет работу редактора, большинство из них хранятся в обособленных файлах и грузятся только при выборе соответствующего пункта меню Tools.
 -- Здесь (с помощью dofile) грузятся только скрипты, обрабатывающие события редактора.
 
--- Lua5.4
--- local t = os.clock()
-unpack = unpack or table.unpack
-math.mod = math.mod or function(a,b) return a%b end
-loadstring = loadstring or load 
-
 ----[[ C O M M O N ]]-------------------------------------------------------
 do
 
@@ -177,8 +171,13 @@ scite.StripShow('') -- reinit required
 --[[ date time menu items ]]----------------------------
 dofile (props["SciteDefaultHome"].."\\tools\\DateTimeMenu.lua")
 -- print(string.format("time %.f",1000*(os.clock()-tm)))
-
+-- print( collectgarbage("count") )
 end
 
 --[[ Clear OnInit callbacks ]]------------------------------
-event("OnInit"):register(function(e) e:clear() collectgarbage() end)
+event("OnInit"):register(function(e)
+	e:clear() 
+	collectgarbage()
+	collectgarbage()
+	-- print( collectgarbage("count") )
+end)

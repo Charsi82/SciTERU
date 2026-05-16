@@ -40,7 +40,6 @@ extern "C" {
 }
 
 #ifdef RB_BUILD
-#include "Scintilla.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
@@ -49,6 +48,7 @@ extern "C" {
 //!-start-[EncodingToLua]
 void lua_utf8_register_libs(lua_State* L);
 //!-end-[EncodingToLua]
+UINT CodePageFromCharSet(Scintilla::CharacterSet characterSet, UINT documentCodePage) noexcept;
 #endif
 
 #if (LUA_VERSION_NUM < 502)
@@ -377,7 +377,7 @@ int cf_scite_menu_command(lua_State *L) {
 		if (codePage != SA::CpUtf8/*SC_CP_UTF8*/) {
 			std::string charSet = host->Property("character.set");
 			SA::CharacterSet cs = static_cast<SA::CharacterSet>(IntegerFromString(charSet, 1 /*SA::CharacterSet::Default*/));
-			codePage = GUI::CodePageFromCharSet(cs, codePage);
+			codePage = CodePageFromCharSet(cs, codePage);
 		}
 		else { // temporary solution
 			const int unimode = IntegerFromString(host->Property("editor.unicode.mode"), 0);
@@ -1717,11 +1717,11 @@ bool InitGlobalScope(bool checkProperties, bool forceReload = false) {
 	luaL_openlibs(luaState);
 
 #ifdef RB_UTF8
-		lua_utf8_register_libs(luaState); //!-change-[EncodingToLua]
+	lua_utf8_register_libs(luaState); //!-change-[EncodingToLua]
 #endif RB_UTF8
 
 #ifdef RB_GETCURWORD
-		lua_register(luaState, "GetCurrentWord", cf_get_current_word);
+	lua_register(luaState, "GetCurrentWord", cf_get_current_word);
 #endif
 
 	lua_register(luaState, "_ALERT", cf_global_print);
@@ -1807,16 +1807,16 @@ bool InitGlobalScope(bool checkProperties, bool forceReload = false) {
 
 #ifdef RB_PDFL
 	//!-start-[ParametersDialogFromLua]
-		lua_pushcfunction(luaState, cf_scite_show_parameters_dialog);
-		lua_setfield(luaState, -2, "ShowParametersDialog");
-		//!-end-[ParametersDialogFromLua]
+	lua_pushcfunction(luaState, cf_scite_show_parameters_dialog);
+	lua_setfield(luaState, -2, "ShowParametersDialog");
+	//!-end-[ParametersDialogFromLua]
 #endif // RB_PDFL
 
 #ifdef RB_RSS
 	//!-start-[ReloadStartupScript]
-		lua_pushcfunction(luaState, cf_editor_reload_startup_script);
-		lua_setfield(luaState, -2, "ReloadStartupScript");
-		//!-end-[ReloadStartupScript]
+	lua_pushcfunction(luaState, cf_editor_reload_startup_script);
+	lua_setfield(luaState, -2, "ReloadStartupScript");
+	//!-end-[ReloadStartupScript]
 #endif // RB_RSS
 
 	lua_pushcfunction(luaState, cf_scite_update_status_bar);
@@ -1829,8 +1829,8 @@ bool InitGlobalScope(bool checkProperties, bool forceReload = false) {
 	lua_setfield(luaState, -2, "StripSet");
 
 #ifdef RB_USBTT
-		lua_pushcfunction(luaState, cf_scite_strip_set_tip_text);
-		lua_setfield(luaState, -2, "StripSetBtnTipText");
+	lua_pushcfunction(luaState, cf_scite_strip_set_tip_text);
+	lua_setfield(luaState, -2, "StripSetBtnTipText");
 #endif
 
 	lua_pushcfunction(luaState, cf_scite_strip_set_list);
@@ -1866,7 +1866,7 @@ bool InitGlobalScope(bool checkProperties, bool forceReload = false) {
 		if (fpTest.Exists()) {
 
 #ifdef RB_SF // fix encoding for startup path 
-				if (0 == luaL_loadfile(luaState, GUI::ConvertFromUTF8(startupScript, CP_ACP).c_str())) {
+			if (0 == luaL_loadfile(luaState, GUI::ConvertFromUTF8(startupScript, CP_ACP).c_str())) {
 #else
 			if (0 == luaL_loadfile(luaState, startupScript.c_str())) {
 #endif
@@ -2139,7 +2139,7 @@ bool LuaExtension::OnBeforeSave(const char *filename) {
 
 bool LuaExtension::OnSave(const char *filename) {
 	const bool result = CallNamedFunction("OnSave", filename);
-
+#ifndef RB_BUILD // отключено так как вызывает ошибки при перезапуске стартового скрипта
 	FilePath fpSaving = FilePath(GUI::StringFromUTF8(filename)).NormalizePath();
 	if (startupScript.length() && fpSaving == FilePath(GUI::StringFromUTF8(startupScript)).NormalizePath()) {
 		if (GetPropertyInt("ext.lua.auto.reload") > 0) {
@@ -2154,7 +2154,7 @@ bool LuaExtension::OnSave(const char *filename) {
 			Load(extensionScript.c_str());
 		}
 	}
-
+#endif // RB_BUILD
 	return result;
 }
 

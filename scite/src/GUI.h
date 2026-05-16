@@ -11,9 +11,9 @@
 #define GUI_H
 
 #include "SciTE_RB_defs.h"
-#ifdef RB_ENCODING
-#include <ScintillaTypes.h>
-#endif
+//#ifdef RB_ENCODING
+//#include <ScintillaTypes.h>
+//#endif
 
 namespace GUI {
 
@@ -78,8 +78,8 @@ std::string LowerCaseUTF8(std::string_view sv);
 
 #ifdef RB_ENCODING
 //!-start-[FixEncoding]
-int CodePageFromName(std::string_view encodingName) noexcept;
-unsigned int CodePageFromCharSet(Scintilla::CharacterSet characterSet, unsigned int documentCodePage);
+//int CodePageFromName(std::string_view encodingName) noexcept;
+//unsigned int CodePageFromCharSet(Scintilla::CharacterSet characterSet, unsigned int documentCodePage);
 std::string ConvertFromUTF8(const std::string& s, int codePage);
 std::string ConvertToUTF8(const std::string& s, int codePage);
 std::string UpperCaseUTF8(std::string_view sv);

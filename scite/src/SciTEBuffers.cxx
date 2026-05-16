@@ -1295,8 +1295,8 @@ GUI::gui_string AbbreviateWithTilde(const GUI::gui_string &path) {
 // Produce a menu or tab title from a buffer.
 // <index> <file name> <is read only> <is dirty>
 // 3 /src/example.cxx | *
-GUI::gui_string BufferTitle([[maybe_unused]] int pos, const Buffer &buffer, Title destination,
-	PropSetFile const &props, const Localization &localiser) {
+GUI::gui_string BufferTitle([[maybe_unused]] int pos, const Buffer& buffer, Title destination,
+	PropSetFile const& props, const Localization& localiser) {
 	GUI::gui_string title;
 
 	// Index
@@ -1306,12 +1306,13 @@ GUI::gui_string BufferTitle([[maybe_unused]] int pos, const Buffer &buffer, Titl
 		const GUI::gui_string sHotKey = GUI_TEXT("&") + sPos + GUI_TEXT(" ");
 		if (destination == Title::menu) {
 			title = sHotKey;	// hotkey 1..0
-			
+
 #ifdef RB_TMF
-				Substitute(title, GUI_TEXT(" "), GUI_TEXT(": "));
+			Substitute(title, GUI_TEXT(" "), GUI_TEXT(": "));
 #endif
 
-		} else {
+		}
+		else {
 			if (props.GetInt("tabbar.hide.index") == 0) {
 #if defined(_WIN32)
 				title = sHotKey; // add hotkey to the tabbar
@@ -1326,37 +1327,41 @@ GUI::gui_string BufferTitle([[maybe_unused]] int pos, const Buffer &buffer, Titl
 	// File name or path
 	if (buffer.file.IsUntitled()) {
 		title += localiser.Text("Untitled");
-	} else {
+	}
+	else {
 		if (destination == Title::menu) {
 
 #ifdef RB_TMF
-				title += EscapeFilePath(buffer.file.Name(), Title::menu);
+			title += EscapeFilePath(buffer.file.Name(), Title::menu);
 #else
 			title += AbbreviateWithTilde(EscapeFilePath(buffer.file, destination));
 #endif
 
-		} else {
+		}
+		else {
 			title += EscapeFilePath(buffer.file.Name(), destination);
 		}
 	}
 
 #ifdef RB_TTML
-		//!-start-[TabbarTitleMaxLength]
+	//!-start-[TabbarTitleMaxLength]
+	if (destination == Title::tab) {
 		int tabsTitleMaxLength = std::max(props.GetInt("tabbar.title.maxlength"), 6); //!-add-[TabbarTitleMaxLength]
 		if (buffer.isReadOnly && props.GetInt("read.only.indicator")) tabsTitleMaxLength -= 2;
 		if (buffer.DocumentNotSaved()) tabsTitleMaxLength -= 2;
-		if (tabsTitleMaxLength > 0 && title.length() - tabsTitleMaxLength > 3) {
+		if ((tabsTitleMaxLength > 0) && (title.length() - 3 > tabsTitleMaxLength)) {
 			title.resize(tabsTitleMaxLength, L'\0');
-			title.append(GUI_TEXT("..."));
-		}
-		//!-end-[TabbarTitleMaxLength]
+			title += GUI_TEXT("...");
+	}
+}
+	//!-end-[TabbarTitleMaxLength]
 #endif
 
 	// Read only indicator
 	if (buffer.isReadOnly && props.GetInt("read.only.indicator")) {
 #ifdef RB_ROTM
-			const std::string mark = props.GetString("tabbar.readonly.marker");
-			title += mark.empty() ? GUI_TEXT(" |") : GUI::StringFromUTF8(mark);
+		const std::string mark = props.GetString("tabbar.readonly.marker");
+		title += mark.empty() ? GUI_TEXT(" |") : GUI::StringFromUTF8(mark);
 #else
 		title += GUI_TEXT(" |");
 #endif // RB_ROTM
@@ -1364,16 +1369,17 @@ GUI::gui_string BufferTitle([[maybe_unused]] int pos, const Buffer &buffer, Titl
 
 	// Dirty indicator
 #ifdef RB_ONE
-		if (buffer.DocumentNotSaved()) {
-#else
-	if (buffer.isDirty) {
-#endif // RB_ONE
+	if (buffer.DocumentNotSaved()) {
 		title += GUI_TEXT(" *");
 	}
+#else
+	if (buffer.isDirty) {
+		title += GUI_TEXT(" *");
+	}
+#endif // RB_ONE
 
 	return title;
 }
-
 }
 
 void SciTEBase::SetBuffersMenu() {

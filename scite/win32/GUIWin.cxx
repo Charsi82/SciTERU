@@ -20,7 +20,6 @@
 #define _WIN32_WINNT  0x0A00
 #include <windows.h>
 
-#include <algorithm> //+ std::transform
 #include "ScintillaTypes.h"
 #include "GUI.h"
 
@@ -190,71 +189,17 @@ gui_string StringFromLongLong(long long i) {
 
 #ifdef RB_ENCODING
 //!-start-[FixEncoding]
-// from ScintillaWin.cxx
-	//!-start-[EncodingToLua]
-	int CodePageFromName(std::string_view encodingName) noexcept {
-		struct Encoding {
-			const char* name;
-			int codePage;
-		};
-		const Encoding	knownEncodings[] = {
-			{ "ascii", CP_UTF8 },
-			{ "utf-8", CP_UTF8 },
-			{ "latin1", 1252 },
-			{ "latin2", 28592 },
-			{ "big5", 950 },
-			{ "gbk", 936 },
-			{ "shift_jis", 932 },
-			{ "euc-kr", 949 },
-			{ "cyrillic", 1251 },
-			{ "iso-8859-5", 28595 },
-			{ "iso8859-11", 874 },
-			{ "1250", 1250 },
-			{ "windows-1251", 1251 },
-		};
-		for (const Encoding& enc : knownEncodings) {
-			if (encodingName == enc.name) {
-				return enc.codePage;
-			}
-		}
-		return CP_UTF8;
-	}
-	//!-end-[EncodingToLua]
-
-
-	unsigned int CodePageFromCharSet(Scintilla::CharacterSet characterSet, unsigned int documentCodePage) {
-		CHARSETINFO ci{};
-		BOOL bci = ::TranslateCharsetInfo(reinterpret_cast<DWORD*>(static_cast<uintptr_t>(characterSet)),
-			&ci, TCI_SRCCHARSET);
-
-		UINT cp;
-		if (bci)
-			cp = ci.ciACP;
-		else if (characterSet == Scintilla::CharacterSet::Oem866)
-			cp = 866;
-		else
-			cp = documentCodePage;
-
-		CPINFO cpi{};
-		if (!::IsValidCodePage(cp) && !::GetCPInfo(cp, &cpi))
-			cp = CP_ACP;
-
-		return cp;
-	}
-
 	std::string ConvertFromUTF8(const std::string& s, int codePage) {
 		if (codePage == CP_UTF8) {
 			return s;
 		}
 		else {
 			GUI::gui_string sWide = GUI::StringFromUTF8(s.c_str());
-			const int cchMulti = ::WideCharToMultiByte(codePage, 0, sWide.c_str(), static_cast<int>(sWide.length()), NULL, 0, NULL, NULL);
-			char* pszMulti = new char[static_cast<size_t>(cchMulti) + 1];
-			::WideCharToMultiByte(codePage, 0, sWide.c_str(), static_cast<int>(sWide.length()), pszMulti, cchMulti + 1, NULL, NULL);
-			pszMulti[cchMulti] = 0;
-			std::string ret(pszMulti);
-			delete[] pszMulti;
-			return ret;
+			const int sLength = static_cast<int>(sWide.length());
+			const int cchMulti = ::WideCharToMultiByte(codePage, 0, sWide.c_str(), sLength, NULL, 0, NULL, NULL);
+			std::string pszMulti(cchMulti, 0);
+			::WideCharToMultiByte(codePage, 0, sWide.c_str(), sLength, pszMulti.data(), cchMulti, NULL, NULL);
+			return pszMulti;
 		}
 	}
 
@@ -263,20 +208,17 @@ gui_string StringFromLongLong(long long i) {
 			return s;
 		}
 		else {
-			const char* original = s.c_str();
-			int cchWide = ::MultiByteToWideChar(codePage, 0, original, -1, NULL, 0);
-			wchar_t* pszWide = new wchar_t[static_cast<size_t>(cchWide) + 1];
-			::MultiByteToWideChar(codePage, 0, original, -1, pszWide, cchWide + 1);
-			GUI::gui_string sWide(pszWide);
-			std::string ret = GUI::UTF8FromString(sWide);
-			delete[] pszWide;
-			return ret;
+			const int sLength = static_cast<int>(s.length());
+			int cchWide = ::MultiByteToWideChar(codePage, 0, s.c_str(), sLength, NULL, 0);
+			std::wstring sWide(cchWide, 0);
+			::MultiByteToWideChar(codePage, 0, s.c_str(), sLength, sWide.data(), cchWide);
+			return GUI::UTF8FromString(sWide);
 		}
 	}
 
 	std::string UpperCaseUTF8(std::string_view sv) {
 		if (sv.empty()) {
-			return std::string();
+			return {};
 		}
 		const std::string s(sv);
 		const gui_string gs = StringFromUTF8(s);
@@ -285,9 +227,8 @@ gui_string StringFromLongLong(long long i) {
 		::LCMapString(LOCALE_SYSTEM_DEFAULT, LCMAP_UPPERCASE, gs.c_str(), static_cast<int>(gs.size()), lc.data(), chars);
 		return UTF8FromString(lc);
 	}
-
 	//!-end-[FixEncoding]
-#endif
+#endif // RB_ENCODING
 
 std::string LowerCaseUTF8(std::string_view sv) {
 	if (sv.empty()) {

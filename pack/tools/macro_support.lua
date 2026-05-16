@@ -36,7 +36,7 @@ and next lines into SciTEUser.properties:
 ---------------------------------------------------
 ]]
 local shell = require 'shell'
-
+local unpack = unpack or table.unpack
 scite.Perform("macroenable:1")
 
 -- pattern for macro name
