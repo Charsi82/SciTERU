@@ -219,13 +219,10 @@ fileMove(sPathFrom, sPathTo)\n Moving files
 gui.window
 gui.panel
 gui.set_panel
-gui.tabbar
-gui.list
-gui.memo
 gui.pass_focus
-gui.toolbar
 gui.open_dlg
 gui.save_dlg
+gui.scite_window
 gui.select_dir_dlg
 gui.colour_dlg
 gui.files
@@ -233,15 +230,29 @@ gui.chdir
 gui.message
 gui.prompt_value
 gui.run
+gui.run_cmd
+gui.get_ascii
+gui.version
+gui.desktop
+gui.create_link
+gui.ini_file
+gui.day_of_year
+gui.get_folder
+get_folder(number)\n get path of system directory by number /extern lib "gui"/
+day_of_year()\n return number of current day in year /extern lib "gui"/
+day_of_year(day, month, year)\n return number of given date from 01 yan in year /extern lib "gui"/
+ini_file(file_path, bInCurrentDir)\n create ini to file_path /extern lib "gui"/
+create_link(file_path, link_path, work_dir, description)\n create link to file /extern lib "gui"/
+desktop()\n return desktop window /extern lib "gui"/
+version()\n return version 'gui' lib /extern lib "gui"/
+get_ascii(u8)\n return ASCII symbol, html_number and html_code /extern lib "gui"/
+run_cmd("command")\n run command in cmd and return result from console  /extern lib "gui"/
+scite_window()\n get scite window  /extern lib "gui"/
 window ("title")\n create new top-level windows  /extern lib "gui"/
 panel (width)\n create panel  /extern lib "gui"/
 set_panel (panel_name, "right")\n panel attached to the left or the right side of the editor pane  /extern lib "gui"/
 set_panel ()\n remove the panel and hide it  /extern lib "gui"/
-tabbar (win_name)\n create tabbar control from window or panel  /extern lib "gui"/
-list (multi_column, single_select)\n create standard list view (set multi_column=>false, set multiselect=>true)  /extern lib "gui"/
-memo ()\n creates a Windows Rich Text control  /extern lib "gui"/
 pass_focus ()\n pass keyboard focus to editor  /extern lib "gui"/
-toolbar ("title", {"icon1.bmp:item1 caption|func1", "FILEOPEN:Open|IDM_OPEN"}, icons_size, "c:\\Path to icons\\button")
 open_dlg (caption,filter)\n standard Open File Dialog to the user, with the specified caption and filter  /extern lib "gui"/
 save_dlg (caption,filter)\n standard Save File Dialog to the user, with the specified caption and filter  /extern lib "gui"/
 select_dir_dlg (caption)\n standard Open Folder Dialog to the user, with the specified caption  /extern lib "gui"/
@@ -4836,3 +4847,31 @@ menu:insert_item
 menu:remove_item
 menu:insert_submenu
 menu:get_submenu
+
+styler:StartStyling(startPos, length, initStyle)
+styler:EndStyling()
+styler:More()
+styler:Forward()
+styler:Position()
+styler:AtLineStart()
+styler:AtLineEnd()
+styler:State()
+styler:SetState(state)
+styler:ForwardSetState(state)
+styler:ChangeState(state)
+styler:Current()
+styler:Next()
+styler:Previous()
+styler:Token()
+styler:Match(string)
+styler:Line(position)
+styler:CharAt(position)
+styler:StyleAt(position)
+styler:LevelAt(line)
+styler:SetLevelAt(line, level)
+styler:LineState(line)
+styler:SetLineState(line, state)
+styler.startPos
+styler.lengthDoc
+styler.initStyle
+styler.language

@@ -2275,11 +2275,11 @@ int window_main_menu(lua_State* L)
 // local posx, posy = wnd:cursor_pos()
 int window_cursor_pos(lua_State* L)
 {
-	if (TEventWindow* w = ew_arg(L))
+	if (TWin* w = window_arg(L))
 	{
-		auto [posx, posy] = w->get_cursor_position();
-		lua_pushinteger(L, posx);
-		lua_pushinteger(L, posy);
+		auto [px, py] = w->cursor_position();
+		lua_pushinteger(L, px);
+		lua_pushinteger(L, py);
 		return 2;
 	}
 	return 0;

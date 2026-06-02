@@ -44,7 +44,8 @@ require 'shell'
 
 local panel_width = tonumber(props['sidebar.width']) or 326
 local win_height = tonumber(props['position.height']) or 600
-local sidebar_position = (props['sidebar.position'] == 'left') and 'left' or 'right'
+-- local sidebar_position = (props['sidebar.position'] == 'left') and 'left' or 'right'
+if props['sidebar.position'] ~= 'left' then props['sidebar.position'] = 'right' end
 ----------------------------------------------------------
 local sb_window = gui.window "Side Bar"
 sb_window:size(panel_width + 24, 600)
@@ -109,7 +110,7 @@ local function SideBar_Show()
 	if tonumber(props['sidebar.win']) == 1 then
 		sb_window:show()
 	else
-		gui.set_panel(sb_panel, sidebar_position)
+		gui.set_panel(sb_panel, props['sidebar.position'])
 	end
 	OnSwitchTab()
 end
@@ -176,17 +177,17 @@ end
 function MoveSideBarMove()
 	if tonumber(props['sidebar.win']) ~= 1 then
 		if props['sidebar.position'] == 'right' then
-		props['sidebar.position'] = 'left'
-		sidebar_position = 'left'
-		gui.set_panel()
-		gui.set_panel(sb_panel, 'left')
-		ResetTabsMenu()
-	else
-		props['sidebar.position'] = 'right' 
-		sidebar_position = 'right'
-		gui.set_panel()
-		gui.set_panel(sb_panel, 'right')
-		ResetTabsMenu()
+			props['sidebar.position'] = 'left'
+			--sidebar_position = 'left'
+			gui.set_panel()
+			gui.set_panel(sb_panel, 'left')
+			ResetTabsMenu()
+		else
+			props['sidebar.position'] = 'right' 
+			--sidebar_position = 'right'
+			gui.set_panel()
+			gui.set_panel(sb_panel, 'right')
+			ResetTabsMenu()
 		end
 	end
 end

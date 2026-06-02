@@ -3,7 +3,7 @@
 ---------------------------------------------------
 -- Общие функции, использующиеся во многих скриптах
 ---------------------------------------------------
--- Пути поиска подключаемых lua-библиотек и модулей
+-- Пути поиска подключаемых Lua-библиотек и модулей
 package.path = props["SciteDefaultHome"] .. "\\tools\\LuaLib\\?.lua;" .. package.path
 package.cpath = props["SciteDefaultHome"] .. "\\tools\\LuaLib\\?.dll;" .. package.cpath
 
@@ -73,7 +73,7 @@ end
 -- string.to_pattern возращает строку, пригодную для использования
 -- в виде паттерна в string.find и т.п.
 -- Например: "xx-yy" -> "xx%-yy"
-local lua_patt_chars = "[%(%)%.%+%-%*%?%[%]%^%$%%]" -- управляющие паттернами символов Луа:
+local lua_patt_chars = "[%(%)%.%+%-%*%?%[%]%^%$%%]" -- управляющие паттернами символов Lua:
 function string.pattern(s)
 	return (s:gsub(lua_patt_chars, '%%%0')) -- фактически экранирование служебных символов символом %
 end
@@ -182,19 +182,19 @@ end
 
 ----------------------------------------------------------------------------
 -- Задание стиля для маркеров (затем эти маркеры можно будет использовать в скриптах, вызывая их по номеру)
+-- Translate color from RGB to win
+local function encodeRGB2WIN(color)
+	local conv_color, cnt = color:gsub("#(%x%x)(%x%x)(%x%x)", "%3%2%1", 1)
+	return (cnt == 1) and tonumber(conv_color, 16) or tonumber(color)
+end
 -- Перенесено в ядро 02.05.2026
 local function EditorInitMarkStyles()
-	-- Translate color from RGB to win
-	local function encodeRGB2WIN(color)
 	--[[	if string.sub(color, 1, 1) == "#" and string.len(color) > 6 then
 			return tonumber(string.sub(color, 6, 7) .. string.sub(color, 4, 5) .. string.sub(color, 2, 3), 16)
 		else
 			return tonumber(color)
 		end]]
-		local conv_color, cnt = color:gsub("#(%x%x)(%x%x)(%x%x)", "%3%2%1", 1)
 		-- local conv_color, cnt = color:gsub("#(%x%x)(%x%x)(%x%x)", "%1%2%3", 1)
-		return (cnt == 1) and tonumber(conv_color, 16) or tonumber(color)
-	end
 
 	local function InitMarkStyle(indic_number, indic_style, indic_color, indic_alpha, indic_outlinealpha)
 		editor.IndicStyle[indic_number] = indic_style
@@ -366,6 +366,10 @@ AddEventHandler("OnOpen", function()
 	--EditorInitMarkStyles() -- перенесено в ядро
 	SetMarginTypeN()
 	props["pane.accessible"] = '1'
+	local hs_fore_color = props['hotspot.fore']
+	if #hs_fore_color > 0 then editor:SetHotspotActiveFore(true, encodeRGB2WIN(hs_fore_color)) end --0xFF0000
+	local hs_back_color = props['hotspot.back']
+	if #hs_back_color > 0 then editor:SetHotspotActiveBack(true, encodeRGB2WIN(hs_back_color)) end --0x62E399
 end, 'RunOnce')
 
 -- on change props['what.find'] = value

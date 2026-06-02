@@ -158,6 +158,13 @@ bool StyleDefinition::ParseStyleDefinition(std::string_view definition) {
 			specified = static_cast<flags>(specified | sdInvisibleRep);
 			invisibleRep = optionValue;
 		}
+
+#ifdef RB_HOTSPOT		
+		if (optionName == "hotspot") {
+			specified = static_cast<flags>(specified | sdHotspot);
+			hotspot = true;
+		}
+#endif // RB_HOTSPOT
 	}
 	return true;
 }

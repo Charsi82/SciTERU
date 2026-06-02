@@ -52,6 +52,7 @@ public:
 
 	void set(HWND hwnd);
 	virtual void update();
+	POINT cursor_position() const;
 	HWND handle() const { return m_hwnd; }
 	HWND parent_handle() const;
 	void  invalidate(Rect* lprt = nullptr) const;
@@ -191,7 +192,6 @@ public:
 	virtual ~TEventWindow();
 
 	POINT fixed_size() const;
-	POINT get_cursor_position() const;
 	void enable_resize(bool do_resize, int w = 0, int h = 0);
 	bool cant_resize() const;
 	//std::unique_ptr<TDC> get_dc();

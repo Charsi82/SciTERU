@@ -134,14 +134,14 @@ end
 
 <tr><td>
 	<p class="head">
-		<dfn id="gui.inifile">gui.inifile('filename.ini', true)</dfn><br />
+		<dfn id="gui.ini_file">gui.ini_file('filename.ini', true)</dfn><br />
 	</p>
 	<p>
 		<b>Описание:</b><br />
 		&nbsp;&nbsp;Создаёт объект для работы с ini файлом.<br />
 		&nbsp;&nbsp;Первый аргумент задаёт путь к файлу или его имя.<br />
 		&nbsp;&nbsp;Второй аргумент задаёт - создать в текущей папке.<br />
-		<div class="example">local ini = gui.inifile('filename.ini', true)</div>
+		<div class="example">local ini = gui.ini_file('filename.ini', true)</div>
 		&nbsp;&nbsp;Доступные методы:
 		&nbsp;&nbsp;<div class="example">
 		&nbsp;&nbsp;ini:set_section('section name') -- устанавливает текущую секцию<br />
@@ -620,7 +620,7 @@ end
 	local btn = wnd:add_button("test")<br />
 	btn:position(20, 420)<br />
 	btn:size(70, 25)<br />
-	wnd:set_tiptext(btn:get_ctrl_id(), "tiptext for button", true)</div>
+	wnd:set_tiptext(btn:get_ctrl_id(), "tiptext for button", "caption", true)</div>
 	</p>
 </td></tr>
 
@@ -646,7 +646,7 @@ end
 
 <tr><td>
 	<p class="head">
-		<dfn id="wnd:set_tiptext">wnd:set_tiptext(ctrlID, "tiptext", "optCaption", optBoolBaloon, optBoolCloseBtn, optIconType)</dfn>
+		<dfn id="wnd:set_tiptext">wnd:set_tiptext(ctrlID, "tiptext", "optCaption" = '', optBoolBaloon = false, optBoolCloseBtn = false, optIconType = 0)</dfn>
 	</p>
 	<p>
 		<b>Описание:</b><br />
@@ -678,12 +678,14 @@ end
 	<p>
 		<b>Описание:</b><br />
 		&nbsp;&nbsp;Устанавливает колбек на событие закрытия окна.<br />
+		&nbsp;&nbsp;<b>Необходимо устанавливать!</b> Иначе окно при закрытии будет не уничтожено, а только скрыто, и при этом цикл обработки сообщений окна не будет прерван.<br />
+		&nbsp;&nbsp;<div class="example">wnd:on_close(function() wnd:quit() end)</div><br />
 	</p>
 </td></tr>
 
 <tr><td>
 	<p class="head">
-		<dfn id="wnd:on_show">wnd:on_show(func)</dfn>
+		<dfn id="wnd:on_show">wnd:on_show(function(bState) end)</dfn>
 	</p>
 	<p>
 		<b>Описание:</b><br />
@@ -693,7 +695,7 @@ end
 
 <tr><td>
 	<p class="head">
-		<dfn id="wnd:on_move">wnd:on_move(func)</dfn>
+		<dfn id="wnd:on_move">wnd:on_move(function() end)</dfn>
 	</p>
 	<p>
 		<b>Описание:</b><br />
@@ -702,11 +704,11 @@ end
 
 <tr><td>
 	<p class="head">
-		<dfn id="wnd:on_move">wnd:on_mouse_down(func)</dfn>
+		<dfn id="wnd:on_move">wnd:on_mouse_down(function(mx, my) ... end)</dfn>
 	</p>
 	<p>
 		<b>Описание:</b><br />
-		&nbsp;&nbsp;Устанавливает колбек на событие нажатия левой кнопки мыши.<br />
+		&nbsp;&nbsp;Устанавливает колбек на событие нажатия левой кнопки мыши, получающий координаты курсора мыши.<br />
 </p></td></tr>
 
 <tr><td>
@@ -720,7 +722,7 @@ end
 
 <tr><td>
 	<p class="head">
-		<dfn id="wnd:on_key">wnd:on_key(func)</dfn>
+		<dfn id="wnd:on_key">wnd:on_key(function(key, bCtrl, bAlt, bShift) end)</dfn>
 	</p>
 	<p>
 		<b>Описание:</b><br />
@@ -729,7 +731,7 @@ end
 
 <tr><td>
 	<p class="head">
-		<dfn id="wnd:on_command">wnd:on_command(func)</dfn>
+		<dfn id="wnd:on_command">wnd:on_command(function(ctrlID, state) end)</dfn>
 	</p>
 	<p>
 		<b>Описание:</b><br />
@@ -738,7 +740,7 @@ end
 
 <tr><td>
 	<p class="head">
-		<dfn id="wnd:on_scroll">wnd:on_scroll(func)</dfn>
+		<dfn id="wnd:on_scroll">wnd:on_scroll(function(ctrlID, pos) end)</dfn>
 	</p>
 	<p>
 		<b>Описание:</b><br />
@@ -747,7 +749,7 @@ end
 
 <tr><td>
 	<p class="head">
-		<dfn id="wnd:on_size">wnd:on_size(func)</dfn>
+		<dfn id="wnd:on_size">wnd:on_size(function(w, h) end)</dfn>
 	</p>
 	<p>
 		<b>Описание:</b><br />
@@ -756,7 +758,7 @@ end
 
 <tr><td>
 	<p class="head">
-		<dfn id="wnd:on_timer">wnd:on_timer(func, nOptPeriod)</dfn>
+		<dfn id="wnd:on_timer">wnd:on_timer(function() end, nOptPeriod = 1)</dfn>
 	</p>
 	<p>
 		<b>Описание:</b><br />

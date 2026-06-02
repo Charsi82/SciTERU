@@ -92,7 +92,8 @@ return function(tabs, panel_width, colorback, colorfore)
 	-- Show Current Colour
 	----------------------------------------------------------
 	function SetMemoColour(colour)
-		if (#colour == 6 or #colour == 8) and colour:match('%x%x%x%x%x%x') then
+		local colour = colour:match('^%x%x%x%x%x%x$') or colour:match('^0x(%x%x%x%x%x%x)$') or colour:match('^%x%x%x%x%x%x%x%x$')
+		if colour then
 			-- Set colour's value HEX
 			memo_path:set_memo_colour("", "#" .. colour)
 		else

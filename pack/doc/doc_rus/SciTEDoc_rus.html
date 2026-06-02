@@ -3245,9 +3245,9 @@ strip.trailing.spaces.$(file.patterns.yaml)=0</div></td>
 
 		<tr class="gtkonly">
 			<td><dfn><a name="strip.button.height">strip.button.height</a></dfn></td>
-			<td>Buttons on GTK often contain extra spacing that makes strips take too much room.
-			This setting tries to limit the height of buttons.
-			A value of 23 or 24 may work well.</td>
+			<td>В GTK кнопки часто имеют лишнее пространство, из-за чего полосы занимают слишком много места.
+Этот параметр пытается ограничить высоту кнопок.
+Значение 23 или 24 может подойти.</td>
 		</tr>
 
 	<tr>
@@ -3488,12 +3488,12 @@ if&nbsp;"Language:Korean"&nbsp;in&nbsp;open(sys.argv[1]).read():<br>
 
 		<tr>
 			<td><dfn><a name="lexilla.path">lexilla.path</a></dfn></td>
-			<td>Specifies a ';' separated list of dynamic lexer libraries. Each entry is a path to a dynamic library that implements the Lexilla protocol. If there is no extension then the platform standard extension '.so', '.dll', or '.dylib' is appended. The special entry '.' which is the default refers to the 'Lexilla' dynamic library distributed with SciTE.</td>
+			<td>Указывает список динамических библиотек лексеров, разделённых точкой с запятой. Каждая запись представляет собой путь к динамической библиотеке, реализующей протокол Lexilla. Если расширение отсутствует, добавляется стандартное расширение платформы '.so', '.dll' или '.dylib'. Специальная запись '.', которая является значением по умолчанию, относится к динамической библиотеке 'Lexilla', распространяемой вместе с SciTE. В сборке Ru-Board лексилла интергрирована в SciTE.exe</td>
 		</tr>
 
 		<tr>
 				<td><dfn><a name="lexilla.context.contextspecific">lexilla.context.<i>contextspecific</i></a></dfn></td>
-			<td>	Lexer libraries may require initialisation parameters and these can be specified by prefixing the library-specific names with 'lexilla.context.'. For example, a lexer library that needs to read in XML files containing lexer definitions may require a xmllexer.directory property which is provided with lexilla.context.xmllexer.directory.
+			<td>	Библиотеки лексеров могут требовать параметры инициализации, которые можно указать, добавив префикс 'lexilla.context' к именам библиотек. Например, библиотека лексеров, которой необходимо считывать XML-файлы, содержащие определения лексеров, может потребовать свойство xmllexer.directory, которое предоставляется с помощью lexilla.context.xmllexer.directory.
 				<div class="example">lexilla.context.xmllexer.directory=/home/example/xmllexer/definitions</div></td>
 		</tr>
 

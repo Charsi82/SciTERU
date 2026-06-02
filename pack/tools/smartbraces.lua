@@ -107,7 +107,7 @@ end
 
 -- последний символ в строке - конец строки?
 local function IsEOLlast( text )
-	-- в луа конец строки всегда один символ
+	-- в Lua конец строки всегда один символ
 --[[	if string.find( text, GetEOL(), string.len( text ) - 1 ) then
 		return true
 	end

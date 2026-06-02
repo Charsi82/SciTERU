@@ -310,6 +310,14 @@ TWin::~TWin()
 	//log_add("~TWin[0x%d]", this);
 }
 
+POINT TWin::cursor_position() const
+{
+	POINT p;
+	GetCursorPos(&p);
+	ScreenToClient(m_hwnd, &p);
+	return p;
+}
+
 void TWin::update()
 {
 	UpdateWindow(m_hwnd);
@@ -765,14 +773,6 @@ POINT TEventWindow::fixed_size() const
 	return m_fixed_size;
 }
 
-POINT TEventWindow::get_cursor_position() const
-{
-	POINT p;
-	GetCursorPos(&p);
-	ScreenToClient(handle(), &p);
-	return p;
-}
-
 //*1 new cursor types
 void TEventWindow::cursor(CursorType curs)
 {
@@ -957,7 +957,7 @@ TEventWindow::~TEventWindow()
 		{
 			delete win;
 		}
-		catch (const std::exception& ex)
+		catch ([[maybe_unused]] const std::exception& ex)
 		{
 			//std::string fmt = std::format("del list item {} 0x{:x} : {}", ++i, (size_t)win, ex.what());
 			//log_add(fmt.c_str());

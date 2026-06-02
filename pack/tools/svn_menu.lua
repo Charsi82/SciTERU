@@ -5,7 +5,7 @@ Version: 1.3.0
 Author: VladVRO, arhohryakov
 
 Using:
-Add next line to lua startup file (SciTEStartup.lua):
+Add next line to Lua startup file (SciTEStartup.lua):
 	dofile ("svn_menu.lua")
 ]]
 --++++++++++++++++++++++++++++++++++++++++++++++++++++++++

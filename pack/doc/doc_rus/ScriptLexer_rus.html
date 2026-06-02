@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<link rel="stylesheet" type="text/css" href="style.css" />
+		<title>Скриптовый лексер для SciTE</title>
+		<style type="text/css">
+.S0 {
+	color: #FF0000;
+	font-size: 8pt;
+}
+.S2 {
+	font-family: 'Comic Sans MS';
+	color: #007F00;
+	font-size: 8pt;
+}
+.S4 {
+	color: #007F7F;
+	font-size: 8pt;
+}
+.S5 {
+	color: #00007F;
+	font-size: 8pt;
+}
+.S6 {
+	color: #7F007F;
+	font-size: 8pt;
+}
+.S10 {
+	color: #000000;
+	font-size: 8pt;
+}
+.S14 {
+	color: #00007F;
+	background: #F5F5FF;
+	font-size: 8pt;
+}
+.Z0 {
+	color: #7f007f;
+	font-weight: bold;
+	font-size: 8pt;
+}
+.Z1 {
+	color: #000000;
+	font-size: 8pt;
+}
+.Z2 {
+	color: #000080;
+	font-weight: bold;
+	font-size: 8pt;
+}
+.Z3 {
+	color: #008000;
+	font-family: 'Georgia';
+	font-size: 8pt;
+	font-style:italic;
+}
+</style>
+	</head>
+<body bgcolor="#FFFFFF">
+    <table bgcolor="#000000" width="100%" cellspacing="0" cellpadding="0" border="0" class="tmenu">
+      <tr>
+        <td><img src="SciTEIco.png" height="32" width="32" alt="Scintilla icon" /></td>
+        <td width="100%"><font size="4">Скриптовый лексер для SciTE</font></td>
+      </tr>
+    </table>
+    <h3>Создание лексера на Lua</h3>
+	<p>Лексер может быть написан в виде скрипта на языке Lua вместо C++.
+Это немного проще и позволяет разрабатывать лексеры без использования компилятора C++.</p>
+	<p>Лексер скрипта подключается путём указания имени файла лексера, начинающегося с "script_".
+Затем, используя это имя, можно назначать стили и другие свойства. Например,</p>
+	<div class="example">
+	lexer.*.zog=script_zog<br/>
+style.script_zog.0=fore:#7f007f,bold<br/>
+style.script_zog.1=fore:#000000<br/>
+style.script_zog.2=fore:#000080,bold<br/>
+style.script_zog.3=fore:#008000,font:Georgia,italics,size:9
+	</div>
+	<p>Тогда лексер реализуется на Lua подобно этому:</p>
+<div class="example"><pre>-- -*- coding: utf-8 -*-
+
+function OnStyle(styler)
+        local S_DEFAULT = 0
+        local S_IDENTIFIER = 1
+        local S_KEYWORD = 2
+        local S_UNICODECOMMENT = 3
+        local identifierCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+        styler:StartStyling(styler.startPos, styler.lengthDoc, styler.initStyle)
+        while styler:More() do
+
+                -- Exit state if needed
+                if styler:State() == S_IDENTIFIER then
+                        if not identifierCharacters:find(styler:Current(), 1, true) then
+                                local identifier = styler:Token()
+                                if identifier == "if" or identifier == "end" then
+                                        styler:ChangeState(S_KEYWORD)
+                                end
+                                styler:SetState(S_DEFAULT)
+                        end
+                elseif styler:State() == S_UNICODECOMMENT then
+                        if styler:Match("»") then
+                                styler:ForwardSetState(S_DEFAULT)
+                        end
+                end
+
+                -- Enter state if needed
+                if styler:State() == S_DEFAULT then
+                        if styler:Match("«") then
+                                styler:SetState(S_UNICODECOMMENT)
+                        elseif identifierCharacters:find(styler:Current(), 1, true) then
+                                styler:SetState(S_IDENTIFIER)
+                        end
+                end
+
+                styler:Forward()
+        end
+        styler:EndStyling()
+end
+</pre></div>
+
+<p>Результат выглядит так:</p>
+
+<div class="highlighted">
+<span><span class="Z1">proc</span><span class="Z0"> </span><span class="Z1">clip</span><span class="Z0">(</span><span class="Z1">int</span><span class="Z0"> </span><span class="Z1">a</span><span class="Z0">)</span><br />
+<span class="Z3">« Clip into the positive zone »</span><br />
+<span class="Z2">if</span><span class="Z0"> (</span><span class="Z1">a</span><span class="Z0"> &gt; 0) </span><span class="Z1">a</span><br />
+<span class="Z0">0</span><br />
+<span class="Z2">end</span></span>
+</div>
+<br />
+
+<h3>Структура кода</h3>
+
+<h4>Цикл документа</h4>
+
+<p>Лексер проходит по указанной части документа, присваивая каждому символу свой стиль.</p>
+<div class="highlighted">
+<span class="Z1">styler:StartStyling<span class="S10">(</span>styler.startPos<span class="Z1">,</span><span class="S0"> </span>styler.lengthDoc<span class="Z1">,</span><span class="S0"> </span>styler.initStyle<span class="Z1"><span class="S10">)</span><br />
+<span class="S5">while</span><span class="S0"> </span>styler:More<span class="S10">()</span><span class="S0"> </span><span class="S5">do</span><br />
+<span class="S0">&nbsp; &nbsp; &nbsp; &nbsp; </span><span class="S2">-- Code that examines the text and sets lexical states</span><br />
+<span class="S0">&nbsp; &nbsp; &nbsp; &nbsp; </span>styler:Forward<span class="S10">()</span><br />
+<span class="S5">end</span><br />
+styler:EndStyling<span class="S10">()</span><br />
+</span></span></div>
+
+<p>Существует множество различных способов структурирования кода, который анализирует текст и устанавливает лексические состояния.
+Структура, оказавшаяся полезной в лексерах C++, — это написание двух блоков кода, как показано в примере.
+Первый блок проверяет, должно ли текущее состояние завершиться, и если да, то устанавливает состояние в значение по умолчанию 0.
+Второй блок отвечает за определение того, следует ли перейти в новое состояние из состояния по умолчанию.
+Такая структура позволяет обрабатывать все как переключение из состояния по умолчанию или обратно и избежать необходимости рассматривать множество комбинаций состояний.</p>
+
+<h4>Кодировки</h4>
+<p>Стайлер перебирает целые символы, а не байты. Таким образом, если документ закодирован в UTF-8, styler:Current() может представлять собой многобайтовую строку. Если же скрипт также закодирован в UTF-8,
+то легко проверить его на соответствие символам Юникода с помощью такого кода, как</p>
+<div class="example">
+<span class="S5">if styler:Current() == "«" then<span><br />
+</div>
+<p>Если используется кодировка, например Latin-1, и сам шрифт также закодирован в той же кодировке, то литералы можно использовать, как указано выше.</p>
+<p>Если язык может быть закодирован различными способами, то может потребоваться более сложный код, а также код, специфичный для данной кодировки.</p>
+
+<h4>Предварительные проверки</h4>
+<p>Иногда лексеру необходимо увидеть некоторую информацию в начале файла, например, объявление изменяет синтаксис или конкретная форма кавычек.
+Кавычки в начале строки должны совпадать с кавычками в конце. Поскольку стандартный цикл идет только вперед от начальной позиции, необходимо использовать другие вызовы, такие как CharAt и StyleAt.
+Они используют позиции байтов и не рассматривают многобайтовые символы как единые сущности.</p>
+
+<h4>Производительность</h4>
+<p>Приведённый выше лексический анализатор способен обрабатывать приблизительно 90 000 запросов в секунду на процессоре Athlon 64 с частотой 2,4 ГГц.
+В большинстве ситуаций это будет ощущаться совершенно плавно.</p>
+<p>Более сложные лексеры будут работать медленнее. Если лексер настолько медленный, что приложение перестаёт отвечать, то
+лексер может разделить каждый запрос. Он может сделать это, выбрав диапазон целых строк и используя этот диапазон в качестве
+аргументов функции StartStyling. Это позволяет обрабатывать нажатия клавиш и движения мыши пользователя.
+Лексер будет автоматически вызван снова для лексического анализа большей части документа.</p>
+<br />
+<h3>Программый интерфейс</h3>
+<p>API объекта стилизации, передаваемого в OnStyle:</p>
+<table>
+<thead>
+	<tr><th>Имя</th><th>Пояснение</th></tr>
+</thead>
+	<tr><td>StartStyling(startPos,&nbsp;length,&nbsp;initStyle)</td>
+	<td>Начинает задавать стили тексту длиной length, начиная с позиции startPos, с помощью начального стиля initStyle.</td></tr>
+	<tr><td>EndStyling()</td>
+	<td>Стилизация завершена, очистка временных объектов</td></tr>
+	<tr><td>More() → boolean</td>
+	<td>Есть ли ещё какие-либо символы, которые нужно обработать</td></tr>
+	<tr><td>Forward()</td>
+	<td>Переместиться на один символ вперёд</td></tr>
+	<tr><td>Position() → integer</td>
+	<td>Позиция текущего символа в документе</td></tr>
+	<tr><td>AtLineStart() → boolean</td>
+	<td>Является ли текущий символ первым в строке</td></tr>
+	<tr><td>AtLineEnd() → boolean</td>
+	<td>Является ли текущий символ последним в строке</td></tr>
+	<tr><td>State() → integer</td>
+	<td>Текущее значение лексического состояния</td></tr>
+	<tr><td>SetState(state)</td>
+	<td>Установить стиль текущего токена в соответствии с текущим состоянием, а затем изменить состояние на значение аргумента state</td></tr>
+	<tr><td>ForwardSetState(state)</td>
+	<td>Сочетание продвижения вперед и установки состояния. Полезно, когда текущий символ является разделителем токенов, например, " для строки.</td></tr>
+	<tr><td>ChangeState(state)</td>
+	<td>Изменяет текущее состояние таким образом, чтобы состояние текущего токена устанавливалось в соответствии с аргументом.</td></tr>
+	<tr><td>Current() → string</td>
+	<td>Текущий символ</td></tr>
+	<tr><td>Next() → string</td>
+	<td>Следующий символ</td></tr>
+	<tr><td>Previous() → string</td>
+	<td>Предыдущий символ</td></tr>
+	<tr><td>Token() → string</td>
+	<td>Текущий токен</td></tr>
+	<tr><td>Match(string) → boolean</td>
+	<td>Совпадает ли текст в текущей позиции с аргументом</td></tr>
+
+	<tr><td>Line(position) → integer</td>
+	<td>Преобразовать позицию байта в номер строки</td></tr>
+	<tr><td>CharAt(position) → integer</td>
+	<td>В аргумента беззнаковое байтовое целое</td></tr>
+	<tr><td>StyleAt(position) → integer</td>
+	<td>Значение стиля символа в указанной позиции</td></tr>
+	<tr><td>LevelAt(line) → integer</td>
+	<td>Уровень фолдинга для линии line</td></tr>
+	<tr><td>SetLevelAt(line, level)</td>
+	<td>Установить уровень фолдинга для линии line</td></tr>
+	<tr><td>LineState(line) → integer</td>
+	<td>Значение состоянии для строки</td></tr>
+	<tr><td>SetLineState(line, state)</td>
+	<td>Установите значение состояния для строки. Это можно использовать для хранения дополнительной информации, полученной в результате лексического анализа,
+например, текущего языкового режима, чтобы не было необходимости возвращаться к предыдущему фрагменту документа.</td></tr>
+
+	<tr><td>startPos : integer</td>
+	<td>Начало диапазона для обработки лексером</td></tr>
+	<tr><td>lengthDoc : integer</td>
+	<td>Длина диапазона для обработки лексером</td></tr>
+	<tr><td>initStyle : integer</td>
+	<td>Стартовый стиль</td></tr>
+	<tr><td>language : string</td>
+	<td>Имя языка. Позволяет реализовать поддержку нескольких языков с помощью одной функции OnStyle.</td></tr>
+</table>
+<br />
+
+<h3>
+   Пример лексера построчной обработки.
+</h3>
+<p>Этот пример предназначен для построчно-ориентированного языка, который иногда используется для конфигурационных файлов.
+В нём используются низкоуровневые прямые вызовы вместо вызовов StartStyling/More/Forward/EndStyling.</p>
+
+<div class="highlighted">
+<span class="Z1"><span class="S2">-- Лексер, ориентированный на строки — стилизует строку в соответствии с первым символом.</span><br />
+<span class="S5">function</span><span class="S0"> </span>OnStyle<span class="S10">(</span>styler<span class="S10">)</span><br />
+<span class="S0">&nbsp; &nbsp; &nbsp; &nbsp; </span><span class="S5">local</span> lineStart<span class="S0"> </span><span class="S10">=</span><span class="S0"> </span>editor<span class="S10">:</span>LineFromPosition<span class="S10">(</span>styler.startPos<span class="S10">)</span><br />
+<span class="S0">&nbsp; &nbsp; &nbsp; &nbsp; </span><span class="S5">local</span> lineEnd<span class="S0"> </span><span class="S10">=</span><span class="S0"> </span>editor<span class="S10">:</span>LineFromPosition<span class="S10">(</span>styler.startPos<span class="S0"> </span><span class="S10">+</span><span class="S0"> </span>styler.lengthDoc<span class="S10">)</span><br />
+<span class="S0">&nbsp; &nbsp; &nbsp; &nbsp; </span>editor<span class="S10">:</span>StartStyling<span class="S10">(</span>styler.startPos<span class="S10">, </span><span class="S0"> </span><span class="S4">31</span><span class="S10">)</span><br />
+<span class="S0">&nbsp; &nbsp; &nbsp; &nbsp; </span><span class="S5">for</span><span class="S0"> </span>line<span class="S10">=</span>lineStart<span class="S10">, </span>lineEnd<span class="S10">, </span><span class="S4">1</span><span class="S0"> </span><span class="S5">do</span><br />
+<span class="S0">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </span><span class="S5">local</span> lengthLine<span class="S0"> </span><span class="S10">=</span><span class="S0"> </span>editor<span class="S10">:</span>PositionFromLine<span class="S10">(</span>line<span class="S10"> + </span><span class="S4">1</span><span class="S10">)</span><span class="S0"> </span><span class="S10">-</span><span class="S0"> </span>editor<span class="S10">:</span>PositionFromLine<span class="S10">(</span>line<span class="S10">)</span><br />
+<span class="S0">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </span><span class="S5">local</span> lineText<span class="S0"> </span><span class="S10">=</span><span class="S0"> </span>editor<span class="S10">:</span>GetLine<span class="S10">(</span>line<span class="S10">)</span><br />
+<span class="S0">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </span><span class="S5">local</span> first<span class="S0"> </span><span class="S10">=</span><span class="S0"> </span><span class="S14">string.sub</span><span class="S10">(</span>lineText<span class="S10">, </span><span class="S4">1</span><span class="S10">, </span><span class="S4">1</span><span class="S10">)</span><br />
+<span class="S0">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </span><span class="S5">local</span> style<span class="S0"> </span><span class="S10">=</span><span class="S0"> </span><span class="S4">0</span><br />
+<span class="S0">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </span><span class="S5">if</span><span class="S0"> </span>first<span class="S0"> </span><span class="S10">==</span><span class="S0"> </span><span class="S6">"+"</span><span class="S0"> </span><span class="S5">then</span><br />
+<span class="S0">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </span>style<span class="S0"> </span><span class="S10">=</span><span class="S0"> </span><span class="S4">1</span><br />
+<span class="S0">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </span><span class="S5">elseif</span><span class="S0"> </span>first<span class="S0"> </span><span class="S10">==</span><span class="S0"> </span><span class="S6">" "</span><span class="S0"> </span><span class="S5">or</span><span class="S0"> </span>first<span class="S0"> </span><span class="S10">==</span><span class="S0"> </span><span class="S6">"\t"</span><span class="S0"> </span><span class="S5">then</span><br />
+<span class="S0">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </span>style<span class="S0"> </span><span class="S10">=</span><span class="S0"> </span><span class="S4">2</span><br />
+<span class="S0">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </span><span class="S5">end</span><br />
+<span class="S0">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </span>editor<span class="S10">:</span>SetStyling<span class="S10">(</span>lengthLine<span class="S10">, </span><span class="S0"> </span>style<span class="S10">)</span><br />
+<span class="S0">&nbsp; &nbsp; &nbsp; &nbsp; </span><span class="S5">end</span><br />
+<span class="S5">end</span><br />
+<span class="S0"></span></span>
+</div>
+<br />
+</body>
+</html>

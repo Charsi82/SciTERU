@@ -20,21 +20,21 @@ public:
 	bool italics;
 	bool eolfilled;
 	bool underlined;
-	Scintilla::CaseVisible caseForce;
-	bool visible;
-	bool changeable;
-	std::string invisibleRep;
 
 #ifdef RB_HOTSPOT
 	bool hotspot; //!-add-[StyleDefHotspot]
 #endif // RB_HOTSPOT
 
+	Scintilla::CaseVisible caseForce;
+	bool visible;
+	bool changeable;
+	std::string invisibleRep;
 	enum flags { sdNone = 0, sdFont = 0x1, sdSize = 0x2, sdFore = 0x4, sdBack = 0x8,
 		     sdWeight = 0x10, sdItalics = 0x20, sdEOLFilled = 0x40, sdUnderlined = 0x80,
 		     sdCaseForce = 0x100, sdVisible = 0x200, sdChangeable = 0x400, sdInvisibleRep=0x800,
 		     sdStretch = 0x10000,
 #ifdef RB_HOTSPOT
-		sdHotspot = 0x2000, //!-change-[StyleDefHotspot]
+		sdHotspot = 0x1000, //!-change-[StyleDefHotspot]
 #endif // RB_HOTSPOT
 		   } specified;
 	explicit StyleDefinition(std::string_view definition);

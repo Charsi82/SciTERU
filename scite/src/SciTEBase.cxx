@@ -2046,7 +2046,7 @@ void SciTEBase::ContinueCallTip() {
 	int braces = 0;
 	int commas = 0;
 #ifdef RB_BTCT3
-	if (FindLanguageProperty("calltip.*.fixcolorize", "0") == "1")
+	if (FindLanguageProperty("calltip.*.fixcolorize") == "1")
 		for (SA::Position i = startCalltipWord - 1; i > 0; i--) {
 			if (line[i] == '.')
 				break;
@@ -2084,7 +2084,7 @@ void SciTEBase::ContinueCallTip() {
 		startHighlight++;
 	size_t endHighlight = startHighlight;
 #ifdef RB_BTCT3
-	std::string hlend = calltipParametersEnd + "[=]"; //+
+	const std::string hlend = calltipParametersEnd + "[=]"; //+
 	while ((endHighlight < functionDefinition.length()) && !Contains(calltipParametersSeparators, functionDefinition[endHighlight]) && !Contains(hlend, functionDefinition[endHighlight]))
 #else
 	while ((endHighlight < functionDefinition.length()) && !Contains(calltipParametersSeparators, functionDefinition[endHighlight]) && !Contains(calltipParametersEnd, functionDefinition[endHighlight]))
@@ -2791,7 +2791,7 @@ void SciTEBase::UpdateStatusBar(bool bUpdateSlowData) {
 
 #ifdef RB_ZFP
 		propsStatus.Set("ZoomFactorPercent", std::to_string(100 + 10 * wEditor.Zoom()).append("%"));
-#endif
+#endif // RB_ZFP
 
 		const std::string sbKey = "statusbar.text." + std::to_string(sbNum);
 		std::string msg = propsStatus.GetExpandedString(sbKey);
@@ -4589,7 +4589,8 @@ void SciTEBase::Notify(SCNotification *notification) {
 
 #ifdef RB_GMI
 		//!-start-[GoMessageImprovement]
-	case SA::Notification::HotSpotReleaseClick /*SCN_HOTSPOTRELEASECLICK*/:
+	case SA::Notification::HotSpotDoubleClick:
+	//case SA::Notification::HotSpotReleaseClick /*SCN_HOTSPOTRELEASECLICK*/:
 		if (extender) {
 			handled = extender->OnHotSpotReleaseClick(notification->modifiers);
 			if (handled) {
@@ -4611,7 +4612,7 @@ void SciTEBase::Notify(SCNotification *notification) {
 		}
 		break;
 		//!-end-[GoMessageImprovement]
-#endif
+#endif // RB_GMI
 
 	case SA::Notification::UpdateUI:
 		UpdateUI(notification);

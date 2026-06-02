@@ -74,9 +74,9 @@ void ColourisePropsLine(
 
 	if (i < lengthLine) {
 #ifdef RB_PCF
-			if ((lineBuffer[i] == '#') && (lineBuffer[i + 1] == ' ' || lineBuffer[i + 1] == '#' || lineBuffer[i + 1] == '~')
-				|| (lineBuffer[i] == '!'
-					|| lineBuffer[i] == ';')) {
+			if ((lineBuffer[i] == '#' && (isspacechar(lineBuffer[i + 1]) || lineBuffer[i + 1] == '#' || lineBuffer[i + 1] == '~'))
+				|| lineBuffer[i] == '!'
+				|| lineBuffer[i] == ';') {
 #else
 		if (lineBuffer[i] == '#' || lineBuffer[i] == '!' || lineBuffer[i] == ';') {
 #endif

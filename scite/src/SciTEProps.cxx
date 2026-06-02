@@ -365,7 +365,7 @@ void SciTEBase::SetOneStyle(GUI::ScintillaWindow &win, int style, std::string_vi
 #ifdef RB_HOTSPOT
 	//!-start-[StyleDefHotspot]
 	if (sd.specified & StyleDefinition::sdHotspot)
-		win.StyleSetHotSpot(style, sd.hotspot ? 1 : 0);
+		win.StyleSetHotSpot(style, sd.hotspot);
 	//!-end-[StyleDefHotspot]
 #endif // RB_HOTSPOT
 	win.StyleSetCharacterSet(style, characterSet);

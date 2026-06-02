@@ -481,6 +481,10 @@ protected:
 	bool fullScreen;
 	SystemAppearance appearance;
 	
+#ifdef RB_OMC
+	int OnMenuCommandCallsCount; //!-add-[OnMenuCommand]
+#endif // RB_OMC
+
 #ifdef RB_ToolsMax
 	enum { toolMax = 300 }; //!-change-[ToolsMax]
 #else
@@ -489,11 +493,6 @@ protected:
 
 	Extension *extender;
 	bool needReadProperties;
-
-#ifdef RB_GMI
-	bool preserveFocusOnEditor; //!-add-[GoMessageImprovement]
-#endif // RB_GMI
-
 	bool quitting;
 	bool canUndo;
 	bool canRedo;
@@ -505,6 +504,15 @@ protected:
 	int heightOutput;
 	int heightOutputStartDrag;
 	GUI::Point ptStartDrag;
+
+#ifdef RB_BTCT2
+	bool callTipAutomatic; //!-add-[BetterCalltips]
+#endif // RB_BTCT2
+
+#ifdef RB_GMI
+	bool preserveFocusOnEditor; //!-add-[GoMessageImprovement]
+#endif // RB_GMI
+
 	bool capturedMouse;
 	int previousHeightOutput;
 	bool firstPropertiesRead;
@@ -514,11 +522,6 @@ protected:
 	bool bracesSloppy;
 	int bracesStyle;
 	int braceCount;
-
-#ifdef RB_BTCT2
-	bool callTipAutomatic; //!-add-[BetterCalltips]
-#endif // RB_BTCT2
-
 	int indentationWSVisible;
 	SA::IndentView indentExamine;
 	bool autoCompleteIgnoreCase;
@@ -856,7 +859,7 @@ protected:
 	bool PerformInsertAbbreviation();
 
 #ifdef RB_IA
-	virtual bool InsertAbbreviation(const char* data); //!-add-[InsertAbbreviation]
+	bool InsertAbbreviation(const char* data); //!-add-[InsertAbbreviation]
 #endif // RB_IA
 
 	virtual bool StartBlockComment();
@@ -1093,10 +1096,6 @@ protected:
 	bool iswordcharforsel(char ch) noexcept;
 	bool isfilenamecharforsel(char ch) noexcept;
 	bool islexerwordcharforsel(char ch) noexcept;
-
-#ifdef RB_OMC
-	int OnMenuCommandCallsCount; //!-add-[OnMenuCommand]
-#endif // RB_OMC
 
 	CurrentWordHighlight currentWordHighlight;
 	void HighlightCurrentWord(bool highlight);
