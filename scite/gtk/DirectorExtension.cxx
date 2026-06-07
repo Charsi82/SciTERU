@@ -60,12 +60,11 @@
 
 #include <gtk/gtk.h>
 
-#include "ILexer.h"
 
 #include "ScintillaTypes.h"
 #include "ScintillaMessages.h"
 #include "ScintillaCall.h"
-
+#include "ILexer.h"
 #include "Scintilla.h"
 
 #include "GUI.h"

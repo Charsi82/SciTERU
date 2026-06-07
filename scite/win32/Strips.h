@@ -253,7 +253,7 @@ public:
 
 #ifdef RB_USBTT
 	void SetTipText(int control, const char* value);
-#endif
+#endif // RB_USBTT
 
 	void SetList(int control, const char *value);
 	std::string GetValue(int control);

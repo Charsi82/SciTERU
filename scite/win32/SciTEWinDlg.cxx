@@ -1740,7 +1740,7 @@ BOOL SciTEWin::ParametersMessage(HWND hDlg, UINT message, WPARAM wParam) {
 				HICON hIcon = LoadIcon(hInstance, L"SciTE");
 				if (hIcon) SendMessage(hDlg, WM_SETICON, (WPARAM)ICON_BIG, (LPARAM)hIcon);
 			}
-#endif
+#endif // RB_ICPW
 
 			for (int param = 0; param < maxParam; param++) {
 				std::string paramText = StdStringFromInteger(param + 1);

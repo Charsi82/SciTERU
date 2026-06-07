@@ -42,14 +42,14 @@ extern "C" {
 #ifdef RB_BUILD
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#endif
+#endif // RB_BUILD
 
 #ifdef RB_UTF8
 //!-start-[EncodingToLua]
 void lua_utf8_register_libs(lua_State* L);
 //!-end-[EncodingToLua]
 UINT CodePageFromCharSet(Scintilla::CharacterSet characterSet, UINT documentCodePage) noexcept;
-#endif
+#endif // RB_UTF8
 
 #if (LUA_VERSION_NUM < 502)
 #define lua_pushglobaltable(L) lua_pushvalue(L, LUA_GLOBALSINDEX)
@@ -59,10 +59,12 @@ UINT CodePageFromCharSet(Scintilla::CharacterSet characterSet, UINT documentCode
 #define LUA_GLOBALSINDEX LUA_RIDX_GLOBALS
 #endif
 
+#ifdef RB_BUILD
 // LUA_COMPAT_APIINTCASTS Lua 5.5
 #ifndef luaL_checkint
 #define luaL_checkint(L,n)	(static_cast<int>(luaL_checkinteger(L, (n))))
 #endif
+#endif // RB_BUILD
 
 #if defined(_WIN32) && defined(_MSC_VER)
 
@@ -483,7 +485,8 @@ int cf_scite_update_status_bar(lua_State *L) {
 	return 0;
 }
 
-#ifdef RB_ENCODING //!-start-[EncodingToLua]
+#ifdef RB_ENCODING
+	//!-start-[EncodingToLua]
 	int cf_pane_get_codepage(lua_State* L) {
 		ExtensionAPI::Pane p = check_pane_object(L, 1);
 		int codePage = get_codepage(p);
@@ -491,7 +494,7 @@ int cf_scite_update_status_bar(lua_State *L) {
 		return 1;
 	}
 	//!-end-[EncodingToLua]
-#endif
+#endif // RB_ENCODING
 
 int cf_scite_strip_show(lua_State *L) {
 	const char *s = luaL_checkstring(L, 1);
@@ -519,7 +522,7 @@ int cf_scite_strip_set(lua_State *L) {
 		}
 		return 0;
 	}
-#endif
+#endif // RB_USBTT
 
 int cf_scite_strip_set_list(lua_State *L) {
 	const int control = luaL_checkint(L, 1);
@@ -914,7 +917,7 @@ int cf_os_execute(lua_State *L) {
 		lua_pushstring(L, cur_word.c_str());
 		return 1;
 	}
-#endif
+#endif // RB_GETCURWORD
 
 int cf_global_print(lua_State *L) {
 	const int nargs = lua_gettop(L);
@@ -1536,7 +1539,8 @@ void push_pane_object(lua_State *L, ExtensionAPI::Pane p) noexcept {
 			lua_pushcfunction(luaState, cf_pane_get_codepage);
 			lua_setfield(luaState, -2, "codepage");
 			//!-end-[EncodingToLua]
-#endif
+#endif // RB_ENCODING
+
 		lua_pushcfunction(L, cf_pane_match_generator);
 		lua_pushcclosure(L, cf_pane_match, 1);
 		lua_setfield(L, -2, "match");
@@ -1634,7 +1638,7 @@ void PublishGlobalBufferData() noexcept {
 
 #ifdef RB_SSR
 	int cf_editor_reload_startup_script(lua_State*); //!-add-[StartupScriptReload]
-#endif
+#endif // RB_SSR
 
 bool InitGlobalScope(bool checkProperties, bool forceReload = false) {
 	bool reload = forceReload;
@@ -1718,11 +1722,11 @@ bool InitGlobalScope(bool checkProperties, bool forceReload = false) {
 
 #ifdef RB_UTF8
 	lua_utf8_register_libs(luaState); //!-change-[EncodingToLua]
-#endif RB_UTF8
+#endif // RB_UTF8
 
 #ifdef RB_GETCURWORD
 	lua_register(luaState, "GetCurrentWord", cf_get_current_word);
-#endif
+#endif // RB_GETCURWORD
 
 	lua_register(luaState, "_ALERT", cf_global_print);
 
@@ -1778,31 +1782,31 @@ bool InitGlobalScope(bool checkProperties, bool forceReload = false) {
 	lua_setfield(luaState, -2, "MenuCommand");
 
 #ifdef RB_CheckMenus
-		//!-start-[CheckMenus]
-		lua_pushcfunction(luaState, cf_scite_check_menus);
-		lua_setfield(luaState, -2, "CheckMenus");
-		//!-end-[CheckMenus]
+	//!-start-[CheckMenus]
+	lua_pushcfunction(luaState, cf_scite_check_menus);
+	lua_setfield(luaState, -2, "CheckMenus");
+	//!-end-[CheckMenus]
 #endif // RB_CheckMenus
 
 #ifdef RB_LFL
 	//!-start-[LocalizationFromLua]
-		lua_pushcfunction(luaState, cf_editor_get_translation);
-		lua_setfield(luaState, -2, "GetTranslation");
-		//!-end-[LocalizationFromLua]
+	lua_pushcfunction(luaState, cf_editor_get_translation);
+	lua_setfield(luaState, -2, "GetTranslation");
+	//!-end-[LocalizationFromLua]
 #endif // RB_LFL
 
 #ifdef RB_Perform
-//!-start-[Perform]
-		lua_pushcfunction(luaState, cf_scite_perform);
-		lua_setfield(luaState, -2, "Perform");
-		//!-end-[Perform]
-#endif
+	//!-start-[Perform]
+	lua_pushcfunction(luaState, cf_scite_perform);
+	lua_setfield(luaState, -2, "Perform");
+	//!-end-[Perform]
+#endif // RB_Perform
 
 #ifdef RB_IA
 	//!-start-[InsertAbbreviation]
-		lua_pushcfunction(luaState, cf_editor_insert_abbrev);
-		lua_setfield(luaState, -2, "InsertAbbreviation");
-		//!-end-[InsertAbbreviation]
+	lua_pushcfunction(luaState, cf_editor_insert_abbrev);
+	lua_setfield(luaState, -2, "InsertAbbreviation");
+	//!-end-[InsertAbbreviation]
 #endif // RB_IA
 
 #ifdef RB_PDFL
@@ -1831,7 +1835,7 @@ bool InitGlobalScope(bool checkProperties, bool forceReload = false) {
 #ifdef RB_USBTT
 	lua_pushcfunction(luaState, cf_scite_strip_set_tip_text);
 	lua_setfield(luaState, -2, "StripSetBtnTipText");
-#endif
+#endif // RB_USBTT
 
 	lua_pushcfunction(luaState, cf_scite_strip_set_list);
 	lua_setfield(luaState, -2, "StripSetList");
@@ -1869,7 +1873,7 @@ bool InitGlobalScope(bool checkProperties, bool forceReload = false) {
 			if (0 == luaL_loadfile(luaState, GUI::ConvertFromUTF8(startupScript, CP_ACP).c_str())) {
 #else
 			if (0 == luaL_loadfile(luaState, startupScript.c_str())) {
-#endif
+#endif // RB_SF
 
 				if (!call_function(luaState, 0, true)) {
 					host->Trace(">Lua: error occurred while running startup script\n");

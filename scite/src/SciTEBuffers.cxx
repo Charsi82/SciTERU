@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <ctime>
 
+#include <utility>
 #include <compare>
 #include <tuple>
 #include <string>
@@ -22,16 +23,15 @@
 #include <set>
 #include <optional>
 #include <algorithm>
+#include <ranges>
 #include <memory>
 #include <chrono>
 #include <atomic>
 #include <mutex>
 
-#include "ILoader.h"
-
 #include "ScintillaTypes.h"
 #include "ScintillaCall.h"
-
+#include "ILoader.h"
 #include "SciLexer.h"
 
 #include "GUI.h"
@@ -1158,7 +1158,7 @@ SciTEBase::SaveResult SciTEBase::SaveAllBuffers(bool alwaysYes) {
 				choice = SaveIfUnsure(false);
 			}
 		}
-#else //  RB_ONE
+#else // RB_ONE
 		if (buffers.buffers[i].isDirty) {
 			SetDocumentAt(i);
 			if (alwaysYes) {
@@ -1169,7 +1169,7 @@ SciTEBase::SaveResult SciTEBase::SaveAllBuffers(bool alwaysYes) {
 				choice = SaveIfUnsure(false);
 			}
 		}
-#endif //  RB_ONE
+#endif // RB_ONE
 	}
 	SetDocumentAt(currentBuffer);
 	return choice;
@@ -1184,7 +1184,7 @@ void SciTEBase::SaveTitledBuffers() {
 			SetDocumentAt(i);
 			Save();
 		}
-#else// RB_ONE
+#else // RB_ONE
 		if (buffers.buffers[i].isDirty && !buffers.buffers[i].file.IsUntitled()) {
 			SetDocumentAt(i);
 			Save();
@@ -1222,7 +1222,7 @@ void SciTEBase::ShiftTab(BufferIndex indexFrom, BufferIndex indexTo) {
 
 #ifdef RB_ONTABMOVE
 	if (extender) extender->OnTabMove(indexFrom, indexTo);
-#endif //RB_ONTABMOVE
+#endif // RB_ONTABMOVE
 }
 
 void SciTEBase::MoveTabRight() {
@@ -1295,8 +1295,8 @@ GUI::gui_string AbbreviateWithTilde(const GUI::gui_string &path) {
 // Produce a menu or tab title from a buffer.
 // <index> <file name> <is read only> <is dirty>
 // 3 /src/example.cxx | *
-GUI::gui_string BufferTitle([[maybe_unused]] int pos, const Buffer& buffer, Title destination,
-	PropSetFile const& props, const Localization& localiser) {
+GUI::gui_string BufferTitle([[maybe_unused]] int pos, const Buffer &buffer, Title destination,
+	PropSetFile const &props, const Localization &localiser) {
 	GUI::gui_string title;
 
 	// Index
@@ -1309,7 +1309,7 @@ GUI::gui_string BufferTitle([[maybe_unused]] int pos, const Buffer& buffer, Titl
 
 #ifdef RB_TMF
 			Substitute(title, GUI_TEXT(" "), GUI_TEXT(": "));
-#endif
+#endif // RB_TMF
 
 		}
 		else {
@@ -1327,18 +1327,15 @@ GUI::gui_string BufferTitle([[maybe_unused]] int pos, const Buffer& buffer, Titl
 	// File name or path
 	if (buffer.file.IsUntitled()) {
 		title += localiser.Text("Untitled");
-	}
-	else {
+	} else {
 		if (destination == Title::menu) {
-
 #ifdef RB_TMF
 			title += EscapeFilePath(buffer.file.Name(), Title::menu);
 #else
 			title += AbbreviateWithTilde(EscapeFilePath(buffer.file, destination));
-#endif
-
-		}
-		else {
+#endif // RB_TMF
+			
+		} else {
 			title += EscapeFilePath(buffer.file.Name(), destination);
 		}
 	}
@@ -1352,10 +1349,10 @@ GUI::gui_string BufferTitle([[maybe_unused]] int pos, const Buffer& buffer, Titl
 		if ((tabsTitleMaxLength > 0) && (title.length() - 3 > tabsTitleMaxLength)) {
 			title.resize(tabsTitleMaxLength, L'\0');
 			title += GUI_TEXT("...");
+		}
 	}
-}
 	//!-end-[TabbarTitleMaxLength]
-#endif
+#endif // RB_TTML
 
 	// Read only indicator
 	if (buffer.isReadOnly && props.GetInt("read.only.indicator")) {
@@ -1380,6 +1377,7 @@ GUI::gui_string BufferTitle([[maybe_unused]] int pos, const Buffer& buffer, Titl
 
 	return title;
 }
+
 }
 
 void SciTEBase::SetBuffersMenu() {
@@ -1443,9 +1441,9 @@ void SciTEBase::SetFileStackMenu() {
 		const int fileStackMaxToUse = std::min(fileStackMax, props.GetInt("save.recent.max", fileStackMaxDefault)); //-> props
 		for (int stackPos = 0; stackPos < fileStackMaxToUse; stackPos++) {
 			//!-end-[MoreRecentFiles]
-#else //RB_MoreRecentFiles
+#else
 		for (int stackPos = 0; stackPos < fileStackMax; stackPos++) {
-#endif //RB_MoreRecentFiles
+#endif // RB_MoreRecentFiles
 			const int itemID = fileStackCmdID + stackPos;
 			if (recentFileStack[stackPos].IsSet()) {
 				GUI::gui_string sEntry;
@@ -1620,7 +1618,7 @@ void SciTEBase::RemoveToolsMenu() {
 		DestroyMenuItem(menuTools, IDM_TOOLS + pos);
 	}
 }
-#endif
+#endif // !RB_SUBMENU
 
 void SciTEBase::SetMenuItemLocalised(int menuNumber, int position, int itemID,
 				     std::string_view text, std::string_view mnemonic) {
@@ -2264,7 +2262,7 @@ void SciTEBase::ShowMessages(SA::Line line) {
 bool SciTEBase::GoMessage(int dir) {
 #else
 void SciTEBase::GoMessage(int dir) {
-#endif
+#endif // RB_GMI
 	const SA::Position selStart = wOutput.SelectionStart();
 	const SA::Line curLine = wOutput.LineFromPosition(selStart);
 	const SA::Line maxLine = wOutput.LineCount();
@@ -2288,11 +2286,13 @@ void SciTEBase::GoMessage(int dir) {
 			wOutput.MarkerSetFore(0, ColourOfProperty(props,
 					      "error.marker.fore", ColourRGB(0x7f, 0, 0)));
 			wOutput.MarkerSetBack(0, ColourOfProperty(props,
-#ifndef RB_ELB
-					      "error.marker.back", ColourRGB(0xff, 0xff, 0)));
-#else
+
+#ifdef RB_ELB
 				"error.line.back", ColourOfProperty(props, "error.marker.back", ColourRGB(0xff, 0xff, 0)))); //!-change-[ErrorLineBack]
+#else
+				"error.marker.back", ColourRGB(0xff, 0xff, 0)));
 #endif // RB_ELB
+
 			wOutput.MarkerAdd(lookLine, 0);
 			wOutput.SetSel(startPosLine, startPosLine);
 			std::string message = wOutput.StringOfRange(SA::Span(startPosLine, startPosLine + lineLength));
@@ -2337,7 +2337,7 @@ void SciTEBase::GoMessage(int dir) {
 					}
 				}
 				//!-end-[FindResultListStyle]
-#endif
+#endif // RB_FRLS
 				GUI::gui_string sourceString = GUI::StringFromUTF8(source);
 				FilePath sourcePath = FilePath(sourceString).NormalizePath();
 #ifdef RB_GMFIX
@@ -2443,7 +2443,7 @@ void SciTEBase::GoMessage(int dir) {
 				WindowSetFocus(wEditor);
 #ifdef RB_GMI
 				return true; //!-add-[GoMessageImprovement]
-#endif
+#endif // RB_GMI
 			}
 
 #ifdef RB_GMI

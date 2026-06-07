@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <ctime>
 
+#include <exception>
 #include <compare>
 #include <tuple>
 #include <string>
@@ -22,6 +23,7 @@
 #include <optional>
 #include <memory>
 #include <chrono>
+#include <ostream>
 #include <sstream>
 #include <atomic>
 #include <mutex>
@@ -29,11 +31,9 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-#include "ILexer.h"
-
 #include "ScintillaTypes.h"
 #include "ScintillaCall.h"
-
+#include "ILexer.h"
 #include "GUI.h"
 #include "ScintillaWindow.h"
 

@@ -29,11 +29,9 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-#include "ILexer.h"
-
 #include "ScintillaTypes.h"
 #include "ScintillaCall.h"
-
+#include "ILexer.h"
 #include "GUI.h"
 #include "ScintillaWindow.h"
 

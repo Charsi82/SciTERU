@@ -15,6 +15,7 @@
 #include <cstdio>
 #include <cstdarg>
 
+#include <new>
 #include <compare>
 #include <tuple>
 #include <string>
@@ -27,10 +28,12 @@
 #include <optional>
 #include <initializer_list>
 #include <algorithm>
+#include <ranges>
 #include <iterator>
 #include <memory>
 #include <numeric>
 #include <chrono>
+#include <ios>
 #include <sstream>
 #include <iomanip>
 #include <atomic>
@@ -68,14 +71,12 @@ typedef void *HTHEME;
 // need this header for SHBrowseForFolder
 #include <shlobj.h>
 
-#include "ILoader.h"
-#include "ILexer.h"
-
 #include "ScintillaTypes.h"
 #include "ScintillaMessages.h"
 #include "ScintillaCall.h"
 #include "ScintillaStructures.h"
-
+#include "ILoader.h"
+#include "ILexer.h"
 #include "Scintilla.h"
 #include "Lexilla.h"
 #include "LexillaAccess.h"

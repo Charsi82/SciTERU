@@ -17,6 +17,7 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <ranges>
 #include <chrono>
 
 #include "ScintillaTypes.h"

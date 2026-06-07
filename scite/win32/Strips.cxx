@@ -1875,7 +1875,7 @@ LRESULT UserStrip::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) {
 			return 0;
 		}
 	}
-#endif
+#endif // RB_USBTT
 
 	try {
 		return Strip::WndProc(iMessage, wParam, lParam);
@@ -1950,7 +1950,7 @@ void UserStrip::SetDescription(const char *description) {
 						0, reinterpret_cast<LPARAM>(&toolInfo));
 					::SendMessage(HwndOf(wToolTip), TTM_ACTIVATE, TRUE, 0);
 				}
-#endif
+#endif // RB_USBTT
 				break;
 
 			default:
@@ -1998,7 +1998,7 @@ void UserStrip::Set(int control, const char *value) {
 void UserStrip::SetTipText(int control, const char *value) {
 	if (UserControl* ctl = FindControl(control)) ctl->tip_text = GUI::StringFromUTF8(value);
 }
-#endif
+#endif // RB_USBTT
 
 void UserStrip::SetList(int control, const char *value) {
 	const UserControl *ctl = FindControl(control);

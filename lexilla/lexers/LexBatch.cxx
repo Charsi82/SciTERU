@@ -57,7 +57,7 @@ const LexicalClass lexicalClasses[] = {
 		10, "SCE_BAT_EXPANSION", "comment", "environment !variable!",
 		11, "SCE_BAT_CLABEL", "comment", "pointers to :label",
 #endif // RB_LEX_BATCH_EXP
-	};
+};
 
 #ifdef RB_LEX_BATCH_OPTS
 	struct OptionsBatch {
@@ -83,7 +83,7 @@ class LexerBatch : public DefaultLexer {
 		OptionsBatch options;
 		OptionSetBatch osBatch;
 #endif
-	public:
+public:
 	explicit LexerBatch() :
 		DefaultLexer("batch", SCLEX_BATCH, lexicalClasses, std::size(lexicalClasses)) {
 		wordLists = JoinWordListDescriptions(batchWordListDesc);

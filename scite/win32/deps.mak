@@ -1,10 +1,10 @@
 # Created by AppDepGen.py. To recreate, run AppDepGen.py.
 DirectorExtension.o: \
 	DirectorExtension.cxx \
-	../../scintilla/include/ILexer.h \
-	../../scintilla/include/Sci_Position.h \
 	../../scintilla/include/ScintillaTypes.h \
 	../../scintilla/include/ScintillaCall.h \
+	../../scintilla/include/ILexer.h \
+	../../scintilla/include/Sci_Position.h \
 	../src/GUI.h \
 	../src/ScintillaWindow.h \
 	../src/StringList.h \
@@ -28,13 +28,13 @@ GUIWin.o: \
 SciTEWin.o: \
 	SciTEWin.cxx \
 	SciTEWin.h \
-	../../scintilla/include/ILoader.h \
-	../../scintilla/include/Sci_Position.h \
-	../../scintilla/include/ILexer.h \
 	../../scintilla/include/ScintillaTypes.h \
 	../../scintilla/include/ScintillaMessages.h \
 	../../scintilla/include/ScintillaCall.h \
 	../../scintilla/include/ScintillaStructures.h \
+	../../scintilla/include/ILoader.h \
+	../../scintilla/include/Sci_Position.h \
+	../../scintilla/include/ILexer.h \
 	../../scintilla/include/Scintilla.h \
 	../../lexilla/include/Lexilla.h \
 	../../lexilla/access/LexillaAccess.h \
@@ -67,13 +67,13 @@ SciTEWin.o: \
 Sc1.o: \
 	SciTEWin.cxx \
 	SciTEWin.h \
-	../../scintilla/include/ILoader.h \
-	../../scintilla/include/Sci_Position.h \
-	../../scintilla/include/ILexer.h \
 	../../scintilla/include/ScintillaTypes.h \
 	../../scintilla/include/ScintillaMessages.h \
 	../../scintilla/include/ScintillaCall.h \
 	../../scintilla/include/ScintillaStructures.h \
+	../../scintilla/include/ILoader.h \
+	../../scintilla/include/Sci_Position.h \
+	../../scintilla/include/ILexer.h \
 	../../scintilla/include/Scintilla.h \
 	../../lexilla/include/Lexilla.h \
 	../../lexilla/access/LexillaAccess.h \
@@ -106,13 +106,13 @@ Sc1.o: \
 SciTEWinBar.o: \
 	SciTEWinBar.cxx \
 	SciTEWin.h \
-	../../scintilla/include/ILoader.h \
-	../../scintilla/include/Sci_Position.h \
-	../../scintilla/include/ILexer.h \
 	../../scintilla/include/ScintillaTypes.h \
 	../../scintilla/include/ScintillaMessages.h \
 	../../scintilla/include/ScintillaCall.h \
 	../../scintilla/include/ScintillaStructures.h \
+	../../scintilla/include/ILoader.h \
+	../../scintilla/include/Sci_Position.h \
+	../../scintilla/include/ILexer.h \
 	../../scintilla/include/Scintilla.h \
 	../../lexilla/include/Lexilla.h \
 	../../lexilla/access/LexillaAccess.h \
@@ -141,13 +141,13 @@ SciTEWinBar.o: \
 SciTEWinDlg.o: \
 	SciTEWinDlg.cxx \
 	SciTEWin.h \
-	../../scintilla/include/ILoader.h \
-	../../scintilla/include/Sci_Position.h \
-	../../scintilla/include/ILexer.h \
 	../../scintilla/include/ScintillaTypes.h \
 	../../scintilla/include/ScintillaMessages.h \
 	../../scintilla/include/ScintillaCall.h \
 	../../scintilla/include/ScintillaStructures.h \
+	../../scintilla/include/ILoader.h \
+	../../scintilla/include/Sci_Position.h \
+	../../scintilla/include/ILexer.h \
 	../../scintilla/include/Scintilla.h \
 	../../lexilla/include/Lexilla.h \
 	../../lexilla/access/LexillaAccess.h \
@@ -177,13 +177,13 @@ SciTEWinDlg.o: \
 Strips.o: \
 	Strips.cxx \
 	SciTEWin.h \
-	../../scintilla/include/ILoader.h \
-	../../scintilla/include/Sci_Position.h \
-	../../scintilla/include/ILexer.h \
 	../../scintilla/include/ScintillaTypes.h \
 	../../scintilla/include/ScintillaMessages.h \
 	../../scintilla/include/ScintillaCall.h \
 	../../scintilla/include/ScintillaStructures.h \
+	../../scintilla/include/ILoader.h \
+	../../scintilla/include/Sci_Position.h \
+	../../scintilla/include/ILexer.h \
 	../../scintilla/include/Scintilla.h \
 	../../lexilla/include/Lexilla.h \
 	../../lexilla/access/LexillaAccess.h \
@@ -213,13 +213,13 @@ Strips.o: \
 UniqueInstance.o: \
 	UniqueInstance.cxx \
 	SciTEWin.h \
-	../../scintilla/include/ILoader.h \
-	../../scintilla/include/Sci_Position.h \
-	../../scintilla/include/ILexer.h \
 	../../scintilla/include/ScintillaTypes.h \
 	../../scintilla/include/ScintillaMessages.h \
 	../../scintilla/include/ScintillaCall.h \
 	../../scintilla/include/ScintillaStructures.h \
+	../../scintilla/include/ILoader.h \
+	../../scintilla/include/Sci_Position.h \
+	../../scintilla/include/ILexer.h \
 	../../scintilla/include/Scintilla.h \
 	../../lexilla/include/Lexilla.h \
 	../../lexilla/access/LexillaAccess.h \
@@ -252,10 +252,10 @@ Cookie.o: \
 	../src/Cookie.h
 Credits.o: \
 	../src/Credits.cxx \
-	../../scintilla/include/ILexer.h \
-	../../scintilla/include/Sci_Position.h \
 	../../scintilla/include/ScintillaTypes.h \
 	../../scintilla/include/ScintillaCall.h \
+	../../scintilla/include/ILexer.h \
+	../../scintilla/include/Sci_Position.h \
 	../src/GUI.h \
 	../src/ScintillaWindow.h \
 	../src/StringList.h \
@@ -281,10 +281,10 @@ EditorConfig.o: \
 	../src/EditorConfig.h
 ExportHTML.o: \
 	../src/ExportHTML.cxx \
-	../../scintilla/include/ILexer.h \
-	../../scintilla/include/Sci_Position.h \
 	../../scintilla/include/ScintillaTypes.h \
 	../../scintilla/include/ScintillaCall.h \
+	../../scintilla/include/ILexer.h \
+	../../scintilla/include/Sci_Position.h \
 	../src/GUI.h \
 	../src/ScintillaWindow.h \
 	../src/StringList.h \
@@ -303,10 +303,10 @@ ExportHTML.o: \
 	../src/SciTEBase.h
 ExportPDF.o: \
 	../src/ExportPDF.cxx \
-	../../scintilla/include/ILexer.h \
-	../../scintilla/include/Sci_Position.h \
 	../../scintilla/include/ScintillaTypes.h \
 	../../scintilla/include/ScintillaCall.h \
+	../../scintilla/include/ILexer.h \
+	../../scintilla/include/Sci_Position.h \
 	../src/GUI.h \
 	../src/ScintillaWindow.h \
 	../src/StringList.h \
@@ -325,10 +325,10 @@ ExportPDF.o: \
 	../src/SciTEBase.h
 ExportRTF.o: \
 	../src/ExportRTF.cxx \
-	../../scintilla/include/ILexer.h \
-	../../scintilla/include/Sci_Position.h \
 	../../scintilla/include/ScintillaTypes.h \
 	../../scintilla/include/ScintillaCall.h \
+	../../scintilla/include/ILexer.h \
+	../../scintilla/include/Sci_Position.h \
 	../src/GUI.h \
 	../src/ScintillaWindow.h \
 	../src/StringList.h \
@@ -347,10 +347,10 @@ ExportRTF.o: \
 	../src/SciTEBase.h
 ExportTEX.o: \
 	../src/ExportTEX.cxx \
-	../../scintilla/include/ILexer.h \
-	../../scintilla/include/Sci_Position.h \
 	../../scintilla/include/ScintillaTypes.h \
 	../../scintilla/include/ScintillaCall.h \
+	../../scintilla/include/ILexer.h \
+	../../scintilla/include/Sci_Position.h \
 	../src/GUI.h \
 	../src/ScintillaWindow.h \
 	../src/StringList.h \
@@ -369,10 +369,10 @@ ExportTEX.o: \
 	../src/SciTEBase.h
 ExportXML.o: \
 	../src/ExportXML.cxx \
-	../../scintilla/include/ILexer.h \
-	../../scintilla/include/Sci_Position.h \
 	../../scintilla/include/ScintillaTypes.h \
 	../../scintilla/include/ScintillaCall.h \
+	../../scintilla/include/ILexer.h \
+	../../scintilla/include/Sci_Position.h \
 	../src/GUI.h \
 	../src/ScintillaWindow.h \
 	../src/StringList.h \
@@ -473,11 +473,11 @@ ScintillaWindow.o: \
 	../src/ScintillaWindow.h
 SciTEBase.o: \
 	../src/SciTEBase.cxx \
-	../../scintilla/include/ILoader.h \
-	../../scintilla/include/Sci_Position.h \
 	../../scintilla/include/ScintillaTypes.h \
 	../../scintilla/include/ScintillaMessages.h \
 	../../scintilla/include/ScintillaCall.h \
+	../../scintilla/include/ILoader.h \
+	../../scintilla/include/Sci_Position.h \
 	../../scintilla/include/Scintilla.h \
 	../../lexilla/include/SciLexer.h \
 	../src/GUI.h \
@@ -501,10 +501,10 @@ SciTEBase.o: \
 	../src/SciTEBase.h
 SciTEBuffers.o: \
 	../src/SciTEBuffers.cxx \
-	../../scintilla/include/ILoader.h \
-	../../scintilla/include/Sci_Position.h \
 	../../scintilla/include/ScintillaTypes.h \
 	../../scintilla/include/ScintillaCall.h \
+	../../scintilla/include/ILoader.h \
+	../../scintilla/include/Sci_Position.h \
 	../../lexilla/include/SciLexer.h \
 	../src/GUI.h \
 	../src/ScintillaWindow.h \
@@ -526,10 +526,10 @@ SciTEBuffers.o: \
 	../src/SciTEBase.h
 SciTEIO.o: \
 	../src/SciTEIO.cxx \
-	../../scintilla/include/ILoader.h \
-	../../scintilla/include/Sci_Position.h \
 	../../scintilla/include/ScintillaTypes.h \
 	../../scintilla/include/ScintillaCall.h \
+	../../scintilla/include/ILoader.h \
+	../../scintilla/include/Sci_Position.h \
 	../src/GUI.h \
 	../src/ScintillaWindow.h \
 	../src/StringList.h \
@@ -550,11 +550,11 @@ SciTEIO.o: \
 	../src/SciTEBase.h
 SciTEProps.o: \
 	../src/SciTEProps.cxx \
-	../../scintilla/include/ILexer.h \
-	../../scintilla/include/Sci_Position.h \
 	../../scintilla/include/ScintillaTypes.h \
 	../../scintilla/include/ScintillaMessages.h \
 	../../scintilla/include/ScintillaCall.h \
+	../../scintilla/include/ILexer.h \
+	../../scintilla/include/Sci_Position.h \
 	../../scintilla/include/Scintilla.h \
 	../../lexilla/include/SciLexer.h \
 	../../lexilla/include/Lexilla.h \

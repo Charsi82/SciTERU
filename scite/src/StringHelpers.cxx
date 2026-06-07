@@ -16,6 +16,7 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <ranges>
 #include <functional>
 #include <chrono>
 

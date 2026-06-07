@@ -22,6 +22,7 @@
 #include <set>
 #include <optional>
 #include <algorithm>
+#include <ranges>
 #include <memory>
 #include <chrono>
 #include <sstream>
@@ -378,7 +379,7 @@ void GetFullLine(std::string_view &data, std::string &lineBuffer) {
 			}
 		}
 	}
-#else
+#else // RB_PCMF
 void GetFullLine(std::string_view &data, std::string &lineBuffer) {
 	lineBuffer.clear();
 	while (!data.empty()) {
@@ -401,7 +402,7 @@ void GetFullLine(std::string_view &data, std::string &lineBuffer) {
 		}
 	}
 }
-#endif
+#endif // RB_PCMF
 
 bool IsCommentLine(std::string_view line) noexcept {
 	while (!line.empty() && IsSpaceOrTab(line.front()))
@@ -495,7 +496,7 @@ PropSetFile::ReadLineState PropSetFile::ReadLine(const std::string &lineBuffer, 
 					importPath = FilePath(directoryForImports, FilePath(GUI::StringFromUTF8(importName)));
 				}
 				//!-end-[import]
-#endif
+#endif // RB_IMPORT
 				Import(importPath, directoryForImports, filter, imports, depth + 1);
 			}
 		}

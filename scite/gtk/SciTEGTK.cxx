@@ -40,12 +40,10 @@
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 
-#include "ILexer.h"
-
 #include "ScintillaTypes.h"
 #include "ScintillaMessages.h"
 #include "ScintillaCall.h"
-
+#include "ILexer.h"
 #include "Scintilla.h"
 #include "ScintillaWidget.h"
 

@@ -515,4 +515,4 @@ bool Has_UTF8_Char(const char* buf, size_t size) noexcept {
 	return cnt;
 }
 //!-end-[utf8.auto.check]
-#endif
+#endif // RB_UTF8AC

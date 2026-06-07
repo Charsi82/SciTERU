@@ -29,15 +29,16 @@
 #include <csignal>
 
 // C++ standard library
+#include <exception>
 #include <stdexcept>
 #include <system_error>
+#include <new>
 #include <utility>
 #include <compare>
 #include <tuple>
 #include <string>
 #include <string_view>
 #include <vector>
-#include <span>
 #include <array>
 #include <deque>
 #include <map>
@@ -45,11 +46,14 @@
 #include <optional>
 #include <initializer_list>
 #include <algorithm>
+#include <ranges>
 #include <iterator>
 #include <functional>
 #include <memory>
 #include <numeric>
 #include <chrono>
+#include <ios>
+#include <ostream>
 #include <sstream>
 #include <iomanip>
 #include <atomic>
@@ -95,12 +99,12 @@
 
 // include
 
-#include "ILoader.h"
-#include "ILexer.h"
 #include "ScintillaTypes.h"
 #include "ScintillaMessages.h"
 #include "ScintillaCall.h"
 #include "ScintillaStructures.h"
+#include "ILoader.h"
+#include "ILexer.h"
 #include "Scintilla.h"
 #include "ScintillaWidget.h"
 

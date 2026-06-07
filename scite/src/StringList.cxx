@@ -17,6 +17,7 @@
 #include <map>
 #include <set>
 #include <algorithm>
+#include <ranges>
 #include <chrono>
 
 #include "GUI.h"

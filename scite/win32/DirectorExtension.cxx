@@ -28,11 +28,9 @@
 #include <windows.h>
 #include <commctrl.h>
 
-#include "ILexer.h"
-
 #include "ScintillaTypes.h"
 #include "ScintillaCall.h"
-
+#include "ILexer.h"
 #include "GUI.h"
 #include "ScintillaWindow.h"
 #include "StringList.h"

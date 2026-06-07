@@ -47,7 +47,7 @@ public:
 
 #ifdef RB_USBTT
 	virtual void UserStripSetTipText(int control, const char* value) = 0;
-#endif
+#endif // RB_USBTT
 
 	virtual void UserStripSetList(int control, const char *value)=0;
 	virtual std::string UserStripValue(int control)=0;
@@ -102,7 +102,7 @@ public:
 	virtual bool OnDoubleClick(int) { return false; } //!-change-[OnDoubleClick]
 #else
 	virtual bool OnDoubleClick() { return false; }
-#endif
+#endif // RB_ODBCLK
 
 #ifdef RB_ONCLICK
 	virtual bool OnClick(int) { return false; } //!-add-[OnClick]
@@ -124,18 +124,18 @@ public:
 	virtual bool OnUserListSelection(int, const char*, Scintilla::Position) { return false; } //!-change-[UserListItemID]
 #else
 	virtual bool OnUserListSelection(int, const char *) { return false; }
-#endif
+#endif // RB_ULID
 
 	virtual bool SendProperty(const char *) { return false; }
 
 #ifdef RB_OMC
 	virtual bool OnMenuCommand(int, int) { return false; } //!-add-[OnMenuCommand]
-#endif
+#endif // RB_OMC
 
 #ifdef RB_OnSendEditor
 	virtual const char* OnSendEditor(Scintilla::Message, uintptr_t, const char*) { return 0; } //!-add-[OnSendEditor]
 	virtual const char* OnSendEditor(Scintilla::Message, uintptr_t, long) { return 0; } //!-add-[OnSendEditor]
-#endif
+#endif // RB_OnSendEditor
 
 #ifdef RB_ONTABMOVE
 	virtual void OnTabMove(int, int) {};
@@ -149,7 +149,7 @@ public:
 	virtual bool OnKey(int, int, char) { return false; } //!-change-[OnKey]
 #else
 	virtual bool OnKey(int, int) { return false; }
-#endif
+#endif // RB_ONKEY
 
 	virtual bool OnDwellStart(Scintilla::Position, const char *) { return false; }
 	virtual bool OnClose(const char *) { return false; }

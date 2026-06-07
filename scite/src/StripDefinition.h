@@ -16,7 +16,7 @@ public:
 
 #ifdef RB_USBTT
 	GUI::gui_string tip_text;
-#endif
+#endif // RB_USBTT
 
 	int item;
 	bool fixedWidth = true;

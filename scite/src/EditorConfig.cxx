@@ -16,6 +16,7 @@
 #include <map>
 #include <set>
 #include <algorithm>
+#include <ranges>
 #include <memory>
 #include <chrono>
 

@@ -145,7 +145,7 @@ public:
 		return (isDirty || (!file.IsUntitled() && (fileModTime == 0)));
 	}
 	//!-end-[OpenNonExistent]
-#endif
+#endif // RB_ONE
 
 	void DocumentModified() noexcept;
 	void WantReload() noexcept;
@@ -362,7 +362,7 @@ protected:
 	static constexpr int fileStackMaxDefault = 10; //!-add-[MoreRecentFiles]
 #else
 	static constexpr int fileStackMax = 10;
-#endif
+#endif // RB_MoreRecentFiles
 
 	RecentFile recentFileStack[fileStackMax];
 	enum { fileStackCmdID = IDM_MRUFILE, bufferCmdID = IDM_BUFFER };
@@ -522,6 +522,7 @@ protected:
 	bool bracesSloppy;
 	int bracesStyle;
 	int braceCount;
+
 	int indentationWSVisible;
 	SA::IndentView indentExamine;
 	bool autoCompleteIgnoreCase;
@@ -944,7 +945,7 @@ protected:
 	
 #ifdef RB_SE
 	void CheckMenusSave(); //!-add-[SaveEnabled]
-#endif
+#endif // RB_SE
 
 	virtual void CheckMenus();
 	

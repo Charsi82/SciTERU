@@ -8,6 +8,7 @@
 
 #include <ctime>
 
+#include <exception>
 #include <string>
 #include <string_view>
 #include <chrono>

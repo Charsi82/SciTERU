@@ -100,7 +100,7 @@ public:
 	bool SendProperty(const char *) override;
 
 #ifdef RB_ONKEY
-	virtual bool OnKey(int, int, char); //!-change-[OnKey]
+	bool OnKey(int, int, char) override; //!-change-[OnKey]
 #else
 	bool OnKey(int, int) override;
 #endif // RB_ONKEY
@@ -115,7 +115,7 @@ public:
 #ifdef RB_OnSendEditor
 	const char* OnSendEditor(Scintilla::Message, uintptr_t, const char*) override; //!-add-[OnSendEditor]
 	const char* OnSendEditor(Scintilla::Message, uintptr_t, long) override; //!-add-[OnSendEditor]
-#endif
+#endif // RB_OnSendEditor
 
 #ifdef RB_ONTABMOVE
 	void OnTabMove(int, int) override;

@@ -108,7 +108,7 @@ RCINCLUDEDIRS=--include-dir ../src
 
 CBASEFLAGS = $(LUA_DEFINES) $(WIDEFLAGS)
 
-LDFLAGS += -mwindows
+LDFLAGS += -mwindows -municode
 
 %.o: %.cxx
 	$(CXX) $(DEFINES) $(INCLUDES) $(WARNINGS) $(CPPFLAGS) $(BASE_FLAGS) $(CXXFLAGS) -c $< -o $@

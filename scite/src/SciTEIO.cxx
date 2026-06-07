@@ -15,6 +15,7 @@
 #include <cstdio>
 #include <ctime>
 
+#include <utility>
 #include <compare>
 #include <tuple>
 #include <string>
@@ -24,6 +25,7 @@
 #include <set>
 #include <optional>
 #include <algorithm>
+#include <ranges>
 #include <memory>
 #include <chrono>
 #include <atomic>
@@ -31,11 +33,9 @@
 
 #include <fcntl.h>
 
-#include "ILoader.h"
-
 #include "ScintillaTypes.h"
 #include "ScintillaCall.h"
-
+#include "ILoader.h"
 #include "GUI.h"
 #include "ScintillaWindow.h"
 
@@ -210,7 +210,11 @@ void SciTEBase::DiscoverEOLSetting() {
 // Look inside the first line for a #! clue regarding the language
 std::string SciTEBase::DiscoverLanguage() {
 	constexpr SA::Position oneK = 1024;
-	const SA::Position length = std::min<>(LengthDocument(), 64 * oneK); // fix std::min
+#ifdef RB_BUILD
+	const SA::Position length = std::min<>(LengthDocument(), 64 * oneK);
+#else
+	const SA::Position length = std::min(LengthDocument(), 64 * oneK);
+#endif // RB_BUILD
 	std::string buf = wEditor.StringOfRange(SA::Span(0, length));
 	std::string languageOverride;
 	std::string_view line = ExtractLine(buf);
@@ -331,7 +335,7 @@ void SciTEBase::OpenCurrentFile(const long long fileSize, bool suppressMessage, 
 	if (!suppressMessage && props.GetInt("warning.couldnotopenfile.disable") == 1)
 		suppressMessage = true;
 	//!-end-[warning.couldnotopenfile.disable]
-#endif
+#endif // RB_WNRSUPRESS
 
 	// Allocate a bit extra to allow minor edits without reallocation.
 	const long long fileAllocationSize = fileSize + 1000;
@@ -776,7 +780,7 @@ bool SciTEBase::OpenSelected() {
 	std::string selName = SelectionFilename();
 #ifdef RB_LINK
 	resolveLinkFile(selName); //!+ 
-#endif
+#endif // RB_LINK
 	if (selName.length() == 0) {
 #ifdef RB_WRNM
 		WarnUser(warnWrongFile, "No selection."); //!-change-[WarningMessage]
@@ -1029,7 +1033,7 @@ void SciTEBase::CheckReload() {
 						      "The file '^0' has been deleted.",
 						      filePath.AsInternal());
 			WindowMessageBox(wSciTE, msg, mbsOK);
-#endif
+#endif // RB_CFE
 		}
 	}
 }
@@ -1357,7 +1361,11 @@ bool SciTEBase::SaveBuffer(const FilePath &saveName, SaveFlags sf) {
 				std::vector<char> data(blockSize);
 				retVal = true;
 				for (size_t startBlock = 0; startBlock < lengthDoc;) {
-					size_t grabSize = std::min<>(lengthDoc - startBlock, blockSize); // fix std::min
+#ifdef RB_BUILD
+					size_t grabSize = std::min<>(lengthDoc - startBlock, blockSize);
+#else
+					size_t grabSize = std::min(lengthDoc - startBlock, blockSize);
+#endif //  RB_BUILD
 					// Round down so only whole characters retrieved.
 					grabSize = wEditor.PositionBefore(startBlock + grabSize + 1) - startBlock;
 					const SA::Span rangeGrab(startBlock, startBlock + grabSize);
@@ -1702,7 +1710,7 @@ void SciTEBase::GrepRecursive(GrepFlags gf, const FilePath& baseDir, const char*
 #else
 void SciTEBase::GrepRecursive(GrepFlags gf, const FilePath &baseDir, const char *searchString,
 	GUI::gui_string_view fileTypes, GUI::gui_string_view excludedTypes) {
-#endif
+#endif // RB_FRLS
 	constexpr int checkAfterLines = 10'000;
 	FilePathSet directories;
 	FilePathSet files;

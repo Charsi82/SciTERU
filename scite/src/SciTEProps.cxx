@@ -14,6 +14,7 @@
 #include <clocale>
 
 #include <stdexcept>
+#include <utility>
 #include <compare>
 #include <tuple>
 #include <string>
@@ -23,6 +24,7 @@
 #include <set>
 #include <optional>
 #include <algorithm>
+#include <ranges>
 #include <memory>
 #include <chrono>
 #include <atomic>
@@ -30,12 +32,10 @@
 
 #include <fcntl.h>
 
-#include "ILexer.h"
-
 #include "ScintillaTypes.h"
 #include "ScintillaMessages.h"
 #include "ScintillaCall.h"
-
+#include "ILexer.h"
 #include "Scintilla.h"
 #include "SciLexer.h"
 #include "Lexilla.h"
@@ -415,27 +415,24 @@ void SciTEBase::SetMarkerFromProperty(GUI::ScintillaWindow &win, int marker, con
 }
 
 std::string SciTEBase::ExtensionFileName() const {
-	if (CurrentBufferConst()->overrideExtension.length()) {
+	if (!CurrentBufferConst()->overrideExtension.empty()) {
 		return CurrentBufferConst()->overrideExtension;
-	} else {
-		FilePath name = FileNameExt();
-		if (name.IsSet()) {
-#if !defined(GTK)
-			// Force extension to lower case
-			std::string extension = name.Extension().AsUTF8();
-			if (extension.empty()) {
-				return name.AsUTF8();
-			} else {
-				LowerCaseAZ(extension);
-				return name.BaseName().AsUTF8() + "." + extension;
-			}
-#else
-			return name.AsUTF8();
-#endif
-		} else {
-			return props.GetString("default.file.ext");
-		}
 	}
+	const FilePath name = FileNameExt();
+	if (name.IsSet()) {
+#if !defined(GTK)
+		// Force extension to lower case
+		std::string extension = name.Extension().AsUTF8();
+		if (extension.empty()) {
+			return name.AsUTF8();
+		}
+		LowerCaseAZ(extension);
+		return name.BaseName().AsUTF8() + "." + extension;
+#else
+		return name.AsUTF8();
+#endif
+	}
+	return props.GetString("default.file.ext");
 }
 
 void SciTEBase::ForwardPropertyToEditor(const char *key) {
@@ -770,11 +767,10 @@ std::string SciTEBase::GetFileNameProperty(const char *name) {
 	namePlusDot.append(".");
 	std::string valueForFileName = props.GetNewExpandString(namePlusDot,
 				       ExtensionFileName());
-	if (valueForFileName.length() != 0) {
+	if (!valueForFileName.empty()) {
 		return valueForFileName;
-	} else {
-		return props.GetString(name);
 	}
+	return props.GetString(name);
 }
 
 void SciTEBase::SetRepresentations() {
@@ -1008,7 +1004,7 @@ void SciTEBase::ReadProperties() {
 		SetElementColour(SA::Element::Caret, tmp_str.c_str());
 	else
 		//!-end-[caret]
-#endif
+#endif // RB_CARET
 
 	SetElementColour(SA::Element::Caret, "caret.fore");
 	SetElementColour(SA::Element::CaretAdditional, "caret.additional.fore");
@@ -1070,7 +1066,7 @@ void SciTEBase::ReadProperties() {
 	wOutput.SetCaretLineBackAlpha(
 		static_cast<SA::Alpha>(props.GetInt("output.caret.line.back.alpha", static_cast<int>(SA::Alpha::NoAlpha))));
 	//!-end-[output.caret]
-#endif
+#endif // RB_OUTCARET
 
 	int indicatorsAlpha = props.GetInt("indicators.alpha", 30);
 	if (indicatorsAlpha < 0 || 255 < indicatorsAlpha) // If invalid value,
@@ -1466,10 +1462,11 @@ void SciTEBase::ReadProperties() {
 	wEditor.SetMarginMaskN(2, SA::MaskFolders);
 	wEditor.SetMarginSensitiveN(2, true);
 
-#ifdef RB_SB //!-add-[SetBookmark]
+#ifdef RB_SB
+	//!-add-[SetBookmark]
 	if (props.GetInt("margin.bookmark.by.single.click", 1) == 1)
 		wEditor.SetMarginSensitiveN(1, true);
-#endif //!-add-[SetBookmark]
+#endif // RB_SB
 
 	// Define foreground (outline) and background (fill) colour of folds
 	const int foldSymbols = props.GetInt("fold.symbols");
@@ -1870,7 +1867,7 @@ void SciTEBase::ReadFontProperties() {
 		SetStyleBlock(wEditor, "error", diagnosticStyleStart, diagnosticStyleStart+diagnosticStyles-1);
 	}
 
-	const int diffToSecondary = static_cast<int>(wEditor.DistanceToSecondaryStyles());
+	const int diffToSecondary = wEditor.DistanceToSecondaryStyles();
 	for (const unsigned char subStyleBase : subStyleBases) {
 		const int subStylesStart = wEditor.SubStylesStart(subStyleBase);
 		const int subStylesLength = wEditor.SubStylesLength(subStyleBase);
@@ -2056,7 +2053,7 @@ void SciTEBase::ReadPropertiesInitial() {
 			sShortCutProp += strlen(sShortCutProp) + 1;
 #ifdef RB_HKFIX
 			if (sci.menuKey.find(props.GetNewExpandString("comment.block.props")) == std::string::npos)
-#endif
+#endif // RB_HKFIX
 			shortCutItemList.push_back(sci);
 		}
 	}

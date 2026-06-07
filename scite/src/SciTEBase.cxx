@@ -16,6 +16,7 @@
 #include <cmath>
 
 #include <system_error>
+#include <utility>
 #include <compare>
 #include <tuple>
 #include <string>
@@ -25,6 +26,7 @@
 #include <set>
 #include <optional>
 #include <algorithm>
+#include <ranges>
 #include <memory>
 #include <chrono>
 #include <atomic>
@@ -34,12 +36,10 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-#include "ILoader.h"
-
 #include "ScintillaTypes.h"
 #include "ScintillaMessages.h"
 #include "ScintillaCall.h"
-
+#include "ILoader.h"
 #include "Scintilla.h"
 #include "SciLexer.h"
 
@@ -128,8 +128,7 @@ bool &Searcher::FlagFromCmd(int cmd) noexcept {
 	return notFound;
 }
 
-StyleAndWords::StyleAndWords() {
-}
+StyleAndWords::StyleAndWords() = default;
 
 // Set of words separated by spaces. First is style number, rest are symbols.
 // <styleNumber> [symbol]*
@@ -448,7 +447,7 @@ static bool isInterruptableMessage(unsigned int msg) {
 	case SCI_MARKERDELETE:
 	case SCI_MARKERDELETEALL:
 		return true;
-	}
+}
 	return false;
 }
 
@@ -517,14 +516,14 @@ void SciTEBase::WorkerCommand(int cmd, Worker *pWorker) {
 		UpdateProgress(pWorker);
 #ifdef RB_SE
 		CheckMenusSave(); //!-add-[SaveEnabled]
-#endif
+#endif // RB_SE
 		break;
 	case WORK_FILEWRITTEN:
 		TextWritten(static_cast<FileStorer *>(pWorker));
 		UpdateProgress(pWorker);
 #ifdef RB_SE
 		CheckMenusSave(); //!-add-[SaveEnabled]
-#endif
+#endif / RB_SE
 		break;
 	case WORK_FILEPROGRESS:
 		UpdateProgress(pWorker);
@@ -571,7 +570,7 @@ void SciTEBase::SetPaneFocus(bool editPane) noexcept {
 	pwFocussed = editPane ? &(reinterpret_cast<GUI::ScintillaWindow&>(wEditor)) : &wOutput;
 #else
 	pwFocussed = editPane ? &wEditor : &wOutput;
-#endif
+#endif // RB_OnSendEditor
 }
 
 GUI::ScintillaWindow &SciTEBase::PaneFocused() noexcept {
@@ -579,7 +578,7 @@ GUI::ScintillaWindow &SciTEBase::PaneFocused() noexcept {
 	return wOutput.HasFocus() ? wOutput : reinterpret_cast<GUI::ScintillaWindow&>(wEditor);
 #else
 	return wOutput.HasFocus() ? wOutput : wEditor;
-#endif
+#endif // RB_OnSendEditor
 }
 
 GUI::ScintillaWindow &SciTEBase::PaneSource(int destination) noexcept {
@@ -588,7 +587,7 @@ GUI::ScintillaWindow &SciTEBase::PaneSource(int destination) noexcept {
 		return reinterpret_cast<GUI::ScintillaWindow&>(wEditor);
 #else	
 		return wEditor;
-#endif
+#endif // RB_OnSendEditor
 	else if (destination == IDM_RUNWIN)
 		return wOutput;
 	else
@@ -826,7 +825,7 @@ bool SciTEBase::FindMatchingBracePosition(bool editor, SA::Position &braceAtCare
 	GUI::ScintillaWindow& win = editor ? reinterpret_cast<GUI::ScintillaWindow&>(wEditor) : wOutput; //!-change-[OnSendEditor]
 #else
 	GUI::ScintillaWindow &win = editor ? wEditor : wOutput;
-#endif
+#endif // RB_OnSendEditor
 	const int mainSel = win.MainSelection();
 	if (win.SelectionNCaretVirtualSpace(mainSel) > 0)
 		return false;
@@ -901,7 +900,7 @@ void SciTEBase::BraceMatch(bool editor) {
 	GUI::ScintillaWindow& win = editor ? reinterpret_cast<GUI::ScintillaWindow&>(wEditor) : wOutput; //!-change-[OnSendEditor]
 #else
 	GUI::ScintillaWindow &win = editor ? wEditor : wOutput;
-#endif
+#endif // RB_OnSendEditor
 	if ((braceAtCaret != -1) && (braceOpposite == -1)) {
 		win.BraceBadLight(braceAtCaret);
 		wEditor.SetHighlightGuide(0);
@@ -1036,9 +1035,8 @@ std::string SciTEBase::GetCTag(GUI::ScintillaWindow *pw) {
 
 	if (selStart < selEnd) {
 		return pw->StringOfRange(SA::Span(selStart, selEnd));
-	} else {
-		return std::string();
 	}
+	return {};
 }
 
 void SciTEBase::DropSelectionAt(GUI::ScintillaWindow &win, int selection) {
@@ -1066,10 +1064,9 @@ bool SciTEBase::isfilenamecharforsel(char ch) noexcept {
 
 bool SciTEBase::islexerwordcharforsel(char ch) noexcept {
 	// If there are no word.characters defined for the current file, fall back on the original function
-	if (wordCharacters.length())
+	if (!wordCharacters.empty())
 		return Contains(wordCharacters, ch);
-	else
-		return iswordcharforsel(ch);
+	return iswordcharforsel(ch);
 }
 
 void SciTEBase::HighlightCurrentWord(bool highlight) {
@@ -1094,7 +1091,7 @@ void SciTEBase::HighlightCurrentWord(bool highlight) {
 	const bool noUserSelection = sel.start == sel.end;
 	std::string sWordToFind = RangeExtendAndGrab(wCurrent, sel,
 				  &SciTEBase::islexerwordcharforsel);
-	if (sWordToFind.length() == 0 || (sWordToFind.find_first_of("\n\r ") != std::string::npos))
+	if (sWordToFind.empty() || (sWordToFind.find_first_of("\n\r ") != std::string::npos))
 		return; // No highlight when no selection or multi-lines selection.
 	if (noUserSelection && currentWordHighlight.statesOfDelay == CurrentWordHighlight::StatesOfDelay::noDelay) {
 		// Manage delay before highlight when no user selection but there is word at the caret.
@@ -1126,7 +1123,7 @@ std::string SciTEBase::GetLine(GUI::ScintillaWindow &win, SA::Line line) {
 	const SA::Position lineStart = win.LineStart(line);
 	const SA::Position lineEnd = win.LineEnd(line);
 	if ((lineStart < 0) || (lineEnd < 0))
-		return std::string();
+		return {};
 	return win.StringOfRange(SA::Span(lineStart, lineEnd));
 }
 
@@ -1209,8 +1206,9 @@ void SciTEBase::SelectionIntoFind(bool stripEol /*=true*/) {
 	std::string sel = SelectionWord(stripEol);
 #else
 	const std::string sel = SelectionWord(stripEol);
-#endif
-	if (sel.length() && (sel.find_first_of("\r\n") == std::string::npos)) {
+#endif // RB_FINDFILL
+	
+	if (!sel.empty() && (sel.find_first_of("\r\n") == std::string::npos)) {
 		// The selection does not include a new line, so is likely to be
 		// the expression to search...
 
@@ -1322,7 +1320,7 @@ void SciTEBase::MarkAll(MarkPurpose purpose) {
 	if (props.GetInt("find.mark.delete"))
 		wEditor.MarkerDeleteAll(markerBookmark);
 	//!-end-[NewFind-MarkerDeleteAll]
-#endif
+#endif // !RB_NFMDA
 	wEditor.SetIndicatorCurrent(indicatorMatch);
 
 	int bookMark = -1;
@@ -1344,10 +1342,10 @@ void SciTEBase::MarkAll(MarkPurpose purpose) {
 		CurrentBuffer()->findMarks = Buffer::FindMarks::marked;
 		const std::string_view findIndicatorString = props.Get("find.mark.indicator");
 		IndicatorDefinition findIndicator(findIndicatorString);
-		if (!findIndicatorString.length()) {
+		if (findIndicatorString.empty()) {
 			findIndicator.style = SA::IndicatorStyle::RoundBox;
 			const std::string_view findMark = props.Get("find.mark");
-			if (findMark.length())
+			if (!findMark.empty())
 				findIndicator.colour = ColourFromString(findMark);
 			findIndicator.fillAlpha = alphaIndicator;
 			findIndicator.under = underIndicator;
@@ -1357,7 +1355,7 @@ void SciTEBase::MarkAll(MarkPurpose purpose) {
 	}
 
 	const std::string findTarget = UnSlashAsNeeded(EncodeString(findWhat), unSlash, regExp);
-	if (findTarget.length() == 0) {
+	if (findTarget.empty()) {
 		return;
 	}
 
@@ -1490,12 +1488,12 @@ void SciTEBase::ScrollEditorIfNeeded() {
 }
 
 SA::Position SciTEBase::FindNext(bool reverseDirection, bool showWarnings, bool allowRegExp) {
-	if (findWhat.length() == 0) {
+	if (findWhat.empty()) {
 		Find();
 		return -1;
 	}
 	const std::string findTarget = UnSlashAsNeeded(EncodeString(findWhat), unSlash, regExp);
-	if (findTarget.length() == 0)
+	if (findTarget.empty())
 		return -1;
 
 	const SA::Position lengthDoc = wEditor.Length();
@@ -1586,7 +1584,7 @@ void SciTEBase::ReplaceOnce(bool showWarnings) {
 
 intptr_t SciTEBase::DoReplaceAll(bool inSelection) {
 	const std::string findTarget = UnSlashAsNeeded(EncodeString(findWhat), unSlash, regExp);
-	if (findTarget.length() == 0) {
+	if (findTarget.empty()) {
 		return -1;
 	}
 
@@ -1952,13 +1950,13 @@ void SciTEBase::FillFunctionDefinition(SA::Position pos /*= -1*/) {
 		// Should get current api definition
 		std::string word = apis.GetNearestWord(currentCallTipWord.c_str(), currentCallTipWord.length(),
 						       callTipIgnoreCase, calltipWordCharacters, currentCallTip);
-		if (word.length()) {
+		if (!word.empty()) {
 			functionDefinition = word;
 			if (maxCallTips > 1) {
 				functionDefinition.insert(0, "\001");
 			}
 
-			if (calltipEndDefinition != "") {
+			if (!calltipEndDefinition.empty()) {
 				const size_t posEndDef = functionDefinition.find(calltipEndDefinition);
 				if (maxCallTips > 1) {
 					if (posEndDef != std::string::npos) {
@@ -1977,7 +1975,7 @@ void SciTEBase::FillFunctionDefinition(SA::Position pos /*= -1*/) {
 
 #ifdef RB_ENCODING
 			functionDefinition = EncodeString(functionDefinition); //!-add-[FixEncoding]
-#endif
+#endif // RB_ENCODING
 			std::string definitionForDisplay;
 			if (callTipUseEscapes) {
 				definitionForDisplay = UnSlashString(functionDefinition);
@@ -2045,6 +2043,7 @@ void SciTEBase::ContinueCallTip() {
 
 	int braces = 0;
 	int commas = 0;
+
 #ifdef RB_BTCT3
 	if (FindLanguageProperty("calltip.*.fixcolorize") == "1")
 		for (SA::Position i = startCalltipWord - 1; i > 0; i--) {
@@ -2056,6 +2055,7 @@ void SciTEBase::ContinueCallTip() {
 			}
 		}
 #endif
+
 	for (SA::Position i = startCalltipWord; i < current; i++) {
 		if (Contains(calltipParametersStart, line[i]))
 			braces++;
@@ -2083,12 +2083,14 @@ void SciTEBase::ContinueCallTip() {
 	if ((startHighlight < functionDefinition.length()) && Contains(calltipParametersSeparators, functionDefinition[startHighlight]))
 		startHighlight++;
 	size_t endHighlight = startHighlight;
+	
 #ifdef RB_BTCT3
 	const std::string hlend = calltipParametersEnd + "[=]"; //+
 	while ((endHighlight < functionDefinition.length()) && !Contains(calltipParametersSeparators, functionDefinition[endHighlight]) && !Contains(hlend, functionDefinition[endHighlight]))
 #else
 	while ((endHighlight < functionDefinition.length()) && !Contains(calltipParametersSeparators, functionDefinition[endHighlight]) && !Contains(calltipParametersEnd, functionDefinition[endHighlight]))
-#endif
+#endif // RB_BTCT3
+
 		endHighlight++;
 	if (callTipUseEscapes) {
 		const std::string sPreHighlight = UnSlashString(functionDefinition.substr(0, startHighlight));
@@ -2230,7 +2232,7 @@ bool SciTEBase::InsertAbbreviation(const char* _data) {
 	std::string data = _data;
 	if (data.empty()) return true;
 	//!-end-[InsertAbbreviation]
-#endif // RB_IA
+#endif // !RB_IA
 
 #ifdef RB_ENCODING
 	const std::string expbuf = EncodeString(UnSlashString(data));//>!-add-[FixEncoding]
@@ -3148,9 +3150,6 @@ void SciTEBase::CharAdded(int utf32) {
 		} else {
 			if (Contains(calltipParametersStart, ch)) {
 				braceCount = 1;
-#ifdef RB_BTCT2
-				if (callTipAutomatic) //!-change-[BetterCalltips]
-#endif // RB_BTCT2
 				StartCallTip();
 			} else {
 				autoCCausedByOnlyOne = false;
@@ -3241,7 +3240,7 @@ bool SciTEBase::HandleXml(char ch) {
 	// If the user has turned us off, quit now.
 	// Default is off
 	const std::string value = props.GetExpandedString("xml.auto.close.tags");
-	if ((value.length() == 0) || (value == "0")) {
+	if (value.empty() || (value == "0")) {
 		return false;
 	}
 
@@ -3269,7 +3268,7 @@ bool SciTEBase::HandleXml(char ch) {
 
 	std::string strFound = FindOpenXmlTag(sel.c_str(), nCaret - nMin);
 
-	if (strFound.length() > 0) {
+	if (!strFound.empty()) {
 		UndoBlock ub(wEditor);
 		std::string toInsert = "</";
 		toInsert += strFound;
@@ -3381,7 +3380,7 @@ void SciTEBase::GoMatchingPreprocCond(int direction, bool select) {
 void SciTEBase::AddCommand(std::string_view cmd, std::string_view dir, JobSubsystem jobType, std::string_view input, int flags) {
 	// If no explicit directory, use the directory of the current file
 	FilePath directoryRun;
-	if (dir.length()) {
+	if (!dir.empty()) {
 		FilePath directoryExplicit(GUI::StringFromUTF8(dir));
 		if (directoryExplicit.IsAbsolute()) {
 			directoryRun = directoryExplicit;
@@ -4002,7 +4001,7 @@ void SciTEBase::MenuCommand(int cmdID, int source) {
 					std::string buildcmd = props.GetNewExpandString("command.go.needs.", FileNameExt().AsUTF8());
 					AddCommand(buildcmd, "",
 						   SubsystemType("command.go.needs.subsystem."));
-					if (buildcmd.length() > 0) {
+					if (!buildcmd.empty()) {
 						jobQueue.isBuilding = true;
 						flags |= jobForceQueue;
 					}
@@ -4524,7 +4523,7 @@ void SciTEBase::Notify(SCNotification *notification) {
 		SetBuffersMenu();
 		break;
 
-#ifdef RB_MCH // ON DB CLICK
+#ifdef RB_MCH
 		//!-start-[MouseClickHandled]
 
 	case SA::Notification::DoubleClick:
@@ -4555,7 +4554,7 @@ void SciTEBase::Notify(SCNotification *notification) {
 		break;
 
 		//!-end-[MouseClickHandled]
-#else //RB_MCH 
+#else // RB_MCH 
 
 	case SA::Notification::DoubleClick:
 		if (extender)
@@ -4569,7 +4568,7 @@ void SciTEBase::Notify(SCNotification *notification) {
 			GoMessage(0);
 		}
 		break;
-#endif //RB_MCH
+#endif // RB_MCH
 
 #ifdef RB_MCH // ON CLICK
 		//!-start-[MouseClickHandled]
@@ -4633,7 +4632,7 @@ void SciTEBase::Notify(SCNotification *notification) {
 				BookmarkToggle(lineClick);
 			}
 			//!-end-[SetBookmark]
-#endif
+#endif // RB_SB
 				if (notification->margin == 2) {
 					MarginClick(notification->position, notification->modifiers);
 				}
@@ -4651,7 +4650,7 @@ void SciTEBase::Notify(SCNotification *notification) {
 				ContinueMacroList(notification->text);
 			else if (extender && notification->wParam > 2)
 #ifdef RB_ULID
-			extender->OnUserListSelection(static_cast<int>(notification->wParam), notification->text, notification->position + 1); //!-change-[UserListItemID]
+				extender->OnUserListSelection(static_cast<int>(notification->wParam), notification->text, notification->position + 1); //!-change-[UserListItemID]
 #else
 				extender->OnUserListSelection(static_cast<int>(notification->wParam), notification->text);
 #endif // RB_ULID
@@ -4684,7 +4683,7 @@ void SciTEBase::Notify(SCNotification *notification) {
 			std::string message =
 				RangeExtendAndGrab(wEditor,
 						   range, &SciTEBase::iswordcharforsel);
-			if (message.length()) {
+			if (!message.empty()) {
 				extender->OnDwellStart(range.start, message.c_str());
 			}
 		}
@@ -4734,7 +4733,7 @@ void SciTEBase::CheckMenus() {
 	CheckCanUndoRedo();
 #ifdef RB_SE
 	CheckMenusSave(); //!-add-[SaveEnabled]
-#endif
+#endif // RB_SE
 	EnableAMenuItem(IDM_DUPLICATE, !CurrentBuffer()->isReadOnly);
 	EnableAMenuItem(IDM_SHOWCALLTIP, apis != 0);
 	EnableAMenuItem(IDM_COMPLETE, apis != 0);
@@ -4758,13 +4757,13 @@ void SciTEBase::CheckMenus() {
 	CheckAMenuItem(IDM_TOGGLEPARAMETERS, ParametersOpen());
 	CheckAMenuItem(IDM_MONOFONT, CurrentBuffer()->useMonoFont);
 	EnableAMenuItem(IDM_COMPILE, !jobQueue.IsExecuting() &&
-			props.GetWild("command.compile.", FileNameExt().AsUTF8()).size() != 0);
+			!props.GetWild("command.compile.", FileNameExt().AsUTF8()).empty());
 	EnableAMenuItem(IDM_BUILD, !jobQueue.IsExecuting() &&
-			props.GetWild("command.build.", FileNameExt().AsUTF8()).size() != 0);
+			!props.GetWild("command.build.", FileNameExt().AsUTF8()).empty());
 	EnableAMenuItem(IDM_CLEAN, !jobQueue.IsExecuting() &&
-			props.GetWild("command.clean.", FileNameExt().AsUTF8()).size() != 0);
+			!props.GetWild("command.clean.", FileNameExt().AsUTF8()).empty());
 	EnableAMenuItem(IDM_GO, !jobQueue.IsExecuting() &&
-			props.GetWild("command.go.", FileNameExt().AsUTF8()).size() != 0);
+			!props.GetWild("command.go.", FileNameExt().AsUTF8()).empty());
 	EnableAMenuItem(IDM_OPENDIRECTORYPROPERTIES, props.GetInt("properties.directory.enable") != 0);
 	for (int toolItem = 0; toolItem < toolMax; toolItem++)
 		EnableAMenuItem(IDM_TOOLS + toolItem, ToolIsImmediate(toolItem) || !jobQueue.IsExecuting());
@@ -4924,7 +4923,7 @@ int SciTEBase::IsMenuItemEnabled(int cmd) {
 	case IDM_MACROSTOPRECORD:
 		return recording ? 1 : 0;
 		break;
-	}
+}
 
 	if (cmd > IDM_TOOLS && cmd < IDM_TOOLS + toolMax)
 		return (!jobQueue.IsExecuting()) ? 1 : 0;
@@ -5313,9 +5312,11 @@ void SciTEBase::StartRecordMacro() {
  * Received a Notification::MacroRecord from Scintilla: send it to director.
  */
 bool SciTEBase::RecordMacroCommand(const SCNotification *notification) {
+
 #ifdef RB_OnSendEditor
 	if (!static_iOnSendEditorCallsCount) { //!-change-[OnSendEditor]
-#endif //RB_OnSendEditor
+#endif // RB_OnSendEditor
+
 	if (extender) {
 		std::string sMessage = StdStringFromInteger(notification->message);
 		sMessage += ";";
@@ -5335,7 +5336,7 @@ bool SciTEBase::RecordMacroCommand(const SCNotification *notification) {
 	}
 #ifdef RB_OnSendEditor
 	}
-#endif //RB_OnSendEditor
+#endif // RB_OnSendEditor
 	return true;
 }
 
@@ -5548,8 +5549,7 @@ bool SciTEBase::ProcessCommandLine(const std::vector<GUI::gui_string> &args, int
 					if (arg.starts_with(GUI_TEXT("open:")) || arg.starts_with(GUI_TEXT("loadsession:"))) {
 						if (phase == 0)
 							return performPrint;
-						else
-							evaluate = true;
+						evaluate = true;
 					}
 					if (evaluate) {
 						const std::string sArg = GUI::UTF8FromString(arg);
@@ -5565,8 +5565,7 @@ bool SciTEBase::ProcessCommandLine(const std::vector<GUI::gui_string> &args, int
 		} else {	// Not a switch: it is a file name
 			if (phase == 0)
 				return performPrint;
-			else
-				evaluate = true;
+			evaluate = true;
 
 			if (!buffers.initialised) {
 				InitialiseBuffers();
@@ -5602,14 +5601,12 @@ bool SciTEBase::ProcessCommandLine(const std::vector<GUI::gui_string> &args, int
 intptr_t SciTEBase::Send(Pane p, SA::Message msg, uintptr_t wParam, intptr_t lParam) {
 	if (p == paneEditor)
 		return wEditor.Call(msg, wParam, lParam);
-	else
-		return wOutput.Call(msg, wParam, lParam);
+	return wOutput.Call(msg, wParam, lParam);
 }
 std::string SciTEBase::Range(Pane p, SA::Span range) {
 	if (p == paneEditor)
 		return wEditor.StringOfRange(range);
-	else
-		return wOutput.StringOfRange(range);
+	return wOutput.StringOfRange(range);
 }
 void SciTEBase::Remove(Pane p, SA::Position start, SA::Position end) {
 	if (p == paneEditor) {
@@ -5675,8 +5672,7 @@ void SciTEBase::DoMenuCommand(int cmdID) {
 SA::ScintillaCall &SciTEBase::PaneCaller(Pane p) noexcept {
 	if (p == paneEditor)
 		return wEditor;
-	else
-		return wOutput;
+	return wOutput;
 }
 
 void SciTEBase::SetFindInFilesOptions() {
