@@ -108,6 +108,9 @@ dofile (props["SciteDefaultHome"].."\\tools\\HighlightLinks.lua")
 -- Подставляет адекватный символ комментария для ini, inf, reg и php файлов
 dofile (props["SciteDefaultHome"].."\\tools\\ChangeCommentChar.lua")
 
+-- Автовыравнивание отступов при вставке многострочного текста
+dofile(props["SciteDefaultHome"] .. "\\tools\\AutoIndentOnPaste.lua")
+
 ----[[ Д О П О Л Н И Т Е Л Ь Н Ы Е  М Е Н Ю ]]--------------------------------
 
 -- После выполнения команды "Найти в файлах..." создает пункт в контекстном меню консоли - "Открыть найденные файлы"
