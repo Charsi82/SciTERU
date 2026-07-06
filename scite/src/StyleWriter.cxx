@@ -12,6 +12,7 @@
 #include <string_view>
 #include <vector>
 #include <set>
+#include <algorithm>
 #include <chrono>
 
 #include "ScintillaTypes.h"
@@ -33,7 +34,7 @@ TextReader::TextReader(SA::ScintillaCall &sc_) noexcept :
 	buf[0] = 0;
 }
 
-bool TextReader::InternalIsLeadByte(char ch) const {
+bool TextReader::InternalIsLeadByte(char ch) const noexcept {
 	return IsDBCSLeadByte(codePage, ch);
 }
 
@@ -43,11 +44,8 @@ void TextReader::Fill(SA::Position position) {
 	startPos = position - slopSize;
 	if (startPos + bufferSize > lenDoc)
 		startPos = lenDoc - bufferSize;
-	if (startPos < 0)
-		startPos = 0;
-	endPos = startPos + bufferSize;
-	if (endPos > lenDoc)
-		endPos = lenDoc;
+	startPos = std::max<Scintilla::Position>(startPos, 0);
+	endPos = std::min(startPos + bufferSize, lenDoc);
 	CopyText(sc, buf, SA::Span(startPos, endPos));
 }
 
@@ -114,8 +112,9 @@ void StyleWriter::ColourTo(SA::Position pos, int chAttr) {
 			// Too big for buffer so send directly
 			sc.SetStyling(pos - startSeg + 1, chAttr);
 		} else {
+			const unsigned char attr = chAttr & 0xffU;
 			for (SA::Position i = startSeg; i <= pos; i++) {
-				styleBuf[validLen++] = static_cast<char>(chAttr);
+				styleBuf[validLen++] = attr;
 			}
 		}
 	}
@@ -139,7 +138,7 @@ void StyleWriter::Flush() {
 // Should move to scintilla/call/ScintillaCall.cxx.
 void CopyText(Scintilla::ScintillaCall &sc_, char *buffer, Scintilla::Span range) {
 	if (range.end > range.start) {
-		Scintilla::TextRangeFull tr{ {range.start, range.end}, buffer };
+		Scintilla::TextRangeFull tr{ .chrg = {.cpMin=range.start, .cpMax=range.end}, .lpstrText = buffer };
 		sc_.GetTextRangeFull(&tr);
 	}
 }

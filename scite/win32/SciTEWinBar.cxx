@@ -10,7 +10,7 @@
 #ifdef RB_TABTOP
 int toptab_h = 0;
 COLORREF toptab_clr = 0;
-#endif
+#endif // RB_TABTOP
 
 /**
  * Set up properties for FileTime, FileDate, CurrentTime, CurrentDate and FileAttr.
@@ -268,7 +268,7 @@ void SciTEWin::Notify(SCNotification *notification) {
 
 			subMenu[0].Show(ptCursor, wSciTE);
 			//!-end-[ExtendedContextMenu]
-#endif // RB_ECM			
+#endif // !RB_ECM			
 		}
 		break;
 
@@ -368,7 +368,7 @@ void SciTEWin::Notify(SCNotification *notification) {
 					const GUI::Point ptClient = ClientFromScreen(HwndOf(wTabBar), PointOfCursor());
 					const int index = TabAtPoint(HwndOf(wTabBar), ptClient);
 					if (index >= 0) {
-						GUI::gui_string path = buffers.buffers[index].file.AsInternal();
+						GUI::gui_string path = buffers.buffers[index].file.AsText();
 						// Handle '&' characters in path, since they are interpreted in
 						// tooltips.
 						size_t amp = 0;
@@ -387,7 +387,7 @@ void SciTEWin::Notify(SCNotification *notification) {
 				GUI::gui_string localised = localiser.Text(GUI::UTF8FromString(ttext));
 				StringCopy(tooltipText, localised.c_str());
 				pDispInfo->lpszText = tooltipText;
-#endif				
+#endif // !RB_UT			
 			}
 			break;
 		}
@@ -592,7 +592,7 @@ void SciTEWin::SetMenuItem(int menuNumber, int position, int itemID,
 			hmenu = ::GetSubMenu(hmenu, IMPORT_START - 1);
 	}
 //!-end-[UserPropertiesFilesSubmenu]
-#endif
+#endif // RB_UserPropertiesFilesSubmenu
 
 	GUI::gui_string sTextMnemonic = text;
 	long keycode = 0;
@@ -648,7 +648,7 @@ namespace {
 		::SendMessage(wTools, TB_CHECKBUTTON, id, enable);
 	}
 }
-#endif
+#endif // RB_UT
 
 void SciTEWin::CheckAMenuItem(int wIDCheckItem, bool val) {
 	if (val)
@@ -796,7 +796,7 @@ BarButton bbs[] = {
 	{ STD_FIND,     IDM_FIND },
 	{ STD_REPLACE,  IDM_REPLACE },
 };
-#endif
+#endif // !RB_UT
 
 WNDPROC stDefaultTabProc = nullptr;
 LRESULT CALLBACK TabWndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam) {
@@ -864,7 +864,7 @@ LRESULT CALLBACK TabWndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPar
 			}
 		}
 		break;
-#endif
+#endif // RB_TABMA
 
 	case WM_LBUTTONUP: {
 			iLastClickTab = -1;
@@ -954,7 +954,7 @@ LRESULT CALLBACK TabWndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPar
 					::ReleaseDC(hWnd, hDC);
 				}
 			}
-#endif
+#endif // RB_TABTOP
 			if (bDragBegin && iDraggingTab != -1) {
 
 				const GUI::Point ptClient = ClientFromScreen(hWnd, PointOfCursor());
@@ -1041,7 +1041,7 @@ void SciTEWin::Creation() {
 	wContent = ::CreateWindowExW(
 			   flatterUI ? 0 : WS_EX_CLIENTEDGE,
 			   classNameInternal,
-			   TEXT("Source"),
+			   L"Source",
 			   WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
 			   0, 0,
 			   widthWindow, 100,
@@ -1053,8 +1053,8 @@ void SciTEWin::Creation() {
 
 	wEditor.SetScintilla(::CreateWindowExW(
 				     0,
-				     TEXT("Scintilla"),
-				     TEXT("Source"),
+				     L"Scintilla",
+				     L"Source",
 				     WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
 				     0, 0,
 				     widthWindow, 100,
@@ -1071,8 +1071,8 @@ void SciTEWin::Creation() {
 
 	wOutput.SetScintilla(::CreateWindowExW(
 				     0,
-				     TEXT("Scintilla"),
-				     TEXT("Run"),
+				     L"Scintilla",
+				     L"Run",
 				     WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
 				     0, 0,
 				     widthWindow, 100,
@@ -1093,7 +1093,7 @@ void SciTEWin::Creation() {
 	HWND hwndToolBar = ::CreateWindowExW(
 				   0,
 				   TOOLBARCLASSNAME,
-				   TEXT(""),
+				   L"",
 				   WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS |
 				   TBSTYLE_FLAT | TBSTYLE_TOOLTIPS | CCS_NORESIZE,
 				   0, 0,
@@ -1136,7 +1136,7 @@ void SciTEWin::Creation() {
 	}
 
 	::SendMessage(hwndToolBar, TB_ADDBUTTONS, std::size(bbs), reinterpret_cast<LPARAM>(tbb));
-#endif
+#endif // !RB_UT
 
 	wToolBar.Show();
 
@@ -1145,21 +1145,22 @@ void SciTEWin::Creation() {
 	icce.dwICC = ICC_TAB_CLASSES;
 	InitCommonControlsEx(&icce);
 
+	constexpr const wchar_t *tabClassName = L"SciteTabCtrl";
 	WNDCLASS wndClass = {};
-	if (::GetClassInfo({}, WC_TABCONTROL, &wndClass) == 0)
+	if (::GetClassInfoW({}, WC_TABCONTROL, &wndClass) == 0)
 		exit(FALSE);
 	stDefaultTabProc = wndClass.lpfnWndProc;
 	wndClass.lpfnWndProc = TabWndProc;
 	wndClass.style = wndClass.style | CS_DBLCLKS;
-	wndClass.lpszClassName = TEXT("SciTeTabCtrl");
+	wndClass.lpszClassName = tabClassName;
 	wndClass.hInstance = hInstance;
-	if (RegisterClass(&wndClass) == 0)
+	if (RegisterClassW(&wndClass) == 0)
 		exit(FALSE);
 
 	wTabBar = ::CreateWindowExW(
 			  0,
-			  TEXT("SciTeTabCtrl"),
-			  TEXT("Tab"),
+			  tabClassName,
+			  L"Tab",
 			  WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS |
 			  TCS_FOCUSNEVER | TCS_TOOLTIPS,
 			  0, 0,
@@ -1190,7 +1191,7 @@ void SciTEWin::Creation() {
 	wStatusBar = ::CreateWindowExW(
 			     0,
 			     STATUSCLASSNAME,
-			     TEXT(""),
+			     L"",
 			     WS_CHILD | WS_CLIPSIBLINGS,
 			     0, 0,
 			     widthWindow, heightStatus,
@@ -1385,4 +1386,4 @@ void SciTEWin::SetToolBar()
 	CheckMenus();
 }
 //!-end-[user.toolbar]
-#endif
+#endif // RB_UT

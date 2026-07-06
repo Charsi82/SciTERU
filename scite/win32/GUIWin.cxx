@@ -103,7 +103,7 @@ size_t UTF16Length(const char *s, size_t len) noexcept {
 size_t UTF16FromUTF8(std::string_view s, gui_char *tbuf, size_t tlen) noexcept {
 	size_t ui = 0;
 	const unsigned char *us = reinterpret_cast<const unsigned char *>(s.data());
-	size_t len = s.size();
+	const size_t len = s.size();
 	size_t i = 0;
 	while ((i < len) && (ui < tlen)) {
 		unsigned char ch = us[i++];

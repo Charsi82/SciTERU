@@ -67,16 +67,6 @@ Point Rect::corner(Corner idx) const
 	return Point();
 }
 
-int Rect::width() const
-{
-	return right - left;
-}
-
-int Rect::height() const
-{
-	return bottom - top;
-}
-
 void Rect::offset_by(int dx, int dy)
 {
 	OffsetRect(static_cast<RECT*>(this), dx, dy);
@@ -370,14 +360,14 @@ int TWin::width() const
 {
 	Rect rt;
 	get_client_rect(rt);
-	return rt.right - rt.left;
+	return rt.width();
 }
 
 int TWin::height() const
 {
 	Rect rt;
 	get_client_rect(rt);
-	return rt.bottom - rt.top;
+	return rt.height();
 }
 
 void TWin::set_text(const wchar_t* str)

@@ -39,7 +39,7 @@ public:
 
 	virtual void SetFindText(std::string_view sFind) = 0;
 	virtual void SetFind(std::string_view sFind) = 0;
-	virtual bool FindHasText() const noexcept = 0;
+	[[nodiscard]] virtual bool FindHasText() const noexcept = 0;
 	void InsertFindInMemory();
 	virtual void SetReplace(std::string_view sReplace) = 0;
 	virtual void SetCaretAsStart() = 0;
@@ -56,7 +56,7 @@ public:
 	virtual void UIClosed() = 0;
 	virtual void UIHasFocus() = 0;
 	bool &FlagFromCmd(int cmd) noexcept;
-	bool ShouldClose(bool found) const noexcept {
+	[[nodiscard]] bool ShouldClose(bool found) const noexcept {
 		return (closeFind == CloseFind::closeAlways) || (found && (closeFind == CloseFind::closeOnMatch));
 	}
 };
@@ -71,10 +71,9 @@ struct SearchOption {
 
 class SearchUI {
 protected:
-	Searcher *pSearcher;
+	Searcher *pSearcher{};
 public:
-	SearchUI() noexcept : pSearcher(nullptr) {
-	}
+	SearchUI() noexcept = default;
 	void SetSearcher(Searcher *pSearcher_) noexcept {
 		pSearcher = pSearcher_;
 	}

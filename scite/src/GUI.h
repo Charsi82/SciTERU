@@ -32,12 +32,12 @@ public:
 	explicit constexpr Rectangle(int left_=0, int top_=0, int right_=0, int bottom_=0) noexcept :
 		left(left_), top(top_), right(right_), bottom(bottom_) {
 	}
-	bool Contains(Point pt) const noexcept {
+	[[nodiscard]] bool Contains(Point pt) const noexcept {
 		return (pt.x >= left) && (pt.x <= right) &&
 		       (pt.y >= top) && (pt.y <= bottom);
 	}
-	int Width() const noexcept { return right - left; }
-	int Height() const noexcept { return bottom - top; }
+	[[nodiscard]] int Width() const noexcept { return right - left; }
+	[[nodiscard]] int Height() const noexcept { return bottom - top; }
 	constexpr bool operator==(const Rectangle &other) const noexcept = default;
 };
 
@@ -87,8 +87,7 @@ class Window {
 protected:
 	WindowID wid {};
 public:
-	Window() noexcept {
-	}
+	Window() noexcept = default;
 	Window(Window const &) = default;
 	Window(Window &&) = default;
 	Window &operator=(Window const &) = default;
@@ -99,20 +98,20 @@ public:
 	}
 	virtual ~Window() = default;
 
-	WindowID GetID() const noexcept {
+	[[nodiscard]] WindowID GetID() const noexcept {
 		return wid;
 	}
 	void SetID(WindowID wid_) noexcept {
 		wid = wid_;
 	}
-	bool Created() const noexcept {
+	[[nodiscard]] bool Created() const noexcept {
 		return !!wid;
 	}
 	void Destroy();
-	bool HasFocus() const noexcept;
-	Rectangle GetPosition();
+	[[nodiscard]] bool HasFocus() const noexcept;
+	[[nodiscard]] Rectangle GetPosition();
 	void SetPosition(Rectangle rc);
-	Rectangle GetClientPosition();
+	[[nodiscard]] Rectangle GetClientPosition();
 	void Show(bool show=true);
 	void InvalidateAll();
 	void SetTitle(const gui_char *s);
@@ -123,13 +122,11 @@ using MenuID = void *;
 class Menu {
 	MenuID mid {};
 public:
-	Menu() noexcept {
-	}
+	Menu() noexcept = default;
 #ifdef RB_SUBMENU
 	Menu(MenuID _id) : mid(_id) {} //!-add-[SubMenu]
 #endif // RB_SUBMENU
-
-	MenuID GetID() const noexcept {
+	[[nodiscard]] MenuID GetID() const noexcept {
 		return mid;
 	}
 	void CreatePopUp();

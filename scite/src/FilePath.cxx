@@ -17,6 +17,7 @@
 #include <string_view>
 #include <vector>
 #include <set>
+#include <optional>
 #include <algorithm>
 #include <ranges>
 #include <memory>
@@ -198,6 +199,10 @@ size_t FilePath::RootLength() noexcept {
 
 const GUI::gui_char *FilePath::AsInternal() const noexcept {
 	return fileName.c_str();
+}
+
+const GUI::gui_string &FilePath::AsText() const noexcept {
+	return fileName;
 }
 
 std::string FilePath::AsUTF8() const {
@@ -650,13 +655,13 @@ bool MakeLongPath(const GUI::gui_char *shortPath, GUI::gui_string &longPath) {
 	}
 	GUI::gui_string gsLong(1, L'\0');
 	// Call with too-short string returns size + terminating NUL
-	const DWORD size = (pfnGetLong)(shortPath, gsLong.data(), 0);
+	const DWORD size = pfnGetLong(shortPath, gsLong.data(), 0);
 	if (size == 0) {
 		return false;
 	}
 	gsLong.resize(size);
 	// Call with correct size string returns size without terminating NUL
-	const DWORD characters = (pfnGetLong)(shortPath, gsLong.data(), size);
+	const DWORD characters = pfnGetLong(shortPath, gsLong.data(), size);
 	if (characters != 0) {
 		longPath.assign(gsLong, 0, characters);
 	}
@@ -698,6 +703,20 @@ bool FilePath::CaseSensitive() noexcept {
 #else
 	return false;
 #endif
+}
+
+// Find a path if it exists.
+// If path is not absolute, it is combined with dir.
+// Returns absolute path if it exists else nullopt.
+std::optional<FilePath> FindPath(GUI::gui_string_view path, const FilePath &dir) {
+	FilePath copy(path);
+	if (!copy.IsAbsolute() && dir.IsSet()) {
+		copy.SetDirectory(dir);
+	}
+	if (copy.Exists()) {
+		return copy;
+	}
+	return {};
 }
 
 std::string CommandExecute(const GUI::gui_char *command, const GUI::gui_char *directoryForRun) {

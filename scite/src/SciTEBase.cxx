@@ -124,8 +124,9 @@ bool &Searcher::FlagFromCmd(int cmd) noexcept {
 	case IDCONTEXTVISIBLE:
 	case IDM_CONTEXTVISIBLE:
 		return contextVisible;
+	default:
+		return notFound;
 	}
-	return notFound;
 }
 
 StyleAndWords::StyleAndWords() = default;
@@ -318,7 +319,7 @@ SciTEBase::SciTEBase(Extension *ext) : apis(true), pwFocussed(&wEditor), extende
 	delayBeforeAutoSave = 0;
 #ifdef RB_OnSendEditor
 	wEditor.pBase = this; //!-add-[OnSendEditor]
-#endif
+#endif // RB_OnSendEditor
 
 #ifdef RB_OMC
 	OnMenuCommandCallsCount = 0;	//!-add-[OnMenuCommand]
@@ -485,7 +486,7 @@ intptr_t SciTEBase::ScintillaWindowEditor::Call(SA::Message msg, uintptr_t wPara
 			pBase->RecordMacroCommand(&notification);
 		}
 		return reinterpret_cast<intptr_t>(result);
-	}
+}
 	else {
 		return ScintillaWindow::Call(msg, wParam, lParam);
 	}
@@ -527,6 +528,8 @@ void SciTEBase::WorkerCommand(int cmd, Worker *pWorker) {
 		break;
 	case WORK_FILEPROGRESS:
 		UpdateProgress(pWorker);
+		break;
+	default:
 		break;
 	}
 }
@@ -941,15 +944,15 @@ void SciTEBase::SetWindowName() {
 		windowName.insert(0, GUI_TEXT("("));
 		windowName += GUI_TEXT(")");
 	} else if (props.GetInt("title.full.path") == 2) {
-		windowName = FileNameExt().AsInternal();
+		windowName = FileNameExt().AsText();
 		windowName += GUI_TEXT(" ");
 		windowName += localiser.Text("in");
 		windowName += GUI_TEXT(" ");
-		windowName += filePath.Directory().AsInternal();
+		windowName += filePath.Directory().AsText();
 	} else if (props.GetInt("title.full.path") == 1) {
-		windowName = filePath.AsInternal();
+		windowName = filePath.AsText();
 	} else {
-		windowName = FileNameExt().AsInternal();
+		windowName = FileNameExt().AsText();
 	}
 	if (CurrentBufferConst()->isReadOnly)
 		windowName += GUI_TEXT(" |");
@@ -1404,7 +1407,7 @@ int SciTEBase::FilterSearch() {
 
 void SciTEBase::FailedSaveMessageBox(const FilePath &filePathSaving) {
 	const GUI::gui_string msg = LocaliseMessage(
-					    "Could not save file \"^0\".", filePathSaving.AsInternal());
+					    "Could not save file \"^0\".", filePathSaving.AsText());
 	WindowMessageBox(wSciTE, msg);
 }
 
@@ -1450,7 +1453,7 @@ void SciTEBase::SetFindText(std::string_view sFind) {
 	props.Set("find.what", findWhat);
 #ifdef RB_OFP
 	if (extender) extender->OnFindProperty(findWhat.c_str());
-#endif //RB_OFP
+#endif // RB_OFP
 }
 
 void SciTEBase::SetFind(std::string_view sFind) {
@@ -1925,12 +1928,12 @@ void SciTEBase::Redraw() {
 	wOutput.InvalidateAll();
 }
 
-StringVector SciTEBase::GetNearestWords(const char *wordStart, size_t searchLen,
-				       const char *separators, bool ignoreCase /*=false*/, bool exactLen /*=false*/) {
+StringVector SciTEBase::GetNearestWords(std::string_view word,
+				       std::string_view separators, bool ignoreCase /*=false*/, bool exactLen /*=false*/) {
 	StringVector words;
-	while (words.empty() && *separators) {
-		words = apis.GetNearestWords(wordStart, searchLen, ignoreCase, *separators, exactLen);
-		separators++;
+	while (words.empty() && !separators.empty()) {
+		words = apis.GetNearestWords(word, ignoreCase, separators.front(), exactLen);
+		separators.remove_prefix(1);
 	}
 	return words;
 }
@@ -1940,15 +1943,14 @@ void SciTEBase::FillFunctionDefinition(SA::Position pos /*= -1*/) {
 		lastPosCallTip = pos;
 	}
 	if (apis) {
-		StringVector words = GetNearestWords(currentCallTipWord.c_str(), currentCallTipWord.length(),
-						    calltipParametersStart.c_str(), callTipIgnoreCase, true);
+		StringVector words = GetNearestWords(currentCallTipWord, calltipParametersStart, callTipIgnoreCase, true);
 		if (words.empty())
 			return;
 		// Counts how many call tips
 		maxCallTips = words.size();
 
 		// Should get current api definition
-		std::string word = apis.GetNearestWord(currentCallTipWord.c_str(), currentCallTipWord.length(),
+		const std::string word = apis.GetNearestWord(currentCallTipWord,
 						       callTipIgnoreCase, calltipWordCharacters, currentCallTip);
 		if (!word.empty()) {
 			functionDefinition = word;
@@ -2054,7 +2056,7 @@ void SciTEBase::ContinueCallTip() {
 				break;
 			}
 		}
-#endif
+#endif // RB_BTCT3
 
 	for (SA::Position i = startCalltipWord; i < current; i++) {
 		if (Contains(calltipParametersStart, line[i]))
@@ -2143,8 +2145,8 @@ bool SciTEBase::StartAutoComplete() {
 
 	const std::string root = line.substr(startword, current - startword);
 	if (apis) {
-		const StringVector words = GetNearestWords(root.c_str(), root.length(),
-						    calltipParametersStart.c_str(), autoCompleteIgnoreCase);
+		const StringVector words = GetNearestWords(root, calltipParametersStart,
+			autoCompleteIgnoreCase);
 		if (!words.empty()) {
 			std::string wordsUnique = EliminateDuplicateWords(words);
 			wEditor.AutoCSetSeparator(' ');
@@ -2225,11 +2227,10 @@ bool SciTEBase::PerformInsertAbbreviation() {
 	}
 #else
 	//!-start-[InsertAbbreviation]
-	return InsertAbbreviation(data.c_str());
+	return InsertAbbreviation(data);
 }
 
-bool SciTEBase::InsertAbbreviation(const char* _data) {
-	std::string data = _data;
+bool SciTEBase::InsertAbbreviation(std::string_view data) {
 	if (data.empty()) return true;
 	//!-end-[InsertAbbreviation]
 #endif // !RB_IA
@@ -2463,7 +2464,7 @@ bool SciTEBase::StartBlockComment() {
 	if (comment.empty()) { // user friendly error message box
 		GUI::gui_string sBase = GUI::StringFromUTF8(base);
 		GUI::gui_string error = LocaliseMessage(
-						"Block comment variable '^0' is not defined in SciTE *.properties!", sBase.c_str());
+						"Block comment variable '^0' is not defined in SciTE *.properties!", sBase);
 		WindowMessageBox(wSciTE, error);
 		return true;
 	}
@@ -2558,12 +2559,12 @@ bool SciTEBase::StartBoxComment() {
 	std::string middleComment = props.GetString(middleBase);
 	std::string endComment = props.GetString(endBase);
 	if (startComment.empty() || middleComment.empty() || endComment.empty()) {
-		GUI::gui_string sStart = GUI::StringFromUTF8(startBase);
-		GUI::gui_string sMiddle = GUI::StringFromUTF8(middleBase);
-		GUI::gui_string sEnd = GUI::StringFromUTF8(endBase);
+		const GUI::gui_string sStart = GUI::StringFromUTF8(startBase);
+		const GUI::gui_string sMiddle = GUI::StringFromUTF8(middleBase);
+		const GUI::gui_string sEnd = GUI::StringFromUTF8(endBase);
 		GUI::gui_string error = LocaliseMessage(
 						"Box comment variables '^0', '^1' and '^2' are not defined in SciTE *.properties!",
-						sStart.c_str(), sMiddle.c_str(), sEnd.c_str());
+						sStart, sMiddle, sEnd);
 		WindowMessageBox(wSciTE, error);
 		return true;
 	}
@@ -2667,11 +2668,11 @@ bool SciTEBase::StartStreamComment() {
 	std::string startComment = props.GetString(startBase);
 	std::string endComment = props.GetString(endBase);
 	if (startComment.empty() || endComment.empty()) {
-		GUI::gui_string sStart = GUI::StringFromUTF8(startBase);
-		GUI::gui_string sEnd = GUI::StringFromUTF8(endBase);
+		const GUI::gui_string sStart = GUI::StringFromUTF8(startBase);
+		const GUI::gui_string sEnd = GUI::StringFromUTF8(endBase);
 		GUI::gui_string error = LocaliseMessage(
 						"Stream comment variables '^0' and '^1' are not defined in SciTE *.properties!",
-						sStart.c_str(), sEnd.c_str());
+						sStart, sEnd);
 		WindowMessageBox(wSciTE, error);
 		return true;
 	}
@@ -2736,8 +2737,8 @@ ScrollDocWithOffset SciTEBase::GetCurrentScrollPosition() {
 void SciTEBase::SetTextProperties(
 	PropSetFile &ps) {			///< Property set to update.
 
-	std::string ro = GUI::UTF8FromString(localiser.Text("READ"));
-	ps.Set("ReadOnly", CurrentBuffer()->isReadOnly ? ro.c_str() : "");
+	const std::string ro = GUI::UTF8FromString(localiser.Text("READ"));
+	ps.Set("ReadOnly", CurrentBuffer()->isReadOnly ? ro : "");
 
 	const SA::EndOfLine eolMode = wEditor.EOLMode();
 	ps.Set("EOLMode", eolMode == SA::EndOfLine::CrLf ? "CR+LF" : (eolMode == SA::EndOfLine::Lf ? "LF" : "CR"));
@@ -2960,9 +2961,7 @@ int SciTEBase::IndentOfBlock(SA::Line line) {
 	if (statementIndent.IsEmpty() && blockStart.IsEmpty() && blockEnd.IsEmpty())
 		indentState = IndentationStatus::blockStart;	// Don't bother searching backwards
 
-	SA::Line lineLimit = line - statementLookback;
-	if (lineLimit < 0)
-		lineLimit = 0;
+	const SA::Line lineLimit = std::max<SA::Line>(line - statementLookback, 0);
 	while ((backLine >= lineLimit) && (indentState == IndentationStatus::none)) {
 		indentState = GetIndentState(backLine);
 		if (indentState != IndentationStatus::none) {
@@ -3090,7 +3089,9 @@ void SciTEBase::CharAdded(int utf32) {
 	const SA::Position selStart = rangeSelection.start;
 	const SA::Position selEnd = rangeSelection.end;
 
-	if (utf32 > 0XFF) { // MBCS, never let it go.
+	constexpr int maxSingleByte = 0xFF;
+
+	if (utf32 > maxSingleByte) { // MBCS, never let it go.
 		if (imeAutoComplete) {
 			if ((selEnd == selStart) && (selStart > 0)) {
 				if (wEditor.CallTipActive()) {
@@ -3195,6 +3196,39 @@ constexpr int DigitsIn(SA::Line line) noexcept {
 	return digits;
 }
 
+/** Search backward looking for a '<', then return the tag if any
+ * @return The tag name
+ */
+std::string FindOpenXmlTag(std::string_view sel) {
+	std::string strRet;
+
+	if (sel.length() < 3) {
+		// Smallest tag is "<p>" which is 3 characters
+		return strRet;
+	}
+	const char *pBegin = sel.data();
+	const char *pCur = &sel.back();
+
+	pCur--; // Skip past the >
+	while ((pCur > pBegin) && (*pCur != '<')) {
+		if ((*pCur == '>') && (*(pCur - 1) != '-')) {
+			break;
+		}
+		--pCur;
+	}
+
+	if (*pCur == '<') {
+		pCur++;
+		while (strchr(":_-.", *pCur) || IsAlphaNumeric(*pCur)) {
+			strRet += *pCur;
+			pCur++;
+		}
+	}
+
+	// Return the tag name or ""
+	return strRet;
+}
+
 }
 
 /**
@@ -3245,77 +3279,35 @@ bool SciTEBase::HandleXml(char ch) {
 	}
 
 	// Grab the last 512 characters or so
+	constexpr size_t maxTagCheck = 512;
 	const SA::Position nCaret = wEditor.CurrentPos();
-	SA::Position nMin = nCaret - 512;
-	if (nMin < 0) {
-		nMin = 0;
-	}
+	const SA::Position nMin = std::max<SA::Position>(nCaret - maxTagCheck, 0);
 
 	if (nCaret - nMin < 3) {
 		return false; // Smallest tag is 3 characters ex. <p>
 	}
-	std::string sel = wEditor.StringOfRange(SA::Span(nMin, nCaret));
+	const std::string sel = wEditor.StringOfRange(SA::Span(nMin, nCaret));
 
-	if (sel[nCaret - nMin - 2] == '/') {
+	if (sel.ends_with("/>")) {
 		// User typed something like "<br/>"
 		return false;
 	}
 
-	if (sel[nCaret - nMin - 2] == '-') {
+	if (sel.ends_with("->")) {
 		// User typed something like "<a $this->"
 		return false;
 	}
 
-	std::string strFound = FindOpenXmlTag(sel.c_str(), nCaret - nMin);
-
-	if (!strFound.empty()) {
-		UndoBlock ub(wEditor);
-		std::string toInsert = "</";
-		toInsert += strFound;
-		toInsert += ">";
-		wEditor.ReplaceSel(toInsert.c_str());
-		SetSelection(nCaret, nCaret);
-		return true;
+	const std::string strFound = FindOpenXmlTag(sel);
+	if (strFound.empty()) {
+		return false;
 	}
 
-	return false;
-}
-
-/** Search backward through nSize bytes looking for a '<', then return the tag if any
- * @return The tag name
- */
-std::string SciTEBase::FindOpenXmlTag(const char sel[], SA::Position nSize) {
-	std::string strRet;
-
-	if (nSize < 3) {
-		// Smallest tag is "<p>" which is 3 characters
-		return strRet;
-	}
-	const char *pBegin = &sel[0];
-	const char *pCur = &sel[nSize - 1];
-
-	pCur--; // Skip past the >
-	while (pCur > pBegin) {
-		if (*pCur == '<') {
-			break;
-		} else if (*pCur == '>') {
-			if (*(pCur - 1) != '-') {
-				break;
-			}
-		}
-		--pCur;
-	}
-
-	if (*pCur == '<') {
-		pCur++;
-		while (strchr(":_-.", *pCur) || IsAlphaNumeric(*pCur)) {
-			strRet += *pCur;
-			pCur++;
-		}
-	}
-
-	// Return the tag name or ""
-	return strRet;
+	UndoBlock ub(wEditor);
+	const std::string toInsert = "</" + strFound + ">";
+	wEditor.ReplaceSel(toInsert.c_str());
+	SetSelection(nCaret, nCaret);
+	return true;
 }
 
 void SciTEBase::GoMatchingBrace(bool select) {
@@ -3395,7 +3387,8 @@ void SciTEBase::AddCommand(std::string_view cmd, std::string_view dir, JobSubsys
 }
 
 int ControlIDOfCommand(unsigned long wParam) noexcept {
-	return wParam & 0xffff;
+	constexpr unsigned long lowMask = 0xffff;
+	return wParam & lowMask;
 }
 
 void WindowSetFocus(GUI::ScintillaWindow &w) {
@@ -4697,14 +4690,12 @@ void SciTEBase::Notify(SCNotification *notification) {
 
 	case SA::Notification::Zoom:
 #ifdef RB_ZOOM
-		//!-start-[Zoom]
 		if (extender && static_iOnSendEditorCallsCount < _MAX_SEND_RECURSIVE_CALL) {
 			static_iOnSendEditorCallsCount++;
 			extender->OnSendEditor(SA::Message::SetZoom, 0, wEditor.Zoom());
 			static_iOnSendEditorCallsCount--;
 		}
-		//!-end-[Zoom]
-#endif
+#endif // RB_ZOOM
 		SetLineNumberWidth();
 		UpdateStatusBar(false);
 		break;
@@ -4792,7 +4783,7 @@ void SciTEBase::CheckMenus() {
 			{
 				CheckAMenuItem(itemID, true);
 				last_lang = language;
-			}
+}
 		}
 	}
 	//!-end-[LangMenuChecker]
@@ -5110,7 +5101,7 @@ constexpr bool IsNameCharacter(GUI::gui_char ch) {
  * Find the character following a name which is made up of characters from
  * the set [a-zA-Z.]
  */
-GUI::gui_char AfterName(GUI::gui_string_view s) noexcept {
+constexpr GUI::gui_char AfterName(GUI::gui_string_view s) noexcept {
 	while (!s.empty() && IsNameCharacter(s.front())) {
 		s.remove_prefix(1);
 	}
@@ -5137,7 +5128,7 @@ void SciTEBase::PerformOne(std::string_view action) {
 		} else if (cmd == "cwd") {
 			FilePath dirTarget(GUI::StringFromUTF8(arg));
 			if (!dirTarget.SetWorkingDirectory()) {
-				GUI::gui_string msg = LocaliseMessage("Invalid directory '^0'.", dirTarget.AsInternal());
+				GUI::gui_string msg = LocaliseMessage("Invalid directory '^0'.", dirTarget.AsText());
 				WindowMessageBox(wSciTE, msg);
 			}
 		} else if (cmd == "enumproperties") {
@@ -5629,10 +5620,18 @@ void SciTEBase::Trace(const char *s) {
 }
 
 std::string SciTEBase::Property(const char *key) {
-	return props.GetExpandedString(key);
+	// Provides access to properties for extensions only.
+	const std::string_view keyView(key);
+	if (keyView == "ext.lua.startup.script") {
+		if (!propsUser.GetInt("allow.local.script")) {
+			return propsUser.GetExpandedString(keyView);
+		}
+	}
+	return props.GetExpandedString(keyView);
 }
 
 void SciTEBase::SetProperty(const char *key, const char *val) {
+	// Provides setting of properties for extensions only.
 	const std::string value = props.GetExpandedString(key);
 	if (value != val) {
 		props.Set(key, val);

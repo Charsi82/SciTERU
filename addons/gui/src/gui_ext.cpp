@@ -128,6 +128,10 @@ void dump_stack_to_log(lua_State* L)
 
 COLORREF lua_optColor(lua_State* L, int idx = 1, COLORREF def_clr = 0)
 {
+	if (lua_isinteger(L, idx))
+	{
+		return lua_tointeger(L, idx);
+	}
 	if (const char* s_clr = luaL_optstring(L, idx, nullptr))
 	{
 		unsigned int r = 0, g = 0, b = 0;
@@ -1200,8 +1204,15 @@ int window_resize(lua_State* L)
 	if (TEventWindow* win = ew_arg(L))
 	{
 		bool resize = lua_toboolean(L, 2);
-		int w = luaL_checkinteger(L, 3);
-		int h = luaL_checkinteger(L, 4);
+		Rect rect{};
+		win->get_client_rect(rect);
+		int w = rect.width();
+		int h = rect.height();
+		if (resize) 
+		{
+			w = luaL_optinteger(L, 3, w);
+			h = luaL_optinteger(L, 4, h);
+		}
 		win->enable_resize(resize, w, h);
 		win->size();
 	}

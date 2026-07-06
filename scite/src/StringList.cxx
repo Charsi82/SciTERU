@@ -14,6 +14,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <array>
 #include <map>
 #include <set>
 #include <algorithm>
@@ -40,47 +41,35 @@ int CompareNCaseInsensitive(const char *a, const char *b, size_t len) noexcept {
 	}
 	if (len == 0)
 		return 0;
-	else
-		// Either *a or *b is nul
-		return *a - *b;
+	// Either *a or *b is nul
+	return *a - *b;
 }
 
 /**
  * Creates an array that points into each word in the string and puts \0 terminators
  * after each word.
  */
-std::vector<char *> ArrayFromStringList(char *stringList, bool onlyLineEnds = false) {
-	int prev = '\n';
-	int words = 0;
+std::vector<char *> ArrayFromStringList(std::string &stringList, bool onlyLineEnds = false) {
 	// For rapid determination of whether a character is a separator, build
 	// a look up table.
-	bool wordSeparator[256] = {};
+	constexpr size_t byteValues = 0x100;
+	std::array<bool, byteValues> wordSeparator = {};
 	wordSeparator[static_cast<unsigned int>('\r')] = true;
 	wordSeparator[static_cast<unsigned int>('\n')] = true;
 	if (!onlyLineEnds) {
 		wordSeparator[static_cast<unsigned int>(' ')] = true;
 		wordSeparator[static_cast<unsigned int>('\t')] = true;
 	}
-	for (int j = 0; stringList[j]; j++) {
-		const int curr = static_cast<unsigned char>(stringList[j]);
-		if (!wordSeparator[curr] && wordSeparator[prev])
-			words++;
-		prev = curr;
-	}
+
 	std::vector<char *> keywords;
-	const size_t slen = strlen(stringList);
-	if (words) {
-		prev = '\0';
-		for (size_t k = 0; k < slen; k++) {
-			if (!wordSeparator[static_cast<unsigned char>(stringList[k])]) {
-				if (!prev) {
-					keywords.push_back(&stringList[k]);
-				}
-			} else {
-				stringList[k] = '\0';
-			}
-			prev = stringList[k];
+	int prev = '\0';
+	for (char &ch : stringList) {
+		if (wordSeparator[static_cast<unsigned char>(ch)]) {
+			ch = '\0';
+		} else if (!prev) {
+			keywords.push_back(&ch);
 		}
+		prev = ch;
 	}
 	return keywords;
 }
@@ -112,22 +101,22 @@ struct CompareStringInsensitive {
 };
 
 template<typename Compare>
-std::string GetMatch(std::vector<char *>::iterator start, std::vector<char *>::iterator end,
+std::string GetMatch(const std::vector<char *> &vector,
 	const char *wordStart, const std::string &wordCharacters, ptrdiff_t wordIndex, Compare comp) {
-	std::vector<char *>::iterator elem = std::lower_bound(start, end, wordStart, comp);
+	std::vector<char *>::const_iterator elem = std::lower_bound(vector.begin(), vector.end(), wordStart, comp);
 	if (!comp(wordStart, *elem) && !comp(*elem, wordStart)) {
 		// Found a matching element, now move forward wordIndex matching elements
-		for (; elem < end; ++elem) {
+		for (; elem < vector.end(); ++elem) {
 			const char *word = *elem;
 			if (!word[comp.searchLen] || !Contains(wordCharacters, word[comp.searchLen])) {
 				if (wordIndex <= 0) {
-					return std::string(word);
+					return {word};
 				}
 				wordIndex--;
 			}
 		}
 	}
-	return std::string();
+	return {};
 }
 
 /**
@@ -161,12 +150,12 @@ size_t LengthWord(const char *word, char otherSeparator) noexcept {
 }
 
 template<typename Compare>
-StringVector GetMatches(std::vector<char *>::iterator start, std::vector<char *>::iterator end, const char *wordStart, char otherSeparator, bool exactLen, Compare comp) {
+StringVector GetMatches(const std::vector<char *> &vector, const char *wordStart, char otherSeparator, bool exactLen, Compare comp) {
 	StringVector wordList;
 	const size_t wordStartLength = LengthWord(wordStart, otherSeparator);
-	std::vector<char *>::iterator elem = std::lower_bound(start, end, wordStart, comp);
+	std::vector<char *>::const_iterator elem = std::lower_bound(vector.begin(), vector.end(), wordStart, comp);
 	// Found a matching element, now accumulate all matches
-	for (; elem < end; ++elem) {
+	for (; elem < vector.end(); ++elem) {
 		if (comp(wordStart, *elem) || comp(*elem, wordStart))
 			break;	// Not a match so stop
 		// length of the word part (before the '(' brace) of the api array element
@@ -183,7 +172,7 @@ StringVector GetMatches(std::vector<char *>::iterator start, std::vector<char *>
 void StringList::SetFromListText() {
 	sorted = false;
 	sortedNoCase = false;
-	words = ArrayFromStringList(listText.data(), onlyLineEnds);
+	words = ArrayFromStringList(listText, onlyLineEnds);
 	wordsNoCase = words;
 }
 
@@ -192,12 +181,12 @@ void StringList::SortIfNeeded(bool ignoreCase) {
 	if (ignoreCase) {
 		if (!sortedNoCase) {
 			sortedNoCase = true;
-			std::sort(wordsNoCase.begin(), wordsNoCase.end(), CmpStringNoCase);
+			std::ranges::sort(wordsNoCase, CmpStringNoCase);
 		}
 	} else {
 		if (!sorted) {
 			sorted = true;
-			std::sort(words.begin(), words.end(), CmpString);
+			std::ranges::sort(words, CmpString);
 		}
 	}
 }
@@ -210,14 +199,8 @@ void StringList::Clear() noexcept {
 	sortedNoCase = false;
 }
 
-void StringList::Set(const char *s) {
-	listText.assign(s, s+strlen(s)+1);
-	SetFromListText();
-}
-
-void StringList::Set(const std::vector<char> &data) {
-	listText.assign(data.begin(), data.end());
-	listText.push_back('\0');
+void StringList::Set(std::string_view data) {
+	listText.assign(data);
 	SetFromListText();
 }
 
@@ -227,15 +210,15 @@ void StringList::Set(const std::vector<char> &data) {
  * The length of the word to compare is passed too.
  * Letter case can be ignored or preserved.
  */
-std::string StringList::GetNearestWord(const char *wordStart, size_t searchLen, bool ignoreCase, const std::string &wordCharacters, ptrdiff_t wordIndex) {
+std::string StringList::GetNearestWord(std::string_view word, bool ignoreCase, const std::string &wordCharacters, ptrdiff_t wordIndex) {
 	if (words.empty())
-		return std::string();
+		return {};
 	SortIfNeeded(ignoreCase);
 	if (ignoreCase) {
-		return GetMatch(wordsNoCase.begin(), wordsNoCase.end(), wordStart, wordCharacters, wordIndex, CompareStringInsensitive(searchLen));
-	} else { // preserve the letter case
-		return GetMatch(words.begin(), words.end(), wordStart, wordCharacters, wordIndex, CompareString(searchLen));
+		return GetMatch(wordsNoCase, word.data(), wordCharacters, wordIndex, CompareStringInsensitive(word.length()));
 	}
+	// preserve the letter case
+	return GetMatch(words, word.data(), wordCharacters, wordIndex, CompareString(word.length()));
 }
 
 /**
@@ -247,8 +230,7 @@ std::string StringList::GetNearestWord(const char *wordStart, size_t searchLen, 
  * them in the ascending order separated with spaces.
  */
 StringVector StringList::GetNearestWords(
-	const char *wordStart,
-	size_t searchLen,
+	std::string_view word,
 	bool ignoreCase,
 	char otherSeparator /*= '\0'*/,
 	bool exactLen /*=false*/) {
@@ -257,11 +239,10 @@ StringVector StringList::GetNearestWords(
 		return {};
 	SortIfNeeded(ignoreCase);
 	if (ignoreCase) {
-		return GetMatches(wordsNoCase.begin(), wordsNoCase.end(), wordStart, otherSeparator, exactLen, CompareStringInsensitive(searchLen));
-	} else {
-		// Preserve the letter case
-		return GetMatches(words.begin(), words.end(), wordStart, otherSeparator, exactLen, CompareString(searchLen));
+		return GetMatches(wordsNoCase, word.data(), otherSeparator, exactLen, CompareStringInsensitive(word.length()));
 	}
+	// Preserve the letter case
+	return GetMatches(words, word.data(), otherSeparator, exactLen, CompareString(word.length()));
 }
 
 bool AutoCompleteWordList::Add(const std::string& word) {

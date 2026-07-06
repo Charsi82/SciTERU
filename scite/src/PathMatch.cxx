@@ -14,6 +14,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <optional>
 #include <algorithm>
 #include <ranges>
 #include <memory>

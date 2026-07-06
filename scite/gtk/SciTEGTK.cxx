@@ -2919,11 +2919,11 @@ SciTEBase::MessageBoxChoice SciTEGTK::WindowMessageBox(GUI::Window &w, const GUI
 }
 
 void SciTEGTK::FindMessageBox(const std::string &msg, const std::string *findItem) {
-	if (findItem == 0) {
-		GUI::gui_string msgBuf = LocaliseMessage(msg.c_str());
+	if (!findItem) {
+		GUI::gui_string msgBuf = LocaliseMessage(msg);
 		WindowMessageBox(wSciTE, msgBuf);
 	} else {
-		GUI::gui_string msgBuf = LocaliseMessage(msg.c_str(), findItem->c_str());
+		GUI::gui_string msgBuf = LocaliseMessage(msg, *findItem);
 		WindowMessageBox(wSciTE, msgBuf);
 	}
 }

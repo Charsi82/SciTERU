@@ -136,11 +136,10 @@ public:
 class Dialog;
 
 class ContentWin : public BaseWin {
-	SciTEWin *pSciTEWin;
-	bool capturedMouse;
+	SciTEWin *pSciTEWin = nullptr;
+	bool capturedMouse = false;
 public:
-	ContentWin() noexcept : pSciTEWin(nullptr), capturedMouse(false) {
-	}
+	ContentWin() noexcept = default;
 	void SetSciTE(SciTEWin *pSciTEWin_) noexcept {
 		pSciTEWin = pSciTEWin_;
 	}
@@ -189,8 +188,8 @@ protected:
 	bool flatterUI;
 	int cmdShow;
 	static HINSTANCE hInstance;
-	static const TCHAR *className;
-	static const TCHAR *classNameInternal;
+	static const WCHAR *className;
+	static const WCHAR *classNameInternal;
 	static SciTEWin *app;
 	WINDOWPLACEMENT winPlace;
 	RECT rcWorkArea;
@@ -267,7 +266,7 @@ protected:
 	void SizeSubWindows() override;
 
 	void SetMenuItem(int menuNumber, int position, int itemID,
-			 const GUI::gui_char *text, const GUI::gui_char *mnemonic = 0) override;
+			 const GUI::gui_char *text, const GUI::gui_char *mnemonic = nullptr) override;
 	void RedrawMenu() override;
 	void DestroyMenuItem(int menuNumber, int itemID) override;
 	void CheckAMenuItem(int wIDCheckItem, bool val) override;
@@ -279,7 +278,7 @@ protected:
 	void LocaliseControl(HWND w);
 	void LocaliseDialog(HWND wDialog);
 
-	INT_PTR DoDialog(const TCHAR *resName, DLGPROC lpProc);
+	INT_PTR DoDialog(const WCHAR *resName, DLGPROC lpProc);
 	HWND CreateParameterisedDialog(LPCWSTR lpTemplateName, DLGPROC lpProc) noexcept;
 	GUI::gui_string DialogFilterFromProperty(const GUI::gui_string &filterProperty);
 	void CheckCommonDialogError();
@@ -306,7 +305,7 @@ protected:
 	BOOL HandleReplaceCommand(int cmd, bool reverseDirection = false);
 
 	MessageBoxChoice WindowMessageBox(GUI::Window &w, const GUI::gui_string &msg, MessageBoxStyle style = mbsIconWarning) override;
-	void FindMessageBox(const std::string &msg, const std::string *findItem = 0) override;
+	void FindMessageBox(const std::string &msg, const std::string *findItem = nullptr) override;
 	void AboutDialog() override;
 	void DropFiles(HDROP hdrop);
 	void MinimizeToTray();
@@ -353,7 +352,7 @@ protected:
 	void UserStripSet(int control, const char *value) override;
 #ifdef RB_USBTT
 	void UserStripSetTipText(int control, const char *value) override;
-#endif
+#endif // RB_USBTT
 	void UserStripSetList(int control, const char *value) override;
 	std::string UserStripValue(int control) override;
 	void UserStripClosed();
@@ -405,7 +404,7 @@ protected:
 
 public:
 
-	explicit SciTEWin(Extension *ext = 0);
+	explicit SciTEWin(Extension *ext = nullptr);
 
 	// Deleted so SciTEWin objects can not be copied.
 	SciTEWin(const SciTEWin &) = delete;
@@ -444,7 +443,7 @@ public:
 #ifndef RB_ECM
 	//!-remove-[ExtendedContextMenu]
 	void AddToPopUp(const char *label, int cmd=0, bool enabled=true) override;
-#endif
+#endif // RB_ECM
 
 	LRESULT ContextMenuMessage(UINT iMessage, WPARAM wParam, LPARAM lParam);
 	void CheckForScintillaFailure(SA::Status statusFailure) noexcept;
@@ -481,7 +480,8 @@ constexpr GUI::Point PointFromLong(LPARAM lPoint) noexcept {
 }
 
 constexpr int ControlIDOfWParam(WPARAM wParam) noexcept {
-	return wParam & 0xffff;
+	constexpr WPARAM lowMask = 0xffff;
+	return wParam & lowMask;
 }
 
 inline HWND HwndOf(const GUI::Window &w) noexcept {

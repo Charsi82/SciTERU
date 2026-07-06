@@ -26,8 +26,7 @@ inline uintptr_t UptrFromString(const char *cp) noexcept {
 
 class ExtensionAPI {
 public:
-	virtual ~ExtensionAPI() {
-	}
+	virtual ~ExtensionAPI() = default;
 	enum Pane { paneEditor=1, paneOutput=2, paneFindOutput=3 };
 	virtual intptr_t Send(Pane p, Scintilla::Message msg, uintptr_t wParam=0, intptr_t lParam=0)=0;
 	virtual std::string Range(Pane p, Scintilla::Span range)=0;
@@ -44,27 +43,22 @@ public:
 	virtual void UpdateStatusBar(bool bUpdateSlowData)=0;
 	virtual void UserStripShow(const char *description)=0;
 	virtual void UserStripSet(int control, const char *value)=0;
-
-#ifdef RB_USBTT
-	virtual void UserStripSetTipText(int control, const char* value) = 0;
-#endif // RB_USBTT
-
 	virtual void UserStripSetList(int control, const char *value)=0;
 	virtual std::string UserStripValue(int control)=0;
 	virtual Scintilla::ScintillaCall &PaneCaller(Pane p) noexcept =0;
 
+#ifdef RB_USBTT
+	virtual void UserStripSetTipText(int control, const char* value) = 0;
+#endif // RB_USBTT
 #ifdef RB_CheckMenus
 	virtual void CheckMenus() = 0; //!-add-[CheckMenus]
 #endif // RB_CheckMenus
-
 #ifdef RB_LFL
 	virtual std::string GetTranslation(const char* s, bool retainIfNotFound = true) = 0; //!-add-[LocalizationFromLua]
 #endif // RB_LFL
-
 #ifdef RB_IA
-	virtual bool InsertAbbreviation(const char* data) = 0; //!-add-[InsertAbbreviation]
+	virtual bool InsertAbbreviation(std::string_view data) = 0; //!-add-[InsertAbbreviation]
 #endif // RB_IA
-
 #ifdef RB_PDFL
 	virtual bool ShowParametersDialog(const char* msg) = 0; //!-add-[ParametersDialogFromLua]
 #endif //RB_PDFL
@@ -76,7 +70,7 @@ public:
  */
 class Extension {
 public:
-	virtual ~Extension() {}
+	virtual ~Extension() = default;
 
 	virtual bool Initialise(ExtensionAPI *host_)=0;
 	virtual bool Finalise() noexcept =0;

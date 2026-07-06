@@ -17,24 +17,20 @@ class StringList {
 	std::vector<char *> words;
 	std::vector<char *> wordsNoCase;
 	bool onlyLineEnds;	///< Delimited by any white space or only line ends
-	bool sorted;
-	bool sortedNoCase;
+	bool sorted = false;
+	bool sortedNoCase = false;
 	void SetFromListText();
 	void SortIfNeeded(bool ignoreCase);
 public:
-	explicit StringList(bool onlyLineEnds_ = false) :
-		words(0), wordsNoCase(0), onlyLineEnds(onlyLineEnds_),
-		sorted(false), sortedNoCase(false) {}
-	size_t Length() const noexcept { return words.size(); }
-	operator bool() const noexcept { return !words.empty(); }
+	explicit StringList(bool onlyLineEnds_ = false) : onlyLineEnds(onlyLineEnds_) {
+	}
+	[[nodiscard]] size_t Length() const noexcept { return words.size(); }
+	[[nodiscard]] operator bool() const noexcept { return !words.empty(); }
 	char *operator[](size_t ind) noexcept { return words[ind]; }
 	void Clear() noexcept;
-	void Set(const char *s);
-	void Set(const std::vector<char> &data);
-	std::string GetNearestWord(const char *wordStart, size_t searchLen,
-				   bool ignoreCase, const std::string &wordCharacters, ptrdiff_t wordIndex);
-	StringVector GetNearestWords(const char *wordStart, size_t searchLen,
-				    bool ignoreCase, char otherSeparator='\0', bool exactLen=false);
+	void Set(std::string_view data);
+	std::string GetNearestWord(std::string_view word, bool ignoreCase, const std::string &wordCharacters, ptrdiff_t wordIndex);
+	StringVector GetNearestWords(std::string_view word, bool ignoreCase, char otherSeparator='\0', bool exactLen=false);
 };
 
 class AutoCompleteWordList {
@@ -42,14 +38,14 @@ class AutoCompleteWordList {
 	size_t totalLength = 0;
 	size_t minWordLength = SIZE_MAX;
 public:
-	size_t Count() const noexcept {
+	[[nodiscard]] size_t Count() const noexcept {
 		return words.size();
 	}
-	size_t MinWordLength() const noexcept {
+	[[nodiscard]] size_t MinWordLength() const noexcept {
 		return minWordLength;
 	}
 	bool Add(const std::string& word);
-	std::string Sorted(bool ignoreCase) const;
+	[[nodiscard]] std::string Sorted(bool ignoreCase) const;
 };
 
 #endif

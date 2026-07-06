@@ -8640,7 +8640,7 @@ sptr_t Editor::WndProc(Message iMessage, uptr_t wParam, sptr_t lParam) {
 		//!-start-[ignore_overstrike_change]
 		if (wParam < 2) {
 		//!-end-[ignore_overstrike_change]
-#endif
+#endif // RB_IOCH
 		if (inOverstrike != (wParam != 0)) {
 			inOverstrike = wParam != 0;
 			ContainerNeedsUpdate(Update::Selection);
@@ -8654,7 +8654,7 @@ sptr_t Editor::WndProc(Message iMessage, uptr_t wParam, sptr_t lParam) {
 			ignoreOverstrikeChange = wParam == 2;
 		}
 		//!-end-[ignore_overstrike_change]
-#endif
+#endif // RB_IOCH
 		break;
 
 	case Message::GetOvertype:
@@ -9232,15 +9232,6 @@ sptr_t Editor::WndProc(Message iMessage, uptr_t wParam, sptr_t lParam) {
 	case Message::ChangeLexerState:
 		pdoc->ChangeLexerState(PositionFromUPtr(wParam), lParam);
 		break;
-
-#ifdef RB_MCH
-		//!-start-[MouseClickHandled]
-	case Message::Click /*SCI_SETMOUSECAPTURE*/:
-		SetMouseCapture(wParam != 0);
-		break;
-		//!-end-[MouseClickHandled]
-
-#endif RB_MCH
 
 	case Message::SetIdentifier:
 		SetCtrlID(static_cast<int>(wParam));

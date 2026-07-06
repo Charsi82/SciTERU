@@ -165,7 +165,7 @@ int IntFromString(std::u32string_view s) noexcept {
 	}
 	int value = 0;
 	while (!s.empty()) {
-		value = value * decimalBase + s.front() - '0';
+		value = (value * decimalBase) + s.front() - '0';
 		s.remove_prefix(1);
 	}
 	return negate ? -value : value;
@@ -206,7 +206,7 @@ int IntFromHexByte(std::string_view hexByte) noexcept {
 unsigned int IntFromHexBytes(std::string_view hexBytes) noexcept {
 	unsigned int val = 0;
 	while (!hexBytes.empty()) {
-		val = val * hexBase + IntFromHexDigit(hexBytes[0]);
+		val = (val * hexBase) + IntFromHexDigit(hexBytes[0]);
 		hexBytes.remove_prefix(1);
 	}
 	return val;
@@ -261,7 +261,7 @@ bool EqualCaseInsensitive(std::string_view a, std::string_view b) noexcept {
 }
 
 void LowerCaseAZ(std::string &s) {
-	std::transform(s.begin(), s.end(), s.begin(), MakeLowerCase);
+	std::ranges::transform(s, s.begin(), MakeLowerCase);
 }
 
 std::u32string UTF32FromUTF8(std::string_view s) {

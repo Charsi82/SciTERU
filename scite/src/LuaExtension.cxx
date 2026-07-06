@@ -15,6 +15,7 @@
 #include <string_view>
 #include <vector>
 #include <set>
+#include <optional>
 #include <memory>
 #include <chrono>
 
@@ -167,8 +168,7 @@ void raise_error(lua_State *L, const char *errMsg=nullptr) noexcept {
 int absolute_index(lua_State *L, int index) noexcept {
 	if (index > LUA_REGISTRYINDEX && index < 0)
 		return lua_gettop(L) + index + 1;
-	else
-		return index;
+	return index;
 }
 
 /**
@@ -207,10 +207,9 @@ bool clone_table(lua_State *L, int srcTableIdx, bool copyMetatable = false) {
 		lua_newtable(L);
 		merge_table(L, -1, srcTableIdx, copyMetatable);
 		return true;
-	} else {
-		lua_pushnil(L);
-		return false;
 	}
+	lua_pushnil(L);
+	return false;
 }
 
 // loop through each key in the table and set its value to nil
@@ -241,9 +240,8 @@ void *checkudata(lua_State *L, int ud, const char *tname) noexcept {
 			if (lua_rawequal(L, -1, -2)) { // does it have correct mt?
 				lua_pop(L, 2);
 				return p;
-			} else {
-				lua_pop(L, 2);
 			}
+			lua_pop(L, 2);
 		}
 	}
 	return nullptr;
@@ -285,27 +283,24 @@ int cf_scite_send(lua_State *L) {
 	if (func.value != 0) {
 		if (IFaceFunctionIsScriptable(func)) {
 			return iface_function_helper(L, func);
-		} else {
-			raise_error(L, "Cannot call send for this function: not scriptable.");
-			return 0;
 		}
-	} else {
-		raise_error(L, "Message number does not match any published Scintilla function or property");
+		raise_error(L, "Cannot call send for this function: not scriptable.");
 		return 0;
 	}
+	raise_error(L, "Message number does not match any published Scintilla function or property");
+	return 0;
 }
 
 int cf_scite_constname(lua_State *L) {
 	const int message = luaL_checkint(L, 1);
 	const char *prefix = luaL_optstring(L, 2, nullptr);
 	const std::string constName = IFaceTable::GetConstantName(message, prefix);
-	if (constName.length() > 0) {
+	if (!constName.empty()) {
 		push_string(L, constName);
 		return 1;
-	} else {
-		raise_error(L, "Argument does not match any Scintilla / SciTE constant");
-		return 0;
 	}
+	raise_error(L, "Argument does not match any Scintilla / SciTE constant");
+	return 0;
 }
 
 int cf_scite_open(lua_State *L) {
@@ -461,7 +456,7 @@ int cf_scite_menu_command(lua_State *L) {
 				}
 				spos = get_next_p(s, epos);
 			}
-			host->InsertAbbreviation(GUI::UTF8FromString(s).c_str());
+			host->InsertAbbreviation(GUI::UTF8FromString(s));
 			host->Send(ExtensionAPI::paneEditor, SA::Message::EndUndoAction/*SCI_ENDUNDOACTION*/);
 		}
 		return 0;
@@ -541,7 +536,7 @@ int cf_scite_strip_value(lua_State *L) {
 }
 
 ExtensionAPI::Pane check_pane_object(lua_State *L, int index) {
-	ExtensionAPI::Pane *pPane = static_cast<ExtensionAPI::Pane *>(checkudata(L, index, "SciTE_MT_Pane"));
+	const ExtensionAPI::Pane *pPane = static_cast<ExtensionAPI::Pane *>(checkudata(L, index, "SciTE_MT_Pane"));
 
 	if ((!pPane) && lua_istable(L, index)) {
 		// so that nested objects have a convenient way to do a back reference
@@ -579,9 +574,8 @@ int cf_pane_textrange(lua_State *L) {
 			std::string range = host->Range(p, SA::Span(cpMin, cpMax));
 			push_string(L, range);
 			return 1;
-		} else {
-			raise_error(L, "Invalid argument 2 for <pane>:textrange.  Positive number or zero expected.");
 		}
+		raise_error(L, "Invalid argument 2 for <pane>:textrange.  Positive number or zero expected.");
 	} else {
 		raise_error(L, "Not enough arguments for <pane>:textrange");
 	}
@@ -653,10 +647,9 @@ int cf_pane_findtext(lua_State *L) {
 				lua_pushinteger(L, result.start);
 				lua_pushinteger(L, result.end);
 				return 2;
-			} else {
-				lua_pushnil(L);
-				return 1;
 			}
+			lua_pushnil(L);
+			return 1;
 		}
 	}
 
@@ -737,9 +730,8 @@ int cf_match_metatable_index(lua_State *L) {
 			if (lua_iscfunction(L, replaceMethodIndex)) {
 				lua_pushvalue(L, replaceMethodIndex);
 				return 1;
-			} else {
-				return 0;
 			}
+			return 0;
 		}
 	}
 
@@ -809,20 +801,20 @@ int cf_pane_match(lua_State *L) {
 		lua_setmetatable(L, -2);
 
 		return 3;
-	} else {
-		raise_error(L, "Internal error: could not create match object.");
-		return 0;
 	}
+	raise_error(L, "Internal error: could not create match object.");
+	return 0;
 }
 
 int cf_pane_match_generator(lua_State *L) {
 	const char *text = lua_tostring(L, 1);
-	PaneMatchObject *pmo = static_cast<PaneMatchObject *>(checkudata(L, 2, "SciTE_MT_PaneMatchObject"));
-
-	if (!(text)) {
+	if (!text) {
 		raise_error(L, "Internal error: invalid state for <pane>:match generator.");
 		return 0;
-	} else if (!pmo) {
+	}
+
+	PaneMatchObject *pmo = static_cast<PaneMatchObject *>(checkudata(L, 2, "SciTE_MT_PaneMatchObject"));
+	if (!pmo) {
 		raise_error(L, "Internal error: invalid match object initializer for <pane>:match generator");
 		return 0;
 	}
@@ -869,9 +861,8 @@ int cf_props_metatable_index(lua_State *L) {
 		std::string value = host->Property(lua_tostring(L, selfArg + 1));
 		push_string(L, value);
 		return 1;
-	} else {
-		raise_error(L, "String argument required for property access");
 	}
+	raise_error(L, "String argument required for property access");
 	return 0;
 }
 
@@ -965,9 +956,8 @@ int cf_global_dostring(lua_State *L) {
 	if (0 == luaL_loadbuffer(L, code, lua_strlen(L, 1), name)) {
 		lua_call(L, 0, LUA_MULTRET);
 		return lua_gettop(L) - nargs;
-	} else {
-		raise_error(L);
 	}
+	raise_error(L);
 	return 0;
 }
 
@@ -1362,10 +1352,9 @@ int cf_pane_iface_function(lua_State *L) {
 	const IFaceFunction *func = static_cast<IFaceFunction *>(lua_touserdata(L, funcidx));
 	if (func) {
 		return iface_function_helper(L, *func);
-	} else {
-		raise_error(L, "Internal error - bad upvalue in iface function closure");
-		return 0;
 	}
+	raise_error(L, "Internal error - bad upvalue in iface function closure");
+	return 0;
 }
 
 int push_iface_function(lua_State *L, const char *name) {
@@ -1411,11 +1400,10 @@ int push_iface_propval(lua_State *L, const char *name) {
 				if (host->Send(p, static_cast<SA::Message>(prop.getter), 1, 0)) {
 					lua_pushnil(L);
 					return 1;
-				} else {
-					lua_settop(L, 1);
-					lua_pushboolean(L, 0);
-					return iface_function_helper(L, prop.GetterFunction());
 				}
+				lua_settop(L, 1);
+				lua_pushboolean(L, 0);
+				return iface_function_helper(L, prop.GetterFunction());
 			}
 		} else {
 			// Indexed property.  These return an object with the following behaviour:
@@ -1438,10 +1426,9 @@ int push_iface_propval(lua_State *L, const char *name) {
 				}
 				lua_setmetatable(L, -2);
 				return 1;
-			} else {
-				raise_error(L, "Internal error: failed to allocate userdata for indexed property");
-				return -1;
 			}
+			raise_error(L, "Internal error: failed to allocate userdata for indexed property");
+			return -1;
 		}
 	}
 
@@ -1560,20 +1547,19 @@ int cf_global_metatable_index(lua_State *L) {
 		if (i >= 0) {
 			lua_pushinteger(L, IFaceTable::constants[i].value);
 			return 1;
-		} else {
-			i = IFaceTable::FindFunctionByConstantName(name);
-			if (i >= 0) {
-				lua_pushinteger(L, IFaceTable::functions[i].value);
+		}
+		i = IFaceTable::FindFunctionByConstantName(name);
+		if (i >= 0) {
+			lua_pushinteger(L, IFaceTable::functions[i].value);
 
-				// FindFunctionByConstantName is slow, so cache the result into the
-				// global table.  My tests show this gives an order of magnitude
-				// improvement.
-				lua_pushvalue(L, 2);
-				lua_pushvalue(L, -2);
-				lua_rawset(L, 1);
+			// FindFunctionByConstantName is slow, so cache the result into the
+			// global table.  My tests show this gives an order of magnitude
+			// improvement.
+			lua_pushvalue(L, 2);
+			lua_pushvalue(L, -2);
+			lua_rawset(L, 1);
 
-				return 1;
-			}
+			return 1;
 		}
 	}
 
@@ -1599,7 +1585,7 @@ int LuaPanicFunction(lua_State *L) {
 
 bool CheckStartupScript() {
 	startupScript = host->Property("ext.lua.startup.script");
-	return startupScript.length() > 0;
+	return !startupScript.empty();
 }
 
 void PublishGlobalBufferData() noexcept {
@@ -1675,9 +1661,8 @@ bool InitGlobalScope(bool checkProperties, bool forceReload = false) {
 				PublishGlobalBufferData();
 
 				return true;
-			} else {
-				lua_pop(luaState, 1);
 			}
+			lua_pop(luaState, 1);
 		}
 
 		// reload mode is enabled, or else the initial state has been broken.
@@ -1859,7 +1844,7 @@ bool InitGlobalScope(bool checkProperties, bool forceReload = false) {
 		CheckStartupScript();
 	}
 
-	if (startupScript.length()) {
+	if (!startupScript.empty()) {
 		// TODO: Should buffer be deactivated temporarily, so editor iface
 		// functions won't be available during a reset, just as they are not
 		// available during a normal startup?  Are there any other functions
@@ -2145,14 +2130,14 @@ bool LuaExtension::OnSave(const char *filename) {
 	const bool result = CallNamedFunction("OnSave", filename);
 #ifndef RB_BUILD // отключено так как вызывает ошибки при перезапуске стартового скрипта
 	FilePath fpSaving = FilePath(GUI::StringFromUTF8(filename)).NormalizePath();
-	if (startupScript.length() && fpSaving == FilePath(GUI::StringFromUTF8(startupScript)).NormalizePath()) {
+	if (!startupScript.empty() && fpSaving == FilePath(GUI::StringFromUTF8(startupScript)).NormalizePath()) {
 		if (GetPropertyInt("ext.lua.auto.reload") > 0) {
 			InitGlobalScope(false, true);
-			if (extensionScript.length()) {
+			if (!extensionScript.empty()) {
 				Load(extensionScript.c_str());
 			}
 		}
-	} else if (extensionScript.length() && 0 == strcmp(filename, extensionScript.c_str())) {
+	} else if (!extensionScript.empty() && 0 == strcmp(filename, extensionScript.c_str())) {
 		if (GetPropertyInt("ext.lua.auto.reload") > 0) {
 			InitGlobalScope(false, false);
 			Load(extensionScript.c_str());

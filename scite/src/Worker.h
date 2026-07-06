@@ -22,8 +22,7 @@ public:
 	Worker(Worker &&) = delete;
 	void operator=(const Worker &) = delete;
 	void operator=(Worker &&) = delete;
-	virtual ~Worker() noexcept {
-	}
+	virtual ~Worker() noexcept = default;
 	virtual void Execute() noexcept {}
 	bool FinishedJob() const noexcept {
 		return completed;

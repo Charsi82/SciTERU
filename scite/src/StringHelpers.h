@@ -63,11 +63,15 @@ constexpr char MakeLowerCase(char c) noexcept {
 }
 
 constexpr bool IsASCII(int ch) noexcept {
-	return (ch >= 0) && (ch < 0x80);
+	constexpr int lastASCII = 0x7F;
+	return (ch >= 0) && (ch <= lastASCII);
 }
 
+constexpr int charTab = 0x09;
+constexpr int charCarriageReturn = 0x0D;
+
 constexpr bool IsASpace(int ch) noexcept {
-	return (ch == ' ') || ((ch >= 0x09) && (ch <= 0x0d));
+	return (ch == ' ') || ((ch >= charTab) && (ch <= charCarriageReturn));
 }
 
 constexpr bool IsSpaceOrTab(int ch) noexcept {
@@ -133,7 +137,7 @@ using ViewPair = std::tuple<std::string_view, std::string_view>;
 inline ViewPair ViewSplit(std::string_view view, char separator) noexcept {
 	const size_t sepPos = view.find_first_of(separator);
 	std::string_view first = view.substr(0, sepPos);
-	std::string_view second = sepPos == (std::string_view::npos) ? "" : view.substr(sepPos + 1);
+	std::string_view second = sepPos == std::string_view::npos ? "" : view.substr(sepPos + 1);
 	return { first, second };
 }
 

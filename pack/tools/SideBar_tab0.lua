@@ -381,34 +381,57 @@ return function(tabs, panel_width, colorback, colorfore)
 		return props['file.patterns.lua']:find(fext)~=nil
 	end
 	
+	local lua_errors = {}
+	local function PrintErrors()
+		for err in pairs(lua_errors) do print(err) end
+		lua_errors = {}
+	end
+	
 	local function CheckLuaScript(fn)
-		local res, err = loadfile(current_path .. fn)
-		print(res and (fn .. ' - ok') or err)
+		local res, err = loadfile(fn)
+		if props['sidebar.lua.check.errors.only']=='1' then
+			if not res then lua_errors[err] = true end
+		else
+			print(res and (fn .. ' - ok') or err)
+		end
 	end
 	
 	function FileMan_LuaSyntax()
 		output:ClearAll()
+		local state = props['sidebar.lua.check.errors.only']
+		props['sidebar.lua.check.errors.only'] = '0'
 		local si = list_dir:get_selected_items()
 		for _, i in ipairs(si) do
 			local dir_or_file, attr = FileMan_GetSelectedItem(i)
 			if attr ~= 'd' and isLuaScript(dir_or_file) then
-				CheckLuaScript(dir_or_file)
+				CheckLuaScript(current_path .. dir_or_file)
 			end
 		end
+		props['sidebar.lua.check.errors.only'] = state
+		PrintErrors()
 	end
 
-	function FileMan_LuaSyntax_all()
-		output:ClearAll()
+	function CheckFilesInDir(dir)
 		local exts = props['file.patterns.lua']
 		for ext in exts:gmatch("[^;]+") do
-			local fnames = gui.files(current_path .. "\\" .. ext)
+			local fnames = gui.files(dir .. ext)
 			for _, fname in ipairs(fnames) do
-				CheckLuaScript(fname)
+				CheckLuaScript(dir .. fname)
+			end
+			local subdirs = gui.files(dir .. "\\*", true)
+			for _, subdir in ipairs(subdirs) do
+				CheckFilesInDir(dir .. subdir .. "\\")
 			end
 		end
 	end
+	
+	function FileMan_LuaSyntax_all()
+		output:ClearAll()
+		CheckFilesInDir(current_path)
+		PrintErrors()
+	end
 
-	list_dir:on_double_click(function() FileMan_OpenItem() end)
+	list_dir:on_double_click(FileMan_OpenItem)
 
 	list_dir:on_key(function(key, ctrl, alt, shift)
 		if key == 13 then -- Enter
@@ -430,15 +453,30 @@ return function(tabs, panel_width, colorback, colorfore)
 	end)
 
 	list_dir:context_menu{
-		'Выбрать папку...|FileMan_ChangeDir', 'Показать все файлы|FileMan_MaskAllFiles',
-  'C расширением выделенного файла|FileMan_MaskOnlyCurrentExt', 'Показать в Проводнике|FileMan_Explore',
-  'Перейти к текущему файлу|FileMan_SelectCurrentFile', '', -- separator
-		'Проверить синтаксис Lua|FileMan_LuaSyntax', 'Проверить все в папке|FileMan_LuaSyntax_all', '', -- separator
+		'Выбрать папку...|FileMan_ChangeDir',
+		'Показать все файлы|FileMan_MaskAllFiles',
+		'C расширением выделенного файла|FileMan_MaskOnlyCurrentExt',
+		'Показать в Проводнике|FileMan_Explore',
+		'Перейти к текущему файлу|FileMan_SelectCurrentFile',
+		'', -- separator
+		'Проверить синтаксис Lua|FileMan_LuaSyntax',
+		'Проверить все в папке|FileMan_LuaSyntax_all',
+		'', -- separator
 		'POPUPBEGIN|Посчитать CRC-сумму', -- submenu
-		'Посчитать MD5\tAlt+L|FileMan_CalcMD5', 'Посчитать SHA1|FileMan_CalcSHA1', 'Посчитать SHA-256|FileMan_CalcSHA256', 'Посчитать SHA-512|FileMan_CalcSHA512', 'POPUPEND',
-  'Открыть в SciTE|FileMan_OpenSelectedItems', 'Выполнить|FileMan_FileExec', 'Выполнить с параметрами|FileMan_FileExecWithParams', '', -- separator
-		'Копировать в...|FileMan_FileCopy', 'Переместить в...|FileMan_FileMove', 'Переименовать|FileMan_FileRename', 'Удалить файл\tDel|FileMan_FileDelete',
-  '', -- separator
+			'Посчитать MD5\tAlt+L|FileMan_CalcMD5',
+			'Посчитать SHA1|FileMan_CalcSHA1',
+			'Посчитать SHA-256|FileMan_CalcSHA256',
+			'Посчитать SHA-512|FileMan_CalcSHA512',
+		'POPUPEND',
+		'Открыть в SciTE|FileMan_OpenSelectedItems',
+		'Выполнить|FileMan_FileExec',
+		'Выполнить с параметрами|FileMan_FileExecWithParams',
+		'', -- separator
+		'Копировать в...|FileMan_FileCopy',
+		'Переместить в...|FileMan_FileMove',
+		'Переименовать|FileMan_FileRename',
+		'Удалить файл\tDel|FileMan_FileDelete',
+		'', -- separator
 		'Добавить в Избранное\tIns|Favorites_AddFile'
 	}
 

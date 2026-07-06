@@ -34,8 +34,8 @@ struct Rect : RECT
 	explicit Rect(int x0 = 0, int y0 = 0, int x1 = 0, int y1 = 0) :RECT{ x0, y0, x1, y1 } {}
 	bool is_inside(Point p) const;
 	Point corner(Corner idx) const;
-	int width() const;
-	int height() const;
+	int width() const { return right - left; };
+	int height() const { return bottom - top; };
 	void offset_by(int dx, int dy);
 };
 
@@ -232,7 +232,8 @@ public:
 	//HACCEL GetAcceleratorTable() const { return m_hACCEL; }
 
 	//-----------Event Handling-------------------
-	  //virtual void show() {}
+	//virtual void show() {}
+
 	virtual void size();
 	virtual void paint(TDC*);
 	virtual void ncpaint(TDC*);

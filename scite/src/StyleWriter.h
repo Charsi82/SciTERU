@@ -26,7 +26,7 @@ protected:
 	Scintilla::ScintillaCall &sc;
 	Scintilla::Position lenDoc;
 
-	bool InternalIsLeadByte(char ch) const;
+	[[nodiscard]] bool InternalIsLeadByte(char ch) const noexcept;
 	void Fill(Scintilla::Position position);
 public:
 	explicit TextReader(Scintilla::ScintillaCall &sc_) noexcept;
@@ -50,7 +50,7 @@ public:
 		}
 		return buf[position - startPos];
 	}
-	bool IsLeadByte(char ch) const {
+	[[nodiscard]] bool IsLeadByte(char ch) const noexcept {
 		return codePage && InternalIsLeadByte(ch);
 	}
 	void SetCodePage(int codePage_) noexcept {
@@ -80,7 +80,7 @@ public:
 	void SetLineState(Scintilla::Line line, int state);
 
 	void StartAt(Scintilla::Position start);
-	Scintilla::Position GetStartSegment() const noexcept { return startSeg; }
+	[[nodiscard]] Scintilla::Position GetStartSegment() const noexcept { return startSeg; }
 	void StartSegment(Scintilla::Position pos) noexcept;
 	void ColourTo(Scintilla::Position pos, int chAttr);
 	void SetLevel(Scintilla::Line line, Scintilla::FoldLevel level);

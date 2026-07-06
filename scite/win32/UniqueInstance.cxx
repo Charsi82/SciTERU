@@ -14,7 +14,7 @@
 
 UniqueInstance::UniqueInstance() {
 	stw = nullptr;
-	identityMessage = ::RegisterWindowMessage(TEXT("SciTEInstanceIdentifier"));
+	identityMessage = ::RegisterWindowMessageW(L"SciTEInstanceIdentifier");
 	mutex = {};
 	bAlreadyRunning = false;
 	hOtherWindow = {};
@@ -93,7 +93,7 @@ LRESULT UniqueInstance::CopyData(const COPYDATASTRUCT *pcds) {
 		}
 		const char *text = static_cast<const char *>(pcds->lpData);
 		if (text && strlen(text) > 0) {
-			const std::vector<GUI::gui_string> args = stw->ProcessArgs(GUI::StringFromUTF8(text));
+			const std::vector<GUI::gui_string> args = SciTEWin::ProcessArgs(GUI::StringFromUTF8(text));
 			stw->ProcessCommandLine(args, 0);
 			stw->ProcessCommandLine(args, 1);
 		}
@@ -135,7 +135,7 @@ void UniqueInstance::CheckOtherInstance() {
 	// Use the method explained by Joseph M. Newcomer to avoid multiple instances of an application:
 	// http://www.codeproject.com/cpp/avoidmultinstance.asp
 	// I limit instances by desktop, it seems to make sense with a GUI application...
-	mutexName = TEXT("SciTE-UniqueInstanceMutex-");	// I doubt I really need a GUID here...
+	mutexName = L"SciTE-UniqueInstanceMutex-";	// I doubt I really need a GUID here...
 	HDESK desktop = ::GetThreadDesktop(::GetCurrentThreadId());
 	DWORD len = 0;
 	// Query the needed size for the buffer

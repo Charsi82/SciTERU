@@ -19,12 +19,11 @@ class BaseWin : public GUI::Window {
 protected:
 	const ILocalize *localiser = nullptr;
 public:
-	BaseWin() noexcept {
-	}
+	BaseWin() noexcept = default;
 	void SetLocalizer(const ILocalize *localiser_) noexcept {
 		localiser = localiser_;
 	}
-	HWND Hwnd() const noexcept {
+	[[nodiscard]] HWND Hwnd() const noexcept {
 		return static_cast<HWND>(GetID());
 	}
 	virtual LRESULT WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) = 0;
@@ -34,19 +33,22 @@ public:
 
 class Strip : public BaseWin {
 protected:
-	HFONT fontText;
-	HTHEME hTheme;
-	int scale;
-	int space;
-	bool capturedMouse;
-	SIZE closeSize;
-	enum class StripCloseState { none, over, clicked, clickedOver } closeState;
+	HFONT fontText {};
+	HTHEME hTheme {};
+	int scale = USER_DEFAULT_SCREEN_DPI;
+	int space = 2;
+	bool capturedMouse = false;
+	static constexpr SIZE sizeBox {11, 11};
+	SIZE closeSize = sizeBox;
+	enum class StripCloseState { none, over, clicked, clickedOver };
+	StripCloseState closeState {StripCloseState::none};
 	GUI::Window wToolTip;
-	int entered;
-	int lineHeight;
+	int entered = 0;
+	static constexpr int lineHeightDefault = 20;
+	int lineHeight = lineHeightDefault;
 
-	GUI::Window CreateText(const char *text);
-	GUI::Window CreateButton(const char *text, size_t ident, bool check=false);
+	[[nodiscard]] GUI::Window CreateText(const char *text);
+	[[nodiscard]] GUI::Window CreateButton(const char *text, size_t ident, bool check=false);
 	void Tab(bool forwards) noexcept;
 	virtual void Creation();
 	virtual void Destruction() noexcept;
@@ -55,10 +57,10 @@ protected:
 	virtual bool Command(WPARAM wParam);
 	virtual void Size();
 	virtual void Paint(HDC hDC);
-	virtual bool HasClose() const noexcept;
-	GUI::Rectangle CloseArea();
-	GUI::Rectangle LineArea(int line);
-	virtual int Lines() const noexcept;
+	[[nodiscard]] virtual bool HasClose() const noexcept;
+	[[nodiscard]] GUI::Rectangle CloseArea();
+	[[nodiscard]] GUI::Rectangle LineArea(int line);
+	[[nodiscard]] virtual int Lines() const noexcept;
 	void InvalidateClose();
 	void Redraw() noexcept;
 	bool MouseInClose(GUI::Point pt);
@@ -70,19 +72,16 @@ protected:
 	void AddToPopUp(const GUI::Menu &popup, const char *label, int cmd, bool checked) const;
 	virtual void ShowPopup();
 public:
-	bool visible;
-	Strip() noexcept : fontText(0), hTheme(0), scale(96), space(2), capturedMouse(false), closeState(StripCloseState::none), entered(0), lineHeight(20), visible(false) {
-		closeSize.cx = 11;
-		closeSize.cy = 11;
-	}
+	bool visible {false};
+	Strip() noexcept = default;
 	// Deleted so Strip objects can not be copied.
 	Strip(const Strip &) = delete;
 	Strip(Strip &&) = delete;
 	Strip &operator=(const Strip &) = delete;
 	Strip &operator=(Strip &&) = delete;
-	virtual ~Strip() override = default;
+	~Strip() override = default;
 	virtual int Height() noexcept {
-		return lineHeight * Lines() + space - 1;
+		return (lineHeight * Lines()) + space - 1;
 	}
 	void CloseIfOpen();
 };
@@ -98,7 +97,7 @@ public:
 	bool KeyDown(WPARAM key) override;
 	bool Command(WPARAM wParam) override;
 	void Size() override;
-	bool HasClose() const noexcept override;
+	[[nodiscard]] bool HasClose() const noexcept override;
 	LRESULT WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) override;
 	void SetProgress(const GUI::gui_string &explanation, size_t size, size_t progress);
 };
@@ -113,7 +112,7 @@ public:
 	}
 	void Creation() override;
 	void Destruction() noexcept override;
-	LRESULT NoMatchColour(HDC hdc) noexcept;
+	[[nodiscard]] LRESULT NoMatchColour(HDC hdc) noexcept;
 };
 
 class SearchStrip : public SearchStripBase {
@@ -130,7 +129,7 @@ public:
 	bool Command(WPARAM wParam) override;
 	void Size() override;
 	void Paint(HDC hDC) override;
-	LRESULT EditColour(HWND hwnd, HDC hdc) noexcept override;
+	[[nodiscard]] LRESULT EditColour(HWND hwnd, HDC hdc) noexcept override;
 	LRESULT WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) override;
 };
 
@@ -144,9 +143,8 @@ protected:
 	GUI::Window wCheckRE;
 	GUI::Window wCheckBE;
 	enum class IncrementalBehaviour { simple, incremental, showAllMatches };
-	IncrementalBehaviour incrementalBehaviour;
-	FindReplaceStrip() noexcept : incrementalBehaviour(IncrementalBehaviour::simple) {
-	}
+	IncrementalBehaviour incrementalBehaviour {IncrementalBehaviour::simple};
+	FindReplaceStrip() noexcept = default;
 	LRESULT EditColour(HWND hwnd, HDC hdc) noexcept override;
 	enum class ChangingSource { edit, combo };
 	void SetFindFromSource(ChangingSource source);
@@ -190,11 +188,10 @@ class ReplaceStrip : public FindReplaceStrip {
 	GUI::Window wCheckFilter;
 	GUI::Window wCheckContext;
 public:
-	ReplaceStrip() noexcept {
-	}
+	ReplaceStrip() noexcept = default;
 	void Creation() override;
 	void Destruction() noexcept override;
-	int Lines() const noexcept override;
+	[[nodiscard]] int Lines() const noexcept override;
 	void Focus() noexcept;
 	bool KeyDown(WPARAM key) override;
 	void ShowPopup() override;
@@ -209,8 +206,7 @@ public:
 class FilterStrip : public FindReplaceStrip {
 	GUI::Window wCheckContext;
 public:
-	FilterStrip() noexcept {
-	}
+	FilterStrip() noexcept = default;
 	void Creation() override;
 	void Destruction() noexcept override;
 	void Focus() noexcept;
@@ -229,10 +225,10 @@ class StripDefinition;
 
 class UserStrip : public Strip {
 	std::unique_ptr<StripDefinition> psd;
-	Extension *extender;
-	SciTEWin *pSciTEWin;
+	Extension *extender = nullptr;
+	SciTEWin *pSciTEWin = nullptr;
 public:
-	UserStrip() noexcept : extender(nullptr), pSciTEWin(nullptr) {
+	UserStrip() noexcept {
 		lineHeight = 26;
 	}
 	void Creation() override;
@@ -242,13 +238,13 @@ public:
 	bool KeyDown(WPARAM key) override;
 	bool Command(WPARAM wParam) override;
 	void Size() override;
-	bool HasClose() const noexcept override;
+	[[nodiscard]] bool HasClose() const noexcept override;
 	LRESULT WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) override;
-	int Lines() const noexcept override;
+	[[nodiscard]] int Lines() const noexcept override;
 	void SetDescription(const char *description);
 	void SetExtender(Extension *extender_) noexcept;
 	void SetSciTE(SciTEWin *pSciTEWin_) noexcept;
-	UserControl *FindControl(int control) noexcept;
+	[[nodiscard]] UserControl *FindControl(int control) noexcept;
 	void Set(int control, const char *value);
 
 #ifdef RB_USBTT
@@ -256,7 +252,7 @@ public:
 #endif // RB_USBTT
 
 	void SetList(int control, const char *value);
-	std::string GetValue(int control);
+	[[nodiscard]] std::string GetValue(int control);
 };
 
 #endif

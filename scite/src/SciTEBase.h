@@ -15,7 +15,7 @@ extern const GUI::gui_char propGlobalFileName[];
 extern const GUI::gui_char propAbbrevFileName[];
 
 constexpr int IntFromTwoShorts(short a, short b) noexcept {
-	return (a) | ((b) << 16);
+	return a | (b << 16);
 }
 
 #if defined (RB_SUBMENU) || defined (RB_ECM)
@@ -137,8 +137,7 @@ public:
 
 	void Init();
 
-	void SetTimeFromFile();
-
+	void SetTimeFromFile() noexcept;
 #ifdef RB_ONE	
 	//!-start-[OpenNonExistent]
 	bool DocumentNotSaved() const {
@@ -149,20 +148,20 @@ public:
 
 	void DocumentModified() noexcept;
 	void WantReload() noexcept;
-	bool NeedsSave(int delayBeforeSave) const noexcept;
+	[[nodiscard]] bool NeedsSave(int delayBeforeSave) const noexcept;
 
 	void CompleteLoading() noexcept;
-	void CompleteStoring();
-	void AbandonAutomaticSave();
+	void CompleteStoring() noexcept;
+	void AbandonAutomaticSave() noexcept;
 
-	bool ShouldNotSave() const noexcept {
+	[[nodiscard]] bool ShouldNotSave() const noexcept {
 		return lifeState != LifeState::opened;
 	}
 
 	void ScheduleFinishSave() noexcept;
 	bool FinishSave() noexcept;
 
-	void CancelLoad();
+	void CancelLoad() noexcept;
 };
 
 struct BackgroundActivities {
@@ -203,7 +202,7 @@ public:
 	BufferIndex StackPrev() noexcept;
 	void CommitStackSelection();
 	void MoveToStackTop(BufferIndex index);
-	void ShiftTo(BufferIndex indexFrom, BufferIndex indexTo);
+	void ShiftTo(BufferIndex indexFrom, BufferIndex indexTo) noexcept;
 	void Swap(BufferIndex indexA, BufferIndex indexB);
 	bool SingleBuffer() const noexcept;
 	BackgroundActivities CountBackgroundActivities() const;
@@ -211,7 +210,7 @@ public:
 	bool GetVisible(BufferIndex index) const noexcept;
 	void SetVisible(BufferIndex index, bool visible);
 private:
-	void PopStack();
+	void PopStack() noexcept;
 };
 
 // class to hold user defined keyboard short cuts
@@ -675,7 +674,6 @@ protected:
 	void New();
 	void RestoreState(const Buffer &buffer, bool restoreBookmarks);
 	void Close(bool updateUI = true, bool loadingSession = false, bool makingRoomForNew = false);
-	static bool Exists(const GUI::gui_char *dir, const GUI::gui_char *path, FilePath *resultPath);
 	void DiscoverEOLSetting();
 	void DiscoverIndentSetting();
 	std::string DiscoverLanguage();
@@ -833,7 +831,6 @@ protected:
 	virtual void ParamGrab() = 0;
 	virtual bool ParametersDialog(bool modal) = 0;
 	bool HandleXml(char ch);
-	static std::string FindOpenXmlTag(const char sel[], SA::Position nSize);
 	void GoMatchingBrace(bool select);
 	void GoMatchingPreprocCond(int direction, bool select);
 	virtual void FindReplace(bool replace) = 0;
@@ -850,8 +847,8 @@ protected:
 #endif // RB_GMI
 
 	virtual bool StartCallTip();
-	StringVector GetNearestWords(const char *wordStart, size_t searchLen,
-				    const char *separators, bool ignoreCase=false, bool exactLen=false);
+	StringVector GetNearestWords(std::string_view word,
+				    std::string_view separators, bool ignoreCase=false, bool exactLen=false);
 	virtual void FillFunctionDefinition(SA::Position pos = -1);
 	void ContinueCallTip();
 	virtual bool StartAutoComplete();
@@ -860,7 +857,7 @@ protected:
 	bool PerformInsertAbbreviation();
 
 #ifdef RB_IA
-	bool InsertAbbreviation(const char* data); //!-add-[InsertAbbreviation]
+	bool InsertAbbreviation(std::string_view data) override; //!-add-[InsertAbbreviation]
 #endif // RB_IA
 
 	virtual bool StartBlockComment();
@@ -974,7 +971,7 @@ protected:
 	void AddFileToStack(const RecentFile &file);
 	void RemoveFileFromStack(const FilePath &file);
 	FilePosition GetFilePosition();
-	void DisplayAround(const FilePosition &rf);
+	void DisplayAround(const FilePosition &fp);
 	void StackMenu(int pos);
 	void StackMenuNext();
 	void StackMenuPrev();
@@ -994,8 +991,10 @@ protected:
 	void ImportMenu(int pos);
 	void SetLanguageMenu();
 	void SetPropertiesInitial();
-	GUI::gui_string LocaliseMessage(const char *s,
-					const GUI::gui_char *param0 = nullptr, const GUI::gui_char *param1 = nullptr, const GUI::gui_char *param2 = nullptr);
+	GUI::gui_string LocaliseMessage(std::string_view s,
+		std::optional<GUI::gui_string_view> param0={},
+		std::optional<GUI::gui_string_view> param1={},
+		std::optional<GUI::gui_string_view> param2={});
 	virtual void ReadLocalization();
 	std::string GetFileNameProperty(const char *name);
 	virtual void ReadPropertiesInitial();
@@ -1127,7 +1126,7 @@ public:
 		return nullptr;
 	}
 	//!-end-[GetApplicationProps]
-#endif
+#endif // RB_GAP
 
 	static bool PerformOnNewThread(Worker *pWorker);
 	// WorkerListener

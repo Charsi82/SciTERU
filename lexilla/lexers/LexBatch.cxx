@@ -53,9 +53,9 @@ const LexicalClass lexicalClasses[] = {
 	7, "SCE_BAT_OPERATOR", "operator", "Operator",
 	8, "SCE_BAT_AFTER_LABEL", "comment","After label",
 #ifdef RB_LEX_BATCH_EXP
-		9, "SCE_BAT_ENVIRONMENT", "comment", "environment %variable%",
-		10, "SCE_BAT_EXPANSION", "comment", "environment !variable!",
-		11, "SCE_BAT_CLABEL", "comment", "pointers to :label",
+	9, "SCE_BAT_ENVIRONMENT", "comment", "environment %variable%",
+	10, "SCE_BAT_EXPANSION", "comment", "environment !variable!",
+	11, "SCE_BAT_CLABEL", "comment", "pointers to :label",
 #endif // RB_LEX_BATCH_EXP
 };
 
@@ -80,8 +80,8 @@ class LexerBatch : public DefaultLexer {
 	WordList keywords2;
 	std::string wordLists;
 #ifdef RB_LEX_BATCH_OPTS
-		OptionsBatch options;
-		OptionSetBatch osBatch;
+	OptionsBatch options;
+	OptionSetBatch osBatch;
 #endif
 public:
 	explicit LexerBatch() :
@@ -100,10 +100,10 @@ public:
 	Sci_Position SCI_METHOD WordListSet(int n, const char *wl) override;
 	void SCI_METHOD Lex(Sci_PositionU startPos, Sci_Position length, int initStyle, Scintilla::IDocument *pAccess) override;
 #ifdef RB_LEX_BATCH_FOLD
-		void SCI_METHOD Fold(Sci_PositionU startPos,
-			Sci_Position length,
-			int initStyle,
-			Scintilla::IDocument* pAccess) override;
+	void SCI_METHOD Fold(Sci_PositionU startPos,
+		Sci_Position length,
+		int initStyle,
+		Scintilla::IDocument* pAccess) override;
 #endif // RB_LEX_BATCH_FOLD
 
 	static ILexer5 *LexerFactoryBatch() {
@@ -111,22 +111,22 @@ public:
 	}
 	
 #ifdef RB_LEX_BATCH_OPTS
-		const char* SCI_METHOD PropertyNames() override {
-			return osBatch.PropertyNames();
+	const char* SCI_METHOD PropertyNames() override {
+		return osBatch.PropertyNames();
+	}
+	int SCI_METHOD PropertyType(const char* name) override {
+		return osBatch.PropertyType(name);
+	}
+	const char* SCI_METHOD DescribeProperty(const char* name) override {
+		return osBatch.DescribeProperty(name);
+	}
+	Sci_Position SCI_METHOD PropertySet(const char* key, const char* val) override
+	{
+		if (osBatch.PropertySet(&options, key, val)) {
+			return 0;
 		}
-		int SCI_METHOD PropertyType(const char* name) override {
-			return osBatch.PropertyType(name);
-		}
-		const char* SCI_METHOD DescribeProperty(const char* name) override {
-			return osBatch.DescribeProperty(name);
-		}
-		Sci_Position SCI_METHOD PropertySet(const char* key, const char* val) override
-		{
-			if (osBatch.PropertySet(&options, key, val)) {
-				return 0;
-			}
-			return -1;
-		}
+		return -1;
+	}
 #endif
 };
 
@@ -451,15 +451,15 @@ void LexerBatch::Lex(Sci_PositionU startPos, Sci_Position length, int, Scintilla
 					styler.ColourTo(startLine + offset - 1, style);
 
 #ifdef RB_LEX_BATCH_EXP
-						//!-start-[BatchLexerImprovement]
-						// Check for Labels in text (... :label)
-					}
-					else if (first == ':' && isspacechar(lineBuffer[offset - wbl - 1])) {
-						// Colorize Default Text
-						styler.ColourTo(startLine + offset - 1 - wbl, SCE_BAT_DEFAULT);
-						// Colorize Label
-						styler.ColourTo(startLine + offset - 1, SCE_BAT_CLABEL);
-						// No need to Reset Offset
+				//!-start-[BatchLexerImprovement]
+				// Check for Labels in text (... :label)
+				}
+				else if (first == ':' && isspacechar(lineBuffer[offset - wbl - 1])) {
+					// Colorize Default Text
+					styler.ColourTo(startLine + offset - 1 - wbl, SCE_BAT_DEFAULT);
+					// Colorize Label
+					styler.ColourTo(startLine + offset - 1, SCE_BAT_CLABEL);
+					// No need to Reset Offset
 #endif // RB_LEX_BATCH_EXP
 				// Check for Regular Keyword in list
 				} else if ((keywords.InList(word)) && (continueProcessing)) {
@@ -637,9 +637,9 @@ void LexerBatch::Lex(Sci_PositionU startPos, Sci_Position length, int, Scintilla
 						}
 						// Colorize Environment Variable
 #ifdef RB_LEX_BATCH_EXP
-							//!-change-[BatchLexerImprovement]
-							//! colorize !variable!
-							styler.ColourTo(startLine + wordStart + wbo - 1, SCE_BAT_ENVIRONMENT);
+						//!-change-[BatchLexerImprovement]
+						//! colorize !variable!
+						styler.ColourTo(startLine + wordStart + wbo - 1, SCE_BAT_ENVIRONMENT);
 #else // RB_LEX_BATCH_EXP
 						styler.ColourTo(startLine + wordStart + wbo - 1, SCE_BAT_IDENTIFIER);
 #endif // RB_LEX_BATCH_EXP
@@ -680,9 +680,10 @@ void LexerBatch::Lex(Sci_PositionU startPos, Sci_Position length, int, Scintilla
 						}
 						// Colorize Environment Variable
 #ifdef RB_LEX_BATCH_EXP
-							styler.ColourTo(startLine + wordStart + nextExclamation, options.isDelayedExpansion ? SCE_BAT_EXPANSION : SCE_BAT_IDENTIFIER);
-#endif // RB_LEX_BATCH_EXP
+						styler.ColourTo(startLine + wordStart + nextExclamation, options.isDelayedExpansion ? SCE_BAT_EXPANSION : SCE_BAT_IDENTIFIER);
+#else
 						styler.ColourTo(startLine + wordStart + nextExclamation, SCE_BAT_IDENTIFIER);
+#endif // RB_LEX_BATCH_EXP
 						// Reset Offset to re-process remainder of word
 						offset = wordStart + nextExclamation + 1;
 					}
@@ -726,11 +727,11 @@ void LexerBatch::Lex(Sci_PositionU startPos, Sci_Position length, int, Scintilla
 							isNotAssigned=false;
 						}
 #ifdef RB_LEX_BATCH_FOLD
-							//!-change-[BatchLexerImprovement]
-							//! fix brackets colorize
-							if (/*!inString ||*/ AnyOf(first, ')', '(') && !textQuoted(lineBuffer, wordStart)) //!-add-[BatchLexerImprovement]
-								styler.ColourTo(startLine + wordStart, SCE_BAT_OPERATOR);
-							else
+						//!-change-[BatchLexerImprovement]
+						//! fix brackets colorize
+						if (/*!inString ||*/ AnyOf(first, ')', '(') && !textQuoted(lineBuffer, wordStart)) //!-add-[BatchLexerImprovement]
+							styler.ColourTo(startLine + wordStart, SCE_BAT_OPERATOR);
+						else
 #endif // RB_LEX_BATCH_FOLD
 						// Colorize Other Operators
 						// Do not Colorize Parenthesis, quoted text and escaped operators

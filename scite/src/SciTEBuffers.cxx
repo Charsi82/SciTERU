@@ -24,6 +24,7 @@
 #include <optional>
 #include <algorithm>
 #include <ranges>
+#include <iterator>
 #include <memory>
 #include <chrono>
 #include <atomic>
@@ -95,7 +96,7 @@ void Buffer::Init() {
 	doc.reset();
 }
 
-void Buffer::SetTimeFromFile() {
+void Buffer::SetTimeFromFile() noexcept {
 	fileModTime = file.ModifiedTime();
 	fileModLastAsk = fileModTime;
 	documentModTime = fileModTime;
@@ -126,14 +127,14 @@ void Buffer::CompleteLoading() noexcept {
 	}
 }
 
-void Buffer::CompleteStoring() {
+void Buffer::CompleteStoring() noexcept {
 	if (pFileWorker && !pFileWorker->IsLoading()) {
 		pFileWorker.reset();
 	}
 	SetTimeFromFile();
 }
 
-void Buffer::AbandonAutomaticSave() {
+void Buffer::AbandonAutomaticSave() noexcept {
 	if (pFileWorker && !pFileWorker->IsLoading()) {
 		const FileStorer *pFileStorer = dynamic_cast<FileStorer *>(pFileWorker.get());
 		if (pFileStorer && !pFileStorer->visibleProgress) {
@@ -170,11 +171,11 @@ bool Buffer::FinishSave() noexcept {
 	if ((futureDo & FutureDo::finishSave) != FutureDo::finishSave) {
 		return false;
 	}
-	futureDo = futureDo & ~(FutureDo::finishSave);
+	futureDo = futureDo & ~FutureDo::finishSave;
 	return true;
 }
 
-void Buffer::CancelLoad() {
+void Buffer::CancelLoad() noexcept {
 	// Complete any background loading
 	if (pFileWorker && pFileWorker->IsLoading()) {
 		pFileWorker->Cancel();
@@ -317,7 +318,7 @@ void BufferList::SetCurrent(BufferIndex index) noexcept {
 
 }
 
-void BufferList::PopStack() {
+void BufferList::PopStack() noexcept {
 	for (BufferIndex i = 0; i < length - 1; ++i) {
 		BufferIndex index = stack[i + 1];
 		// adjust the index for items that will move in buffers[]
@@ -358,7 +359,7 @@ void BufferList::CommitStackSelection() {
 	stackcurrent = 0;
 }
 
-void BufferList::ShiftTo(BufferIndex indexFrom, BufferIndex indexTo) {
+void BufferList::ShiftTo(BufferIndex indexFrom, BufferIndex indexTo) noexcept {
 	// shift buffer to new place in buffers array
 	if (indexFrom == indexTo ||
 			indexFrom < 0 || indexFrom >= length ||
@@ -415,7 +416,7 @@ BackgroundActivities BufferList::CountBackgroundActivities() const {
 					bg.loaders++;
 				else
 					bg.storers++;
-				bg.fileNameLast = buffers[i].file.AsInternal();
+				bg.fileNameLast = buffers[i].file.AsText();
 				bg.totalWork += buffers[i].pFileWorker->SizeJob();
 				bg.totalProgress += buffers[i].pFileWorker->ProgressMade();
 			}
@@ -1257,7 +1258,7 @@ void SciTEBase::EndStackedTabbing() {
 
 void SciTEBase::UpdateTabs(const std::vector<GUI::gui_string> &tabNames) {
 	RemoveAllTabs();
-	for (int t = 0; t < static_cast<int>(tabNames.size()); t++) {
+	for (int t = 0; t < std::ssize(tabNames); t++) {
 		TabInsert(t, tabNames[t].c_str());
 	}
 }
@@ -1266,7 +1267,7 @@ namespace {
 
 GUI::gui_string EscapeFilePath(const FilePath &path, [[maybe_unused]]Title destination) {
 	// Escape '&' characters in path, since they are interpreted in menus.
-	GUI::gui_string escaped(path.AsInternal());
+	GUI::gui_string escaped(path.AsText());
 #if defined(_WIN32)
 	// On Windows, '&' are interpreted in menus and tab names, so we need
 	// the escaped filename
@@ -1283,7 +1284,7 @@ GUI::gui_string AbbreviateWithTilde(const GUI::gui_string &path) {
 #if defined(GTK) || defined(__APPLE__)
 	FilePath homePath = FilePath::UserHomeDirectory();
 	if (homePath.IsSet()) {
-		const GUI::gui_string_view homeDirectory = homePath.AsInternal();
+		const GUI::gui_string_view homeDirectory = homePath.AsText();
 		if (path.starts_with(homeDirectory)) {
 			return GUI::gui_string(GUI_TEXT("~")) + path.substr(homeDirectory.size());
 		}
@@ -1306,13 +1307,10 @@ GUI::gui_string BufferTitle([[maybe_unused]] int pos, const Buffer &buffer, Titl
 		const GUI::gui_string sHotKey = GUI_TEXT("&") + sPos + GUI_TEXT(" ");
 		if (destination == Title::menu) {
 			title = sHotKey;	// hotkey 1..0
-
 #ifdef RB_TMF
 			Substitute(title, GUI_TEXT(" "), GUI_TEXT(": "));
 #endif // RB_TMF
-
-		}
-		else {
+		} else {
 			if (props.GetInt("tabbar.hide.index") == 0) {
 #if defined(_WIN32)
 				title = sHotKey; // add hotkey to the tabbar
@@ -2290,7 +2288,7 @@ void SciTEBase::GoMessage(int dir) {
 #ifdef RB_ELB
 				"error.line.back", ColourOfProperty(props, "error.marker.back", ColourRGB(0xff, 0xff, 0)))); //!-change-[ErrorLineBack]
 #else
-				"error.marker.back", ColourRGB(0xff, 0xff, 0)));
+					      "error.marker.back", ColourRGB(0xff, 0xff, 0)));
 #endif // RB_ELB
 
 			wOutput.MarkerAdd(lookLine, 0);
@@ -2338,34 +2336,33 @@ void SciTEBase::GoMessage(int dir) {
 				}
 				//!-end-[FindResultListStyle]
 #endif // RB_FRLS
-				GUI::gui_string sourceString = GUI::StringFromUTF8(source);
-				FilePath sourcePath = FilePath(sourceString).NormalizePath();
+				const GUI::gui_string sourceString = GUI::StringFromUTF8(source);
+				const FilePath sourcePath = FilePath(sourceString).NormalizePath();
 #ifdef RB_GMFIX
 				if (sourcePath.IsSet() && !filePath.Name().SameNameAs(sourcePath)) { //!-change-[GoMessageFix]
 #else
 				if (!filePath.Name().SameNameAs(sourcePath)) {
 #endif // RB_GMFIX
-					FilePath messagePath;
-					bool bExists = false;
-					if (Exists(dirNameAtExecute.AsInternal(), sourceString.c_str(), &messagePath)) {
-						bExists = true;
-					} else if (Exists(dirNameForExecute.AsInternal(), sourceString.c_str(), &messagePath)) {
-						bExists = true;
-					} else if (Exists(filePath.Directory().AsInternal(), sourceString.c_str(), &messagePath)) {
-						bExists = true;
-					} else if (Exists(nullptr, sourceString.c_str(), &messagePath)) {
-						bExists = true;
-					} else {
+					std::optional<FilePath> messagePath = FindPath(sourceString, dirNameAtExecute);
+					if (!messagePath) {
+						messagePath = FindPath(sourceString, dirNameForExecute);
+						if (!messagePath) {
+							messagePath = FindPath(sourceString, filePath.Directory());
+							if (!messagePath) {
+								messagePath = FindPath(sourceString, {});
+							}
+						}
+					}
+					if (!messagePath) {
 						// Look through buffers for name match
 						for (BufferIndex i = buffers.lengthVisible - 1; i >= 0; i--) {
 							if (sourcePath.Name().SameNameAs(buffers.buffers[i].file.Name())) {
 								messagePath = buffers.buffers[i].file;
-								bExists = true;
 							}
 						}
 					}
-					if (bExists) {
-						if (!Open(messagePath, ofSynchronous)) {
+					if (messagePath) {
+						if (!Open(messagePath.value(), ofSynchronous)) {
 #ifdef RB_GMI
 							return false;//!-change-[GoMessageImprovement]
 #else

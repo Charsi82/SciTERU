@@ -94,8 +94,12 @@ void SendDirectorInteger(const char *verb, intptr_t arg) {
 	::SendDirector(verb, s.c_str());
 }
 
-HWND HwndFromString(const char *s) noexcept {
-	return reinterpret_cast<HWND>(static_cast<uintptr_t>(atoll(s)));
+HWND HwndFromString(const std::string &s) noexcept {
+	try {
+		return reinterpret_cast<HWND>(static_cast<uintptr_t>(stoull(s)));
+	} catch (...) {
+		return {};
+	}
 }
 
 void CheckEnvironment(ExtensionAPI *phost) {
@@ -104,7 +108,7 @@ void CheckEnvironment(ExtensionAPI *phost) {
 			std::string director = phost->Property("director.hwnd");
 			if (!director.empty()) {
 				startedByDirector = true;
-				wDirector = HwndFromString(director.c_str());
+				wDirector = HwndFromString(director);
 				// Director is just seen so identify this to it
 				::SendDirectorInteger("identity", reinterpret_cast<intptr_t>(wReceiver));
 			}
@@ -114,7 +118,7 @@ void CheckEnvironment(ExtensionAPI *phost) {
 	}
 }
 
-TCHAR DirectorExtension_ClassName[] = TEXT("DirectorExtension");
+WCHAR DirectorExtension_ClassName[] = L"DirectorExtension";
 
 LRESULT HandleCopyData(LPARAM lParam) {
 	const COPYDATASTRUCT *pcds = reinterpret_cast<COPYDATASTRUCT *>(lParam);
@@ -148,7 +152,7 @@ void DirectorExtension_Register(HINSTANCE hInstance) noexcept {
 	wndclass.hbrBackground = {};
 	wndclass.lpszMenuName = nullptr;
 	wndclass.lpszClassName = DirectorExtension_ClassName;
-	if (!::RegisterClass(&wndclass))
+	if (!::RegisterClassW(&wndclass))
 		::exit(FALSE);
 }
 
@@ -161,11 +165,11 @@ DirectorExtension &DirectorExtension::Instance() {
 
 bool DirectorExtension::Initialise(ExtensionAPI *host_) {
 	host = host_;
-	SDI = ::RegisterWindowMessage(TEXT("SciTEDirectorInterface"));
+	SDI = ::RegisterWindowMessageW(L"SciTEDirectorInterface");
 	HINSTANCE hInstance = reinterpret_cast<HINSTANCE>(
 				      host->GetInstance());
 	DirectorExtension_Register(hInstance);
-	wReceiver = ::CreateWindow(
+	wReceiver = ::CreateWindowW(
 			    DirectorExtension_ClassName,
 			    DirectorExtension_ClassName,
 			    0,
@@ -322,25 +326,22 @@ void DirectorExtension::HandleStringMessage(const char *message) {
 	// Message may contain multiple commands separated by '\n'
 	// Reentrance trouble - if this function is reentered, the wCorrespondent may
 	// be set to zero before time.
-	StringList wlMessage(true);
-	wlMessage.Set(message);
-	for (size_t i = 0; i < wlMessage.Length(); i++) {
+	std::vector<std::string> wlMessage = StringSplit(std::string(message), '\n');
+	for (std::string cmd : wlMessage) {
 		// Message format is [:return address:]command:argument
-		char *cmd = wlMessage[i];
-		if (*cmd == ':') {
+		if (cmd.starts_with(':')) {
 			// There is a return address
-			char *colon = strchr(cmd + 1, ':');
-			if (colon) {
-				*colon = '\0';
-				wCorrespondent = HwndFromString(cmd + 1);
-				cmd = colon + 1;
+			const size_t colon = cmd.find(':', 1);
+			if (colon != std::string::npos) {
+				wCorrespondent = HwndFromString(cmd.substr(1, colon - 1));
+				cmd.erase(0, colon + 1);
 			}
 		}
-		if (isprefix(cmd, "identity:")) {
-			const char *arg = strchr(cmd, ':');
-			if (arg)
-				wDirector = HwndFromString(arg + 1);
-		} else if (isprefix(cmd, "closing:")) {
+		if (cmd.starts_with("identity:")) {
+			const size_t colon = cmd.find(':');
+			if (colon != std::string::npos)
+				wDirector = HwndFromString(cmd.substr(colon + 1));
+		} else if (cmd.starts_with("closing:")) {
 			wDirector = {};
 			if (startedByDirector) {
 				shuttingDown = true;
@@ -350,7 +351,7 @@ void DirectorExtension::HandleStringMessage(const char *message) {
 				shuttingDown = false;
 			}
 		} else if (host) {
-			host->Perform(cmd);
+			host->Perform(cmd.c_str());
 		}
 		wCorrespondent = {};
 	}

@@ -13,7 +13,7 @@ SciTE ICON SciBall.ico
 SciTEfile ICON "SciTE-file.ico" //!-add-[NewIcons]
 SciTEses ICON "SciTE-ses.ico" //!-add-[NewIcons]
 SciTExmas ICON "SciTExmas.ico" //!-add-[NewIcons]
-#endif
+#endif // RB_BUILD
 
 1 RT_MANIFEST SciTE.exe.manifest
 
@@ -165,7 +165,7 @@ BEGIN
 	MENUITEM "Use &Monospaced Font\tCtrl+F11",	IDM_MONOFONT
 #ifdef RB_NFS
 	MENUITEM "Use &Next FontSet", IDM_NEXTFONTSET
-#endif
+#endif // RB_NFS
 	MENUITEM SEPARATOR
 	MENUITEM "Open Local &Options File",		IDM_OPENLOCALPROPERTIES
 	MENUITEM "Open &Directory Options File",		IDM_OPENDIRECTORYPROPERTIES
@@ -182,7 +182,7 @@ BEGIN
 		MENUITEM SEPARATOR
 	END
 //!-end-[UserPropertiesFilesSubmenu]
-#endif
+#endif // RB_UserPropertiesFilesSubmenu
 
 END // used: abcghlmoprstux
 
@@ -603,7 +603,7 @@ END
 IDR_BUTTONS BITMAP "buttons.bmp"	//!-add-[user.toolbar]
 #else
 IDR_CLOSEFILE BITMAP "closefile.bmp"
-#endif
+#endif // RB_UT
 IDR_CLOSEFILE24 BITMAP "closefile24.bmp"
 
 IDBM_WORD BITMAP "word.bmp"
@@ -649,7 +649,7 @@ Embedded Properties Embedded.properties
 #ifdef STATIC_BUILD
 Embedded Properties Embedded.properties
 #endif
-#endif
+#endif // RB_BUILD
 IDC_DRAGDROP       CURSOR  DISCARDABLE     "DragDrop.cur"
 
 VS_VERSION_INFO VERSIONINFO

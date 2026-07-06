@@ -50,7 +50,7 @@ void ColourisePropsLine(
 #endif // RB_PCF
 
 #ifdef RB_PKS
-		char* lineBuffer, //!- const removed [PropsKeysSets]
+	char* lineBuffer, //!- const removed [PropsKeysSets]
 #else
 	const char *lineBuffer,
 #endif
@@ -58,7 +58,7 @@ void ColourisePropsLine(
 	Sci_PositionU startLine,
 	Sci_PositionU endPos,
 #ifdef RB_PKS
-		WordList* keywordlists[], //!-add-[PropsKeysSets]
+	WordList* keywordlists[], //!-add-[PropsKeysSets]
 #endif
 	Accessor &styler,
 	bool allowInitialSpaces) {
@@ -74,20 +74,20 @@ void ColourisePropsLine(
 
 	if (i < lengthLine) {
 #ifdef RB_PCF
-			if ((lineBuffer[i] == '#' && (isspacechar(lineBuffer[i + 1]) || lineBuffer[i + 1] == '#' || lineBuffer[i + 1] == '~'))
-				|| lineBuffer[i] == '!'
-				|| lineBuffer[i] == ';') {
+		if ((lineBuffer[i] == '#' && (isspacechar(lineBuffer[i + 1]) || lineBuffer[i + 1] == '#' || lineBuffer[i + 1] == '~'))
+			|| lineBuffer[i] == '!'
+			|| lineBuffer[i] == ';') {
 #else
 		if (lineBuffer[i] == '#' || lineBuffer[i] == '!' || lineBuffer[i] == ';') {
 #endif
 			styler.ColourTo(endPos, SCE_PROPS_COMMENT);
 #ifdef RB_PCF
-				return SCE_PROPS_COMMENT; //!-add-[PropsColouriseFix]
+			return SCE_PROPS_COMMENT; //!-add-[PropsColouriseFix]
 #endif // RB_PCF
 		} else if (lineBuffer[i] == '[') {
 			styler.ColourTo(endPos, SCE_PROPS_SECTION);
 #ifdef RB_PCF
-				return SCE_PROPS_SECTION; //!-add-[PropsColouriseFix]
+			return SCE_PROPS_SECTION; //!-add-[PropsColouriseFix]
 #endif // RB_PCF
 		} else if (lineBuffer[i] == '@') {
 			styler.ColourTo(startLine + i, SCE_PROPS_DEFVAL);
@@ -118,34 +118,34 @@ void ColourisePropsLine(
 				i++;
 			if ((i < lengthLine) && isAssignChar(lineBuffer[i])) {
 #ifdef RB_PKS
-					//!-start-[PropsKeysSets]
-					if (i > 0) {
-						int chAttr = SCE_PROPS_KEY;
-						lineBuffer[i] = '\0';
-						// remove trailing spaces
-						int indent = 0;
-						while (lineBuffer[0] == ' ' || lineBuffer[0] == '\t') {
-							lineBuffer++;
-							indent++;
-						}
-						int len = 0, fin = 0;
-						if ((*keywordlists[0]).InListPartly(lineBuffer, '~', len, fin)) {
-							chAttr = SCE_PROPS_KEYSSET0;
-						}
-						else if ((*keywordlists[1]).InListPartly(lineBuffer, '~', len, fin)) {
-							chAttr = SCE_PROPS_KEYSSET1;
-						}
-						else if ((*keywordlists[2]).InListPartly(lineBuffer, '~', len, fin)) {
-							chAttr = SCE_PROPS_KEYSSET2;
-						}
-						else if ((*keywordlists[3]).InListPartly(lineBuffer, '~', len, fin)) {
-							chAttr = SCE_PROPS_KEYSSET3;
-						}
-						styler.ColourTo(startLine + indent + len, chAttr);
-						styler.ColourTo(startLine + i - 1 - fin, SCE_PROPS_KEY);
-						styler.ColourTo(startLine + i - 1, chAttr);
+				//!-start-[PropsKeysSets]
+				if (i > 0) {
+					int chAttr = SCE_PROPS_KEY;
+					lineBuffer[i] = '\0';
+					// remove trailing spaces
+					int indent = 0;
+					while (lineBuffer[0] == ' ' || lineBuffer[0] == '\t') {
+						lineBuffer++;
+						indent++;
 					}
-					//!-end-[PropsKeysSets]
+					int len = 0, fin = 0;
+					if ((*keywordlists[0]).InListPartly(lineBuffer, '~', len, fin)) {
+						chAttr = SCE_PROPS_KEYSSET0;
+					}
+					else if ((*keywordlists[1]).InListPartly(lineBuffer, '~', len, fin)) {
+						chAttr = SCE_PROPS_KEYSSET1;
+					}
+					else if ((*keywordlists[2]).InListPartly(lineBuffer, '~', len, fin)) {
+						chAttr = SCE_PROPS_KEYSSET2;
+					}
+					else if ((*keywordlists[3]).InListPartly(lineBuffer, '~', len, fin)) {
+						chAttr = SCE_PROPS_KEYSSET3;
+					}
+					styler.ColourTo(startLine + indent + len, chAttr);
+					styler.ColourTo(startLine + i - 1 - fin, SCE_PROPS_KEY);
+					styler.ColourTo(startLine + i - 1, chAttr);
+				}
+				//!-end-[PropsKeysSets]
 #else
 				styler.ColourTo(startLine + i - 1, SCE_PROPS_KEY);
 #endif
@@ -159,13 +159,13 @@ void ColourisePropsLine(
 		styler.ColourTo(endPos, SCE_PROPS_DEFAULT);
 	}
 #ifdef RB_PCF
-		return SCE_PROPS_DEFAULT; //!-add-[PropsColouriseFix]
+	return SCE_PROPS_DEFAULT; //!-add-[PropsColouriseFix]
 #endif // RB_PCF
 
 }
 
 #ifdef RB_PKS
-	void ColourisePropsDoc(Sci_PositionU startPos, Sci_Position length, int, WordList * keywordlists[], Accessor & styler) {
+void ColourisePropsDoc(Sci_PositionU startPos, Sci_Position length, int, WordList * keywordlists[], Accessor & styler) {
 #else
 void ColourisePropsDoc(Sci_PositionU startPos, Sci_Position length, int, WordList *[], Accessor &styler) {
 #endif // RB_PKS
@@ -181,13 +181,13 @@ void ColourisePropsDoc(Sci_PositionU startPos, Sci_Position length, int, WordLis
 	const bool allowInitialSpaces = styler.GetPropertyInt("lexer.props.allow.initial.spaces", 1) != 0;
 
 #ifdef RB_PCF
-		//!-start-[PropsColouriseFix]
-		char style = SCE_PROPS_DEFAULT;
-		bool continuation = false;
-		if (startPos >= 3)
-			continuation = styler.StyleAt(startPos - 2) != SCE_PROPS_COMMENT && ((styler[startPos - 2] == '\\')
-				|| (styler[startPos - 3] == '\\' && styler[startPos - 2] == '\r'));
-		//!-end-[PropsColouriseFix]
+	//!-start-[PropsColouriseFix]
+	char style = SCE_PROPS_DEFAULT;
+	bool continuation = false;
+	if (startPos >= 3)
+		continuation = styler.StyleAt(startPos - 2) != SCE_PROPS_COMMENT && ((styler[startPos - 2] == '\\')
+			|| (styler[startPos - 3] == '\\' && styler[startPos - 2] == '\r'));
+	//!-end-[PropsColouriseFix]
 #endif // RB_PCF
 
 	for (Sci_PositionU i = startPos; i < startPos + length; i++) {
@@ -195,33 +195,29 @@ void ColourisePropsDoc(Sci_PositionU startPos, Sci_Position length, int, WordLis
 		if (AtEOL(styler, i)) {
 			// End of line (or of line buffer) met, colourise it
 #ifdef RB_PCF
-				Sci_PositionU start = lineBuffer.find_first_of("#;!");
-				bool bfindcomment = start != std::string::npos;
-				while (bfindcomment && start)
-					if (!isspacechar(lineBuffer[--start])) bfindcomment = false;
-				if (bfindcomment) // comment detected
-					// colorize line with comment and skip check continuation
-					style = ColourisePropsLine(lineBuffer.data(), lineBuffer.length(), startLine, i, keywordlists, styler, allowInitialSpaces);
+			Sci_PositionU start = lineBuffer.find_first_of("#;!");
+			bool bfindcomment = start != std::string::npos;
+			while (bfindcomment && start)
+				if (!isspacechar(lineBuffer[--start])) bfindcomment = false;
+			if (bfindcomment) // comment detected
+				// colorize line with comment and skip check continuation
+				style = ColourisePropsLine(lineBuffer.data(), lineBuffer.length(), startLine, i, keywordlists, styler, allowInitialSpaces);
+			else
+			{
+				if (continuation)
+					styler.ColourTo(i, SCE_PROPS_DEFAULT);
 				else
-				{
-					if (continuation)
-						styler.ColourTo(i, SCE_PROPS_DEFAULT);
-					else
-						style = ColourisePropsLine(lineBuffer.data(), lineBuffer.length(), startLine, i, keywordlists, styler, allowInitialSpaces);
+					style = ColourisePropsLine(lineBuffer.data(), lineBuffer.length(), startLine, i, keywordlists, styler, allowInitialSpaces);
 
-					// test: is next a continuation of line
-					continuation = (style != SCE_PROPS_COMMENT) && (lineBuffer.length() > 2) && (
-						(lineBuffer[lineBuffer.length() - 2] == '\\') || // '\\\r'  or '\\\n'
-						(lineBuffer[lineBuffer.length() - 3] == '\\' && lineBuffer[lineBuffer.length() - 2] == '\r')); // '\\\r\n'
-				}
-
+				// test: is next a continuation of line
+				continuation = (style != SCE_PROPS_COMMENT) && (lineBuffer.length() > 2) && (
+					(lineBuffer[lineBuffer.length() - 2] == '\\') || // '\\\r'  or '\\\n'
+					(lineBuffer[lineBuffer.length() - 3] == '\\' && lineBuffer[lineBuffer.length() - 2] == '\r')); // '\\\r\n'
+			}
 #else
 
 #ifdef RB_PKS
-			//if (styler.SafeGetCharAt(i - lineBuffer.size() - 2) == '\\' && styler.StyleAt(i - lineBuffer.size() - 2) != SCE_PROPS_COMMENT)
-				//styler.ColourTo(i, SCE_PROPS_DEFAULT);
-			//else
-				ColourisePropsLine(lineBuffer.data(), lineBuffer.length(), startLine, i, keywordlists, styler, allowInitialSpaces);
+			ColourisePropsLine(lineBuffer.data(), lineBuffer.length(), startLine, i, keywordlists, styler, allowInitialSpaces);
 #else
 			ColourisePropsLine(lineBuffer.c_str(), lineBuffer.length(), startLine, i, styler, allowInitialSpaces);
 #endif // RB_PKS
@@ -233,14 +229,14 @@ void ColourisePropsDoc(Sci_PositionU startPos, Sci_Position length, int, WordLis
 	}
 	if (lineBuffer.length() > 0) {	// Last line does not have ending characters
 #ifdef RB_PCF
-			//!-start-[PropsColouriseFix]
-			if (continuation)
-				styler.ColourTo(startPos + length - 1, SCE_PROPS_DEFAULT);
-			else
-				//!-end-[PropsColouriseFix]
+		//!-start-[PropsColouriseFix]
+		if (continuation)
+			styler.ColourTo(startPos + length - 1, SCE_PROPS_DEFAULT);
+		else
+			//!-end-[PropsColouriseFix]
 #endif // RB_PCF
 #ifdef RB_PKS
-				ColourisePropsLine(lineBuffer.data(), lineBuffer.length(), startLine, startPos + length - 1, keywordlists, styler, allowInitialSpaces);
+		ColourisePropsLine(lineBuffer.data(), lineBuffer.length(), startLine, startPos + length - 1, keywordlists, styler, allowInitialSpaces);
 #else
 		ColourisePropsLine(lineBuffer.c_str(), lineBuffer.length(), startLine, startPos + length - 1, styler, allowInitialSpaces);
 #endif // RB_PKS

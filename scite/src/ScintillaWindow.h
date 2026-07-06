@@ -21,7 +21,7 @@ public:
 	ScintillaWindow &operator=(ScintillaWindow &&) = delete;
 
 	void SetScintilla(GUI::WindowID wid_);
-	bool CanCall() const noexcept;
+	[[nodiscard]] bool CanCall() const noexcept;
 };
 
 }

@@ -29,10 +29,10 @@ public:
 	Reader &operator=(const Reader &) = delete;
 	Reader &operator=(Reader &&) = delete;
 
-	virtual ~Reader() noexcept {};
+	virtual ~Reader() noexcept = default;
 
 	virtual std::string_view convert(std::string_view buf) = 0;
-	virtual UniMode getEncoding() const noexcept = 0;
+	[[nodiscard]] virtual UniMode getEncoding() const noexcept = 0;
 
 	static std::unique_ptr<Reader> Allocate();
 };
@@ -47,7 +47,7 @@ public:
 	Writer &operator=(const Writer &) = delete;
 	Writer &operator=(Writer &&) = delete;
 
-	virtual ~Writer() noexcept {};
+	virtual ~Writer() noexcept = default;
 
 	virtual size_t fwrite(std::string_view buf, FILE *pFile) = 0;
 
