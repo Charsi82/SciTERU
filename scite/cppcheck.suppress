@@ -88,9 +88,6 @@ constParameterPointer:scite/src/SciTEIO.cxx
 // Not using const pointer as may change to mutate argument
 constParameterPointer:scite/src/Extender.h
 
-// Menu::Show is cross-platform and may have to mutate its second argument
-constParameterReference:scite/win32/GUIWin.cxx
-
 // Prefer uniform use of | instead of special casing first which is just assignment
 badBitmaskCheck:scite/win32/SciTEWin.cxx
 

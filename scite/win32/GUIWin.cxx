@@ -243,7 +243,7 @@ std::string LowerCaseUTF8(std::string_view sv) {
 	return UTF8FromString(lc);
 }
 
-void Window::Destroy() {
+void Window::Destroy() noexcept {
 	if (wid)
 		::DestroyWindow(static_cast<HWND>(wid));
 	wid = {};
@@ -253,7 +253,7 @@ bool Window::HasFocus() const noexcept {
 	return ::GetFocus() == wid;
 }
 
-Rectangle Window::GetPosition() {
+Rectangle Window::GetPosition() const noexcept {
 	RECT rc;
 	::GetWindowRect(static_cast<HWND>(wid), &rc);
 	return Rectangle(rc.left, rc.top, rc.right, rc.bottom);
@@ -264,7 +264,7 @@ void Window::SetPosition(Rectangle rc) {
 		       {}, rc.left, rc.top, rc.Width(), rc.Height(), SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
-Rectangle Window::GetClientPosition() {
+Rectangle Window::GetClientPosition() const noexcept {
 	RECT rc {};
 	if (wid)
 		::GetClientRect(static_cast<HWND>(wid), &rc);
@@ -278,7 +278,7 @@ void Window::Show(bool show) {
 		::ShowWindow(static_cast<HWND>(wid), SW_HIDE);
 }
 
-void Window::InvalidateAll() {
+void Window::InvalidateAll() noexcept {
 	::InvalidateRect(static_cast<HWND>(wid), nullptr, FALSE);
 }
 
@@ -305,7 +305,7 @@ void Menu::Destroy() noexcept {
 	mid = {};
 }
 
-void Menu::Show(Point pt, Window &w) {
+void Menu::Show(Point pt, const Window &w) {
 	::TrackPopupMenu(static_cast<HMENU>(mid),
 			 TPM_RIGHTBUTTON, pt.x - 4, pt.y, 0,
 			 static_cast<HWND>(w.GetID()), nullptr);
@@ -316,7 +316,7 @@ intptr_t ScintillaPrimitive::Send(unsigned int msg, uintptr_t wParam, intptr_t l
 	return ::SendMessage(static_cast<HWND>(GetID()), msg, wParam, lParam);
 }
 
-void SleepMilliseconds(int sleepTime) {
+void SleepMilliseconds(int sleepTime) noexcept {
 	::Sleep(sleepTime);
 }
 

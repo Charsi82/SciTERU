@@ -67,11 +67,11 @@ std::string LowerCaseUTF8(std::string_view sv) {
 	return sLower;
 }
 
-static GtkWidget *PWidget(WindowID wid) {
+static GtkWidget *PWidget(WindowID wid) noexcept {
 	return static_cast<GtkWidget *>(wid);
 }
 
-void Window::Destroy() {
+void Window::Destroy() noexcept {
 	if (wid)
 		gtk_widget_destroy(GTK_WIDGET(wid));
 	wid = 0;
@@ -81,7 +81,7 @@ bool Window::HasFocus() const noexcept {
 	return gtk_widget_has_focus(GTK_WIDGET(wid));
 }
 
-Rectangle Window::GetPosition() {
+Rectangle Window::GetPosition() const noexcept {
 	// Before any size allocated pretend its 1000 wide so not scrolled
 	Rectangle rc(0, 0, 1000, 1000);
 	if (wid) {
@@ -106,7 +106,7 @@ void Window::SetPosition(Rectangle rc) {
 	gtk_widget_size_allocate(PWidget(wid), &alloc);
 }
 
-Rectangle Window::GetClientPosition() {
+Rectangle Window::GetClientPosition() const noexcept {
 	// On GTK, the client position is the window position
 	return GetPosition();
 }
@@ -116,7 +116,7 @@ void Window::Show(bool show) {
 		gtk_widget_show(PWidget(wid));
 }
 
-void Window::InvalidateAll() {
+void Window::InvalidateAll() noexcept {
 	if (wid) {
 		gtk_widget_queue_draw(PWidget(wid));
 	}
@@ -151,7 +151,7 @@ static void  MenuPositionFunc(GtkMenu *, gint *x, gint *y, gboolean *, gpointer 
 }
 #endif
 
-void Menu::Show(Point pt G_GNUC_UNUSED, Window &) {
+void Menu::Show(Point pt G_GNUC_UNUSED, const Window &) {
 	GtkMenu *widget = static_cast<GtkMenu *>(mid);
 	gtk_widget_show_all(GTK_WIDGET(widget));
 #if GTK_CHECK_VERSION(3,22,0)
@@ -182,7 +182,7 @@ sptr_t ScintillaPrimitive::Send(unsigned int msg, uptr_t wParam, sptr_t lParam) 
 	return scintilla_send_message(SCINTILLA(GetID()), msg, wParam, lParam);
 }
 
-void SleepMilliseconds(int sleepTime) {
+void SleepMilliseconds(int sleepTime) noexcept {
 	g_usleep(sleepTime * 1000);
 }
 

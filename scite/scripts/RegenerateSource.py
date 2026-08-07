@@ -106,6 +106,12 @@ def UpdateVersionNumbers(sci, pathSciTE, lexVersion, scintillaVersion):
     ReplaceREInFile(pathDownload,
         r"/www.scintilla.org/(Sc32_)\d{3,5}",
         r"/www.scintilla.org/\g<1>" +  sci.version)
+    ReplaceREInFile(pathDownload,
+        r"/www.scintilla.org/(wsciteArm_)\d{3,5}",
+        r"/www.scintilla.org/\g<1>" +  sci.version)
+    ReplaceREInFile(pathDownload,
+        r"/www.scintilla.org/(ScArm_)\d{3,5}",
+        r"/www.scintilla.org/\g<1>" +  sci.version)
 
     pathMain = pathSciTE / "doc" / "SciTE.html"
     UpdateLineInFile(pathMain,

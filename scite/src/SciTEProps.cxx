@@ -109,7 +109,7 @@ void SciTEBase::SetLanguageMenu() {
 		const int itemID = languageCmdID + item;
 		const GUI::gui_string entry = localiser.Text(languageMenu[item].menuItem);
 		const GUI::gui_string menuKey = GUI::StringFromUTF8(languageMenu[item].menuKey);
-		if (entry.size() && entry[0] != '#') {
+		if (!entry.empty() && entry[0] != '#') {
 			SetMenuItem(menuLanguage, item, itemID, entry.c_str(), menuKey.c_str());
 		}
 	}
@@ -133,6 +133,7 @@ void SciTEBase::ReadEnvironment() {
 		const auto [key, value] = ViewSplit(*e, '=');
 		propsPlatform.Set(key, value);
 	}
+
 	propsPlatform.SetPath("SciteDefaultHome", GetSciteDefaultHome());
 	propsPlatform.SetPath("SciteUserHome", GetSciteUserHome());
 }
@@ -247,7 +248,7 @@ void SciTEBase::ReadLocalPropFile() {
 
 SA::Colour ColourOfProperty(const PropSetFile &props, const char *key, SA::Colour colourDefault) {
 	std::string colour = props.GetExpandedString(key);
-	if (colour.length()) {
+	if (!colour.empty()) {
 		return ColourFromString(colour);
 	}
 	return colourDefault;
@@ -255,7 +256,7 @@ SA::Colour ColourOfProperty(const PropSetFile &props, const char *key, SA::Colou
 
 SA::ColourAlpha ColourAlphaOfProperty(const PropSetFile &props, const char *key, SA::ColourAlpha colourDefault) {
 	std::string colour = props.GetExpandedString(key);
-	if (colour.length()) {
+	if (!colour.empty()) {
 		return ColourAlphaFromString(colour);
 	}
 	return colourDefault;
@@ -265,7 +266,7 @@ namespace {
 
 void OptionalSetColour(GUI::ScintillaWindow &scintilla, SA::Element element, const PropSetFile &props, const char *key) {
 	std::string colour = props.GetExpandedString(key);
-	if (colour.length()) {
+	if (!colour.empty()) {
 		const SA::Colour colourElement = ColourAlphaFromString(colour);
 		scintilla.SetElementColour(element, colourElement);
 	} else {
@@ -375,7 +376,7 @@ void SciTEBase::SetStyleBlock(GUI::ScintillaWindow &win, const char *lang, int s
 		if (style != StyleDefault) {
 			const std::string key = StyleName(lang, style-start);
 			std::string sval = props.GetExpandedString(key);
-			if (sval.length()) {
+			if (!sval.empty()) {
 				SetOneStyle(win, style, sval);
 			}
 		}
@@ -454,7 +455,7 @@ void SciTEBase::DefineMarker(SA::MarkerOutline marker, SA::MarkerSymbol markerTy
 void SciTEBase::ReadAPI(const std::string &fileNameForExtension) {
 	std::string sApiFileNames = props.GetNewExpandString("api.",
 				    fileNameForExtension);
-	if (sApiFileNames.length() > 0) {
+	if (!sApiFileNames.empty()) {
 		std::vector<std::string> vApiFileNames = StringSplit(sApiFileNames, ';');
 		std::string data;
 
@@ -958,7 +959,7 @@ void SciTEBase::ReadProperties() {
 		codePage = SA::CpUtf8;
 	}
 #ifdef RB_EUM
-	props.Set("editor.unicode.mode", std::to_string((int)CurrentBuffer()->unicodeMode + IDM_ENCODING_DEFAULT)); //!-add-[EditorUnicodeMode]
+	props.Set("editor.unicode.mode", std::to_string(static_cast<int>(CurrentBuffer()->unicodeMode) + IDM_ENCODING_DEFAULT)); //!-add-[EditorUnicodeMode]
 #endif // RB_EUM
 	wEditor.SetCodePage(codePage);
 	const int outputCodePage = props.GetInt("output.code.page", codePage);
@@ -977,7 +978,7 @@ void SciTEBase::ReadProperties() {
 #endif
 
 	std::string imeInteraction = props.GetString("ime.interaction");
-	if (imeInteraction.length()) {
+	if (!imeInteraction.empty()) {
 		CallChildren(SA::Message::SetIMEInteraction, props.GetInt("ime.interaction", static_cast<int>(SA::IMEInteraction::Windowed)));
 	}
 	imeAutoComplete = props.GetInt("ime.autocomplete", 0) == 1;
@@ -1036,7 +1037,7 @@ void SciTEBase::ReadProperties() {
 	const std::string caretLineLayer = props.GetExpandedString("caret.line.layer");
 	if (caretLineLayer.empty()) {
 		std::string caretLineBack = props.GetExpandedString("caret.line.back");
-		if (caretLineBack.length()) {
+		if (!caretLineBack.empty()) {
 			wEditor.SetCaretLineVisible(true);
 			wEditor.SetCaretLineBack(ColourFromString(caretLineBack));
 		} else {
@@ -1080,14 +1081,14 @@ void SciTEBase::ReadProperties() {
 	closeFind = static_cast<CloseFind>(props.GetInt("find.close.on.find", 1));
 
 	const std::string controlCharSymbol = props.GetString("control.char.symbol");
-	if (controlCharSymbol.length()) {
+	if (!controlCharSymbol.empty()) {
 		wEditor.SetControlCharSymbol(static_cast<unsigned char>(controlCharSymbol[0]));
 	} else {
 		wEditor.SetControlCharSymbol(0);
 	}
 
 	const std::string caretPeriod = props.GetString("caret.period");
-	if (caretPeriod.length()) {
+	if (!caretPeriod.empty()) {
 		const int caretPeriodValue = IntegerFromString(caretPeriod, 0);
 		wEditor.SetCaretPeriod(caretPeriodValue);
 		wOutput.SetCaretPeriod(caretPeriodValue);
@@ -1136,16 +1137,16 @@ void SciTEBase::ReadProperties() {
 	if (selectionLayer.empty()) {
 
 		std::string selFore = props.GetExpandedString("selection.fore");
-		if (selFore.length()) {
+		if (!selFore.empty()) {
 			CallChildren(SA::Message::SetSelFore, 1, ColourFromString(selFore));
 		} else {
 			CallChildren(SA::Message::SetSelFore, 0, 0);
 		}
 		std::string selBack = props.GetExpandedString("selection.back");
-		if (selBack.length()) {
+		if (!selBack.empty()) {
 			CallChildren(SA::Message::SetSelBack, 1, ColourFromString(selBack));
 		} else {
-			if (selFore.length())
+			if (!selFore.empty())
 				CallChildren(SA::Message::SetSelBack, 0, 0);
 			else	// Have to show selection somehow
 				CallChildren(SA::Message::SetSelBack, 1, ColourRGB(0xC0, 0xC0, 0xC0));
@@ -1155,11 +1156,11 @@ void SciTEBase::ReadProperties() {
 		CallChildren(SA::Message::SetSelAlpha, selectionAlpha);
 
 		std::string selAdditionalFore = props.GetString("selection.additional.fore");
-		if (selAdditionalFore.length()) {
+		if (!selAdditionalFore.empty()) {
 			CallChildren(SA::Message::SetAdditionalSelFore, ColourFromString(selAdditionalFore));
 		}
 		std::string selAdditionalBack = props.GetString("selection.additional.back");
-		if (selAdditionalBack.length()) {
+		if (!selAdditionalBack.empty()) {
 			CallChildren(SA::Message::SetAdditionalSelBack, ColourFromString(selAdditionalBack));
 		}
 		const int selectionAdditionalAlpha = (selectionAlpha == NoAlpha) ? NoAlpha : selectionAlpha / 2;
@@ -1180,13 +1181,13 @@ void SciTEBase::ReadProperties() {
 	}
 
 	foldColour = props.GetExpandedString("fold.margin.colour");
-	if (foldColour.length()) {
+	if (!foldColour.empty()) {
 		CallChildren(SA::Message::SetFoldMarginColour, 1, ColourFromString(foldColour));
 	} else {
 		CallChildren(SA::Message::SetFoldMarginColour, 0, 0);
 	}
 	foldHiliteColour = props.GetExpandedString("fold.margin.highlight.colour");
-	if (foldHiliteColour.length()) {
+	if (!foldHiliteColour.empty()) {
 		CallChildren(SA::Message::SetFoldMarginHiColour, 1, ColourFromString(foldHiliteColour));
 	} else {
 		CallChildren(SA::Message::SetFoldMarginHiColour, 0, 0);
@@ -1305,7 +1306,7 @@ void SciTEBase::ReadProperties() {
 
 	wEditor.SetCharsDefault();
 	wordCharacters = props.GetNewExpandString("word.characters.", fileNameForExtension);
-	if (wordCharacters.length()) {
+	if (!wordCharacters.empty()) {
 		wEditor.SetWordChars(wordCharacters.c_str());
 	} else {
 		wordCharacters = "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -1318,7 +1319,7 @@ void SciTEBase::ReadProperties() {
 #endif // RB_GWC
 
 	whitespaceCharacters = props.GetNewExpandString("whitespace.characters.", fileNameForExtension);
-	if (whitespaceCharacters.length()) {
+	if (!whitespaceCharacters.empty()) {
 		wEditor.SetWhitespaceChars(whitespaceCharacters.c_str());
 	}
 
@@ -1474,7 +1475,7 @@ void SciTEBase::ReadProperties() {
 	// Define foreground (outline) and background (fill) colour of folds
 	const int foldSymbols = props.GetInt("fold.symbols");
 	std::string foldFore = props.GetExpandedString("fold.fore");
-	if (foldFore.length() == 0) {
+	if (foldFore.empty()) {
 		// Set default colour for outline
 		switch (foldSymbols) {
 		case 0: // Arrows
@@ -1495,7 +1496,7 @@ void SciTEBase::ReadProperties() {
 
 	std::string foldBack = props.GetExpandedString("fold.back");
 	// Set default colour for fill
-	if (foldBack.length() == 0) {
+	if (foldBack.empty()) {
 		switch (foldSymbols) {
 		case 0:
 		case 1:
@@ -1581,9 +1582,9 @@ void SciTEBase::ReadProperties() {
 	wEditor.MarkerSetStrokeWidth(markerBookmark, props.GetInt("bookmark.stroke.width", 100));
 
 	const std::string bookMarkXPM = props.GetString("bookmark.pixmap");
-	if (bookMarkXPM.length()) {
+	if (!bookMarkXPM.empty()) {
 		wEditor.MarkerDefinePixmap(markerBookmark, bookMarkXPM.c_str());
-	} else if (props.GetString("bookmark.fore").length()) {
+	} else if (!props.GetString("bookmark.fore").empty()) {
 		wEditor.MarkerDefine(markerBookmark, static_cast<SA::MarkerSymbol>(
 					     props.GetInt("bookmark.symbol", static_cast<int>(SA::MarkerSymbol::Bookmark))));
 	} else {
@@ -1623,10 +1624,10 @@ void SciTEBase::ReadProperties() {
 	if (currentWordHighlight.isEnabled) {
 		const std::string highlightCurrentWordIndicatorString = props.GetExpandedString("highlight.current.word.indicator");
 		IndicatorDefinition highlightCurrentWordIndicator(highlightCurrentWordIndicatorString);
-		if (highlightCurrentWordIndicatorString.length() == 0) {
+		if (highlightCurrentWordIndicatorString.empty()) {
 			highlightCurrentWordIndicator.style = SA::IndicatorStyle::RoundBox;
 			std::string highlightCurrentWordColourString = props.GetExpandedString("highlight.current.word.colour");
-			if (highlightCurrentWordColourString.length() == 0) {
+			if (highlightCurrentWordColourString.empty()) {
 				// Set default colour for highlight.
 				highlightCurrentWordColourString = "#A0A000";
 			}
@@ -1954,7 +1955,7 @@ GUI::gui_string Localization::Text(std::string_view sv, bool retainIfNotFound) c
 	LowerCaseAZ(translation);
 	Substitute(translation, "\n", "\\n");
 	translation = GetString(translation);
-	if (translation.length()) {
+	if (!translation.empty()) {
 		if (ellipseIndicator)
 			translation += sEllipse;
 		if (utfEllipseIndicator)
@@ -1979,7 +1980,7 @@ GUI::gui_string Localization::Text(std::string_view sv, bool retainIfNotFound) c
 	} else {
 		translation = missing;
 	}
-	if ((translation.length() > 0) || !retainIfNotFound) {
+	if ((!translation.empty()) || !retainIfNotFound) {
 		return GUI::StringFromUTF8(translation);
 	}
 	return GUI::StringFromUTF8(std::string(sv));
@@ -2003,7 +2004,7 @@ void SciTEBase::ReadLocalization() {
 	localiser.Clear();
 	GUI::gui_string title = GUI_TEXT("locale.properties");
 	const std::string localeProps = props.GetExpandedString("locale.properties");
-	if (localeProps.length()) {
+	if (!localeProps.empty()) {
 		title = GUI::StringFromUTF8(localeProps);
 	}
 	FilePath propdir = GetSciteDefaultHome();
@@ -2132,7 +2133,7 @@ void SciTEBase::OpenProperties(int propsFile) {
 		break;
 	case IDM_OPENLUAEXTERNALFILE: {
 			GUI::gui_string extlua = GUI::StringFromUTF8(props.GetExpandedString("ext.lua.startup.script"));
-			if (extlua.length()) {
+			if (!extlua.empty()) {
 				Open(extlua, ofQuiet);
 			}
 			break;

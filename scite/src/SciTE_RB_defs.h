@@ -52,7 +52,7 @@ SciTE Ru-Board additions defines
 //#define RB_EVINV //?
 
 // [ExtendedContextMenu]
-#define RB_ECM
+#define RB_ExtContextMenu
 
 // [FileAttr in PROPS]
 #define RB_FAINP

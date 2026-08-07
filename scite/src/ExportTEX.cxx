@@ -91,11 +91,11 @@ void defineTexStyle(const StyleDefinition &style, FILE *fp, int istyle) {
 		fputs("\\textbf{", fp);
 		closing_brackets++;
 	}
-	if (style.fore.length()) {
+	if (!style.fore.empty()) {
 		fprintf(fp, "\\textcolor[rgb]{%s}{", getTexRGB(rgb, std::size(rgb), style.fore.c_str()));
 		closing_brackets++;
 	}
-	if (style.back.length()) {
+	if (!style.back.empty()) {
 		fprintf(fp, "\\colorbox[rgb]{%s}{", getTexRGB(rgb, std::size(rgb), style.back.c_str()));
 		closing_brackets++;
 	}

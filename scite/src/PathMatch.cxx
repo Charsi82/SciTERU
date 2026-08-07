@@ -167,7 +167,7 @@ bool PatternMatch(std::u32string_view pattern, std::u32string_view text) noexcep
 				const bool finalAlt = comma == std::u32string_view::npos;
 				const std::u32string_view oneAlt = finalAlt ? parenExpression :
 					parenExpression.substr(0, comma);
-				if (oneAlt == text.substr(0, oneAlt.length())) {
+				if (text.starts_with(oneAlt)) {
 					// match
 					inSet = true;
 					text.remove_prefix(oneAlt.length());

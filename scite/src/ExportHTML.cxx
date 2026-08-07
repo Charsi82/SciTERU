@@ -133,7 +133,7 @@ void SciTEBase::SaveToHTML(const FilePath &saveName) {
 
 		StyleDefinition sddef = StyleDefinitionFor(StyleDefault);
 
-		if (sddef.back.length()) {
+		if (!sddef.back.empty()) {
 			bgColour = sddef.back;
 		}
 
@@ -147,7 +147,7 @@ void SciTEBase::SaveToHTML(const FilePath &saveName) {
 
 				StyleDefinition sd = StyleDefinitionFor(istyle);
 
-				if (CurrentBufferConst()->useMonoFont && sd.font.length() && sdmono.font.length()) {
+				if (CurrentBufferConst()->useMonoFont && !sd.font.empty() && !sdmono.font.empty()) {
 					sd.font = sdmono.font;
 					sd.size = sdmono.size;
 					sd.italics = sdmono.italics;
@@ -170,15 +170,15 @@ void SciTEBase::SaveToHTML(const FilePath &saveName) {
 					if (sd.IsBold()) {
 						fprintf(fp, "\tfont-weight: bold;\n");
 					}
-					if (wysiwyg && sd.font.length()) {
+					if (wysiwyg && !sd.font.empty()) {
 						fprintf(fp, "\tfont-family: '%s';\n", sd.font.c_str());
 					}
-					if (sd.fore.length()) {
+					if (!sd.fore.empty()) {
 						fprintf(fp, "\tcolor: %s;\n", sd.fore.c_str());
 					} else if (istyle == StyleDefault) {
 						fprintf(fp, "\tcolor: #000000;\n");
 					}
-					if ((sd.specified & StyleDefinition::sdBack) && sd.back.length()) {
+					if ((sd.specified & StyleDefinition::sdBack) && !sd.back.empty()) {
 						if (istyle != StyleDefault && bgColour != sd.back) {
 							fprintf(fp, "\tbackground: %s;\n", sd.back.c_str());
 							fprintf(fp, "\ttext-decoration: inherit;\n");
@@ -195,7 +195,7 @@ void SciTEBase::SaveToHTML(const FilePath &saveName) {
 		}
 		fputs("</style>\n", fp);
 		fputs("</head>\n", fp);
-		if (bgColour.length() > 0)
+		if (!bgColour.empty())
 			fprintf(fp, "<body bgcolor=\"%s\">\n", bgColour.c_str());
 		else
 			fputs("<body>\n", fp);

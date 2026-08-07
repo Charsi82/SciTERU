@@ -100,10 +100,12 @@ return function(tabs, panel_width, colorback, colorfore)
 			local ELLIPSIS_LEN = 30
 			local line_text = editor:GetLine(line_number) or ""
 			line_text = line_text:gsub('^%s+', ''):gsub('%s+', ' ')
-			if line_text == '' then line_text = ' - empty line' end
-			line_text = "[" .. (line_number + 1) .. "] " .. line_text
-			if #line_text > ELLIPSIS_LEN then line_text = line_text:sub(1, ELLIPSIS_LEN - 3) .. "..." end
-			return line_text
+			local linenumber = "[" .. (line_number + 1) .. "] "
+			if line_text == '' then return linenumber .. ' - empty line' end
+			line_text = linenumber .. line_text
+			local from, to = utf8.offset(line_text, ELLIPSIS_LEN)
+			if not from then return line_text:to_utf8(editor.CodePage) end
+			return line_text:sub(1, to):to_utf8(editor.CodePage)..'..'
 		end
 
 		local function get_or_add_parent_item()
@@ -121,7 +123,11 @@ return function(tabs, panel_width, colorback, colorfore)
 			ini:write_string(line, GetLineText(line))
 			local parent_item = get_or_add_parent_item()
 			tree_bookmarks:tree_remove_childs(parent_item)
-			for i = 0, editor.LineCount do if (editor:MarkerGet(i) // 2 % 2 == 1) or (i == line) then tree_bookmarks:add_item(GetLineText(i), parent_item, BM_LINE_IDX) end end
+			for i = 0, editor.LineCount do
+				if (editor:MarkerGet(i) // 2 % 2 == 1) or (i == line) then
+					tree_bookmarks:add_item(GetLineText(i), parent_item, BM_LINE_IDX)
+				end
+			end
 			tree_bookmarks:tree_expand(parent_item)
 		end
 

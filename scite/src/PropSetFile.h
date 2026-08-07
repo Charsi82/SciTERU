@@ -36,15 +36,15 @@ public:
 	void Unset(std::string_view key);
 	void Clear() noexcept;
 
-	bool Exists(std::string_view key) const;
+	[[nodiscard]] bool Exists(std::string_view key) const;
 	[[nodiscard]] std::string_view Get(std::string_view key) const;
-	std::string GetString(std::string_view key) const;
-	std::string Evaluate(std::string_view key) const;
-	std::string GetExpandedString(std::string_view key) const;
-	std::string Expand(std::string_view withVars, int maxExpands=200) const;
-	int GetInt(std::string_view key, int defaultValue=0) const;
-	intptr_t GetInteger(std::string_view key, intptr_t defaultValue=0) const;
-	long long GetLongLong(std::string_view key, long long defaultValue=0) const;
+	[[nodiscard]] std::string GetString(std::string_view key) const;
+	[[nodiscard]] std::string Evaluate(std::string_view key) const;
+	[[nodiscard]] std::string GetExpandedString(std::string_view key) const;
+	[[nodiscard]] std::string Expand(std::string_view withVars, int maxExpands=200) const;
+	[[nodiscard]] int GetInt(std::string_view key, int defaultValue=0) const;
+	[[nodiscard]] intptr_t GetInteger(std::string_view key, intptr_t defaultValue=0) const;
+	[[nodiscard]] long long GetLongLong(std::string_view key, long long defaultValue=0) const;
 
 	enum class ReadLineState { active, excludedModule, conditionFalse };
 	ReadLineState ReadLine(const std::string &lineBuffer, ReadLineState rls, const FilePath &directoryForImports, const ImportFilter &filter,

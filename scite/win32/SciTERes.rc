@@ -8,7 +8,7 @@
 #include "SciTE.h"
 
 SciTE ICON SciBall.ico
-
+IDI_BUSY ICON Busy.ico
 #ifdef RB_BUILD
 SciTEfile ICON "SciTE-file.ico" //!-add-[NewIcons]
 SciTEses ICON "SciTE-ses.ico" //!-add-[NewIcons]

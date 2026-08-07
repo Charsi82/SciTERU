@@ -18,22 +18,23 @@ constexpr int IntFromTwoShorts(short a, short b) noexcept {
 	return a | (b << 16);
 }
 
-#if defined (RB_SUBMENU) || defined (RB_ECM)
+#if defined (RB_SUBMENU) || defined (RB_ExtContextMenu)
 //!-start-[ExtendedContextMenu]
 class MenuEx {
-	void* mid;
+	void* mid{};
 public:
-	MenuEx(void* _id = 0) : mid(_id) {}
-	void* GetID() const { return mid; }
-	void Add(const GUI::gui_char* label = 0, int cmd = 0, int enabled = 1, const char* mnemonic = 0, int position = -1);
-	void AddSubMenu(const GUI::gui_char* label, MenuEx& subMenu, int position = -1);
-	void RemoveItems(int fromID = 0, int toID = -1);
-	void CreatePopUp(MenuEx* parentMenu);
-	void Destroy();
-	void Show(GUI::Point pt, GUI::Window& w);
+	MenuEx() noexcept = default;
+	MenuEx(void* _id) : mid(_id) {}
+	[[nodiscard]] void* GetID() const noexcept { return mid; }
+	void Add(const GUI::gui_char* label = nullptr, int cmd = 0, int enabled = 1, const char* mnemonic = nullptr, int position = -1) const;
+	void AddSubMenu(const GUI::gui_string_view label, MenuEx& subMenu, int position = -1) const;
+	void RemoveItems(int fromID = 0, int toID = -1) const;
+	void CreatePopUp();
+	void Destroy() noexcept;
+	void Show(GUI::Point pt, const GUI::Window& w);
 };
 //!-end-[ExtendedContextMenu]
-#endif // RB_SUBMENU || RB_ECM
+#endif // RB_SUBMENU || RB_ExtContextMenu
 
 /**
  * The order of menus on Windows - the Buffers menu may not be present
@@ -165,10 +166,10 @@ public:
 };
 
 struct BackgroundActivities {
-	int loaders;
-	int storers;
-	size_t totalWork;
-	size_t totalProgress;
+	int loaders = 0;
+	int storers = 0;
+	size_t totalWork = 0;
+	size_t totalProgress = 0;
 	GUI::gui_string fileNameLast;
 };
 
@@ -187,16 +188,16 @@ public:
 	bool initialised;
 
 	BufferList();
-	BufferIndex size() const noexcept;
+	[[nodiscard]] BufferIndex size() const noexcept;
 	void Allocate(BufferIndex maxSize);
 	BufferIndex Add();
 	BufferIndex GetDocumentByWorker(const FileWorker *pFileWorker) const noexcept;
 	BufferIndex GetDocumentByName(const FilePath &filename, bool excludeCurrent=false) const noexcept;
 	void RemoveInvisible(BufferIndex index);
 	void RemoveCurrent();
-	BufferIndex Current() const noexcept;
-	Buffer *CurrentBuffer() noexcept;
-	const Buffer *CurrentBufferConst() const noexcept;
+	[[nodiscard]] BufferIndex Current() const noexcept;
+	[[nodiscard]] Buffer *CurrentBuffer() noexcept;
+	[[nodiscard]] const Buffer *CurrentBufferConst() const noexcept;
 	void SetCurrent(BufferIndex index) noexcept;
 	BufferIndex StackNext() noexcept;
 	BufferIndex StackPrev() noexcept;
@@ -204,10 +205,10 @@ public:
 	void MoveToStackTop(BufferIndex index);
 	void ShiftTo(BufferIndex indexFrom, BufferIndex indexTo) noexcept;
 	void Swap(BufferIndex indexA, BufferIndex indexB);
-	bool SingleBuffer() const noexcept;
-	BackgroundActivities CountBackgroundActivities() const;
-	bool SavingInBackground() const noexcept;
-	bool GetVisible(BufferIndex index) const noexcept;
+	[[nodiscard]] bool SingleBuffer() const noexcept;
+	[[nodiscard]] BackgroundActivities CountBackgroundActivities() const;
+	[[nodiscard]] bool SavingInBackground() const noexcept;
+	[[nodiscard]] bool GetVisible(BufferIndex index) const noexcept;
 	void SetVisible(BufferIndex index, bool visible);
 private:
 	void PopStack() noexcept;
@@ -272,26 +273,17 @@ struct CurrentWordHighlight {
 		delay,              // Delay before to highlight the word at the caret.
 		delayJustEnded,     // Delay has just ended. This state allows to ignore next HighlightCurrentWord (UpdateUI and SC_UPDATE_CONTENT for setting indicators).
 		delayAlreadyElapsed // Delay has already elapsed, word at the caret and occurrences are (or have to be) highlighted.
-	} statesOfDelay;
-	bool isEnabled;
-	bool textHasChanged;
+	} statesOfDelay = StatesOfDelay::noDelay;
+	bool isEnabled = false;
 	GUI::ElapsedTime elapsedTimes;
-	bool isOnlyWithSameStyle;
-
-	CurrentWordHighlight() {
-		statesOfDelay = StatesOfDelay::noDelay;
-		isEnabled = false;
-		textHasChanged = false;
-		isOnlyWithSameStyle = false;
-	}
+	bool isOnlyWithSameStyle = false;
 };
 
 class Localization : public PropSetFile, public ILocalize {
 	std::string missing;
 public:
-	bool read;
-	Localization() : PropSetFile(true), read(false) {
-	}
+	bool read = false;
+	Localization() : PropSetFile(true) {}
 	// Deleted so Localization objects can not be copied.
 	Localization(const Localization &) = delete;
 	Localization(Localization &&) = delete;
@@ -430,7 +422,7 @@ protected:
 	{
 	public:
 		intptr_t Call(SA::Message msg, uintptr_t wParam = 0, intptr_t lParam = 0) override;
-		SciTEBase* pBase;
+		SciTEBase* pBase{};
 	};
 	ScintillaWindowEditor wEditor;
 	friend class ScintillaWindowEditor;
@@ -446,10 +438,10 @@ protected:
 	GUI::Window wStatusBar;
 	GUI::Window wTabBar;
 
-#ifndef RB_ECM
+#ifndef RB_ExtContextMenu
 	//!-remove-[ExtendedContextMenu]
 	GUI::Menu popup;
-#endif // RB_ECM
+#endif // RB_ExtContextMenu
 
 	int contextSelection = -1;
 	bool tbVisible;
@@ -637,7 +629,7 @@ protected:
 	GUI::ScintillaWindow &PaneSource(int destination) noexcept;
 	intptr_t CallFocusedElseDefault(int defaultValue, SA::Message msg, uintptr_t wParam = 0, intptr_t lParam = 0);
 	void CallChildren(SA::Message msg, uintptr_t wParam = 0, intptr_t lParam = 0);
-	std::string GetTranslationToAbout(const char *const propname, bool retainIfNotFound = true);
+	std::string GetTranslationToAbout(std::string_view propname, bool retainIfNotFound = true);
 	SA::Position LengthDocument();
 	SA::Position GetCaretInLine();
 	std::string GetLine(SA::Line line);
@@ -946,16 +938,19 @@ protected:
 
 	virtual void CheckMenus();
 	
-#ifndef RB_ECM
+#ifndef RB_ExtContextMenu
 	//!-remove-[ExtendedContextMenu]
 	virtual void AddToPopUp(const char *label, int cmd = 0, bool enabled = true) = 0;
 #else
 	//!-start-[ExtendedContextMenu]
 	int IsMenuItemEnabled(int cmd);
-	void GenerateMenu(MenuEx* subMenu, const char*& userContextItem,
+	//void GenerateMenu(MenuEx* subMenu, const char*& userContextItem,
+	//	const char*& endDefinition, int& item, bool& isAdded, int parent = 0); 
+	void GenerateMenu(std::vector<MenuEx>& subMenu, const char*& userContextItem,
 		const char*& endDefinition, int& item, bool& isAdded, int parent = 0);
+	bool GenerateMenuFrom(std::vector<MenuEx>& subMenu, std::string& data);
 	//!-end-[ExtendedContextMenu]
-#endif // RB_ECM
+#endif // RB_ExtContextMenu
 
 #ifdef RB_SUBMENU
 	//!-start-[SubMenu]
@@ -963,7 +958,7 @@ protected:
 	//!-end-[SubMenu]
 #endif // RB_SUBMENU
 
-	void ContextMenu(GUI::ScintillaWindow &wSource, GUI::Point pt, GUI::Point ptClient, GUI::Window wCmd);
+	void ContextMenu(GUI::ScintillaWindow &wSource, GUI::Point pt, GUI::Point ptClient, const GUI::Window &wCmd);
 
 	void DeleteFileStackMenu();
 	void SetFileStackMenu();
@@ -1033,7 +1028,7 @@ protected:
 	void MoveSplit(GUI::Point ptNewDrag);
 
 	virtual void TimerStart(int mask);
-	virtual void TimerEnd(int mask);
+	virtual void TimerEnd(int mask) noexcept;
 	void OnTimer();
 	virtual void SetIdler(bool on);
 	void OnIdle();
@@ -1078,7 +1073,7 @@ protected:
 	std::string Property(const char *key) override;
 	void SetProperty(const char *key, const char *val) override;
 	void UnsetProperty(const char *key) override;
-	uintptr_t GetInstance() override;
+	uintptr_t GetInstance() noexcept override;
 	void ShutDown() override;
 	void Perform(const char *actionList) override;
 	void DoMenuCommand(int cmdID) override;
@@ -1105,7 +1100,7 @@ public:
 
 	enum { maxParam = 4 };
 
-	explicit SciTEBase(Extension *ext = 0);
+	explicit SciTEBase(Extension *ext = nullptr);
 	// Deleted copy-constructor and assignment operator.
 	SciTEBase(const SciTEBase &) = delete;
 	SciTEBase(SciTEBase &&) = delete;
@@ -1113,7 +1108,7 @@ public:
 	void operator=(SciTEBase &&) = delete;
 	~SciTEBase() override;
 
-	void Finalise();
+	void Finalise() noexcept;
 
 	GUI::WindowID GetID() const noexcept { return wSciTE.GetID(); }
 

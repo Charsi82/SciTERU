@@ -836,6 +836,7 @@
     <ClInclude Include="..\..\scintilla\win32\SurfaceGDI.h">
       <Filter>scintilla</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\scintilla\src\RunThreads.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\win32\SciTERes.rc" />

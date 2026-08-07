@@ -245,6 +245,13 @@ bool UIShouldBeFlat() noexcept {
 		       dwlConditionMask);
 }
 
+constexpr int iconSizeSmall = 16;
+
+HICON IconLoad(LPCWSTR name) noexcept {
+	return reinterpret_cast<HICON>(::LoadImageW(::GetModuleHandle(nullptr), name, IMAGE_ICON,
+		iconSizeSmall, iconSizeSmall, LR_DEFAULTSIZE));
+}
+
 }
 
 SciTEWin::SciTEWin(Extension *ext) : SciTEBase(ext) {
@@ -281,6 +288,8 @@ SciTEWin::SciTEWin(Extension *ext) : SciTEBase(ext) {
 	modalParameters = false;
 	staticBuild = false;
 	menuSource = 0;
+
+	iconBusy = IconLoad(MAKEINTRESOURCEW(IDI_BUSY));
 
 	hWriteSubProcess = {};
 	subProcessGroupId = 0;
@@ -347,9 +356,22 @@ SciTEWin::~SciTEWin() {
 		::DeleteObject(fontTabs);
 	if (hAccTable)
 		::DestroyAcceleratorTable(hAccTable);
+
+	if (pTaskBar) {
+		try {
+			pTaskBar->Release();
+		} catch (...) {
+			// Won't happen but don't want to mark shutdown this as throwing
+		}
+		pTaskBar = nullptr;
+	}
+	if (iconBusy) {
+		::DestroyIcon(iconBusy);
+	}
+	iconBusy = {};
 }
 
-uintptr_t SciTEWin::GetInstance() {
+uintptr_t SciTEWin::GetInstance() noexcept {
 	return reinterpret_cast<uintptr_t>(hInstance);
 }
 
@@ -730,14 +752,14 @@ void SciTEWin::ExecuteOtherHelp(const char *cmd) {
 
 // HH_AKLINK not in mingw headers
 struct XHH_AKLINK {
-	long cbStruct;
-	BOOL fReserved;
-	const wchar_t *pszKeywords;
-	wchar_t *pszUrl;
-	wchar_t *pszMsgText;
-	wchar_t *pszMsgTitle;
-	wchar_t *pszWindow;
-	BOOL fIndexOnFail;
+	long cbStruct = 0;
+	BOOL fReserved = FALSE;
+	const wchar_t *pszKeywords = nullptr;
+	wchar_t *pszUrl = nullptr;
+	wchar_t *pszMsgText = nullptr;
+	wchar_t *pszMsgTitle = nullptr;
+	wchar_t *pszWindow = nullptr;
+	BOOL fIndexOnFail = TRUE;
 };
 
 // Help command lines contain topic!path
@@ -754,15 +776,9 @@ void SciTEWin::ExecuteHelp(const char *cmd) {
 			using HelpFn = HWND(WINAPI *)(HWND, const wchar_t *, UINT, DWORD_PTR);
 			HelpFn fnHHW = DLLFunction<HelpFn>(hHH, "HtmlHelpW");
 			if (fnHHW) {
-				XHH_AKLINK ak {};
+				XHH_AKLINK ak;
 				ak.cbStruct = sizeof(ak);
-				ak.fReserved = FALSE;
 				ak.pszKeywords = topic.c_str();
-				ak.pszUrl = nullptr;
-				ak.pszMsgText = nullptr;
-				ak.pszMsgTitle = nullptr;
-				ak.pszWindow = nullptr;
-				ak.fIndexOnFail = TRUE;
 				fnHHW({},
 				      path.c_str(),
 				      0x000d,          	// HH_KEYWORD_LOOKUP
@@ -833,7 +849,7 @@ void SciTEWin::FullScreenToggle() {
 		::SetWindowPos(MainHWND(), HWND_TOP,
 			       -::GetSystemMetrics(SM_CXSIZEFRAME),
 			       -topStuff,
-			       ::GetSystemMetrics(SM_CXSCREEN) + 2 * ::GetSystemMetrics(SM_CXSIZEFRAME),
+			       ::GetSystemMetrics(SM_CXSCREEN) + (2 * ::GetSystemMetrics(SM_CXSIZEFRAME)),
 			       ::GetSystemMetrics(SM_CYSCREEN) + topStuff + ::GetSystemMetrics(SM_CYSIZEFRAME),
 			       0);
 	} else {
@@ -920,7 +936,7 @@ void SciTEWin::Command(WPARAM wParam, LPARAM lParam) {
 		//!-start-[close_on_dbl_clk]
 	case IDC_TABDBLCLK:
 		if (props.GetInt("tabbar.tab.close.on.doubleclick") == 1) {
-			CloseTab((int)lParam);
+			CloseTab(static_cast<int>(lParam));
 		}
 		break;
 		//!-end-[close_on_dbl_clk]
@@ -941,7 +957,7 @@ UINT CodePageFromCharSet(SA::CharacterSet characterSet, UINT documentCodePage) n
 	const BOOL bci = ::TranslateCharsetInfo(reinterpret_cast<DWORD *>(static_cast<uintptr_t>(characterSet)),
 						&ci, TCI_SRCCHARSET);
 
-	UINT cp = (bci) ? ci.ciACP : documentCodePage;
+	UINT cp = bci ? ci.ciACP : documentCodePage;
 
 	CPINFO cpi {};
 	if (!::IsValidCodePage(cp) && !::GetCPInfo(cp, &cpi))
@@ -992,6 +1008,9 @@ void SciTEWin::ResetExecution() {
 	CheckReload();
 	CheckMenus();
 	jobQueue.ClearJobs();
+	if (pTaskBar && props.GetInt("icon.busy")) {
+		pTaskBar->SetOverlayIcon(MainHWND(), {}, L"");
+	}
 }
 
 void SciTEWin::ExecuteNext() {
@@ -1233,7 +1252,7 @@ DWORD SciTEWin::ExecuteOne(const Job &jobToRun) {
 				// with reads, so that our hRead buffer will not be overrun with results.
 
 				size_t bytesToWrite;
-				const size_t eolPos = jobToRun.input.find("\n", writingPosition);
+				const size_t eolPos = jobToRun.input.find('\n', writingPosition);
 				if (eolPos == std::string::npos) {
 					bytesToWrite = totalBytesToWrite - writingPosition;
 				} else {
@@ -1518,6 +1537,9 @@ void SciTEWin::Execute() {
 	} else {
 		// Execute other jobs asynchronously on a new thread
 		PerformOnNewThread(&cmdWorker);
+		if (pTaskBar && props.GetInt("icon.busy")) {
+			pTaskBar->SetOverlayIcon(MainHWND(), iconBusy, L"Executing");
+		}
 	}
 }
 
@@ -1992,15 +2014,14 @@ bool SciTEWin::IsStdinBlocked() noexcept {
 	return true;
 }
 
-void SciTEWin::MinimizeToTray() {
+void SciTEWin::MinimizeToTray() noexcept {
 	NOTIFYICONDATA nid {};
 	nid.cbSize = sizeof(nid);
 	nid.hWnd = MainHWND();
 	nid.uID = 1;
 	nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
 	nid.uCallbackMessage = SCITE_TRAY;
-	nid.hIcon = static_cast<HICON>(
-			    ::LoadImageW(hInstance, L"SCITE", IMAGE_ICON, 16, 16, LR_DEFAULTSIZE));
+	nid.hIcon = IconLoad(L"SCITE");
 	StringCopy(nid.szTip, L"SciTE");
 	::ShowWindow(MainHWND(), SW_MINIMIZE);
 	if (::Shell_NotifyIcon(NIM_ADD, &nid)) {
@@ -2008,7 +2029,7 @@ void SciTEWin::MinimizeToTray() {
 	}
 }
 
-void SciTEWin::RestoreFromTray() {
+void SciTEWin::RestoreFromTray() noexcept {
 	NOTIFYICONDATA nid {};
 	nid.cbSize = sizeof(nid);
 	nid.hWnd = MainHWND();
@@ -2086,12 +2107,10 @@ LRESULT SciTEWin::KeyDown(WPARAM wParam) {
 	//!-start-[OnKey]
 	if (extender) {
 		char ch[4]{};
-
 		static bool sPrevIsDeadKey = false;
-
-		bool bIsDeadKey = MapVirtualKey((UINT)wParam, 2) & 0x80008000;
-		if (bIsDeadKey) {
-			sPrevIsDeadKey == true ? sPrevIsDeadKey = false : sPrevIsDeadKey = true;
+		if (bool bIsDeadKey = MapVirtualKey(static_cast<UINT>(wParam), 2) & 0x80008000) {
+			//sPrevIsDeadKey == true ? sPrevIsDeadKey = false : sPrevIsDeadKey = true;
+			sPrevIsDeadKey = !sPrevIsDeadKey;
 		}
 		else {
 			if (sPrevIsDeadKey == false) {
@@ -2101,14 +2120,14 @@ LRESULT SciTEWin::KeyDown(WPARAM wParam) {
 				}
 
 				unsigned char masKS[256]{};
-				if (::GetKeyboardState(masKS) && ::ToAscii((UINT)wParam, MapVirtualKey((UINT)wParam, MAPVK_VK_TO_VSC), masKS, (LPWORD)ch, uFlags) != 1) {
+				if (::GetKeyboardState(masKS) && ::ToAscii(static_cast<UINT>(wParam), MapVirtualKey(static_cast<UINT>(wParam), MAPVK_VK_TO_VSC), masKS, (LPWORD)ch, uFlags) != 1) {
 					ch[0] = 0;
 				}
 			}
 			sPrevIsDeadKey = false;
 		}
 
-		if (extender->OnKey((int)wParam, modifierAsInt, ch[0])) {
+		if (extender->OnKey(static_cast<int>(wParam), modifierAsInt, ch[0])) {
 			return 1l;
 		}
 	}
@@ -2169,7 +2188,7 @@ LRESULT SciTEWin::KeyUp(WPARAM wParam) {
 	return 0;
 }
 
-#ifndef RB_ECM
+#ifndef RB_ExtContextMenu
 //!-remove-[ExtendedContextMenu]
 void SciTEWin::AddToPopUp(const char *label, int cmd, bool enabled) {
 	GUI::gui_string localised = localiser.Text(label);
@@ -2181,7 +2200,7 @@ void SciTEWin::AddToPopUp(const char *label, int cmd, bool enabled) {
 	else
 		::AppendMenuW(menu, MF_STRING | MF_DISABLED | MF_GRAYED, cmd, localised.c_str());
 }
-#endif // !RB_ECM
+#endif // !RB_ExtContextMenu
 
 LRESULT SciTEWin::ContextMenuMessage(UINT iMessage, WPARAM wParam, LPARAM lParam) {
 	GUI::ScintillaWindow *w = &wEditor;
@@ -2336,11 +2355,11 @@ LRESULT SciTEWin::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) {
 				MINMAXINFO *pmmi = reinterpret_cast<MINMAXINFO *>(lParam);
 				if (fullScreen) {
 					pmmi->ptMaxSize.x = ::GetSystemMetrics(SM_CXSCREEN) +
-							    2 * ::GetSystemMetrics(SM_CXSIZEFRAME);
+							    (2 * ::GetSystemMetrics(SM_CXSIZEFRAME));
 					pmmi->ptMaxSize.y = ::GetSystemMetrics(SM_CYSCREEN) +
 							    ::GetSystemMetrics(SM_CYCAPTION) +
 							    ::GetSystemMetrics(SM_CYMENU) +
-							    2 * ::GetSystemMetrics(SM_CYSIZEFRAME);
+							    (2 * ::GetSystemMetrics(SM_CYSIZEFRAME));
 					pmmi->ptMaxTrackSize.x = pmmi->ptMaxSize.x;
 					pmmi->ptMaxTrackSize.y = pmmi->ptMaxSize.y;
 					return 0;
@@ -2532,7 +2551,7 @@ std::string SciTEWin::EncodeString(const std::string &s) {
 
 // Convert String from doc encoding to UTF-8
 std::string SciTEWin::GetRangeInUIEncoding(GUI::ScintillaWindow &win, SA::Span span) {
-	const std::string s = SciTEBase::GetRangeInUIEncoding(win, span);
+	std::string s = SciTEBase::GetRangeInUIEncoding(win, span);
 
 	UINT codePageDocument = wEditor.CodePage();
 
@@ -2685,28 +2704,28 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int) {
 	return static_cast<int>(result);
 }
 
-#if defined (RB_SUBMENU) || defined (RB_ECM)
+#if defined (RB_SUBMENU) || defined (RB_ExtContextMenu)
 //!-start-[ExtendedContextMenu]
-void MenuEx::CreatePopUp(MenuEx*) {
+void MenuEx::CreatePopUp() {
 	Destroy();
 	mid = ::CreatePopupMenu();
 }
 
-void MenuEx::Destroy() {
+void MenuEx::Destroy() noexcept {
 	if (mid) {
 		::DestroyMenu(reinterpret_cast<HMENU>(mid));
-		mid = 0;
+		mid = {};
 	}
 }
 
-void MenuEx::Show(GUI::Point pt, GUI::Window & w) {
+void MenuEx::Show(GUI::Point pt, const GUI::Window& w) {
 	::TrackPopupMenu(reinterpret_cast<HMENU>(mid),
 		0, pt.x - 4, pt.y, 0,
 		reinterpret_cast<HWND>(w.GetID()), NULL);
 	Destroy();
 }
 
-void MenuEx::Add(const GUI::gui_char * label, int cmd, int enabled, const char* mnemonic, int position) {
+void MenuEx::Add(const GUI::gui_char* label, int cmd, int enabled, const char* mnemonic, int position) const {
 	HMENU menu = reinterpret_cast<HMENU>(GetID());
 	GUI::gui_string sTextMnemonic = label ? label : GUI_TEXT("");
 	long keycode = 0;
@@ -2716,8 +2735,8 @@ void MenuEx::Add(const GUI::gui_char * label, int cmd, int enabled, const char* 
 			sTextMnemonic += GUI_TEXT("\t") + GUI::StringFromUTF8(mnemonic);
 	}
 
-	UINT flags;
-	if (sTextMnemonic.length() == 0)
+	UINT flags{};
+	if (sTextMnemonic.empty())
 		flags = MF_BYPOSITION | MF_SEPARATOR;
 	else {
 		switch (enabled)
@@ -2737,27 +2756,29 @@ void MenuEx::Add(const GUI::gui_char * label, int cmd, int enabled, const char* 
 	::InsertMenuW(menu, (UINT)position, flags, cmd, sTextMnemonic.c_str());
 
 	if (cmd >= IDM_TOOLS) {
-		MENUITEMINFO mii;
-		mii.cbSize = sizeof(MENUITEMINFO);
-		mii.fMask = MIIM_DATA;
-		mii.dwItemData = reinterpret_cast<DWORD&>(keycode);
+		MENUITEMINFO mii{
+			.cbSize = sizeof(MENUITEMINFO),
+			.fMask = MIIM_DATA,
+			.dwItemData = reinterpret_cast<DWORD&>(keycode)
+		};
 		::SetMenuItemInfo(menu, cmd, FALSE, &mii);
 	}
 }
 
-void MenuEx::AddSubMenu(const GUI::gui_char * label, MenuEx & subMenu, int position) {
-	if (label && *label && subMenu.GetID())
+void MenuEx::AddSubMenu(const GUI::gui_string_view label, MenuEx& subMenu, int position) const {
+	if (label.empty()) return;
+	if (UINT_PTR id = reinterpret_cast<UINT_PTR>(subMenu.GetID()))
 	{
 		HMENU menu = reinterpret_cast<HMENU>(GetID());
-		::InsertMenu(menu, (UINT)position, MF_BYPOSITION | MF_STRING | MF_POPUP, (UINT_PTR)subMenu.GetID(), label);
+		::InsertMenuW(menu, (UINT)position, MF_BYPOSITION | MF_STRING | MF_POPUP, id, label.data());
 	}
 }
 
-void MenuEx::RemoveItems(int fromID, int toID/*-1*/) {
+void MenuEx::RemoveItems(int fromID, int toID/*-1*/) const {
 	if (GetID() && fromID >= 0) {
 		HMENU hMenu = reinterpret_cast<HMENU>(GetID());
 		int	ptr = 0, to_check = 0;
-		HMENU UMenu[300];
+		HMENU UMenu[300]{};
 		UMenu[ptr++] = hMenu;
 
 		int i;
@@ -2777,4 +2798,4 @@ void MenuEx::RemoveItems(int fromID, int toID/*-1*/) {
 	}
 }
 //!-end-[ExtendedContextMenu]
-#endif // RB_SUBMENU || RB_ECM
+#endif // RB_SUBMENU || RB_ExtContextMenu

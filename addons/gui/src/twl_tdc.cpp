@@ -12,10 +12,12 @@
 #include "lua.hpp"
 #include "luabinder.hpp"
 #include "utf.h"
+#include "twl_tdc.hpp"
+#include "twl_bitmap.hpp"
 
 ////////////////////////////////////////////////////////////////////
-constexpr const char* MT_TDC = "TDC*";
 COLORREF lua_optColor(lua_State* L, int idx = 1, COLORREF def_clr = 0);
+twBitMap* lua_checkBitMap(lua_State* L, int idx);
 ////////////////////////////////////////////////////////////////////
 
 namespace
@@ -88,6 +90,42 @@ namespace
 			int x4 = luaL_checkinteger(L, 8);
 			int y4 = luaL_checkinteger(L, 9);
 			pTDC->chord(x1, y1, x2, y2, x3, y3, x4, y4);
+		}
+		return 0;
+	}
+
+	int tdc_set_bitmap(lua_State* L)
+	{
+		if (TDC* pTDC = lua_checkTDC(L))
+		{
+			if (twBitMap* pBitMap = lua_checkBitMap(L, 2))
+			{
+				int x = luaL_optinteger(L, 3, 0);
+				int y = luaL_optinteger(L, 4, 0);
+				int x1 = luaL_optinteger(L, 5, 0);
+				int y1 = luaL_optinteger(L, 6, 0);
+				int status = pTDC->set_bitmap(pBitMap, x, y, x1, y1);
+				lua_pushinteger(L, status);
+				return 1;
+			}
+		}
+		return 0;
+	}
+
+	int tdc_stretch_bitmap(lua_State* L)
+	{
+		if (TDC* pTDC = lua_checkTDC(L))
+		{
+			if (twBitMap* pBitMap = lua_checkBitMap(L, 2))
+			{
+				int x = luaL_optinteger(L, 3, 0);
+				int y = luaL_optinteger(L, 4, 0);
+				int w = luaL_optinteger(L, 5, 0);
+				int h = luaL_optinteger(L, 6, 0);
+				int status = pTDC->stretch_bitmap(pBitMap, x, y, w, h);
+				lua_pushinteger(L, status);
+				return 1;
+			}
 		}
 		return 0;
 	}
@@ -226,11 +264,10 @@ namespace
 	{
 		if (TDC* pTDC = lua_checkTDC(L))
 		{
-			int x = luaL_checkinteger(L, 2);
-			int y = luaL_checkinteger(L, 3);
+			const int x = luaL_checkinteger(L, 2);
+			const int y = luaL_checkinteger(L, 3);
 			COLORREF clr = lua_optColor(L, 4);
 			pTDC->set_pixel(x, y, clr);
-
 		}
 		return 0;
 	}
@@ -317,31 +354,33 @@ const luaL_Reg LuaBinder<twTDC>::metamethods[] =
 
 const luaL_Reg LuaBinder<twTDC>::methods[] =
 {
-	{ "color_back", tdc_back_text		},
-	{ "color_text", tdc_color_text		},
-	{ "text_align", tdc_set_text_align	},
-	{ "draw_text",  tdc_draw_text		},
+	{ "color_back",		tdc_back_text		},
+	{ "color_text",		tdc_color_text		},
+	{ "text_align",		tdc_set_text_align	},
+	{ "draw_text",		tdc_draw_text		},
 
-	{ "reset_pen",	tdc_reset_pen	},
-	{ "set_pen",	tdc_set_pen		},
-	{ "xor_pen",	tdc_set_xorpen	},
+	{ "reset_pen",		tdc_reset_pen		},
+	{ "set_pen",		tdc_set_pen			},
+	{ "xor_pen",		tdc_set_xorpen		},
 
-	{ "solid_brush",tdc_set_solid_brush },
-	{ "hatch_brush",tdc_set_hatch_brush },
+	{ "solid_brush",	tdc_set_solid_brush },
+	{ "hatch_brush",	tdc_set_hatch_brush },
 
-	{ "move_to",	tdc_move_to		},
-	{ "set_pixel",	tdc_set_pixel	},
-	{ "line_to",	tdc_line_to		},
-	{ "draw_line",	tdc_draw_line	},
-	{ "polyline",	tdc_polyline	},
-	{ "polybezier",	tdc_polybezier	},
-	{ "rectangle",  tdc_rectangle	},
-	{ "polygone",   tdc_polygone	},
-	{ "ellipse",	tdc_ellipse		},
-	{ "round_rect",	tdc_round_rect	},
-	{ "chord",		tdc_chord		},
+	{ "move_to",		tdc_move_to			},
+	{ "set_pixel",		tdc_set_pixel		},
+	{ "line_to",		tdc_line_to			},
+	{ "draw_line",		tdc_draw_line		},
+	{ "polyline",		tdc_polyline		},
+	{ "polybezier",		tdc_polybezier		},
+	{ "rectangle",		tdc_rectangle		},
+	{ "polygone",		tdc_polygone		},
+	{ "ellipse",		tdc_ellipse			},
+	{ "round_rect",		tdc_round_rect		},
+	{ "chord",			tdc_chord			},
+	{ "set_bitmap",		tdc_set_bitmap		},
+	{ "stretch_bitmap",	tdc_stretch_bitmap	},
 
-	{ "select_stock", tdc_select_stock },
+	{ "select_stock",	tdc_select_stock	},
 	{ NULL, NULL }
 };
 

@@ -75,16 +75,16 @@ inline void lua_push_newobject(lua_State* L, Args... args)
 }
 
 template<class T>
-inline T* check_udata(lua_State* L, int n = 1)
+inline T* check_udata(lua_State* L, int idx = 1)
 {
-	T** obj = reinterpret_cast<T**>(luaL_checkudata(L, n, T::classname()));
+	T** obj = reinterpret_cast<T**>(luaL_checkudata(L, idx, T::classname()));
 	return obj ? *obj : nullptr;
 }
 
 template<class T>
-inline T* check_arg(lua_State* L)
+inline T* check_arg(lua_State* L, int idx = 1)
 {
-	T* obj = check_udata<T>(L);
+	T* obj = check_udata<T>(L, idx);
 	if (!obj)
 	{
 		lua_pushfstring(L, "there is not %s", T::classname());
@@ -96,7 +96,11 @@ inline T* check_arg(lua_State* L)
 template<class T>
 inline int do_destroy(lua_State* L)
 {
-	if (T* obj = check_udata<T>(L))
-		delete obj;
+	T** obj = reinterpret_cast<T**>(luaL_checkudata(L, 1, T::classname()));
+	if (obj && *obj)
+	{
+		delete *obj;
+		*obj = nullptr;
+	}
 	return 0;
 }

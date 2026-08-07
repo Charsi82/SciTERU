@@ -36,7 +36,7 @@ public:
 	virtual std::string Property(const char *key)=0;
 	virtual void SetProperty(const char *key, const char *val)=0;
 	virtual void UnsetProperty(const char *key)=0;
-	virtual uintptr_t GetInstance()=0;
+	virtual uintptr_t GetInstance() noexcept =0;
 	virtual void ShutDown()=0;
 	virtual void Perform(const char *actions)=0;
 	virtual void DoMenuCommand(int cmdID)=0;

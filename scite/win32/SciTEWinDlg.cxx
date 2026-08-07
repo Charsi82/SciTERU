@@ -197,7 +197,7 @@ void SciTEWin::WarnUser(int warnID) {
 		sound = warningFields[1];
 	}
 	int flashLen = 0;
-	if (warningFields.size() > 0) {
+	if (!warningFields.empty()) {
 		flashLen = IntegerFromString(warningFields[0], 0);
 	}
 
@@ -284,12 +284,12 @@ HWND SciTEWin::CreateParameterisedDialog(LPCWSTR lpTemplateName, DLGPROC lpProc)
 
 GUI::gui_string SciTEWin::DialogFilterFromProperty(const GUI::gui_string &filterProperty) {
 	std::vector<GUI::gui_string> transformed;
-	if (filterProperty.length()) {
+	if (!filterProperty.empty()) {
 		const std::vector<GUI::gui_string> filters = StringSplit(filterProperty, GUI_TEXT('|'));
 		for (size_t i = 0; i < filters.size()-1; i+=2) {
 			if (!filters[i].starts_with(GUI_TEXT("#"))) {
 				const GUI::gui_string localised = localiser.Text(GUI::UTF8FromString(filters[i]), false);
-				if (localised.size()) {
+				if (!localised.empty()) {
 					transformed.push_back(localised);
 				} else {
 					transformed.push_back(filters[i]);
@@ -1146,7 +1146,7 @@ BOOL SciTEWin::ReplaceMessage(HWND hDlg, UINT message, WPARAM wParam) {
 			dlg.SetItemText(IDFINDSTYLE, std::to_wstring(
 						wEditor.UnsignedStyleAt(wEditor.CurrentPos())));
 		}
-		if (findWhat.length() != 0 && props.GetInt("find.replacewith.focus", 1)) {
+		if (!findWhat.empty() && props.GetInt("find.replacewith.focus", 1)) {
 			::SetFocus(::GetDlgItem(hDlg, IDREPLACEWITH));
 			return FALSE;
 		}
@@ -1297,15 +1297,14 @@ int __stdcall BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM, LPARAM pData) {
 void SciTEWin::PerformGrep() {
 	SelectionIntoProperties();
 
-	std::string findInput;
 	long flags = 0;
-	if (props.GetString("find.input").length()) {
-		findInput = props.GetNewExpandString("find.input");
+	const std::string findInput = props.GetNewExpandString("find.input");
+	if (!findInput.empty()) {
 		flags += jobHasInput;
 	}
 
-	std::string findCommand = props.GetNewExpandString("find.command");
-	if (findCommand == "") {
+	const std::string findCommand = props.GetNewExpandString("find.command");
+	if (findCommand.empty()) {
 		// Call InternalGrep in a new thread
 		// searchParams is "(w|~)(c|~)(d|~)(b|~)\0files\0text"
 		// A "w" indicates whole word, "c" case sensitive, "d" dot directories, "b" binary files
@@ -1480,7 +1479,7 @@ void SciTEWin::FindInFiles() {
 	props.Set("find.what", findWhat);
 
 	std::string directory = props.GetString("find.in.directory");
-	if (directory.length()) {
+	if (!directory.empty()) {
 		props.Set("find.directory", directory);
 	} else {
 		props.SetPath("find.directory", filePath.Directory());

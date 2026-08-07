@@ -89,7 +89,7 @@ void PropSetFile::SetLine(const char *keyVal, bool unescape) {
 		const ptrdiff_t lenKey = pKeyEnd - keyVal + 1;
 		const std::string_view key(keyVal, lenKey);
 		const std::string_view value(eqAt + 1, lenVal);
-		if (unescape && (key.find("\\") != std::string_view::npos)) {
+		if (unescape && (key.find('\\') != std::string_view::npos)) {
 			const std::string keyUnescaped = UnicodeUnEscape(key);
 			Set(keyUnescaped, value);
 		} else {
@@ -143,39 +143,6 @@ std::string PropSetFile::GetString(std::string_view key) const {
 
 namespace {
 
-void ShellEscape(std::string &str) {
-	for (ptrdiff_t i = str.length() - 1; i >= 0; --i) {
-		switch (str[i]) {
-		case ' ':
-		case '|':
-		case '&':
-		case ',':
-		case '`':
-		case '"':
-		case ';':
-		case ':':
-		case '!':
-		case '^':
-		case '$':
-		case '{':
-		case '}':
-		case '(':
-		case ')':
-		case '[':
-		case ']':
-		case '=':
-		case '<':
-		case '>':
-		case '\\':
-		case '\'':
-			str.insert(i, "\\");
-			break;
-		default:
-			break;
-		}
-	}
-}
-
 using OptArgument = std::optional<std::string_view>;
 
 OptArgument MatchCommand(std::string_view key, std::string_view command) {
@@ -190,9 +157,8 @@ OptArgument MatchCommand(std::string_view key, std::string_view command) {
 std::string PropSetFile::Evaluate(std::string_view key) const {
 	if (key.find(' ') != std::string_view::npos) {
 		if (OptArgument argEscape = MatchCommand(key, "escape ")) {
-			std::string val(Get(argEscape.value()));
-			ShellEscape(val);
-			return val;
+			const std::string_view val = Get(argEscape.value());
+			return ShellEscape(val);
 		} else if (OptArgument argCompare = MatchCommand(key, "= ")) {
 			const std::string sExpressions(argCompare.value());
 			std::vector<std::string> parts = StringSplit(sExpressions, ';');
@@ -404,7 +370,7 @@ void GetFullLine(std::string_view &data, std::string &lineBuffer) {
 }
 #endif // RB_PCMF
 
-bool IsCommentLine(std::string_view line) noexcept {
+constexpr bool IsCommentLine(std::string_view line) noexcept {
 	while (!line.empty() && IsSpaceOrTab(line.front()))
 		line.remove_prefix(1);
 	return line.starts_with('#');

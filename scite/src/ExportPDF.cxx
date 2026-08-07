@@ -67,13 +67,13 @@
 	Possible TODOs that will probably not be implemented: full styling,
 	optimization, font substitution, compression, character set encoding.
 */
-#define PDF_TAB_DEFAULT		8
-#define PDF_FONT_DEFAULT	1	// Helvetica
-#define PDF_FONTSIZE_DEFAULT	10
-#define PDF_SPACING_DEFAULT	1.2
-#define PDF_HEIGHT_DEFAULT	792	// Letter
-#define PDF_WIDTH_DEFAULT	612
-#define PDF_MARGIN_DEFAULT	72	// 1.0"
+constexpr int pdfTabDefault = 8;
+constexpr int pfdFontDefault = 1;	// Helvetica
+constexpr int pdfFontSizeDefault = 10;
+constexpr double pdfSpacingDefault = 1.2;
+constexpr int pdfHeightDefault = 792;	// Letter
+constexpr int pdfWidthDefault = 612;
+constexpr int pdfMarginDefault = 72;	// 1.0"
 #define PDF_ENCODING		"WinAnsiEncoding"
 
 struct PDFStyle {
@@ -90,19 +90,20 @@ const char *PDFfontNames[] = {
 };
 
 // ascender, descender aligns font origin point with page
-short PDFfontAscenders[] =  { 629, 718, 699 };
-short PDFfontDescenders[] = { 157, 207, 217 };
-short PDFfontWidths[] =     { 600,   0,   0 };
+const int PDFfontAscenders[] =  { 629, 718, 699 };
+const int PDFfontDescenders[] = { 157, 207, 217 };
+const int PDFfontWidths[] =     { 600,   0,   0 };
 
 std::string getPDFRGB(std::string_view stylecolour) {
 	std::string ret;
 	// grab colour components (max string length produced = 18)
-	for (int i = 1; i < 6; i += 2) {
+	for (int i = 1; i < 3*2; i += 2) {
 		char val[20] = "";
 		// 3 decimal places for enough dynamic range
-		const int c = (IntFromHexByte(stylecolour.substr(i,2)) * 1000 + 127) / 255;
-		if (c == 0 || c == 1000) {	// optimise
-			snprintf(val, std::size(val), "%d ", c / 1000);
+		constexpr int colourMax = 1000;
+		const int c = ((IntFromHexByte(stylecolour.substr(i,2)) * colourMax) + 127) / 255;
+		if (c == 0 || c == colourMax) {	// optimise
+			snprintf(val, std::size(val), "%d ", c / colourMax);
 		} else {
 			snprintf(val, std::size(val), "0.%03d ", c);
 		}
@@ -110,6 +111,9 @@ std::string getPDFRGB(std::string_view stylecolour) {
 	}
 	return ret;
 }
+
+constexpr size_t bufferSize = 250;
+constexpr int pageSizeDefault = 100;
 
 }
 
@@ -119,11 +123,11 @@ void SciTEBase::SaveToPDF(const FilePath &saveName) {
 	// All writes to fp passes through a PDFObjectTracker object.
 	class PDFObjectTracker {
 	private:
-		FILE *fp;
+		FILE *fp {};
 		std::vector<long> offsetList;
 	public:
-		int index;
-		explicit PDFObjectTracker(FILE *fp_) noexcept : fp(fp_), index(1) {
+		int index = 1;
+		explicit PDFObjectTracker(FILE *fp_) noexcept : fp(fp_) {
 		}
 
 		// Deleted so PDFObjectTracker objects can not be copied.
@@ -185,16 +189,17 @@ void SciTEBase::SaveToPDF(const FilePath &saveName) {
 		bool justWhiteSpace;
 		int styleCurrent, stylePrev;
 		double leading;
-		char buffer[250];
+		char buffer[bufferSize]{};
 	public:
 		PDFObjectTracker *oT;
 		std::vector<PDFStyle> style;
 		int fontSize;		// properties supplied by user
 		int fontSet;
-		long pageWidth, pageHeight;
+		int pageWidth;
+		int pageHeight;
 		GUI::Rectangle pageMargin;
 		//
-		PDFRender() : buffer{} {
+		PDFRender() {
 			pageStarted = false;
 			firstLine = false;
 			pageCount = 0;
@@ -204,13 +209,13 @@ void SciTEBase::SaveToPDF(const FilePath &saveName) {
 			justWhiteSpace = true;
 			styleCurrent = StyleDefault;
 			stylePrev = StyleDefault;
-			leading = PDF_FONTSIZE_DEFAULT * PDF_SPACING_DEFAULT;
+			leading = pdfFontSizeDefault * pdfSpacingDefault;
 			buffer[0] = '\0';
 			oT = nullptr;
 			fontSize = 0;
-			fontSet = PDF_FONT_DEFAULT;
-			pageWidth = 100;
-			pageHeight = 100;
+			fontSet = pfdFontDefault;
+			pageWidth = pageSizeDefault;
+			pageHeight = pageSizeDefault;
 		}
 		// Deleted so PDFRender objects can not be copied.
 		PDFRender(const PDFRender &) = delete;
@@ -218,8 +223,9 @@ void SciTEBase::SaveToPDF(const FilePath &saveName) {
 		PDFRender &operator=(const PDFRender &) = delete;
 		PDFRender &operator=(PDFRender &&) = delete;
 		//
-		double fontToPoints(int thousandths) const noexcept {
-			return (double)fontSize * thousandths / 1000.0;
+		[[nodiscard]] double fontToPoints(int thousandths) const noexcept {
+			constexpr double thousand = 1000.0;
+			return static_cast<double>(fontSize) * thousandths / thousand;
 		}
 		std::string setStyle(int style_) {
 			int styleNext = style_;
@@ -244,19 +250,15 @@ void SciTEBase::SaveToPDF(const FilePath &saveName) {
 		//
 		void startPDF() {
 			if (fontSize <= 0) {
-				fontSize = PDF_FONTSIZE_DEFAULT;
+				fontSize = pdfFontSizeDefault;
 			}
 			// leading is the term for distance between lines
-			leading = fontSize * PDF_SPACING_DEFAULT;
+			leading = fontSize * pdfSpacingDefault;
 			// sanity check for page size and margins
-			const int pageWidthMin = (int)leading + pageMargin.left + pageMargin.right;
-			if (pageWidth < pageWidthMin) {
-				pageWidth = pageWidthMin;
-			}
-			const int pageHeightMin = (int)leading + pageMargin.top + pageMargin.bottom;
-			if (pageHeight < pageHeightMin) {
-				pageHeight = pageHeightMin;
-			}
+			const int pageWidthMin = static_cast<int>(leading) + pageMargin.left + pageMargin.right;
+			pageWidth = std::max(pageWidth, pageWidthMin);
+			const int pageHeightMin = static_cast<int>(leading) + pageMargin.top + pageMargin.bottom;
+			pageHeight = std::max(pageHeight, pageHeightMin);
 			// start to write PDF file here (PDF1.4Ref(p63))
 			// ASCII>127 characters to indicate binary-possible stream
 			oT->write("%PDF-1.3\n%\xc7\xec\x8f\xa2\n");
@@ -270,7 +272,7 @@ void SciTEBase::SaveToPDF(const FilePath &saveName) {
 					"/Name/F%d/BaseFont/%s/Encoding/"
 					PDF_ENCODING
 					">>\n", i + 1,
-					PDFfontNames[fontSet * 4 + i]);
+					PDFfontNames[(fontSet * 4) + i]);
 				oT->add(buffer);
 			}
 			pageContentStart = oT->index;
@@ -290,7 +292,7 @@ void SciTEBase::SaveToPDF(const FilePath &saveName) {
 			const int pagesRef = pageObjectStart + pageCount;
 			for (int i = 0; i < pageCount; i++) {
 				snprintf(buffer, std::size(buffer), "<</Type/Page/Parent %d 0 R\n"
-					"/MediaBox[ 0 0 %ld %ld"
+					"/MediaBox[ 0 0 %d %d"
 					"]\n/Contents %d 0 R\n"
 					"/Resources %d 0 R\n>>\n",
 					pagesRef, pageWidth, pageHeight,
@@ -345,7 +347,7 @@ void SciTEBase::SaveToPDF(const FilePath &saveName) {
 			segment += ch;	// add to segment data
 		}
 		void flushSegment() {
-			if (segment.length() > 0) {
+			if (!segment.empty()) {
 				if (justWhiteSpace) {	// optimise
 					styleCurrent = stylePrev;
 				} else {
@@ -367,7 +369,7 @@ void SciTEBase::SaveToPDF(const FilePath &saveName) {
 			yPos = static_cast<double>(pageHeight - pageMargin.top) - fontAscender;
 			// start a new page
 			snprintf(buffer, std::size(buffer), "BT 1 0 0 1 %d %d Tm\n",
-				pageMargin.left, (int)yPos);
+				pageMargin.left, static_cast<int>(yPos));
 			pageData = buffer;
 			// force setting of initial font, colour
 			segStyle = setStyle(-1);
@@ -413,8 +415,9 @@ void SciTEBase::SaveToPDF(const FilePath &saveName) {
 			}
 			if (firstLine) {
 				// avoid breakage due to locale setting
-				const int f = static_cast<int>(leading * 10 + 0.5);
-				snprintf(buffer, std::size(buffer), "0 -%d.%d TD\n", f / 10, f % 10);
+				constexpr int decimal = 10;
+				const int f = static_cast<int>((leading * decimal) + 0.5);
+				snprintf(buffer, std::size(buffer), "0 -%d.%d TD\n", f / decimal, f % decimal);
 				firstLine = false;
 			} else {
 				snprintf(buffer, std::size(buffer), "T*\n");
@@ -427,16 +430,16 @@ void SciTEBase::SaveToPDF(const FilePath &saveName) {
 	RemoveFindMarks();
 	wEditor.ColouriseAll();
 	// read exporter flags
-	int tabSize = props.GetInt("tabsize", PDF_TAB_DEFAULT);
+	int tabSize = props.GetInt("tabsize", pdfTabDefault);
 	if (tabSize < 0) {
-		tabSize = PDF_TAB_DEFAULT;
+		tabSize = pdfTabDefault;
 	}
 	// read magnification value to add to default screen font size
 	pr.fontSize = props.GetInt("export.pdf.magnification");
 	// set font family according to face name
 	std::string propItem = props.GetExpandedString("export.pdf.font");
-	pr.fontSet = PDF_FONT_DEFAULT;
-	if (propItem.length()) {
+	pr.fontSet = pfdFontDefault;
+	if (!propItem.empty()) {
 		if (propItem == "Courier")
 			pr.fontSet = 0;
 		else if (propItem == "Helvetica")
@@ -449,26 +452,26 @@ void SciTEBase::SaveToPDF(const FilePath &saveName) {
 		props.GetExpandedString("export.pdf.pagesize"), ',');
 	pageSize.resize(2); // Ensure indexing won't fail
 	if (0 >= (pr.pageWidth = IntegerFromString(pageSize[0], 0))) {
-		pr.pageWidth = PDF_WIDTH_DEFAULT;
+		pr.pageWidth = pdfWidthDefault;
 	}
 	if (0 >= (pr.pageHeight = IntegerFromString(pageSize[1], 0))) {
-		pr.pageHeight = PDF_HEIGHT_DEFAULT;
+		pr.pageHeight = pdfHeightDefault;
 	}
 	// page margins: left, right, top, bottom
 	std::vector<std::string> pageMargins = StringSplit(
 		props.GetExpandedString("export.pdf.margins"), ',');
 	pageMargins.resize(4); // Ensure indexing won't fail
 	if (0 >= (pr.pageMargin.left = IntegerFromString(pageMargins[0], 0))) {
-		pr.pageMargin.left = PDF_MARGIN_DEFAULT;
+		pr.pageMargin.left = pdfMarginDefault;
 	}
 	if (0 >= (pr.pageMargin.right = IntegerFromString(pageMargins[1], 0))) {
-		pr.pageMargin.right = PDF_MARGIN_DEFAULT;
+		pr.pageMargin.right = pdfMarginDefault;
 	}
 	if (0 >= (pr.pageMargin.top = IntegerFromString(pageMargins[2], 0))) {
-		pr.pageMargin.top = PDF_MARGIN_DEFAULT;
+		pr.pageMargin.top = pdfMarginDefault;
 	}
 	if (0 >= (pr.pageMargin.bottom = IntegerFromString(pageMargins[3], 0))) {
-		pr.pageMargin.bottom = PDF_MARGIN_DEFAULT;
+		pr.pageMargin.bottom = pdfMarginDefault;
 	}
 
 	// collect all styles available for that 'language'
@@ -483,7 +486,7 @@ void SciTEBase::SaveToPDF(const FilePath &saveName) {
 		if (sd.specified != StyleDefinition::sdNone) {
 			if (sd.italics) { pr.style[i].font |= 2; }
 			if (sd.IsBold()) { pr.style[i].font |= 1; }
-			if (sd.fore.length()) {
+			if (!sd.fore.empty()) {
 				pr.style[i].fore = getPDFRGB(sd.fore);
 			} else if (i == StyleDefault) {
 				pr.style[i].fore = "0 0 0 ";
@@ -493,7 +496,7 @@ void SciTEBase::SaveToPDF(const FilePath &saveName) {
 				if (sd.size > 0)
 					pr.fontSize += sd.size;
 				else
-					pr.fontSize = PDF_FONTSIZE_DEFAULT;
+					pr.fontSize = pdfFontSizeDefault;
 			}
 		}
 	}

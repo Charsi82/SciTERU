@@ -224,6 +224,10 @@ protected:
 	HFONT fontTabs;
 	std::vector<GUI::gui_string> tabNamesCurrent;
 
+	// Task Bar access
+	ITaskbarList3 *pTaskBar = nullptr;
+	HICON iconBusy {};
+
 	/// Preserve focus during deactivation
 	HWND wFocus;
 
@@ -259,7 +263,7 @@ protected:
 	SystemAppearance CurrentAppearance() const noexcept override;
 
 	void TimerStart(int mask) override;
-	void TimerEnd(int mask) override;
+	void TimerEnd(int mask) noexcept override;
 
 	void ShowOutputOnMainThread() override;
 	void SizeContentWindows() override;
@@ -308,8 +312,8 @@ protected:
 	void FindMessageBox(const std::string &msg, const std::string *findItem = nullptr) override;
 	void AboutDialog() override;
 	void DropFiles(HDROP hdrop);
-	void MinimizeToTray();
-	void RestoreFromTray();
+	void MinimizeToTray() noexcept;
+	void RestoreFromTray() noexcept;
 	void SettingChanged(WPARAM wParam, LPARAM lParam);
 	void SysColourChanged(WPARAM wParam, LPARAM lParam);
 	void ScaleChanged(WPARAM wParam, LPARAM lParam);
@@ -440,10 +444,10 @@ public:
 	LRESULT KeyDown(WPARAM wParam);
 	LRESULT KeyUp(WPARAM wParam);
 
-#ifndef RB_ECM
+#ifndef RB_ExtContextMenu
 	//!-remove-[ExtendedContextMenu]
 	void AddToPopUp(const char *label, int cmd=0, bool enabled=true) override;
-#endif // RB_ECM
+#endif // RB_ExtContextMenu
 
 	LRESULT ContextMenuMessage(UINT iMessage, WPARAM wParam, LPARAM lParam);
 	void CheckForScintillaFailure(SA::Status statusFailure) noexcept;
@@ -452,7 +456,7 @@ public:
 	std::string EncodeString(const std::string &s) override;
 	std::string GetRangeInUIEncoding(GUI::ScintillaWindow &win, SA::Span span) override;
 
-	uintptr_t GetInstance() override;
+	uintptr_t GetInstance() noexcept override;
 	static void Register(HINSTANCE hInstance_) noexcept;
 	static LRESULT CALLBACK TWndProc(
 		HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);

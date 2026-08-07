@@ -265,6 +265,7 @@ protected:	// ScintillaBase subclass needs access to much of Editor
 	Sci::Position lengthForEncode;
 
 	Scintilla::Update needUpdateUI;
+	Sci::Position updateTextStart = InvalidPosition;
 
 	enum class PaintState { notPainting, painting, abandoned } paintState;
 	bool paintAbandonedByStyling;

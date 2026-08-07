@@ -38,7 +38,8 @@
 <p>GUI.dll — это библиотека Lua, реализующая функции окон и виджетов, а также некоторые прочие функции.<br />
 <b>Предназначена ТОЛЬКО для работы с редактором SciTE!</b><br />
 Примеры использования смотрим в файлах SideBar_tab*.lua и win_integrator.lua.<br />
-Вкладка Test, реализованная в файле SideBar_tab4.lua, активируется параметром <b>'sidebar.demo'</b> со значением 1.
+Вкладка Test, реализованная в файле SideBar_tab4.lua, активируется параметром <b>'sidebar.demo'</b> со значением 1.<br />
+Функции, задающие цвет чего-либо, принимают аргумент в виде строки "#RRGGBB" или числа 0xFFFFFF.
 </p>
 
 <h3>Подключение</h3>
@@ -172,7 +173,7 @@ end
 
 <tr><td>
 	<p class="head">
-		<dfn id="gui.get_folder">gui.get_folder( nIndex )</dfn><br />
+		<dfn id="gui.get_folder">gui.get_folder(nIndex)</dfn><br />
 	</p>
 	<p>
 		<b>Описание:</b><br />
@@ -626,7 +627,7 @@ end
 
 <tr><td>
 	<p class="head">
-		<dfn id="wnd:set_transparent">wnd:set_transparent( value )</dfn>
+		<dfn id="wnd:set_transparent">wnd:set_transparent(value)</dfn>
 	</p>
 	<p>
 		<b>Описание:</b><br />
@@ -2085,6 +2086,102 @@ end
 		<b>Описание:</b><br />
 		&nbsp;&nbsp;Устанавливает системный объект отрисовки (перо, кисть, шрифт).<br />
 </p></td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:select_stock">tdc:set_bitmap(bitmap, posx, posy)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Рисует изображение из указанной битовой карты в указанной позиции. По умолчанию posx = 0, posy = 0.<br />
+</p></td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:select_stock">tdc:stretch_bitmap(bitmap, posx, posy, width, height)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Масштабирует изображение из указанной битовой карты в указанную область. По умолчанию posx = 0, posy = 0.
+		Если width и height равны 0, то используется ширина и высота окна, для которого вызвана отрисовка.
+		<br />
+</p></td></tr>
+
+</table>
+
+<h3>Битовая карта (bitmap)</h3>
+
+<table width="100%" cellpadding="1" cellspacing="0" border="1">
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:select_stock">local bmp = gui.bitmap(nWidth, nHeight)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Создаёт битовую карту указанной высоты и ширины.<br />
+	</p>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:select_stock">bmp:reset(nWidth, nHeight)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Пересоздаёт битовую карту указанной высоты и ширины.<br />
+	</p>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:select_stock">bmp:fill("#RRGGBB")<br>bmp:fill(0xFFFFFF)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Заполняет все пикселы указанным цветом.<br />
+	</p>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:select_stock">bmp:grayscale()<br>bmp:grayscale(0.333, 0.333, 0.333)</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Переводит все пикселы в градации серого. Веса компонентов по умолчанию r = 0.299, g = 0.587, b = 0.114.<br />
+	</p>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:select_stock">bmp:set_pixel(x, y, "#RRGGBB")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Устанавливает цвет пиксела по координатам (x, y).<br />
+	</p>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:select_stock">bmp:get_pixel(x, y, "#RRGGBB")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Возвращает цвет пиксела по координатам (x, y).<br />
+	</p>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="tdc:select_stock">bmp:save_as_bmp("image.bmp")</dfn>
+	</p>
+	<p>
+		<b>Описание:</b><br />
+		&nbsp;&nbsp;Сохраняет карту в указанный bmp-файл.<br />
+	</p>
+</td></tr>
 
 </table>
 

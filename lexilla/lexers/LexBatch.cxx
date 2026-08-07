@@ -250,6 +250,7 @@ Sci_Position SCI_METHOD LexerBatch::WordListSet(int n, const char *wl) {
 }
 
 #ifdef RB_LEX_BATCH_EXP
+namespace {
 	//!-start-[BatchLexerImprovement]
 	// Tests for Environment Variable simbol
 	bool IsEnvironmentVar(char ch) noexcept
@@ -310,6 +311,7 @@ Sci_Position SCI_METHOD LexerBatch::WordListSet(int n, const char *wl) {
 		}
 		return 0;
 	}
+}
 	//!-end-[BatchLexerImprovement]
 #endif // RB_LEX_BATCH_EXP
 

@@ -107,13 +107,13 @@ public:
 	[[nodiscard]] bool Created() const noexcept {
 		return !!wid;
 	}
-	void Destroy();
+	void Destroy() noexcept;
 	[[nodiscard]] bool HasFocus() const noexcept;
-	[[nodiscard]] Rectangle GetPosition();
+	[[nodiscard]] Rectangle GetPosition() const noexcept;
 	void SetPosition(Rectangle rc);
-	[[nodiscard]] Rectangle GetClientPosition();
+	[[nodiscard]] Rectangle GetClientPosition() const noexcept;
 	void Show(bool show=true);
-	void InvalidateAll();
+	void InvalidateAll() noexcept;
 	void SetTitle(const gui_char *s);
 	void SetRedraw(bool redraw);
 };
@@ -131,7 +131,7 @@ public:
 	}
 	void CreatePopUp();
 	void Destroy() noexcept;
-	void Show(Point pt, Window &w);
+	void Show(Point pt, const Window &w);
 };
 
 // Simplified access to high precision timing.
@@ -161,7 +161,7 @@ public:
 	intptr_t Send(unsigned int msg, uintptr_t wParam=0, intptr_t lParam=0);
 };
 
-void SleepMilliseconds(int sleepTime);
+void SleepMilliseconds(int sleepTime) noexcept;
 
 }
 

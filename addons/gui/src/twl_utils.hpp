@@ -2,8 +2,9 @@
 
 // dialogs
 bool run_color_dlg(HWND win, COLORREF& cl);
-bool run_open_file_dialog(HWND win, wchar_t* result, const std::wstring& caption, std::wstring filter, bool multi = false);
-bool run_selelect_dir_dialog(HWND win, wchar_t* result, const wchar_t* descr, const wchar_t* initial_dir);
+bool run_open_file_dialog(HWND win, std::wstring& result, const wchar_t* caption, std::wstring filter, bool multi = false);
+bool run_save_file_dialog(HWND win, std::wstring& result, const wchar_t* caption, std::wstring filter, const wchar_t* defext);
+bool run_selelect_dir_dialog(HWND win, std::wstring& result, const wchar_t* descr, const wchar_t* initial_dir);
 
 // fs
 HRESULT CreateShellLink(LPCWSTR pszShortcutFile, LPCWSTR pszLink, LPCWSTR pszWorkingDir, LPCWSTR pszDesc);

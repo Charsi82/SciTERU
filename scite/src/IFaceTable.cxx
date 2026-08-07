@@ -184,6 +184,7 @@ static IFaceConstant ifaceConstants[] = {
 	{"IDM_COMPILE",301},
 	{"IDM_COMPLETE",233},
 	{"IDM_COMPLETEWORD",234},
+	{"IDM_CONTENTWIN",355},
 	{"IDM_CONTEXTVISIBLE",808},
 	{"IDM_COPY",204},
 	{"IDM_COPYASRTF",245},
@@ -3558,8 +3559,10 @@ static IFaceConstant ifaceConstants[] = {
 	{"SC_UNDO_SELECTION_HISTORY_SCROLL",2},
 	{"SC_UPDATE_CONTENT",0x1},
 	{"SC_UPDATE_H_SCROLL",0x8},
+	{"SC_UPDATE_LINE_COUNT",0x20},
 	{"SC_UPDATE_NONE",0x0},
 	{"SC_UPDATE_SELECTION",0x2},
+	{"SC_UPDATE_TEXT",0x10},
 	{"SC_UPDATE_V_SCROLL",0x4},
 	{"SC_WEIGHT_BOLD",700},
 	{"SC_WEIGHT_NORMAL",400},
@@ -4217,7 +4220,7 @@ static IFaceProperty ifaceProperties[] = {
 
 enum {
 	ifaceFunctionCount = 333,
-	ifaceConstantCount = 3451,
+	ifaceConstantCount = 3454,
 	ifacePropertyCount = 281
 };
 

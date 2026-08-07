@@ -317,6 +317,7 @@ SciTEBase::SciTEBase(Extension *ext) : apis(true), pwFocussed(&wEditor), extende
 
 	timerMask = 0;
 	delayBeforeAutoSave = 0;
+	
 #ifdef RB_OnSendEditor
 	wEditor.pBase = this; //!-add-[OnSendEditor]
 #endif // RB_OnSendEditor
@@ -325,168 +326,171 @@ SciTEBase::SciTEBase(Extension *ext) : apis(true), pwFocussed(&wEditor), extende
 	OnMenuCommandCallsCount = 0;	//!-add-[OnMenuCommand]
 #endif // RB_OMC
 
-
 	editorConfig = IEditorConfig::Create();
 }
 
 SciTEBase::~SciTEBase() {
 	if (extender)
 		extender->Finalise();
-#ifndef RB_ECM
+#ifndef RB_ExtContextMenu
 	//!-remove-[ExtendedContextMenu]
 	popup.Destroy();
-#endif // RB_ECM
+#endif // RB_ExtContextMenu
 }
 
 #ifdef RB_OnSendEditor
 //!-start-[OnSendEditor]
-static bool isInterruptableMessage(unsigned int msg) {
-	switch (msg) {
-		// Enumerates all macroable messages
-		// list copied from /scintilla/src/Editor.cxx
-	case SCI_CUT:
-	case SCI_COPY:
-	case SCI_PASTE:
-	case SCI_CLEAR:
-	case SCI_REPLACESEL:
-	case SCI_ADDTEXT:
-	case SCI_INSERTTEXT:
-	case SCI_APPENDTEXT:
-	case SCI_CLEARALL:
-	case SCI_SELECTALL:
-	case SCI_GOTOLINE:
-	case SCI_GOTOPOS:
-	case SCI_SEARCHANCHOR:
-	case SCI_SEARCHNEXT:
-	case SCI_SEARCHPREV:
-	case SCI_LINEDOWN:
-	case SCI_LINEDOWNEXTEND:
-	case SCI_PARADOWN:
-	case SCI_PARADOWNEXTEND:
-	case SCI_LINEUP:
-	case SCI_LINEUPEXTEND:
-	case SCI_PARAUP:
-	case SCI_PARAUPEXTEND:
-	case SCI_CHARLEFT:
-	case SCI_CHARLEFTEXTEND:
-	case SCI_CHARRIGHT:
-	case SCI_CHARRIGHTEXTEND:
-	case SCI_WORDLEFT:
-	case SCI_WORDLEFTEXTEND:
-	case SCI_WORDRIGHT:
-	case SCI_WORDRIGHTEXTEND:
-	case SCI_WORDPARTLEFT:
-	case SCI_WORDPARTLEFTEXTEND:
-	case SCI_WORDPARTRIGHT:
-	case SCI_WORDPARTRIGHTEXTEND:
-	case SCI_WORDLEFTEND:
-	case SCI_WORDLEFTENDEXTEND:
-	case SCI_WORDRIGHTEND:
-	case SCI_WORDRIGHTENDEXTEND:
-	case SCI_HOME:
-	case SCI_HOMEEXTEND:
-	case SCI_LINEEND:
-	case SCI_LINEENDEXTEND:
-	case SCI_HOMEWRAP:
-	case SCI_HOMEWRAPEXTEND:
-	case SCI_LINEENDWRAP:
-	case SCI_LINEENDWRAPEXTEND:
-	case SCI_DOCUMENTSTART:
-	case SCI_DOCUMENTSTARTEXTEND:
-	case SCI_DOCUMENTEND:
-	case SCI_DOCUMENTENDEXTEND:
-	case SCI_STUTTEREDPAGEUP:
-	case SCI_STUTTEREDPAGEUPEXTEND:
-	case SCI_STUTTEREDPAGEDOWN:
-	case SCI_STUTTEREDPAGEDOWNEXTEND:
-	case SCI_PAGEUP:
-	case SCI_PAGEUPEXTEND:
-	case SCI_PAGEDOWN:
-	case SCI_PAGEDOWNEXTEND:
-	case SCI_EDITTOGGLEOVERTYPE:
-	case SCI_CANCEL:
-	case SCI_DELETEBACK:
-	case SCI_TAB:
-	case SCI_BACKTAB:
-	case SCI_FORMFEED:
-	case SCI_VCHOME:
-	case SCI_VCHOMEEXTEND:
-	case SCI_VCHOMEWRAP:
-	case SCI_VCHOMEWRAPEXTEND:
-	case SCI_DELWORDLEFT:
-	case SCI_DELWORDRIGHT:
-	case SCI_DELLINELEFT:
-	case SCI_DELLINERIGHT:
-	case SCI_LINECOPY:
-	case SCI_LINECUT:
-	case SCI_LINEDELETE:
-	case SCI_LINETRANSPOSE:
-	case SCI_LINEDUPLICATE:
-	case SCI_LOWERCASE:
-	case SCI_UPPERCASE:
-	case SCI_LINESCROLLDOWN:
-	case SCI_LINESCROLLUP:
-	case SCI_DELETEBACKNOTLINE:
-	case SCI_HOMEDISPLAY:
-	case SCI_HOMEDISPLAYEXTEND:
-	case SCI_LINEENDDISPLAY:
-	case SCI_LINEENDDISPLAYEXTEND:
-	case SCI_SETSELECTIONMODE:
-	case SCI_LINEDOWNRECTEXTEND:
-	case SCI_LINEUPRECTEXTEND:
-	case SCI_CHARLEFTRECTEXTEND:
-	case SCI_CHARRIGHTRECTEXTEND:
-	case SCI_HOMERECTEXTEND:
-	case SCI_VCHOMERECTEXTEND:
-	case SCI_LINEENDRECTEXTEND:
-	case SCI_PAGEUPRECTEXTEND:
-	case SCI_PAGEDOWNRECTEXTEND:
-	case SCI_SELECTIONDUPLICATE:
-		// One more interruptable messages
-	case SCI_SETREADONLY:
-	case SCI_MARKERADD:
-	case SCI_MARKERDELETE:
-	case SCI_MARKERDELETEALL:
-		return true;
-}
-	return false;
-}
-
-// messages list witch has not string parameter
-static bool isNotStringParams(unsigned int msg) {
-	switch (msg) {
-	case SCI_MARKERADD:
-	case SCI_MARKERDELETE:
-		return true;
-	}
-	return false;
-}
-
-#define _MAX_SEND_RECURSIVE_CALL 100
+constexpr int MAX_SEND_RECURSIVE_CALL = 100;
 static int static_iOnSendEditorCallsCount = 0;
 
 intptr_t SciTEBase::ScintillaWindowEditor::Call(SA::Message msg, uintptr_t wParam, intptr_t lParam)
 {
-	const char* result = NULL;
-	if (pBase->extender && isInterruptableMessage((unsigned int)msg) && static_iOnSendEditorCallsCount < _MAX_SEND_RECURSIVE_CALL) {
+	auto isInterruptableMessage = [](SA::Message msg) -> bool
+	{
+		using namespace SA;
+		switch (msg) {
+			// Enumerates all macroable messages
+			// list copied from /scintilla/src/Editor.cxx
+		case Message::Cut:
+		case Message::Copy:
+		case Message::Paste:
+		case Message::Clear:
+		case Message::ReplaceSel:
+		case Message::AddText:
+		case Message::InsertText:
+		case Message::AppendText:
+		case Message::ClearAll:
+		case Message::SelectAll:
+		case Message::GotoLine:
+		case Message::GotoPos:
+		case Message::SearchAnchor:
+		case Message::SearchNext:
+		case Message::SearchPrev:
+		case Message::LineDown:
+		case Message::LineDownExtend:
+		case Message::ParaDown:
+		case Message::ParaDownExtend:
+		case Message::LineUp:
+		case Message::LineUpExtend:
+		case Message::ParaUp:
+		case Message::ParaUpExtend:
+		case Message::CharLeft:
+		case Message::CharLeftExtend:
+		case Message::CharRight:
+		case Message::CharRightExtend:
+		case Message::WordLeft:
+		case Message::WordLeftExtend:
+		case Message::WordRight:
+		case Message::WordRightExtend:
+		case Message::WordPartLeft:
+		case Message::WordPartLeftExtend:
+		case Message::WordPartRight:
+		case Message::WordPartRightExtend:
+		case Message::WordLeftEnd:
+		case Message::WordLeftEndExtend:
+		case Message::WordRightEnd:
+		case Message::WordRightEndExtend:
+		case Message::Home:
+		case Message::HomeExtend:
+		case Message::LineEnd:
+		case Message::LineEndExtend:
+		case Message::HomeWrap:
+		case Message::HomeWrapExtend:
+		case Message::LineEndWrap:
+		case Message::LineEndWrapExtend:
+		case Message::DocumentStart:
+		case Message::DocumentStartExtend:
+		case Message::DocumentEnd:
+		case Message::DocumentEndExtend:
+		case Message::StutteredPageUp:
+		case Message::StutteredPageUpExtend:
+		case Message::StutteredPageDown:
+		case Message::StutteredPageDownExtend:
+		case Message::PageUp:
+		case Message::PageUpExtend:
+		case Message::PageDown:
+		case Message::PageDownExtend:
+		case Message::EditToggleOvertype:
+		case Message::Cancel:
+		case Message::DeleteBack:
+		case Message::Tab:
+		case Message::BackTab:
+		case Message::FormFeed:
+		case Message::VCHome:
+		case Message::VCHomeExtend:
+		case Message::VCHomeWrap:
+		case Message::VCHomeWrapExtend:
+		case Message::DelWordLeft:
+		case Message::DelWordRight:
+		case Message::DelLineLeft:
+		case Message::DelLineRight:
+		case Message::LineCopy:
+		case Message::LineCut:
+		case Message::LineDelete:
+		case Message::LineTranspose:
+		case Message::LineDuplicate:
+		case Message::LowerCase:
+		case Message::UpperCase:
+		case Message::LineScrollDown:
+		case Message::LineScrollUp:
+		case Message::DeleteBackNotLine:
+		case Message::HomeDisplay:
+		case Message::HomeDisplayExtend:
+		case Message::LineEndDisplay:
+		case Message::LineEndDisplayExtend:
+		case Message::SetSelectionMode:
+		case Message::LineDownRectExtend:
+		case Message::LineUpRectExtend:
+		case Message::CharLeftRectExtend:
+		case Message::CharRightRectExtend:
+		case Message::HomeRectExtend:
+		case Message::VCHomeRectExtend:
+		case Message::LineEndRectExtend:
+		case Message::PageUpRectExtend:
+		case Message::PageDownRectExtend:
+		case Message::SelectionDuplicate:
+
+			// One more interruptable messages
+		case SA::Message::SetReadOnly:
+		case SA::Message::MarkerAdd:
+		case SA::Message::MarkerDelete:
+		case SA::Message::MarkerDeleteAll:
+			return true;
+		}
+		return false;
+	};
+
+	auto isNotStringParams = [](SA::Message msg) -> bool
+	{
+		// messages list witch has not string parameter
+		switch (msg) {
+		case SA::Message::MarkerAdd:
+		case SA::Message::MarkerDelete:
+			return true;
+		}
+		return false;
+	};
+
+	const char* result = nullptr;
+	if (pBase->extender && isInterruptableMessage(msg) && static_iOnSendEditorCallsCount < MAX_SEND_RECURSIVE_CALL) {
 		static_iOnSendEditorCallsCount++;
-		if (!isNotStringParams((unsigned int)msg))
+		if (!isNotStringParams(msg))
 			result = pBase->extender->OnSendEditor(msg, wParam, reinterpret_cast<const char*>(lParam));
 		else
 			result = pBase->extender->OnSendEditor(msg, wParam, static_cast<long>(lParam));
 		static_iOnSendEditorCallsCount--;
 	}
-	if (result != NULL) {
+	if (result) {
 		if (pBase->recording && static_iOnSendEditorCallsCount == 0) {
 			// send record macro notification
 			SCNotification notification{};
-			notification.message = (int)msg;
+			notification.message = static_cast<int>(msg);
 			notification.wParam = wParam;
 			notification.lParam = lParam;
 			pBase->RecordMacroCommand(&notification);
 		}
 		return reinterpret_cast<intptr_t>(result);
-}
+	}
 	else {
 		return ScintillaWindow::Call(msg, wParam, lParam);
 	}
@@ -494,7 +498,7 @@ intptr_t SciTEBase::ScintillaWindowEditor::Call(SA::Message msg, uintptr_t wPara
 //!-end-[OnSendEditor]
 #endif
 
-void SciTEBase::Finalise() {
+void SciTEBase::Finalise() noexcept {
 	TimerEnd(timerAutoSave);
 }
 
@@ -611,7 +615,7 @@ void SciTEBase::CallChildren(SA::Message msg, uintptr_t wParam, intptr_t lParam)
 	wOutput.Call(msg, wParam, lParam);
 }
 
-std::string SciTEBase::GetTranslationToAbout(const char *const propname, bool retainIfNotFound) {
+std::string SciTEBase::GetTranslationToAbout(std::string_view propname, bool retainIfNotFound) {
 #if !defined(GTK)
 	return GUI::UTF8FromString(localiser.Text(propname, retainIfNotFound));
 #else
@@ -1221,7 +1225,7 @@ void SciTEBase::SelectionIntoFind(bool stripEol /*=true*/) {
 		switch (findFillout) {
 		case 2:
 			//never fill search field
-			sel = "";
+			sel.clear();
 			break;
 		case 1:
 			//fill with selection, if none leave blank
@@ -1315,15 +1319,14 @@ SA::FindOption SciTEBase::SearchFlags(bool regularExpressions) const {
 }
 
 void SciTEBase::MarkAll(MarkPurpose purpose) {
-#ifndef RB_NFMDA
-	//!-remove-[NewFind-MarkerDeleteAll]
-	RemoveFindMarks();
-#else
+#ifdef RB_NFMDA
 	//!-start-[NewFind-MarkerDeleteAll]
 	if (props.GetInt("find.mark.delete"))
 		wEditor.MarkerDeleteAll(markerBookmark);
 	//!-end-[NewFind-MarkerDeleteAll]
-#endif // !RB_NFMDA
+#else
+	RemoveFindMarks();
+#endif // RB_NFMDA
 	wEditor.SetIndicatorCurrent(indicatorMatch);
 
 	int bookMark = -1;
@@ -1787,7 +1790,7 @@ void SciTEBase::Execute() {
 	}
 #ifdef RB_CBE // [clear_before_execute]
 	bool bCBE = jobQueue.ClearBeforeExecute();
-	for (auto& job : jobQueue.jobQueue)
+	for (const auto& job : jobQueue.jobQueue)
 		bCBE = (bCBE || job.flags & clearBeforeEnabled) && !(job.flags & clearBeforeDisabled);
 	if (bCBE) wOutput.ClearAll();
 #else
@@ -2740,8 +2743,16 @@ void SciTEBase::SetTextProperties(
 	const std::string ro = GUI::UTF8FromString(localiser.Text("READ"));
 	ps.Set("ReadOnly", CurrentBuffer()->isReadOnly ? ro : "");
 
-	const SA::EndOfLine eolMode = wEditor.EOLMode();
-	ps.Set("EOLMode", eolMode == SA::EndOfLine::CrLf ? "CR+LF" : (eolMode == SA::EndOfLine::Lf ? "LF" : "CR"));
+	ps.Set("EOLMode", [](auto eolMode) {
+		switch (eolMode) {
+		case SA::EndOfLine::CrLf:
+			return "CR+LF";
+		case SA::EndOfLine::Cr:
+			return "CR";
+		default:
+			return "LF";
+		}
+	}(wEditor.EOLMode()));
 
 	ps.Set("BufferLength", std::to_string(LengthDocument()));
 
@@ -3382,6 +3393,21 @@ void SciTEBase::AddCommand(std::string_view cmd, std::string_view dir, JobSubsys
 		}
 	} else {
 		directoryRun = filePath.Directory();
+	}
+	if (jobType == JobSubsystem::cli || jobType == JobSubsystem::shell) {
+		const std::string unsafeCharacters = propsUser.GetString("unsafe.path.characters");
+		if (!unsafeCharacters.empty()) {
+			const std::string uPath = filePath.AsUTF8();
+			const size_t unsafePos = uPath.find_first_of(unsafeCharacters);
+			if (unsafePos != std::string::npos) {
+				// Handle unsafe path
+				GUI::gui_string msg = LocaliseMessage(
+					"Can't run command with unsafe characters in path '^0'\nunsafe.path.characters '^1'.",
+					filePath.AsText(), GUI::StringFromUTF8(unsafeCharacters));
+				WindowMessageBox(wSciTE, msg);
+				return;
+			}
+		}
 	}
 	jobQueue.AddCommand(cmd, directoryRun, jobType, input, flags);
 }
@@ -4335,25 +4361,28 @@ void SciTEBase::NewLineInOutput() {
 
 void SciTEBase::UpdateUI(const SCNotification *notification) {
 	const bool handled = extender && extender->OnUpdateUI();
+	const bool fromEditPane = notification->nmhdr.idFrom == IDM_SRCWIN;
 	if (!handled) {
-		BraceMatch(notification->nmhdr.idFrom == IDM_SRCWIN);
-		if (notification->nmhdr.idFrom == IDM_SRCWIN) {
+		BraceMatch(fromEditPane);
+		if (fromEditPane) {
 			UpdateStatusBar(false);
 		}
 		CheckMenusClipboard();
 	}
+	const SA::Update updated = static_cast<SA::Update>(notification->updated);
+	if (fromEditPane && FlagIsSet(updated, SA::Update::LineCount) && lineNumbers && lineNumbersExpand) {
+		SetLineNumberWidth();
+	}
 	if (CurrentBuffer()->findMarks == Buffer::FindMarks::modified) {
 		RemoveFindMarks();
 	}
-	const SA::Update updated = static_cast<SA::Update>(notification->updated);
-	if (FlagIsSet(updated, SA::Update::Selection) || FlagIsSet(updated, SA::Update::Content)) {
-		if ((notification->nmhdr.idFrom == IDM_SRCWIN) == (pwFocussed == &wEditor)) {
+	if (FlagIsSet(updated, SA::Update::Selection) || FlagIsSet(updated, SA::Update::Text)) {
+		if (fromEditPane == (pwFocussed == &wEditor)) {
 			// Only highlight focused pane.
 			if (FlagIsSet(updated, SA::Update::Selection)) {
 				currentWordHighlight.statesOfDelay = CurrentWordHighlight::StatesOfDelay::noDelay; // Selection has just been updated, so delay is disabled.
-				currentWordHighlight.textHasChanged = false;
 				HighlightCurrentWord(true);
-			} else if (currentWordHighlight.textHasChanged) {
+			} else { // SA::Update::Text
 				HighlightCurrentWord(false);
 			}
 		}
@@ -4396,18 +4425,11 @@ void SciTEBase::Modified(const SCNotification *notification) {
 		// notifications may fire, but we will end up here in the end
 		CheckCanUndoRedo();
 	} else if (textWasModified) {
-		if ((notification->nmhdr.idFrom == IDM_SRCWIN) == (pwFocussed == &wEditor)) {
-			currentWordHighlight.textHasChanged = true;
-		}
 		// This will be called a lot, and usually means "typing".
 		SetCanUndoRedo(true, false);
 		if (CurrentBuffer()->findMarks == Buffer::FindMarks::marked) {
 			CurrentBuffer()->findMarks = Buffer::FindMarks::modified;
 		}
-	}
-
-	if (notification->linesAdded && lineNumbers && lineNumbersExpand) {
-		SetLineNumberWidth();
 	}
 
 	if (FlagIsSet(modificationType, SA::ModificationFlags::ChangeFold)) {
@@ -4690,7 +4712,7 @@ void SciTEBase::Notify(SCNotification *notification) {
 
 	case SA::Notification::Zoom:
 #ifdef RB_ZOOM
-		if (extender && static_iOnSendEditorCallsCount < _MAX_SEND_RECURSIVE_CALL) {
+		if (extender && static_iOnSendEditorCallsCount < MAX_SEND_RECURSIVE_CALL) {
 			static_iOnSendEditorCallsCount++;
 			extender->OnSendEditor(SA::Message::SetZoom, 0, wEditor.Zoom());
 			static_iOnSendEditorCallsCount--;
@@ -4783,62 +4805,52 @@ void SciTEBase::CheckMenus() {
 			{
 				CheckAMenuItem(itemID, true);
 				last_lang = language;
-}
+			}
 		}
 	}
 	//!-end-[LangMenuChecker]
 #endif // RB_LangMenuChecker
-
 }
 
-#ifdef RB_ECM
+#ifdef RB_ExtContextMenu
 //!-start-[ExtendedContextMenu]
-void SciTEBase::ContextMenu(GUI::ScintillaWindow& wSource, GUI::Point pt, GUI::Point ptClient, GUI::Window wCmd) {
-	int item = 0;
-	MenuEx subMenu[50];
-	subMenu[0].CreatePopUp(NULL);
-	bool isAdded = false;
+void SciTEBase::ContextMenu(GUI::ScintillaWindow& wSource, GUI::Point pt, GUI::Point ptClient, const GUI::Window& wCmd) {
+	std::vector<MenuEx> subMenu{ MenuEx{} };
+	MenuEx& mnu = subMenu[0];
+	mnu.CreatePopUp();
 
 	contextSelection = wSource.SelectionFromPoint(ptClient.x, ptClient.y);
-
+	std::string userContextMenu;
 	if (wSource.GetID() == wOutput.GetID()) {
-		std::string userContextMenu = props.GetNewExpandString("user.outputcontext.menu.", ExtensionFileName());
-		std::replace(userContextMenu.begin(), userContextMenu.end(), '|', '\0');
-		const char* userContextItem = userContextMenu.c_str();
-		const char* endDefinition = userContextItem + userContextMenu.length();
-		GenerateMenu(subMenu, userContextItem, endDefinition, item, isAdded);
+		userContextMenu = props.GetNewExpandString("user.outputcontext.menu.", ExtensionFileName());
 	}
 	else {
-		std::string userContextMenu = props.GetNewExpandString("user.context.menu.", ExtensionFileName());
-		if (userContextMenu.empty())
-			userContextMenu = props.GetNewExpandString("user.context.menu");
-		std::replace(userContextMenu.begin(), userContextMenu.end(), '|', '\0');
-		const char* userContextItem = userContextMenu.c_str();
-		const char* endDefinition = userContextItem + userContextMenu.length();
-		GenerateMenu(subMenu, userContextItem, endDefinition, item, isAdded);
+		userContextMenu = props.GetNewExpandString("user.context.menu.", ExtensionFileName());
+		if (userContextMenu.empty()) userContextMenu = props.GetNewExpandString("user.context.menu");
 	}
+	bool isAdded = GenerateMenuFrom(subMenu, userContextMenu);
 
 	if (!isAdded) {
-		subMenu[0].Add(localiser.Text("Undo").c_str(), IDM_UNDO, IsMenuItemEnabled(IDM_UNDO));
-		subMenu[0].Add(localiser.Text("Redo").c_str(), IDM_REDO, IsMenuItemEnabled(IDM_REDO));
-		subMenu[0].Add();
-		subMenu[0].Add(localiser.Text("Cut").c_str(), IDM_CUT, IsMenuItemEnabled(IDM_CUT));
-		subMenu[0].Add(localiser.Text("Copy").c_str(), IDM_COPY, IsMenuItemEnabled(IDM_COPY));
-		subMenu[0].Add(localiser.Text("Paste").c_str(), IDM_PASTE, IsMenuItemEnabled(IDM_PASTE));
-		subMenu[0].Add(localiser.Text("Delete").c_str(), IDM_CLEAR, IsMenuItemEnabled(IDM_CLEAR));
-		subMenu[0].Add();
-		subMenu[0].Add(localiser.Text("Select All").c_str(), IDM_SELECTALL, IsMenuItemEnabled(IDM_SELECTALL));
-		subMenu[0].Add(localiser.Text("Drop Selection").c_str(), IDM_DROPSELECTION, IsMenuItemEnabled(IDM_DROPSELECTION));
-		subMenu[0].Add();
+		mnu.Add(localiser.Text("Undo").c_str(), IDM_UNDO, IsMenuItemEnabled(IDM_UNDO));
+		mnu.Add(localiser.Text("Redo").c_str(), IDM_REDO, IsMenuItemEnabled(IDM_REDO));
+		mnu.Add();
+		mnu.Add(localiser.Text("Cut").c_str(), IDM_CUT, IsMenuItemEnabled(IDM_CUT));
+		mnu.Add(localiser.Text("Copy").c_str(), IDM_COPY, IsMenuItemEnabled(IDM_COPY));
+		mnu.Add(localiser.Text("Paste").c_str(), IDM_PASTE, IsMenuItemEnabled(IDM_PASTE));
+		mnu.Add(localiser.Text("Delete").c_str(), IDM_CLEAR, IsMenuItemEnabled(IDM_CLEAR));
+		mnu.Add();
+		mnu.Add(localiser.Text("Select All").c_str(), IDM_SELECTALL, IsMenuItemEnabled(IDM_SELECTALL));
+		mnu.Add(localiser.Text("Drop Selection").c_str(), IDM_DROPSELECTION, IsMenuItemEnabled(IDM_DROPSELECTION));
+		mnu.Add();
 		if (wSource.GetID() == wOutput.GetID()) {
-			subMenu[0].Add(localiser.Text("Hide").c_str(), IDM_TOGGLEOUTPUT, IsMenuItemEnabled(IDM_TOGGLEOUTPUT));
+			mnu.Add(localiser.Text("Hide").c_str(), IDM_TOGGLEOUTPUT, IsMenuItemEnabled(IDM_TOGGLEOUTPUT));
 		}
 		else {
-			subMenu[0].Add(localiser.Text("Close").c_str(), IDM_CLOSE, IsMenuItemEnabled(IDM_CLOSE));
+			mnu.Add(localiser.Text("Close").c_str(), IDM_CLOSE, IsMenuItemEnabled(IDM_CLOSE));
 		}
 	}
 
-	subMenu[0].Show(pt, wCmd);
+	mnu.Show(pt, wCmd);
 }
 
 #define CallFocused(P) PaneFocused().Call(reinterpret_cast<SA::Message>(P),0,0)
@@ -4914,7 +4926,9 @@ int SciTEBase::IsMenuItemEnabled(int cmd) {
 	case IDM_MACROSTOPRECORD:
 		return recording ? 1 : 0;
 		break;
-}
+	default:
+		break;
+	}
 
 	if (cmd > IDM_TOOLS && cmd < IDM_TOOLS + toolMax)
 		return (!jobQueue.IsExecuting()) ? 1 : 0;
@@ -4922,7 +4936,19 @@ int SciTEBase::IsMenuItemEnabled(int cmd) {
 	return 1;
 }
 
-void SciTEBase::GenerateMenu(MenuEx* subMenu, const char*& userContextItem,
+
+bool SciTEBase::GenerateMenuFrom(std::vector<MenuEx>& subMenu, std::string& DataContextMenu)
+{
+	bool isAdded = false;
+	int item = 0;
+	std::replace(DataContextMenu.begin(), DataContextMenu.end(), '|', '\0');
+	const char* beginDefinition = DataContextMenu.c_str();
+	const char* endDefinition = beginDefinition + DataContextMenu.length();
+	GenerateMenu(subMenu, beginDefinition, endDefinition, item, isAdded);
+	return isAdded;
+}
+
+void SciTEBase::GenerateMenu(std::vector<MenuEx>& subMenu, const char*& userContextItem,
 	const char*& endDefinition, int& item, bool& isAdded, int parent)
 {
 	while (userContextItem < endDefinition) {
@@ -4931,38 +4957,35 @@ void SciTEBase::GenerateMenu(MenuEx* subMenu, const char*& userContextItem,
 		if (userContextItem < endDefinition) {
 			if (strcmp(userContextItem, "POPUPBEGIN") == 0) {
 				userContextItem += strlen(userContextItem) + 1;
-				if (caption[0] != '#') {
-					item++;
-					subMenu[item].CreatePopUp(&subMenu[0]);
-					subMenu[parent].AddSubMenu(localiser.Text(caption).c_str(), subMenu[item]);
-					GenerateMenu(subMenu, userContextItem, endDefinition, item, isAdded, item);
-				}
+				item++;
+				MenuEx& mnu = subMenu.emplace_back(MenuEx{});
+				mnu.CreatePopUp();
+				subMenu[parent].AddSubMenu(localiser.Text(caption), mnu);
+				GenerateMenu(subMenu, userContextItem, endDefinition, item, isAdded, item);
 			}
 			else if (strcmp(userContextItem, "POPUPEND") == 0) {
 				userContextItem += strlen(userContextItem) + 1;
-				if (caption[0] != '#') break;
+				break;
 			}
 			else {
 				int cmd = GetMenuCommandAsInt(userContextItem);
 				userContextItem += strlen(userContextItem) + 1;
-				if (caption[0] != '#') {
-					int item_state = IsMenuItemEnabled(cmd);
-					if (item_state && (cmd > IDM_TOOLS)) {
-						const std::string prefix = "command.checked." + StdStringFromInteger(cmd - IDM_TOOLS) + ".";
-						const std::string sval = props.GetNewExpandString(prefix, ExtensionFileName());
-						if (IntegerFromString(sval, 0)) ++item_state;
-					}
-					subMenu[parent].Add(localiser.Text(caption).c_str(), cmd, item_state);
-					isAdded = true;
+				int item_state = IsMenuItemEnabled(cmd);
+				if (item_state && (cmd > IDM_TOOLS)) {
+					const std::string prefix = "command.checked." + StdStringFromInteger(cmd - IDM_TOOLS) + ".";
+					const std::string sval = props.GetNewExpandString(prefix, ExtensionFileName());
+					if (IntegerFromString(sval, 0)) ++item_state;
 				}
+				subMenu[parent].Add(localiser.Text(caption).c_str(), cmd, item_state);
+				isAdded = true;
 			}
 		}
 	}
 }
 //!-end-[ExtendedContextMenu]
-#else  // RB_ECM
+#else  // RB_ExtContextMenu
 
-void SciTEBase::ContextMenu(GUI::ScintillaWindow &wSource, GUI::Point pt, GUI::Point ptClient, GUI::Window wCmd) {
+void SciTEBase::ContextMenu(GUI::ScintillaWindow &wSource, GUI::Point pt, GUI::Point ptClient, const GUI::Window &wCmd) {
 	const SA::Position currentPos = wSource.CurrentPos();
 	const SA::Position anchor = wSource.Anchor();
 	contextSelection = wSource.SelectionFromPoint(ptClient.x, ptClient.y);
@@ -5001,7 +5024,7 @@ void SciTEBase::ContextMenu(GUI::ScintillaWindow &wSource, GUI::Point pt, GUI::P
 	}
 	popup.Show(pt, wCmd);
 }
-#endif // RB_ECM
+#endif // RB_ExtContextMenu
 
 /**
  * Ensure that a splitter bar position is inside the main window.
@@ -5039,7 +5062,7 @@ void SciTEBase::MoveSplit(GUI::Point ptNewDrag) {
 void SciTEBase::TimerStart(int /* mask */) {
 }
 
-void SciTEBase::TimerEnd(int /* mask */) {
+void SciTEBase::TimerEnd(int /* mask */) noexcept {
 }
 
 void SciTEBase::OnTimer() {
@@ -5644,7 +5667,7 @@ void SciTEBase::UnsetProperty(const char *key) {
 	needReadProperties = true;
 }
 
-uintptr_t SciTEBase::GetInstance() {
+uintptr_t SciTEBase::GetInstance() noexcept {
 	return 0;
 }
 

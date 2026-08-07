@@ -15,6 +15,7 @@
 #include "twl.hpp"
 #include "twl_cntrls.hpp"
 #include "twl_utils.hpp"
+#include "twl_tdc.hpp"
 
 ///////////////////////////////////
 namespace

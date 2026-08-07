@@ -23,6 +23,8 @@
 #include "twl_cntrls.hpp"
 #include "twl_notify.hpp"
 #include "log.hpp"
+#include "twl_tdc.hpp"
+#include "twl_bitmap.hpp"
 
 constexpr wchar_t EW_CLASSNAME[] = L"EVNTWNDCLSS";
 
@@ -74,7 +76,7 @@ void Rect::offset_by(int dx, int dy)
 
 /// TDC ///////////////
 
-TDC::TDC(TWin* ptr) :m_hdc(NULL), m_pen(NULL), m_brush(NULL), m_twin(ptr)
+TDC::TDC(TWin* ptr) :m_twin(ptr)
 {}
 
 TDC::~TDC()
@@ -220,6 +222,30 @@ void TDC::round_rect(const Rect& rt, int rw, int rh) const
 void TDC::chord(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4) const
 {
 	Chord(m_hdc, x1, y1, x2, y2, x3, y3, x4, y4);
+}
+
+BOOL TDC::set_bitmap(twBitMap* pBitMap, int x, int y, int x1, int y1) const
+{
+	HDC hMemDc = CreateCompatibleDC(m_hdc);
+	HBITMAP hBmp = CreateBitmap(pBitMap->width(), pBitMap->height(), 1, pBitMap->getBytesPerPixel() * 8, pBitMap->pixels());
+	SelectObject(hMemDc, hBmp);
+	BOOL status = BitBlt(m_hdc, x, y, pBitMap->width(), pBitMap->height(), hMemDc, x1, y1, SRCCOPY);
+	DeleteDC(hMemDc);
+	DeleteObject(hBmp);
+	return status;
+}
+
+BOOL TDC::stretch_bitmap(twBitMap* pBitMap, int x, int y, int _w, int _h) const
+{
+	HDC hMemDc = CreateCompatibleDC(m_hdc);
+	int w = _w ? _w : m_twin->width();
+	int h = _h ? _h : m_twin->height();
+	HBITMAP hBmp = CreateBitmap(pBitMap->width(), pBitMap->height(), 1, pBitMap->getBytesPerPixel() * 8, pBitMap->pixels());
+	SelectObject(hMemDc, hBmp);
+	BOOL status = StretchBlt(m_hdc, x, y, w, h, hMemDc, 0, 0, pBitMap->width(), pBitMap->height(), SRCCOPY);
+	DeleteDC(hMemDc);
+	DeleteObject(hBmp);
+	return status;
 }
 
 void TDC::polyline(const Point* pts, int npoints) const

@@ -519,7 +519,7 @@ protected:
 
 	static gboolean TimerTick(gpointer pSciTE);
 	void TimerStart(int mask) override;
-	void TimerEnd(int mask) override;
+	void TimerEnd(int mask) noexcept override;
 	static gboolean IdlerTick(gpointer pSciTE);
 	void SetIdler(bool on) override;
 
@@ -1152,7 +1152,7 @@ void SciTEGTK::TimerStart(int mask) {
 	}
 }
 
-void SciTEGTK::TimerEnd(int mask) {
+void SciTEGTK::TimerEnd(int mask) noexcept {
 	const int maskNew = timerMask & ~mask;
 	if (timerMask != maskNew) {
 		if (maskNew == 0) {
@@ -2060,7 +2060,7 @@ void SciTEGTK::FindInFilesCmd() {
 		findCommand += "\" \"";
 		findCommand += props.GetString("find.exclude");
 		findCommand += "\" \"";
-		std::string quotedForm = Slash(props.GetString("find.what"), true);
+		const std::string quotedForm = ShellDoubleQuoteEscape(props.Get("find.what"));
 		findCommand += quotedForm;
 		findCommand += "\"";
 	}

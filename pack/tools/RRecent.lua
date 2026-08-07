@@ -10,13 +10,13 @@ local isOk, res = pcall(dofile, path)
 if isOk and res and type(res)=='table' then RecentData = res else print('loading '..path..' failed') end
 
 for i = #RecentData, 1, -1 do
-	if os.time()-RecentData[i].timestamp > LifeTime then
+	if os.time() - RecentData[i].timestamp > LifeTime then
 		table.remove(RecentData, i)
 	end
 end
 
 function table_to_string(t, indent)
-	if not indent then indent="" end
+	if not indent then indent = "" end
 	local res = indent.."{"
 	for k, v in pairs(t) do
 		if type(k)=='number' then
@@ -74,7 +74,7 @@ local function Restore(file)
 	if tonumber(props['session.bookmarks']) == 1 then
 		for k, v in pairs (RecentData[item].bookmarks or {}) do
 -- 			print('reset bookmark', v.line)
-			if editor:MarkerGet(v.line, 2)//2%2~=1 then
+			if editor:MarkerGet(v.line, 2)//2 % 2 ~= 1 then
 				editor:MarkerAdd(v.line, 1)
 			end
 		end
@@ -103,27 +103,28 @@ AddEventHandler("OnOpen", function(file)
 	end
 end)
 
-local function GetLineText(line_number)
-	local ELLIPSIS_LEN = 30
-	local line_text = editor:GetLine(line_number) or ""
-	line_text = line_text:gsub('^%s+', ''):gsub('%s+', ' ')
-	local linenumber = "[" .. (line_number + 1) .. "] "
-	if line_text == '' then return linenumber .. ' - empty line' end
-	line_text = linenumber .. line_text
-	local from, to = utf8.offset(line_text, ELLIPSIS_LEN)
-	if not from then return line_text end
-	return line_text:sub(1, to):to_utf8(editor.CodePage)..'..'
-end
-
 AddEventHandler("OnClose", function(file)
 	if file=='' then return end
+	
+	local function GetLineText(line_number)
+		local ELLIPSIS_LEN = 30
+		local line_text = editor:GetLine(line_number) or ""
+		line_text = line_text:gsub('^%s+', ''):gsub('%s+', ' ')
+		local linenumber = "[" .. (line_number + 1) .. "] "
+		if line_text == '' then return linenumber .. ' - empty line' end
+		line_text = linenumber .. line_text
+		local from, to = utf8.offset(line_text, ELLIPSIS_LEN)
+		if not from then return line_text:to_utf8(editor.CodePage) end
+		return line_text:sub(1, to):to_utf8(editor.CodePage)..'..'
+	end
+	
 	local function get_bookmarks()
 		local res = {}
 		local line = 0
 		while true do
 			line = editor:MarkerNext(line, 2)
 			if (line == -1) then break end
-			res[#res+1] = {
+			res[#res + 1] = {
 				line = line,
 				caption = GetLineText(line)
 			}
@@ -138,7 +139,7 @@ AddEventHandler("OnClose", function(file)
 		while true do
 			line = editor:ContractedFoldNext(line)
 			if (line == -1) then break end
-			res[#res+1] = line
+			res[#res + 1] = line
 			line = line + 1
 		end
 		return res
@@ -146,7 +147,7 @@ AddEventHandler("OnClose", function(file)
 	
 	local pc = PathCollapse(file)
 	local item = 0
-	for i=1,#RecentData do
+	for i = 1, #RecentData do
 		if RecentData[i].path == pc then item = i break end
 	end
 	RecentData[(item == 0) and (#RecentData+1) or item] =

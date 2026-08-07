@@ -765,9 +765,6 @@ bool SciTEBase::Open(const FilePath &file, OpenFlags of) {
 // Returns true if editor should get the focus
 bool SciTEBase::OpenSelected() {
 	std::string selName = SelectionFilename();
-#ifdef RB_LINK
-	resolveLinkFile(selName); 
-#endif // RB_LINK
 	if (selName.empty()) {
 #ifdef RB_WRNM
 		WarnUser(warnWrongFile, "No selection."); //!-change-[WarningMessage]
@@ -776,6 +773,9 @@ bool SciTEBase::OpenSelected() {
 #endif // RB_WRNM
 		return false;	// No selection
 	}
+#ifdef RB_LINK
+	resolveLinkFile(selName); 
+#endif // RB_LINK
 
 #if !defined(GTK)
 	if (selName.starts_with("http:") ||
@@ -1136,7 +1136,6 @@ SciTEBase::SaveResult SciTEBase::SaveIfUnsureForBuilt() {
 	if (CurrentBuffer()->DocumentNotSaved()) {
 		if (props.GetInt("are.you.sure.for.build"))
 			return SaveIfUnsure(true);
-
 		Save();
 	}
 #else
@@ -1540,7 +1539,7 @@ void SciTEBase::OpenFromStdin(bool UseOutputPane) {
 	} else {
 
 #ifdef RB_EUM
-		props.Set("editor.unicode.mode", std::to_string((int)CurrentBuffer()->unicodeMode + IDM_ENCODING_DEFAULT)); //!-add-[EditorUnicodeMode]
+		props.Set("editor.unicode.mode", std::to_string(static_cast<int>(CurrentBuffer()->unicodeMode) + IDM_ENCODING_DEFAULT)); //!-add-[EditorUnicodeMode]
 #endif // RB_EUM
 
 		wEditor.SetCodePage(codePage);

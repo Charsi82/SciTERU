@@ -34,12 +34,14 @@
     <ClInclude Include="src\log.hpp" />
     <ClInclude Include="src\luabinder.hpp" />
     <ClInclude Include="src\Twl.hpp" />
+    <ClInclude Include="src\twl_bitmap.hpp" />
     <ClInclude Include="src\twl_cntrls.hpp" />
     <ClInclude Include="src\twl_listview.hpp" />
     <ClInclude Include="src\twl_menu.hpp" />
     <ClInclude Include="src\twl_notify.hpp" />
     <ClInclude Include="src\twl_splitter.hpp" />
     <ClInclude Include="src\twl_tab.hpp" />
+    <ClInclude Include="src\twl_tdc.hpp" />
     <ClInclude Include="src\twl_treeview.hpp" />
     <ClInclude Include="src\twl_utils.hpp" />
     <ClInclude Include="src\utf.h" />
@@ -50,6 +52,7 @@
     <ClCompile Include="src\luabinder.cpp" />
     <ClCompile Include="src\twl.cpp" />
     <ClCompile Include="src\twl_ascii.cpp" />
+    <ClCompile Include="src\twl_bitmap.cpp" />
     <ClCompile Include="src\twl_cntrls.cpp" />
     <ClCompile Include="src\twl_dialogs.cpp" />
     <ClCompile Include="src\twl_ini.cpp" />

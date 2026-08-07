@@ -218,7 +218,7 @@ bool IndicatorDefinition::ParseIndicatorDefinition(std::string_view definition) 
 	}
 	struct NameValue {
 		std::string_view name;
-		SA::IndicatorStyle value;
+		SA::IndicatorStyle value = SA::IndicatorStyle::Plain;
 	};
 	const NameValue indicStyleNames[] = {
 		{ "plain", SA::IndicatorStyle::Plain },
@@ -303,7 +303,7 @@ bool MarkerDefinition::ParseMarkerDefinition(std::string_view definition) {
 	}
 	struct NameValue {
 		std::string_view name;
-		SA::MarkerSymbol value;
+		SA::MarkerSymbol value = SA::MarkerSymbol::Circle;
 	};
 	const NameValue markerStyleNames[] = {
 		{"circle", SA::MarkerSymbol::Circle },

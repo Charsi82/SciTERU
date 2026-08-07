@@ -6,21 +6,37 @@
 
 #include "twl_utils.hpp"
 
-bool run_open_file_dialog(HWND win, wchar_t* result, const std::wstring& caption, std::wstring filter, bool multi)
+bool run_open_file_dialog(HWND win, std::wstring& result, const wchar_t* caption, std::wstring filter, bool multi)
 {
 	filter += L"||";
-	std::replace(filter.begin(), filter.end(), L'|', L'\0');
-	*result = 0;
+	std::ranges::replace(filter, L'|', L'\0');
 	OPENFILENAME ofn{};
 	ofn.hwndOwner = win;
 	ofn.lStructSize = sizeof(OPENFILENAME);
-	ofn.lpstrTitle = caption.c_str();
+	ofn.lpstrTitle = caption;
 	ofn.lpstrFilter = filter.c_str();
-	ofn.nMaxFile = 1024;
-	ofn.lpstrFile = result; // buffer for result
+	ofn.lpstrFile = result.data(); // buffer for result
+	ofn.nMaxFile = static_cast<DWORD>(result.capacity());
 	ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
 	if (multi) ofn.Flags |= OFN_ALLOWMULTISELECT;
 	return GetOpenFileName(&ofn);
+}
+
+bool run_save_file_dialog(HWND win, std::wstring& result, const wchar_t* caption, std::wstring filter, const wchar_t* defext)
+{
+	filter += L"||";
+	std::ranges::replace(filter, L'|', L'\0');
+	OPENFILENAME ofn{};
+	ofn.hwndOwner = win;
+	ofn.lStructSize = sizeof(OPENFILENAME);
+	ofn.lpstrTitle = caption;
+	ofn.lpstrFilter = filter.c_str();
+	ofn.lpstrFile = result.data(); // buffer for result
+	ofn.nMaxFile = static_cast<DWORD>(result.capacity());
+	ofn.nFilterIndex = 1;
+	ofn.lpstrDefExt = defext;
+	ofn.Flags = OFN_EXPLORER | OFN_HIDEREADONLY | OFN_PATHMUSTEXIST;
+	return GetSaveFileName(&ofn);
 }
 
 bool run_color_dlg(HWND win, COLORREF& cl)
@@ -37,7 +53,7 @@ bool run_color_dlg(HWND win, COLORREF& cl)
 	return true;
 }
 
-bool run_selelect_dir_dialog(HWND win, wchar_t* result, const wchar_t* descr, const wchar_t* initial_dir)
+bool run_selelect_dir_dialog(HWND win, std::wstring& result, const wchar_t* descr, const wchar_t* initial_dir)
 {
 	BROWSEINFO bi{};
 	bi.hwndOwner = win;
@@ -55,7 +71,7 @@ bool run_selelect_dir_dialog(HWND win, wchar_t* result, const wchar_t* descr, co
 	if (pidl)
 	{
 		//get the name of the folder and put it in path
-		state = SHGetPathFromIDList(pidl, result);
+		state = SHGetPathFromIDList(pidl, result.data());
 
 		//free memory used
 		IMalloc* imalloc = 0;

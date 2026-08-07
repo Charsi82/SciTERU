@@ -52,8 +52,8 @@ const char *const emptyWordListDesc[] = {
 struct OptionSetErrorList : public OptionSet<OptionsErrorList> {
 	OptionSetErrorList() {
 #ifdef RB_FRLS
-			DefineProperty("lexer.errorlist.findtitle.begin", &OptionsErrorList::ftb);
-			DefineProperty("lexer.errorlist.findtitle.end", &OptionsErrorList::fte);
+		DefineProperty("lexer.errorlist.findtitle.begin", &OptionsErrorList::ftb);
+		DefineProperty("lexer.errorlist.findtitle.end", &OptionsErrorList::fte);
 #endif
 		DefineProperty("lexer.errorlist.value.separate", &OptionsErrorList::valueSeparate,
 			"For lines in the output pane that are matches from Find in Files or GCC-style"
@@ -556,10 +556,10 @@ void ColouriseErrorListLine(
     Sci_PositionU endPos,
 
 #ifdef RB_FRLS
-		//!-start-[FindResultListStyle]
-		const char* findTitleB,
-		const char* findTitleE,
-		//!-end-[FindResultListStyle]
+	//!-start-[FindResultListStyle]
+	const char* findTitleB,
+	const char* findTitleE,
+	//!-end-[FindResultListStyle]
 #endif // RB_FRLS
 
     Accessor &styler,
@@ -567,10 +567,10 @@ void ColouriseErrorListLine(
 	bool escapeSequences) {
 
 #ifdef RB_FRLS
-		//!-start-[FindResultListStyle]
-		static bool isFindList;
-		static char findValue[1000];
-		//!-end-[FindResultListStyle]
+	//!-start-[FindResultListStyle]
+	static bool isFindList;
+	static char findValue[1000];
+	//!-end-[FindResultListStyle]
 #endif // RB_FRLS
 
 	Sci_Position startValue = -1;
@@ -611,25 +611,25 @@ void ColouriseErrorListLine(
 		if (valueSeparate && (startValue >= 0)) {
 			styler.ColourTo(endPos - (lineBuffer.length() - startValue), style);
 #ifdef RB_FRLS
-				//!-start-[FindResultListStyle]
-				if (isFindList) {
-					const auto lengthLine = lineBuffer.length();
-					ColouriseFindListLine(lineBuffer.data() + startValue, lengthLine - startValue + 1, endPos - lengthLine + startValue, endPos, findValue, styler);
-				}
-				else
-					//!-end-[FindResultListStyle]
+			//!-start-[FindResultListStyle]
+			if (isFindList) {
+				const auto lengthLine = lineBuffer.length();
+				ColouriseFindListLine(lineBuffer.data() + startValue, lengthLine - startValue + 1, endPos - lengthLine + startValue, endPos, findValue, styler);
+			}
+			else
+				//!-end-[FindResultListStyle]
 #endif // RB_FRLS
 			styler.ColourTo(endPos, SCE_ERR_VALUE);
 		} else {
 #ifdef RB_FRLS
-				//!-start-[FindResultListStyle]
-				if (valueSeparate && style == SCE_ERR_CMD) {
-					isFindList = GetPartOf(lineBuffer.data(), ">Internal search for \"", "\" in \"", findValue, 1000);
-					if (!isFindList && findTitleB)
-						isFindList = GetPartOf(lineBuffer.data(), findTitleB, findTitleE, findValue, 1000);
-					if (!isFindList) findValue[0] = '\0';
-				}
-				//!-end-[FindResultListStyle]
+			//!-start-[FindResultListStyle]
+			if (valueSeparate && style == SCE_ERR_CMD) {
+				isFindList = GetPartOf(lineBuffer.data(), ">Internal search for \"", "\" in \"", findValue, 1000);
+				if (!isFindList && findTitleB)
+					isFindList = GetPartOf(lineBuffer.data(), findTitleB, findTitleE, findValue, 1000);
+				if (!isFindList) findValue[0] = '\0';
+			}
+			//!-end-[FindResultListStyle]
 #endif // RB_FRLS
 			styler.ColourTo(endPos, style);
 		}
@@ -647,8 +647,8 @@ void LexerErrorList::Lex(Sci_PositionU startPos, Sci_Position length, int /* ini
 		if (AtEOL(styler, i)) {
 			// End of line met, colourise it
 #ifdef RB_FRLS  //!-change-[FindResultListStyle]
-				//ColouriseErrorListLine(lineBuffer, i, findTitleB, findTitleE, styler, options.valueSeparate, options.escapeSequences);
-				ColouriseErrorListLine(lineBuffer, i, options.ftb.c_str(), options.fte.c_str(), styler, options.valueSeparate, options.escapeSequences);
+			//ColouriseErrorListLine(lineBuffer, i, findTitleB, findTitleE, styler, options.valueSeparate, options.escapeSequences);
+			ColouriseErrorListLine(lineBuffer, i, options.ftb.c_str(), options.fte.c_str(), styler, options.valueSeparate, options.escapeSequences);
 #else
 			ColouriseErrorListLine(lineBuffer, i, styler, options.valueSeparate, options.escapeSequences);
 #endif //RB_FRLS
@@ -657,8 +657,8 @@ void LexerErrorList::Lex(Sci_PositionU startPos, Sci_Position length, int /* ini
 	}
 	if (!lineBuffer.empty()) {	// Last line does not have ending characters
 #ifdef RB_FRLS  //!-change-[FindResultListStyle]
-			ColouriseErrorListLine(lineBuffer, startPos + length - 1, options.ftb.c_str(), options.fte.c_str(), styler, options.valueSeparate, options.escapeSequences);
-			//ColouriseErrorListLine(lineBuffer, startPos + length - 1, findTitleB, findTitleE, styler, options.valueSeparate, options.escapeSequences);
+		ColouriseErrorListLine(lineBuffer, startPos + length - 1, options.ftb.c_str(), options.fte.c_str(), styler, options.valueSeparate, options.escapeSequences);
+		//ColouriseErrorListLine(lineBuffer, startPos + length - 1, findTitleB, findTitleE, styler, options.valueSeparate, options.escapeSequences);
 #else
 		ColouriseErrorListLine(lineBuffer, startPos + length - 1, styler, options.valueSeparate, options.escapeSequences);
 #endif //RB_FRLS

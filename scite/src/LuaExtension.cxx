@@ -131,15 +131,15 @@ ExtensionAPI::Pane check_pane_object(lua_State *L, int index);
 void push_pane_object(lua_State *L, ExtensionAPI::Pane p) noexcept;
 int iface_function_helper(lua_State *L, const IFaceFunction &func);
 
-bool IFaceTypeIsScriptable(IFaceType t, int index) noexcept {
+constexpr bool IFaceTypeIsScriptable(IFaceType t, int index) noexcept {
 	return t < iface_stringresult || (index==1 && t == iface_stringresult);
 }
 
-bool IFaceTypeIsNumeric(IFaceType t) noexcept {
+constexpr bool IFaceTypeIsNumeric(IFaceType t) noexcept {
 	return (t > iface_void && t < iface_bool);
 }
 
-bool IFaceFunctionIsScriptable(const IFaceFunction &f) noexcept {
+constexpr bool IFaceFunctionIsScriptable(const IFaceFunction &f) noexcept {
 	return IFaceTypeIsScriptable(f.paramType[0], 0) && IFaceTypeIsScriptable(f.paramType[1], 1);
 }
 
@@ -339,7 +339,7 @@ int cf_scite_menu_command(lua_State *L) {
 #endif // RB_CheckMenus
 
 #ifdef RB_LFL
-//!-start-[LocalizationFromLua]
+	//!-start-[LocalizationFromLua]
 	int cf_editor_get_translation(lua_State* L) {
 		const char* s = luaL_checkstring(L, 1);
 		std::string r;
@@ -356,7 +356,7 @@ int cf_scite_menu_command(lua_State *L) {
 #endif // RB_LFL
 
 #ifdef RB_Perform
-//!-start-[Perform]
+	//!-start-[Perform]
 	int cf_scite_perform(lua_State* L) {
 		const char* s = luaL_checkstring(L, 1);
 		if (s) {
@@ -368,11 +368,11 @@ int cf_scite_menu_command(lua_State *L) {
 #endif
 
 #ifdef RB_IA
-//!-start-[InsertAbbreviation]
+	//!-start-[InsertAbbreviation]
 	int get_codepage(ExtensionAPI::Pane p) {
-		int codePage = (int)host->Send(p, SA::Message::GetCodePage /*SCI_GETCODEPAGE*/);
+		int codePage = static_cast<int>(host->Send(p, SA::Message::GetCodePage));
 		if (codePage != SA::CpUtf8/*SC_CP_UTF8*/) {
-			std::string charSet = host->Property("character.set");
+			std::string charSet = host->Property("character.set"); 
 			SA::CharacterSet cs = static_cast<SA::CharacterSet>(IntegerFromString(charSet, 1 /*SA::CharacterSet::Default*/));
 			codePage = CodePageFromCharSet(cs, codePage);
 		}
@@ -407,7 +407,6 @@ int cf_scite_menu_command(lua_State *L) {
 		{
 			str.replace(pos, f.length(), r);
 			pos += r.length();
-
 		}
 	}
 
@@ -665,11 +664,11 @@ int cf_pane_findtext(lua_State *L) {
 // loops and is more tamper-resistant.
 
 struct PaneMatchObject {
-	ExtensionAPI::Pane pane;
+	ExtensionAPI::Pane pane = ExtensionAPI::Pane::paneEditor;
 	SA::Span range;
-	int flags; // this is really part of the state, but is kept here for convenience
-	SA::Position endPosOrig; // has to do with preventing infinite loop on a 0-length match
-	bool RangeValid() const noexcept {
+	int flags = 0; // this is really part of the state, but is kept here for convenience
+	SA::Position endPosOrig = 0; // has to do with preventing infinite loop on a 0-length match
+	[[nodiscard]] bool RangeValid() const noexcept {
 		return (range.start >= 0) && (range.end >= 0) && (range.start <= range.end);
 	}
 };
@@ -1522,10 +1521,10 @@ void push_pane_object(lua_State *L, ExtensionAPI::Pane p) noexcept {
 		lua_setfield(L, -2, "append");
 
 #ifdef  RB_ENCODING
-			//!-start-[EncodingToLua]
-			lua_pushcfunction(luaState, cf_pane_get_codepage);
-			lua_setfield(luaState, -2, "codepage");
-			//!-end-[EncodingToLua]
+		//!-start-[EncodingToLua]
+		lua_pushcfunction(luaState, cf_pane_get_codepage);
+		lua_setfield(luaState, -2, "codepage");
+		//!-end-[EncodingToLua]
 #endif // RB_ENCODING
 
 		lua_pushcfunction(L, cf_pane_match_generator);
@@ -1895,7 +1894,7 @@ bool InitGlobalScope(bool checkProperties, bool forceReload = false) {
 	//!-start-[StartupScriptReload]
 	int cf_editor_reload_startup_script(lua_State*) {
 		InitGlobalScope(false, true);
-		if (extensionScript.length()) {
+		if (!extensionScript.empty()) {
 			reinterpret_cast<LuaExtension*>(host)->Load(extensionScript.c_str());
 		}
 		CallNamedFunction("OnInit", static_cast<intptr_t>(1), static_cast<intptr_t>(0));

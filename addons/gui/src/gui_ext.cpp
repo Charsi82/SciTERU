@@ -23,6 +23,7 @@
 #include "twl_tab.hpp"
 #include "twl_splitter.hpp"
 #include "twl_treeview.hpp"
+#include "twl_tdc.hpp"
 #include "lua.hpp"
 #include "luabinder.hpp"
 #include "utf.h"
@@ -33,6 +34,7 @@ extern HINSTANCE hInst;
 // create new inifile
 // gui.ini_file( 'path', bInCurrentDir)
 int new_inifile(lua_State* L);
+int new_bitmap(lua_State* L);
 int new_menu(lua_State* L, HMENU hm, MessageHandler* cb);
 
 // parent_wnd:add_tooltip(ctrlID, bBaloonStyle)
@@ -43,6 +45,7 @@ void lua_openclass_iniFile(lua_State* L);
 void lua_openclass_TTipCtrl(lua_State* L);
 void lua_openclass_CMenu(lua_State* L);
 void lua_openclass_TDC(lua_State* L);
+void lua_openclass_TBitMap(lua_State* L);
 
 #define output(x) lua_pushstring(L, (x)); OutputMessage(L);
 #define lua_pushwstring(L, str) lua_pushstring((L), UTF8FromString(str).c_str())
@@ -130,7 +133,11 @@ COLORREF lua_optColor(lua_State* L, int idx = 1, COLORREF def_clr = 0)
 {
 	if (lua_isinteger(L, idx))
 	{
-		return lua_tointeger(L, idx);
+		lua_Integer	tmp = lua_tointeger(L, idx);
+		const byte r = (tmp >> 16) & 0xFF;
+		const byte g = (tmp >> 8) & 0xFF;
+		const byte b = tmp & 0xFF;
+		return RGB(r, g, b);
 	}
 	if (const char* s_clr = luaL_optstring(L, idx, nullptr))
 	{
@@ -139,6 +146,12 @@ COLORREF lua_optColor(lua_State* L, int idx = 1, COLORREF def_clr = 0)
 		return RGB(r, g, b);
 	}
 	return def_clr;
+}
+
+void lua_pushcolor(lua_State* L, COLORREF cval)
+{
+	const std::string buff = std::format("#{:02X}{:02X}{:02X}", GetRValue(cval), GetGValue(cval), GetBValue(cval));
+	lua_pushstring(L, buff.c_str());
 }
 
 bool optboolean(lua_State* L, int idx, bool res = false)
@@ -381,11 +394,7 @@ int do_colour_dlg(lua_State* L)
 	if (run_color_dlg(p ? p->handle() : NULL, cval))
 	{
 		if (in_rgb)
-		{
-			char buff[12];
-			sprintf_s(buff, "#%02X%02X%02X", GetRValue(cval), GetGValue(cval), GetBValue(cval));
-			lua_pushstring(L, buff);
-		}
+			lua_pushcolor(L, cval);
 		else
 			lua_pushinteger(L, cval);
 		return 1;
@@ -411,21 +420,21 @@ int do_message(lua_State* L)
 	return 1;
 }
 
-// gui.open_dlg([sCaption = "Open File"][, sFilter = "All (*.*)|*.*"])
+// gui.open_dlg([sCaption = "Open File"][, sFilter = "All (*.*)|*.*"][, bMulti = false])
 // @param sCaption [= "Open File"]
 // @param sFilter  [= "All (*.*)|*.*"]
+// @param bMulti   [= false]
 // @return sFileName or nil
 int do_open_dlg(lua_State* L)
 {
 	const std::wstring caption = StringFromUTF8(luaL_optstring(L, 1, "Open File"));
-	const std::wstring filter = StringFromUTF8(luaL_optstring(L, 2, "All (*.*)|*.*"));
+	std::wstring filter = StringFromUTF8(luaL_optstring(L, 2, "All (*.*)|*.*"));
 	bool multi = optboolean(L, 3);
-	constexpr size_t PATHSIZE = 1024;
-	wchar_t tmp[PATHSIZE]{};
+	std::wstring tmp(1024, 0);
 	auto hParent = get_parent() ? get_parent()->handle() : NULL;
-	if (!run_open_file_dialog(hParent, tmp, caption, filter, multi)) return 0;
+	if (!run_open_file_dialog(hParent, tmp, caption.c_str(), filter, multi)) return 0;
 	// tmp : path\0file1\0file2\0..\0filen
-	if (std::wstring_view(tmp).find(L'.') == std::wstring::npos)
+	if (tmp.find(L'.') == std::wstring::npos)
 	{
 		int count = 0;
 		std::wstring dir = tmp; dir += L"\\";
@@ -451,26 +460,29 @@ int do_open_dlg(lua_State* L)
 // gui.save_dlg([sCaption = "Save File"][, sFilter = "All (*.*)|*.*"])
 // @param sCaption [= "Save File"]
 // @param sFilter  [= "All (*.*)|*.*"]
+// @param sDefaultExtension  [= nil]
 // @return sFileName or nil
 int do_save_dlg(lua_State* L)
 {
-	auto caption = StringFromUTF8(luaL_optstring(L, 1, "Save File"));
-	auto filter = StringFromUTF8(luaL_optstring(L, 2, "All (*.*)|*.*"));
-	wchar_t tmp[1024]{};
-	if (get_parent() && !run_open_file_dialog(get_parent()->handle(), tmp, caption, filter)) return 0;
+	const std::wstring caption = StringFromUTF8(luaL_optstring(L, 1, "Save File"));
+	std::wstring filter = StringFromUTF8(luaL_optstring(L, 2, "All (*.*)|*.*"));
+	std::wstring defext = StringFromUTF8(luaL_optstring(L, 3, "ext"));
+	std::wstring tmp(1024, 0);
+	auto hParent = get_parent() ? get_parent()->handle() : NULL;
+	if (!run_save_file_dialog(hParent, tmp, caption.c_str(), filter, defext.c_str())) return 0;
 	lua_pushwstring(L, tmp);
 	return 1;
 }
 
-// gui.select_dir_dlg([sDescription = ""][, sInitialdir = ""])
+// gui.select_dir_dlg([sDescription = ""][, sInitialDir = ""])
 // @param sDescription [= ""]
-// @param sInitialdir  [= ""]
+// @param sInitialDir  [= ""]
 // @return sDirName or nil
 int do_select_dir_dlg(lua_State* L)
 {
 	auto descr = StringFromUTF8(luaL_optstring(L, 1, "Browse for folder..."));
 	auto initdir = StringFromUTF8(luaL_optstring(L, 2, "C:\\"));
-	wchar_t tmp[MAX_PATH]{};
+	std::wstring tmp(1024, 0);
 	if (get_parent() && !run_selelect_dir_dialog(get_parent()->handle(), tmp, descr.c_str(), initdir.c_str())) return 0;
 	lua_pushwstring(L, tmp);
 	return 1;
@@ -1115,6 +1127,24 @@ int window_enable(lua_State* L)
 {
 	if (TWin* win = window_arg(L))
 		win->set_enable(optboolean(L, 2));
+	return 0;
+}
+
+// update window w
+// w:update()
+int window_update(lua_State* L)
+{
+	if (TWin* win = window_arg(L))
+		win->update();
+	return 0;
+}
+
+// invalidate window w
+// w:invalidate()
+int window_invalidate(lua_State* L)
+{
+	if (TWin* win = window_arg(L))
+		win->invalidate();
 	return 0;
 }
 
@@ -3391,8 +3421,9 @@ static const luaL_Reg gui[] =
 	{ "get_ascii",		do_get_ascii			},
 	{ "pass_focus",		do_pass_focus			},
 	{ "set_panel",		do_set_panel			},
-	{ "ini_file",		new_inifile 			},
 	{ "run_cmd",		do_command	 			},
+	{ "ini_file",		new_inifile 			},
+	{ "bitmap",			new_bitmap	 			},
 
 	// windows
 	{ "scite_window",	do_get_scite_window		},
@@ -3415,6 +3446,8 @@ static const luaL_Reg window_methods[] =
 	{ "close",				window_close		},
 	{ "size",				window_size			},
 	{ "enable",				window_enable		},
+	{ "update",				window_update		},
+	{ "invalidate",			window_invalidate	},
 	{ "set_focus",			window_set_focus	},
 	{ "position",			window_position		},
 	{ "center_h",			window_center_h		},
@@ -3690,14 +3723,15 @@ int luaopen_gui(lua_State* L)
 	getPlugin()->reinit();
 	TLuaState::set_LuaState(L);
 	reinit_storage(L);
-	lua_openclass_iniFile(L); // IniFile
-	lua_openclass_TTipCtrl(L); // ToolTip
-	lua_openclass_CMenu(L);	// CMenu
-	lua_openclass_TDC(L);	// TDC
+	lua_openclass_iniFile(L);	// IniFile
+	lua_openclass_TTipCtrl(L);	// ToolTip
+	lua_openclass_CMenu(L);		// CMenu
+	lua_openclass_TDC(L);		// TDC
+	lua_openclass_TBitMap(L);	// TBitMap
 
-	luaL_newmetatable(L, WINDOW_CLASS);  // create metatable for window objects
-	lua_pushvalue(L, -1);  // push metatable
-	lua_setfield(L, -2, "__index");  // metatable.__index = metatable
+	luaL_newmetatable(L, WINDOW_CLASS); // create metatable for window objects
+	lua_pushvalue(L, -1);				// push metatable
+	lua_setfield(L, -2, "__index");		// metatable.__index = metatable
 #if LUA_VERSION_NUM < 502
 	luaL_register(L, NULL, window_methods);
 #else
@@ -3709,7 +3743,7 @@ int luaopen_gui(lua_State* L)
 #else
 	luaL_newlib(L, gui);
 #endif
-	lua_pushvalue(L, -1);  /* copy of module */
+	lua_pushvalue(L, -1);  // copy of module
 	lua_setglobal(L, "gui");
 	return 1;
 }

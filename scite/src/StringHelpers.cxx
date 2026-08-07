@@ -381,6 +381,62 @@ bool IsDBCSLeadByte(int codePage, char ch) noexcept {
 
 // NOLINTEND(*-magic-numbers)
 
+std::string ShellEscape(std::string_view sv) {
+	std::string result;
+	for (const char ch : sv) {
+		switch (ch) {
+		case ' ':
+		case '|':
+		case '&':
+		case ',':
+		case '`':
+		case '"':
+		case ';':
+		case ':':
+		case '!':
+		case '^':
+		case '$':
+		case '{':
+		case '}':
+		case '(':
+		case ')':
+		case '[':
+		case ']':
+		case '=':
+		case '<':
+		case '>':
+		case '\\':
+		case '\'':
+			result.push_back('\\');
+			break;
+		default:
+			break;
+		}
+		result.push_back(ch);
+	}
+	return result;
+}
+
+// Escape just the characters needed inside Unix shell "double quoted" strings
+std::string ShellDoubleQuoteEscape(std::string_view sv) {
+	std::string result;
+	for (const char ch : sv) {
+		switch (ch) {
+		case '`':
+		case '"':
+		case '!':
+		case '$':
+		case '\\':
+			result.push_back('\\');
+			break;
+		default:
+			break;
+		}
+		result.push_back(ch);
+	}
+	return result;
+}
+
 /**
  * Convert a string into C string literal form using \a, \b, \f, \n, \r, \t, \v, and \ooo.
  */

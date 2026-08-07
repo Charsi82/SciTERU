@@ -18,7 +18,7 @@
 	</div>
 	<small>
 	<p>
-Copyright © 2020–2025 Lua.org, PUC-Rio. Доступно бесплатно на условиях <a href="https://www.lua.org/license.html">лицензии Lua</a>.
+Copyright © 2020–2026 Lua.org, PUC-Rio. Доступно бесплатно на условиях <a href="https://www.lua.org/license.html">лицензии Lua</a>.
 </p>
 </small>
 <!-- ====================================================================== -->
@@ -2710,7 +2710,20 @@ Lua гарантирует, что на стеке достаточно мест
 
 <h3>4.1.3 – <a name="4.1.3">Указатели на строки</a></h3>
 
-<p>Некоторые функции в API возвращают указатели (<code>const char*</code>)
+<p>
+Некоторые функции в API имеют параметры,
+которые являются указателями на строки C (<code>const char*</code>).
+Некоторые из этих параметров имеют связанную с ними длину (<code>size_t</code>).
+Если не указано иное,
+если указана связанная длина,
+строка может содержать встроенные нули;
+кроме того, указатель может быть <code>NULL</code>, если длина равна нулю.
+Если связанная длина отсутствует,
+указатель должен указывать на строку, завершающуюся нулём.
+В любом случае содержимое строки должно оставаться неизменным
+до тех пор, пока функция не вернётся.
+
+</p><p>Некоторые функции в API возвращают указатели (<code>const char*</code>)
 на строки Lua на стеке.
 (См. <a href="#lua_pushfstring"><code>lua_pushfstring</code></a>, <a href="#lua_pushlstring"><code>lua_pushlstring</code></a>,
 <a href="#lua_pushstring"><code>lua_pushstring</code></a> и <a href="#lua_tolstring"><code>lua_tolstring</code></a>.
@@ -3068,8 +3081,8 @@ Lua обрабатывает функцию продолжения так, ка�
 и, следовательно, может вызывать любые ошибки.
 
 </p><hr><h3><a name="lua_absindex"><code>lua_absindex</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_absindex (lua_State *L, int idx);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_absindex (lua_State *L, int idx);</pre>
 
 <p>
 Конвертирует допустимый индекс <code>idx</code>
@@ -3077,7 +3090,7 @@ Lua обрабатывает функцию продолжения так, ка�
 (который не зависит от размера стека).
 
 </p><hr><h3><a name="lua_Alloc"><code>lua_Alloc</code></a></h3>
-<pre>typedef void * (*lua_Alloc) (void *ud,
+<pre class="api">typedef void * (*lua_Alloc) (void *ud,
 							 void *ptr,
 							 size_t osize,
 							 size_t nsize);</pre>
@@ -3147,7 +3160,7 @@ Lua предполагает следующее поведение функци�
 
 </p><hr><h3><a name="lua_arith"><code>lua_arith</code></a></h3><p>
 <span class="apii">[-(2|1), +1, <em>e</em>]</span>
-</p><pre>void lua_arith (lua_State *L, int op);</pre>
+</p><pre class="api">void lua_arith (lua_State *L, int op);</pre>
 
 <p>
 Выполняет арифметическую или битовую операцию над двумя значениями
@@ -3180,15 +3193,15 @@ Lua предполагает следующее поведение функци�
 </ul>
 
 <hr><h3><a name="lua_atpanic"><code>lua_atpanic</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>lua_CFunction lua_atpanic (lua_State *L, lua_CFunction panicf);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">lua_CFunction lua_atpanic (lua_State *L, lua_CFunction panicf);</pre>
 
 <p>
 Устанавливает новую функцию паники и возвращает старую (см. <a href="#4.4">§4.4</a>).
 
 </p><hr><h3><a name="lua_call"><code>lua_call</code></a></h3><p>
 <span class="apii">[-(nargs+1), +nresults, <em>e</em>]</span>
-</p><pre>void lua_call (lua_State *L, int nargs, int nresults);</pre>
+</p><pre class="api">void lua_call (lua_State *L, int nargs, int nresults);</pre>
 
 <p>
 Вызывает функцию.
@@ -3254,7 +3267,7 @@ Lua заботится о том, чтобы возвращаемые значе
 
 </p><hr><h3><a name="lua_callk"><code>lua_callk</code></a></h3><p>
 <span class="apii">[-(nargs + 1), +nresults, <em>e</em>]</span>
-</p><pre>void lua_callk (lua_State *L,
+</p><pre class="api">void lua_callk (lua_State *L,
 				int nargs,
 				int nresults,
 				lua_KContext ctx,
@@ -3265,7 +3278,7 @@ Lua заботится о том, чтобы возвращаемые значе
 но позволяет вызываемой функции передавать управление(см. <a href="#4.5">§4.5</a>).
 
 </p><hr><h3><a name="lua_CFunction"><code>lua_CFunction</code></a></h3>
-<pre>typedef int (*lua_CFunction) (lua_State *L);</pre>
+<pre class="api">typedef int (*lua_CFunction) (lua_State *L);</pre>
 
 <p>
 Тип для C&nbsp;функций.
@@ -3309,8 +3322,8 @@ C&nbsp;функция получает аргументы из Lua в своём
 </pre>
 
 <hr><h3><a name="lua_checkstack"><code>lua_checkstack</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_checkstack (lua_State *L, int n);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_checkstack (lua_State *L, int n);</pre>
 
 <p>
 Гарантирует, что на стеке достаточно места как минимум для <code>n</code> дополнительных элементов,
@@ -3326,8 +3339,8 @@ C&nbsp;функция получает аргументы из Lua в своём
 он остается неизменным.
 
 </p><hr><h3><a name="lua_close"><code>lua_close</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>void lua_close (lua_State *L);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">void lua_close (lua_State *L);</pre>
 
 <p>
 Закрывает все активные переменные, подлежащие закрытию, в основном потоке,
@@ -3344,18 +3357,18 @@ C&nbsp;функция получает аргументы из Lua в своём
 
 </p><hr><h3><a name="lua_closeslot"><code>lua_closeslot</code></a></h3><p>
 <span class="apii">[-0, +0, <em>e</em>]</span>
-</p><pre>void lua_closeslot (lua_State *L, int index);</pre>
+</p><pre class="api">void lua_closeslot (lua_State *L, int index);</pre>
 
 <p>
-Закроет слот, который необходимо закрыть, по указанному индексу и установите его значение равным <b>nil</b>.
+Закроет слот, который необходимо закрыть, по указанному индексу и установит его значение равным <b>nil</b>.
 Индекс должен быть последним индексом, ранее помеченным как закрытый (см. <a href="#lua_toclose"><code>lua_toclose</code></a>),
  который всё ещё активен (то есть ещё не закрыт).
 </p><p>
 Метаметод <code>__close</code> не сможет yield когда вызван этой функцией.
 
 </p><hr><h3><a name="lua_closethread"><code>lua_closethread</code></a></h3><p>
-<span class="apii">[-0, +?, –]</span>
-</p><pre>int lua_closethread (lua_State *L, lua_State *from);</pre>
+<span class="apii">[-0, +?, &ndash;]</span>
+</p><pre class="api">int lua_closethread (lua_State *L, lua_State *from);</pre>
 
 <p>
 Сбрасывает поток, очищая его стек вызовов и закрывая все ожидающие закрытия переменные.
@@ -3382,7 +3395,7 @@ C&nbsp;функция получает аргументы из Lua в своём
 
 </p><hr><h3><a name="lua_compare"><code>lua_compare</code></a></h3><p>
 <span class="apii">[-0, +0, <em>e</em>]</span>
-</p><pre>int lua_compare (lua_State *L, int index1, int index2, int op);</pre>
+</p><pre class="api">int lua_compare (lua_State *L, int index1, int index2, int op);</pre>
 
 <p>
 Сравнивает два Lua значения.
@@ -3406,7 +3419,7 @@ C&nbsp;функция получает аргументы из Lua в своём
 
 <hr><h3><a name="lua_concat"><code>lua_concat</code></a></h3><p>
 <span class="apii">[-n, +1, <em>e</em>]</span>
-</p><pre>void lua_concat (lua_State *L, int n);</pre>
+</p><pre class="api">void lua_concat (lua_State *L, int n);</pre>
 
 <p>
 Производит конкатенацию <code>n</code> значений на вершине стека,
@@ -3418,8 +3431,8 @@ C&nbsp;функция получает аргументы из Lua в своём
 (см. <a href="#3.4.6">§3.4.6</a>).
 
 </p><hr><h3><a name="lua_copy"><code>lua_copy</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>void lua_copy (lua_State *L, int fromidx, int toidx);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">void lua_copy (lua_State *L, int fromidx, int toidx);</pre>
 
 <p>
 Копирует элемент по индексу <code>fromidx</code>
@@ -3429,7 +3442,7 @@ C&nbsp;функция получает аргументы из Lua в своём
 
 </p><hr><h3><a name="lua_createtable"><code>lua_createtable</code></a></h3><p>
 <span class="apii">[-0, +1, <em>m</em>]</span>
-</p><pre>void lua_createtable (lua_State *L, int nseq, int nrec);</pre>
+</p><pre class="api">void lua_createtable (lua_State *L, int nseq, int nrec);</pre>
 
 <p>
 Создаёт новую пустую таблицу и помещает её на стек.
@@ -3441,8 +3454,8 @@ Lua может использовать эти подсказки для пре�
 Иначе вам следует использовать функцию <a href="#lua_newtable"><code>lua_newtable</code></a>.
 
 </p><hr><h3><a name="lua_dump"><code>lua_dump</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_dump (lua_State *L,
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_dump (lua_State *L,
 						lua_Writer writer,
 						void *data,
 						int strip);</pre>
@@ -3474,7 +3487,7 @@ Lua может использовать эти подсказки для пре�
 
 </p><hr><h3><a name="lua_error"><code>lua_error</code></a></h3><p>
 <span class="apii">[-1, +0, <em>v</em>]</span>
-</p><pre>int lua_error (lua_State *L);</pre>
+</p><pre class="api">int lua_error (lua_State *L);</pre>
 
 <p>
 Вызывает ошибку Lua,
@@ -3484,8 +3497,8 @@ Lua может использовать эти подсказки для пре�
 (см. <a href="#luaL_error"><code>luaL_error</code></a>).
 
 </p><hr><h3><a name="lua_gc"><code>lua_gc</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_gc (lua_State *L, int what, ...);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_gc (lua_State *L, int what, ...);</pre>
 
 <p>
 Управляет сборщиком мусора.
@@ -3562,8 +3575,8 @@ Lua может использовать эти подсказки для пре�
 
 </p><p>Эту функцию не следует вызывать из финализатора.
 </p><hr><h3><a name="lua_getallocf"><code>lua_getallocf</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>lua_Alloc lua_getallocf (lua_State *L, void **ud);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">lua_Alloc lua_getallocf (lua_State *L, void **ud);</pre>
 
 <p>
 Возвращает функцию выделения памяти для данного Lua состояния.
@@ -3572,7 +3585,7 @@ Lua может использовать эти подсказки для пре�
 
 </p><hr><h3><a name="lua_getfield"><code>lua_getfield</code></a></h3><p>
 <span class="apii">[-0, +1, <em>e</em>]</span>
-</p><pre>int lua_getfield (lua_State *L, int index, const char *k);</pre>
+</p><pre class="api">int lua_getfield (lua_State *L, int index, const char *k);</pre>
 
 <p>
 Помещает на стек значение <code>t[k]</code>,
@@ -3584,8 +3597,8 @@ Lua может использовать эти подсказки для пре�
 Возвращает тип положенного на стек значения.
 
 </p><hr><h3><a name="lua_getextraspace"><code>lua_getextraspace</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>void *lua_getextraspace (lua_State *L);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">void *lua_getextraspace (lua_State *L);</pre>
 
 <p>
 Возвращает указатель на область "сырой" (raw) памяти, ассоциированную
@@ -3604,7 +3617,7 @@ Lua не использует эту область.
 
 </p><hr><h3><a name="lua_getglobal"><code>lua_getglobal</code></a></h3><p>
 <span class="apii">[-0, +1, <em>e</em>]</span>
-</p><pre>int lua_getglobal (lua_State *L, const char *name);</pre>
+</p><pre class="api">int lua_getglobal (lua_State *L, const char *name);</pre>
 
 <p>
 Помещает на стек значение глобальной переменной <code>name</code>.
@@ -3612,7 +3625,7 @@ Lua не использует эту область.
 
 </p><hr><h3><a name="lua_geti"><code>lua_geti</code></a></h3><p>
 <span class="apii">[-0, +1, <em>e</em>]</span>
-</p><pre>int lua_geti (lua_State *L, int index, lua_Integer i);</pre>
+</p><pre class="api">int lua_geti (lua_State *L, int index, lua_Integer i);</pre>
 
 <p>
 Помещает на стек значение <code>t[i]</code>,
@@ -3624,8 +3637,8 @@ Lua не использует эту область.
 Возвращает тип положенного на стек значения.
 
 </p><hr><h3><a name="lua_getmetatable"><code>lua_getmetatable</code></a></h3><p>
-<span class="apii">[-0, +(0|1), –]</span>
-</p><pre>int lua_getmetatable (lua_State *L, int index);</pre>
+<span class="apii">[-0, +(0|1), &ndash;]</span>
+</p><pre class="api">int lua_getmetatable (lua_State *L, int index);</pre>
 
 <p>
 Если значение по индексу index имеет метатаблицу,
@@ -3634,7 +3647,7 @@ Lua не использует эту область.
 
 </p><hr><h3><a name="lua_gettable"><code>lua_gettable</code></a></h3><p>
 <span class="apii">[-1, +1, <em>e</em>]</span>
-</p><pre>int lua_gettable (lua_State *L, int index);</pre>
+</p><pre class="api">int lua_gettable (lua_State *L, int index);</pre>
 
 <p>
 Помещает на стек значение <code>t[k]</code>,
@@ -3651,8 +3664,8 @@ Lua не использует эту область.
 Возвращает тип положенного на стек значения.
 
 </p><hr><h3><a name="lua_gettop"><code>lua_gettop</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_gettop (lua_State *L);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_gettop (lua_State *L);</pre>
 
 <p>
 Возвращает индекс элемента на вершине стека.
@@ -3661,8 +3674,8 @@ Lua не использует эту область.
 в частности, 0&nbsp;означает, что стек пуст.
 
 </p><hr><h3><a name="lua_getiuservalue"><code>lua_getiuservalue</code></a></h3><p>
-<span class="apii">[-0, +1, –]</span>
-</p><pre>int lua_getiuservalue (lua_State *L, int index, int n);</pre>
+<span class="apii">[-0, +1, &ndash;]</span>
+</p><pre class="api">int lua_getiuservalue (lua_State *L, int index, int n);</pre>
 
 <p>
 Добавляет на стек <code>n</code>-е значение пользователя,
@@ -3674,8 +3687,8 @@ Lua не использует эту область.
 добавляет <b>nil</b> и возвращает <a href="#pdf-LUA_TNONE"><code>LUA_TNONE</code></a>.
 
 </p><hr><h3><a name="lua_insert"><code>lua_insert</code></a></h3><p>
-<span class="apii">[-1, +1, –]</span>
-</p><pre>void lua_insert (lua_State *L, int index);</pre>
+<span class="apii">[-1, +1, &ndash;]</span>
+</p><pre class="api">void lua_insert (lua_State *L, int index);</pre>
 
 <p>
 Перемещает верхний элемент стека в полученный правильный индекс,
@@ -3684,7 +3697,7 @@ Lua не использует эту область.
 т.к. псевдоиндекс не обозначает актуальной позиции на стеке.
 
 </p><hr><h3><a name="lua_Integer"><code>lua_Integer</code></a></h3>
-<pre>typedef ... lua_Integer;</pre>
+<pre class="api">typedef ... lua_Integer;</pre>
 
 <p>
 Тип целых в Lua.
@@ -3703,32 +3716,32 @@ Lua также определяет константы
 с минимальным и максимальным значениями для этого типа.
 
 </p><hr><h3><a name="lua_isboolean"><code>lua_isboolean</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_isboolean (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_isboolean (lua_State *L, int index);</pre>
 
 <p>
 Возвращает 1, если значение по индексу index имеет тип boolean,
 иначе возвращает&nbsp;0.
 
 </p><hr><h3><a name="lua_iscfunction"><code>lua_iscfunction</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_iscfunction (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_iscfunction (lua_State *L, int index);</pre>
 
 <p>
 Возвращает 1, если значение по индексу index это C&nbsp;функция,
 иначе возвращает&nbsp;0.
 
 </p><hr><h3><a name="lua_isfunction"><code>lua_isfunction</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_isfunction (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_isfunction (lua_State *L, int index);</pre>
 
 <p>
 Возвращает 1, если значение по индексу index это функция (любая C или Lua),
 иначе возвращает&nbsp;0.
 
 </p><hr><h3><a name="lua_isinteger"><code>lua_isinteger</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_isinteger (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_isinteger (lua_State *L, int index);</pre>
 
 <p>
 Возвращает 1, если значение по индексу index это целое
@@ -3736,32 +3749,32 @@ Lua также определяет константы
 иначе возвращает&nbsp;0.
 
 </p><hr><h3><a name="lua_islightuserdata"><code>lua_islightuserdata</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_islightuserdata (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_islightuserdata (lua_State *L, int index);</pre>
 
 <p>
 Возвращает 1, если значение по индексу index это лёгкие пользовательские данные
 (light userdata), иначе возвращает&nbsp;0.
 
 </p><hr><h3><a name="lua_isnil"><code>lua_isnil</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_isnil (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_isnil (lua_State *L, int index);</pre>
 
 <p>
 Возвращает 1, если значение по индексу index это <b>nil</b>,
 иначе возвращает&nbsp;0.
 
 </p><hr><h3><a name="lua_isnone"><code>lua_isnone</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_isnone (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_isnone (lua_State *L, int index);</pre>
 
 <p>
 Возвращает 1, если полученный индекс не правильный,
 иначе возвращает&nbsp;0.
 
 </p><hr><h3><a name="lua_isnoneornil"><code>lua_isnoneornil</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_isnoneornil (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_isnoneornil (lua_State *L, int index);</pre>
 
 <p>
 Возвращает 1, если полученный индекс не правильный или
@@ -3769,8 +3782,8 @@ Lua также определяет константы
 иначе возвращает&nbsp;0.
 
 </p><hr><h3><a name="lua_isnumber"><code>lua_isnumber</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_isnumber (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_isnumber (lua_State *L, int index);</pre>
 
 <p>
 Возвращает 1, если значение по индексу index это число или
@@ -3778,8 +3791,8 @@ Lua также определяет константы
 иначе возвращает&nbsp;0.
 
 </p><hr><h3><a name="lua_isstring"><code>lua_isstring</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_isstring (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_isstring (lua_State *L, int index);</pre>
 
 <p>
 Возвращает 1, если значение по индексу index это строка
@@ -3787,39 +3800,39 @@ Lua также определяет константы
 иначе возвращает&nbsp;0.
 
 </p><hr><h3><a name="lua_istable"><code>lua_istable</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_istable (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_istable (lua_State *L, int index);</pre>
 
 <p>
 Возвращает 1, если значение по индексу index это таблица,
 иначе возвращает&nbsp;0.
 
 </p><hr><h3><a name="lua_isthread"><code>lua_isthread</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_isthread (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_isthread (lua_State *L, int index);</pre>
 
 <p>
 Возвращает 1, если значение по индексу index это поток (thread),
 иначе возвращает&nbsp;0.
 
 </p><hr><h3><a name="lua_isuserdata"><code>lua_isuserdata</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_isuserdata (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_isuserdata (lua_State *L, int index);</pre>
 
 <p>
 Возвращает 1, если значение по индексу index это пользовательские данные
 (любые полные или лёгкие), иначе возвращает&nbsp;0.
 
 </p><hr><h3><a name="lua_isyieldable"><code>lua_isyieldable</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_isyieldable (lua_State *L);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_isyieldable (lua_State *L);</pre>
 
 <p>
 Возвращает 1, если данная сопрограмма может передать управление(yield),
 иначе возвращает&nbsp;0.
 
 </p><hr><h3><a name="lua_KContext"><code>lua_KContext</code></a></h3>
-<pre>typedef ... lua_KContext;</pre>
+<pre class="api">typedef ... lua_KContext;</pre>
 
 <p>
 Тип для контекста функции продолжения.
@@ -3830,14 +3843,14 @@ Lua также определяет константы
 Иначе, тип определён как <code>ptrdiff_t</code>.
 
 </p><hr><h3><a name="lua_KFunction"><code>lua_KFunction</code></a></h3>
-<pre>typedef int (*lua_KFunction) (lua_State *L, int status, lua_KContext ctx);</pre>
+<pre class="api">typedef int (*lua_KFunction) (lua_State *L, int status, lua_KContext ctx);</pre>
 
 <p>
 Тип для функций продолжения (см. <a href="#4.5">§4.5</a>).
 
 </p><hr><h3><a name="lua_len"><code>lua_len</code></a></h3><p>
 <span class="apii">[-0, +1, <em>e</em>]</span>
-</p><pre>void lua_len (lua_State *L, int index);</pre>
+</p><pre class="api">void lua_len (lua_State *L, int index);</pre>
 
 <p>
 Возвращает длину значения по индексу index.
@@ -3846,8 +3859,8 @@ Lua также определяет константы
 Результат помещается на стек.
 
 </p><hr><h3><a name="lua_load"><code>lua_load</code></a></h3><p>
-<span class="apii">[-0, +1, –]</span>
-</p><pre>int lua_load (lua_State *L,
+<span class="apii">[-0, +1, &ndash;]</span>
+</p><pre class="api">int lua_load (lua_State *L,
 			  lua_Reader reader,
 			  void *data,
 			  const char *chunkname,
@@ -3917,8 +3930,8 @@ Lua также определяет константы
 Другие переменные upvalue инициализируются значением <b>nil</b>.
 
 </p><hr><h3><a name="lua_newstate"><code>lua_newstate</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>lua_State *lua_newstate (lua_Alloc f, void *ud,
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">lua_State *lua_newstate (lua_Alloc f, void *ud,
 								   unsigned int seed);</pre>
 
 <p>
@@ -3932,7 +3945,7 @@ Lua выполняет всё выделение памяти для данно�
 
 </p><hr><h3><a name="lua_newtable"><code>lua_newtable</code></a></h3><p>
 <span class="apii">[-0, +1, <em>m</em>]</span>
-</p><pre>void lua_newtable (lua_State *L);</pre>
+</p><pre class="api">void lua_newtable (lua_State *L);</pre>
 
 <p>
 Создаёт новую пустую таблицу и помещает её на стек.
@@ -3940,7 +3953,7 @@ Lua выполняет всё выделение памяти для данно�
 
 </p><hr><h3><a name="lua_newthread"><code>lua_newthread</code></a></h3><p>
 <span class="apii">[-0, +1, <em>m</em>]</span>
-</p><pre>lua_State *lua_newthread (lua_State *L);</pre>
+</p><pre class="api">lua_State *lua_newthread (lua_State *L);</pre>
 
 <p>
 Создаёт новый поток, помещает его на стек
@@ -3954,19 +3967,23 @@ Lua выполняет всё выделение памяти для данно�
 
 </p><hr><h3><a name="lua_newuserdatauv"><code>lua_newuserdatauv</code></a></h3><p>
 <span class="apii">[-0, +1, <em>m</em>]</span>
-</p><pre>void *lua_newuserdatauv (lua_State *L, size_t size, int nuvalue);</pre>
+</p><pre class="api">void *lua_newuserdatauv (lua_State *L, size_t size, int nuvalue);</pre>
 
 <p>
 Эта функция создаёт и помещает на стек новые полные пользовательские данные (full userdata),
 с ассоциированными значениями Lua, называемыми <code>user values</code>,
 плюс ассоциированный блок необработанной памяти размером <code>size</code> байт.
 
-(Значения пользователя можно устанавливать и считывать с помощью функций
-<a href="#lua_setiuservalue"><code>lua_setiuservalue</code></a> и <a href="#lua_getiuservalue"><code>lua_getiuservalue</code></a>.)
+</p><p>
+Значения пользователя можно устанавливать и считывать с помощью функций
+<a href="#lua_setiuservalue"><code>lua_setiuservalue</code></a> и
+ <a href="#lua_getiuservalue"><code>lua_getiuservalue</code></a>.
+Блок памяти соответствующим образом выровнен для любого объекта ISO&nbsp;C.
+(См. макро <code>LUAI_MAXALIGN</code> в файле <code>luaconf.h</code> для других
+требований к выравниванию.)
 
 </p><p>
 Функция возвращает адрес блока памяти.
-
 Lua гарантирует, что этот адрес действителен до тех пор, пока
 соответствующие пользовательские данные активны (см. <a href="#2.5">§2.5</a>).
 Более того, если пользовательские данные помечены для финализации (см. <a href="#2.5.3">§2.5.3</a>),
@@ -3974,7 +3991,7 @@ Lua гарантирует, что этот адрес действителен 
 
 </p><hr><h3><a name="lua_next"><code>lua_next</code></a></h3><p>
 <span class="apii">[-1, +(2|0), <em>v</em>]</span>
-</p><pre>int lua_next (lua_State *L, int index);</pre>
+</p><pre class="api">int lua_next (lua_State *L, int index);</pre>
 
 <p>
 Снимает ключ со стека,
@@ -4010,10 +4027,10 @@ Lua гарантирует, что этот адрес действителен 
 </p><p>
 Эта функция может вызвать ошибку, если заданный ключ не равен <b>nil</b> и отсутствует в таблице.
 Смотри функцию <a href="#pdf-next"><code>next</code></a> 
-для предостережений о модификации таблицы во время её перебора.
+для получения более подробной информации об итерировании.
 
 </p><hr><h3><a name="lua_Number"><code>lua_Number</code></a></h3>
-<pre>typedef ... lua_Number;</pre>
+<pre class="api">typedef ... lua_Number;</pre>
 
 <p>
 Тип вещественных чисел в Lua.
@@ -4024,7 +4041,7 @@ Lua гарантирует, что этот адрес действителен 
 (см. <code>LUA_FLOAT_TYPE</code> в <code>luaconf.h</code>).
 
 </p><hr><h3><a name="lua_numbertointeger"><code>lua_numbertointeger</code></a></h3>
-<pre>int lua_numbertointeger (lua_Number n, lua_Integer *p);</pre>
+<pre class="api">int lua_numbertointeger (lua_Number n, lua_Integer *p);</pre>
 
 <p>
 Попытка преобразовать число с плавающей запятой Lua в целое число Lua;
@@ -4039,8 +4056,8 @@ Lua гарантирует, что этот адрес действителен 
 Этот макрос может вычислять свои аргументы несколько раз.
 
 </p><hr><h3><a name="lua_numbertocstring"><code>lua_numbertocstring</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>unsigned lua_numbertocstring (lua_State *L, int idx,
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">unsigned lua_numbertocstring (lua_State *L, int idx,
 										char *buff);</pre>
 
 <p>
@@ -4053,8 +4070,8 @@ Lua гарантирует, что этот адрес действителен 
 или ноль, если значение по индексу <code>idx</code> не является числом.
 
 </p><hr><h3><a name="lua_pcall"><code>lua_pcall</code></a></h3><p>
-<span class="apii">[-(nargs + 1), +(nresults|1), –]</span>
-</p><pre>int lua_pcall (lua_State *L, int nargs, int nresults, int msgh);</pre>
+<span class="apii">[-(nargs + 1), +(nresults|1), &ndash;]</span>
+</p><pre class="api">int lua_pcall (lua_State *L, int nargs, int nresults, int msgh);</pre>
 
 <p>
 Вызывает функцию (или вызываемый объект) в защищённом режиме.
@@ -4095,8 +4112,8 @@ Lua гарантирует, что этот адрес действителен 
 <a href="#pdf-LUA_ERRERR"><code>LUA_ERRERR</code></a>
 
 </p><hr><h3><a name="lua_pcallk"><code>lua_pcallk</code></a></h3><p>
-<span class="apii">[-(nargs + 1), +(nresults|1), –]</span>
-</p><pre>int lua_pcallk (lua_State *L,
+<span class="apii">[-(nargs + 1), +(nresults|1), &ndash;]</span>
+</p><pre class="api">int lua_pcallk (lua_State *L,
 				int nargs,
 				int nresults,
 				int msgh,
@@ -4109,22 +4126,22 @@ Lua гарантирует, что этот адрес действителен 
 
 </p><hr><h3><a name="lua_pop"><code>lua_pop</code></a></h3><p>
 <span class="apii">[-n, +0, <em>e</em>]</span>
-</p><pre>void lua_pop (lua_State *L, int n);</pre>
+</p><pre class="api">void lua_pop (lua_State *L, int n);</pre>
 
 <p>
 Снимает <code>n</code> элементов со стека.
 Она реализована в виде макроса над <a href="#lua_settop"><code>lua_settop</code></a>.
 
 </p><hr><h3><a name="lua_pushboolean"><code>lua_pushboolean</code></a></h3><p>
-<span class="apii">[-0, +1, –]</span>
-</p><pre>void lua_pushboolean (lua_State *L, int b);</pre>
+<span class="apii">[-0, +1, &ndash;]</span>
+</p><pre class="api">void lua_pushboolean (lua_State *L, int b);</pre>
 
 <p>
 Помещает на стек логическое значение (boolean) равное <code>b</code>.
 
 </p><hr><h3><a name="lua_pushcclosure"><code>lua_pushcclosure</code></a></h3><p>
 <span class="apii">[-n, +1, <em>m</em>]</span>
-</p><pre>void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n);</pre>
+</p><pre class="api">void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n);</pre>
 
 <p>
 Помещает на стек новое C&nbsp;замыкание.
@@ -4161,8 +4178,8 @@ Lua гарантирует, что этот адрес действителен 
 В этом случае, она никогда не вызывает ошибку памяти.
 
 </p><hr><h3><a name="lua_pushcfunction"><code>lua_pushcfunction</code></a></h3><p>
-<span class="apii">[-0, +1, –]</span>
-</p><pre>void lua_pushcfunction (lua_State *L, lua_CFunction f);</pre>
+<span class="apii">[-0, +1, &ndash;]</span>
+</p><pre class="api">void lua_pushcfunction (lua_State *L, lua_CFunction f);</pre>
 
 <p>
 Помещает C&nbsp;функцию на стек.
@@ -4170,7 +4187,7 @@ Lua гарантирует, что этот адрес действителен 
 
 </p><hr><h3><a name="lua_pushexternalstring"><code>lua_pushexternalstring</code></a></h3><p>
 <span class="apii">[-0, +1, <em>m</em>]</span>
-</p><pre>const char *lua_pushexternalstring (lua_State *L,
+</p><pre class="api">const char *lua_pushexternalstring (lua_State *L,
 				const char *s, size_t len, lua_Alloc falloc, void *ud);</pre>
 
 <p>
@@ -4204,7 +4221,7 @@ Lua вызовет функцию <code>falloc</code> перед тем, как 
 
 </p><hr><h3><a name="lua_pushfstring"><code>lua_pushfstring</code></a></h3><p>
 <span class="apii">[-0, +1, <em>v</em>]</span>
-</p><pre>const char *lua_pushfstring (lua_State *L, const char *fmt, ...);</pre>
+</p><pre class="api">const char *lua_pushfstring (lua_State *L, const char *fmt, ...);</pre>
 
 <p>
 Помещает на стек отформатированную строку,
@@ -4227,22 +4244,22 @@ Lua вызовет функцию <code>falloc</code> перед тем, как 
 эта функция может вызвать ошибку, если результирующая строка слишком длинная.
 
 </p><hr><h3><a name="lua_pushglobaltable"><code>lua_pushglobaltable</code></a></h3><p>
-<span class="apii">[-0, +1, –]</span>
-</p><pre>void lua_pushglobaltable (lua_State *L);</pre>
+<span class="apii">[-0, +1, &ndash;]</span>
+</p><pre class="api">void lua_pushglobaltable (lua_State *L);</pre>
 
 <p>
 Помещает на стек глобальное окружение.
 
 </p><hr><h3><a name="lua_pushinteger"><code>lua_pushinteger</code></a></h3><p>
-<span class="apii">[-0, +1, –]</span>
-</p><pre>void lua_pushinteger (lua_State *L, lua_Integer n);</pre>
+<span class="apii">[-0, +1, &ndash;]</span>
+</p><pre class="api">void lua_pushinteger (lua_State *L, lua_Integer n);</pre>
 
 <p>
 Помещает на стек целое равное <code>n</code>.
 
 </p><hr><h3><a name="lua_pushlightuserdata"><code>lua_pushlightuserdata</code></a></h3><p>
-<span class="apii">[-0, +1, –]</span>
-</p><pre>void lua_pushlightuserdata (lua_State *L, void *p);</pre>
+<span class="apii">[-0, +1, &ndash;]</span>
+</p><pre class="api">void lua_pushlightuserdata (lua_State *L, void *p);</pre>
 
 <p>
 Помещает на стек лёгкие пользовательские данные (light userdata).
@@ -4258,7 +4275,7 @@ Lua вызовет функцию <code>falloc</code> перед тем, как 
 
 </p><hr><h3><a name="lua_pushliteral"><code>lua_pushliteral</code></a></h3><p>
 <span class="apii">[-0, +1, <em>v</em>]</span>
-</p><pre>const char *lua_pushliteral (lua_State *L, const char *s);</pre>
+</p><pre class="api">const char *lua_pushliteral (lua_State *L, const char *s);</pre>
 
 <p>
 Этот макрос аналогичен <a href="#lua_pushstring"><code>lua_pushstring</code></a>,
@@ -4267,7 +4284,7 @@ Lua вызовет функцию <code>falloc</code> перед тем, как 
 
 </p><hr><h3><a name="lua_pushlstring"><code>lua_pushlstring</code></a></h3><p>
 <span class="apii">[-0, +1, <em>v</em>]</span>
-</p><pre>const char *lua_pushlstring (lua_State *L, const char *s, size_t len);</pre>
+</p><pre class="api">const char *lua_pushlstring (lua_State *L, const char *s, size_t len);</pre>
 
 <p>
 Помещает на стек строку, указанную <code>s</code>, размером <code>len</code>.
@@ -4284,22 +4301,22 @@ Lua создаст или повторно использует внутренн
 эта функция может вызвать ошибку, если строка слишком длинная.
 
 </p><hr><h3><a name="lua_pushnil"><code>lua_pushnil</code></a></h3><p>
-<span class="apii">[-0, +1, –]</span>
-</p><pre>void lua_pushnil (lua_State *L);</pre>
+<span class="apii">[-0, +1, &ndash;]</span>
+</p><pre class="api">void lua_pushnil (lua_State *L);</pre>
 
 <p>
 Помещает на стек значение nil.
 
 </p><hr><h3><a name="lua_pushnumber"><code>lua_pushnumber</code></a></h3><p>
-<span class="apii">[-0, +1, –]</span>
-</p><pre>void lua_pushnumber (lua_State *L, lua_Number n);</pre>
+<span class="apii">[-0, +1, &ndash;]</span>
+</p><pre class="api">void lua_pushnumber (lua_State *L, lua_Number n);</pre>
 
 <p>
 Помещает на стек вещественное число равное <code>n</code>.
 
 </p><hr><h3><a name="lua_pushstring"><code>lua_pushstring</code></a></h3><p>
 <span class="apii">[-0, +1, <em>m</em>]</span>
-</p><pre>const char *lua_pushstring (lua_State *L, const char *s);</pre>
+</p><pre class="api">const char *lua_pushstring (lua_State *L, const char *s);</pre>
 
 <p>
 Помещает на стек завершаемую нулём строку, указанную <code>s</code>.
@@ -4314,23 +4331,23 @@ Lua создаст или повторно использует внутренн
 Если <code>s</code> = <code>NULL</code>, помещает <b>nil</b> и возвращает <code>NULL</code>.
 
 </p><hr><h3><a name="lua_pushthread"><code>lua_pushthread</code></a></h3><p>
-<span class="apii">[-0, +1, –]</span>
-</p><pre>int lua_pushthread (lua_State *L);</pre>
+<span class="apii">[-0, +1, &ndash;]</span>
+</p><pre class="api">int lua_pushthread (lua_State *L);</pre>
 
 <p>
 Помещает на стек поток, представленный Lua состоянием <code>L</code>.
 Возвращает 1, если поток является главным потоком состояния.
 
 </p><hr><h3><a name="lua_pushvalue"><code>lua_pushvalue</code></a></h3><p>
-<span class="apii">[-0, +1, –]</span>
-</p><pre>void lua_pushvalue (lua_State *L, int index);</pre>
+<span class="apii">[-0, +1, &ndash;]</span>
+</p><pre class="api">void lua_pushvalue (lua_State *L, int index);</pre>
 
 <p>
 Помещает на стек копию элемента по индексу index.
 
 </p><hr><h3><a name="lua_pushvfstring"><code>lua_pushvfstring</code></a></h3><p>
-<span class="apii">[-0, +1, –]</span>
-</p><pre>const char *lua_pushvfstring (lua_State *L,
+<span class="apii">[-0, +1, &ndash;]</span>
+</p><pre class="api">const char *lua_pushvfstring (lua_State *L,
 							  const char *fmt,
 							  va_list argp);</pre>
 
@@ -4343,8 +4360,8 @@ Lua создаст или повторно использует внутренн
 и возвращает <code>NULL</code>.
 
 </p><hr><h3><a name="lua_rawequal"><code>lua_rawequal</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_rawequal (lua_State *L, int index1, int index2);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_rawequal (lua_State *L, int index1, int index2);</pre>
 
 <p>
 Возвращает 1, если два значения по индексам <code>index1</code> и <code>index2</code>
@@ -4353,8 +4370,8 @@ Lua создаст или повторно использует внутренн
 Также возвращает&nbsp;0, если любой из индексов не правильный.
 
 </p><hr><h3><a name="lua_rawget"><code>lua_rawget</code></a></h3><p>
-<span class="apii">[-1, +1, –]</span>
-</p><pre>int lua_rawget (lua_State *L, int index);</pre>
+<span class="apii">[-1, +1, &ndash;]</span>
+</p><pre class="api">int lua_rawget (lua_State *L, int index);</pre>
 
 <p>
 Аналогично <a href="#lua_gettable"><code>lua_gettable</code></a>,
@@ -4362,8 +4379,8 @@ Lua создаст или повторно использует внутренн
 Значение по адресу <code>index</code> должно быть таблицей.
 
 </p><hr><h3><a name="lua_rawgeti"><code>lua_rawgeti</code></a></h3><p>
-<span class="apii">[-0, +1, –]</span>
-</p><pre>int lua_rawgeti (lua_State *L, int index, lua_Integer n);</pre>
+<span class="apii">[-0, +1, &ndash;]</span>
+</p><pre class="api">int lua_rawgeti (lua_State *L, int index, lua_Integer n);</pre>
 
 <p>
 Помещает на стек значение <code>t[n]</code>,
@@ -4374,8 +4391,8 @@ Lua создаст или повторно использует внутренн
 Возвращает тип положенного на стек значения.
 
 </p><hr><h3><a name="lua_rawgetp"><code>lua_rawgetp</code></a></h3><p>
-<span class="apii">[-0, +1, –]</span>
-</p><pre>int lua_rawgetp (lua_State *L, int index, const void *p);</pre>
+<span class="apii">[-0, +1, &ndash;]</span>
+</p><pre class="api">int lua_rawgetp (lua_State *L, int index, const void *p);</pre>
 
 <p>
 Помещает на стек значение <code>t[k]</code>,
@@ -4387,8 +4404,8 @@ Lua создаст или повторно использует внутренн
 Возвращает тип положенного на стек значения.
 
 </p><hr><h3><a name="lua_rawlen"><code>lua_rawlen</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>lua_Unsigned lua_rawlen (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">lua_Unsigned lua_rawlen (lua_State *L, int index);</pre>
 
 <p>
 Возвращет сырую "длину" значения по индексу index:
@@ -4399,7 +4416,7 @@ Lua создаст или повторно использует внутренн
 
 </p><hr><h3><a name="lua_rawset"><code>lua_rawset</code></a></h3><p>
 <span class="apii">[-2, +0, <em>m</em>]</span>
-</p><pre>void lua_rawset (lua_State *L, int index);</pre>
+</p><pre class="api">void lua_rawset (lua_State *L, int index);</pre>
 
 <p>
 Аналогично <a href="#lua_settable"><code>lua_settable</code></a>,
@@ -4408,7 +4425,7 @@ Lua создаст или повторно использует внутренн
 
 </p><hr><h3><a name="lua_rawseti"><code>lua_rawseti</code></a></h3><p>
 <span class="apii">[-1, +0, <em>m</em>]</span>
-</p><pre>void lua_rawseti (lua_State *L, int index, lua_Integer i);</pre>
+</p><pre class="api">void lua_rawseti (lua_State *L, int index, lua_Integer i);</pre>
 
 <p>
 Действие аналогично <code>t[i] = v</code>,
@@ -4421,7 +4438,7 @@ Lua создаст или повторно использует внутренн
 
 </p><hr><h3><a name="lua_rawsetp"><code>lua_rawsetp</code></a></h3><p>
 <span class="apii">[-1, +0, <em>m</em>]</span>
-</p><pre>void lua_rawsetp (lua_State *L, int index, const void *p);</pre>
+</p><pre class="api">void lua_rawsetp (lua_State *L, int index, const void *p);</pre>
 
 <p>
 Действие аналогично <code>t[p] = v</code>,
@@ -4434,7 +4451,7 @@ Lua создаст или повторно использует внутренн
 Присваивание "сырое", т.е. без использования метазначения <code>__newindex</code>.
 
 </p><hr><h3><a name="lua_Reader"><code>lua_Reader</code></a></h3>
-<pre>typedef const char * (*lua_Reader) (lua_State *L,
+<pre class="api">typedef const char * (*lua_Reader) (lua_State *L,
 									void *data,
 									size_t *size);</pre>
 
@@ -4452,7 +4469,7 @@ Lua создаст или повторно использует внутренн
 
 </p><hr><h3><a name="lua_register"><code>lua_register</code></a></h3><p>
 <span class="apii">[-0, +0, <em>e</em>]</span>
-</p><pre>void lua_register (lua_State *L, const char *name, lua_CFunction f);</pre>
+</p><pre class="api">void lua_register (lua_State *L, const char *name, lua_CFunction f);</pre>
 
 <p>
 Устанавливает C функцию <code>f</code> в качестве нового значения
@@ -4464,8 +4481,8 @@ Lua создаст или повторно использует внутренн
 </pre>
 
 <hr><h3><a name="lua_remove"><code>lua_remove</code></a></h3><p>
-<span class="apii">[-1, +0, –]</span>
-</p><pre>void lua_remove (lua_State *L, int index);</pre>
+<span class="apii">[-1, +0, &ndash;]</span>
+</p><pre class="api">void lua_remove (lua_State *L, int index);</pre>
 
 <p>
 Удаляет элемент по данному правильному индексу,
@@ -4474,8 +4491,8 @@ Lua создаст или повторно использует внутренн
 т.к. псевдоиндекс не является действительной позицией на стеке.
 
 </p><hr><h3><a name="lua_replace"><code>lua_replace</code></a></h3><p>
-<span class="apii">[-1, +0, –]</span>
-</p><pre>void lua_replace (lua_State *L, int index);</pre>
+<span class="apii">[-1, +0, &ndash;]</span>
+</p><pre class="api">void lua_replace (lua_State *L, int index);</pre>
 
 <p>
 Перемещяет элемент с вершины стека в позицию по правильному индексу index
@@ -4483,8 +4500,8 @@ Lua создаст или повторно использует внутренн
 и затем снимает верхний элемент со стека.
 
 </p><hr><h3><a name="lua_resume"><code>lua_resume</code></a></h3><p>
-<span class="apii">[-?, +?, –]</span>
-</p><pre>int lua_resume (lua_State *L, lua_State *from, int nargs,
+<span class="apii">[-?, +?, &ndash;]</span>
+</p><pre class="api">int lua_resume (lua_State *L, lua_State *from, int nargs,
 int *nresults);</pre>
 
 <p>
@@ -4526,8 +4543,8 @@ int *nresults);</pre>
 Если такой сопрограммы нет, этот параметр может быть равен <code>NULL</code>.
 
 </p><hr><h3><a name="lua_rotate"><code>lua_rotate</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>void lua_rotate (lua_State *L, int idx, int n);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">void lua_rotate (lua_State *L, int idx, int n);</pre>
 
 <p>
 Вращает элементы стека между правильным индексом <code>idx</code>
@@ -4541,8 +4558,8 @@ int *nresults);</pre>
 т.к. псевдоиндекс не является действительной позицией на стеке.
 
 </p><hr><h3><a name="lua_setallocf"><code>lua_setallocf</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);</pre>
 
 <p>
 Заменяет функцию выделения памяти данного состояния на функцию <code>f</code>
@@ -4550,7 +4567,7 @@ int *nresults);</pre>
 
 </p><hr><h3><a name="lua_setfield"><code>lua_setfield</code></a></h3><p>
 <span class="apii">[-1, +0, <em>e</em>]</span>
-</p><pre>void lua_setfield (lua_State *L, int index, const char *k);</pre>
+</p><pre class="api">void lua_setfield (lua_State *L, int index, const char *k);</pre>
 
 <p>
 Действие аналогично <code>t[k] = v</code>,
@@ -4564,7 +4581,7 @@ int *nresults);</pre>
 
 </p><hr><h3><a name="lua_setglobal"><code>lua_setglobal</code></a></h3><p>
 <span class="apii">[-1, +0, <em>e</em>]</span>
-</p><pre>void lua_setglobal (lua_State *L, const char *name);</pre>
+</p><pre class="api">void lua_setglobal (lua_State *L, const char *name);</pre>
 
 <p>
 Снимает значение со стека и 
@@ -4572,7 +4589,7 @@ int *nresults);</pre>
 
 </p><hr><h3><a name="lua_seti"><code>lua_seti</code></a></h3><p>
 <span class="apii">[-1, +0, <em>e</em>]</span>
-</p><pre>void lua_seti (lua_State *L, int index, lua_Integer n);</pre>
+</p><pre class="api">void lua_seti (lua_State *L, int index, lua_Integer n);</pre>
 
 <p>
 Действие аналогично <code>t[n] = v</code>,
@@ -4585,8 +4602,8 @@ int *nresults);</pre>
 (см. <a href="#2.4">§2.4</a>).
 
 </p><hr><h3><a name="lua_setiuservalue"><code>lua_setiuservalue</code></a></h3><p>
-<span class="apii">[-1, +0, –]</span>
-</p><pre>int lua_setiuservalue (lua_State *L, int index, int n);</pre>
+<span class="apii">[-1, +0, &ndash;]</span>
+</p><pre class="api">int lua_setiuservalue (lua_State *L, int index, int n);</pre>
 
 <p>
 Извлекает значение из стека и устанавливает его в качестве
@@ -4596,8 +4613,8 @@ int *nresults);</pre>
 Возвращает 0, если в данных пользователя нет этого значения.
 
 </p><hr><h3><a name="lua_setmetatable"><code>lua_setmetatable</code></a></h3><p>
-<span class="apii">[-1, +0, –]</span>
-</p><pre>int lua_setmetatable (lua_State *L, int index);</pre>
+<span class="apii">[-1, +0, &ndash;]</span>
+</p><pre class="api">int lua_setmetatable (lua_State *L, int index);</pre>
 
 <p>
 Снимает таблицу или <b>nil</b> со стека и устанавливает это значение в качестве новой метатаблицы для значения по индексу index.
@@ -4608,7 +4625,7 @@ int *nresults);</pre>
 
 </p><hr><h3><a name="lua_settable"><code>lua_settable</code></a></h3><p>
 <span class="apii">[-2, +0, <em>e</em>]</span>
-</p><pre>void lua_settable (lua_State *L, int index);</pre>
+</p><pre class="api">void lua_settable (lua_State *L, int index);</pre>
 
 <p>
 Действие аналогично <code>t[k] = v</code>,
@@ -4623,7 +4640,7 @@ int *nresults);</pre>
 
 </p><hr><h3><a name="lua_settop"><code>lua_settop</code></a></h3><p>
 <span class="apii">[-?, +?, <em>e</em>]</span>
-</p><pre>void lua_settop (lua_State *L, int index);</pre>
+</p><pre class="api">void lua_settop (lua_State *L, int index);</pre>
 
 <p>
 Получает любой допустимый индекс или&nbsp;0,
@@ -4636,8 +4653,8 @@ int *nresults);</pre>
 Эта функция может выполнять произвольный код при удалении из стека индекса, помеченного как подлежащий закрытию.
 
 </p><hr><h3><a name="lua_setwarnf"><code>lua_setwarnf</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>void lua_setwarnf (lua_State *L, lua_WarnFunction f, void *ud);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">void lua_setwarnf (lua_State *L, lua_WarnFunction f, void *ud);</pre>
 
 <p>
 Задаёт функцию предупреждения, используемую Lua для генерации предупреждений (см. <a href="#lua_WarnFunction"><code>lua_WarnFunction</code></a>).
@@ -4645,7 +4662,7 @@ int *nresults);</pre>
 функции предупреждения.
 
 </p><hr><h3><a name="lua_State"><code>lua_State</code></a></h3>
-<pre>typedef struct lua_State lua_State;</pre>
+<pre class="api">typedef struct lua_State lua_State;</pre>
 
 <p>
 Непрозрачная структура, которая указывает на поток и косвенно
@@ -4660,8 +4677,8 @@ int *nresults);</pre>
 которая создаёт Lua состояние.
 
 </p><hr><h3><a name="lua_status"><code>lua_status</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_status (lua_State *L);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_status (lua_State *L);</pre>
 
 <p>
 Возвращает состояние потока <code>L</code>.
@@ -4679,8 +4696,8 @@ int *nresults);</pre>
 (для продолжения сопрограммы).
 
 </p><hr><h3><a name="lua_stringtonumber"><code>lua_stringtonumber</code></a></h3><p>
-<span class="apii">[-0, +1, –]</span>
-</p><pre>size_t lua_stringtonumber (lua_State *L, const char *s);</pre>
+<span class="apii">[-0, +(0|1), &ndash;]</span>
+</p><pre class="api">size_t lua_stringtonumber (lua_State *L, const char *s);</pre>
 
 <p>
 Преобразует завершаемую нулём строку <code>s</code> в число,
@@ -4695,8 +4712,8 @@ int *nresults);</pre>
 если преобразование успешно, то результат true.)
 
 </p><hr><h3><a name="lua_toboolean"><code>lua_toboolean</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_toboolean (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_toboolean (lua_State *L, int index);</pre>
 
 <p>
 Преобразует Lua значение по индексу index в C&nbsp;boolean (0&nbsp;или&nbsp;1).
@@ -4708,8 +4725,8 @@ int *nresults);</pre>
 для проверки.)
 
 </p><hr><h3><a name="lua_tocfunction"><code>lua_tocfunction</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>lua_CFunction lua_tocfunction (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">lua_CFunction lua_tocfunction (lua_State *L, int index);</pre>
 
 <p>
 Преобразует значение по индексу index в C&nbsp;функцию.
@@ -4718,7 +4735,7 @@ int *nresults);</pre>
 
 </p><hr><h3><a name="lua_toclose"><code>lua_toclose</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>void lua_toclose (lua_State *L, int index);</pre>
+</p><pre class="api">void lua_toclose (lua_State *L, int index);</pre>
 
 <p>
 Помечает заданный индекс в стеке как
@@ -4751,15 +4768,15 @@ C&nbsp;стек уже был развёрнут,
 (например, буфер), будет вне области видимости.
 
 </p><hr><h3><a name="lua_tointeger"><code>lua_tointeger</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>lua_Integer lua_tointeger (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">lua_Integer lua_tointeger (lua_State *L, int index);</pre>
 
 <p>
 Эквивалент <a href="#lua_tointegerx"><code>lua_tointegerx</code></a> с <code>isnum</code> = <code>NULL</code>.
 
 </p><hr><h3><a name="lua_tointegerx"><code>lua_tointegerx</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>lua_Integer lua_tointegerx (lua_State *L, int index, int *isnum);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">lua_Integer lua_tointegerx (lua_State *L, int index, int *isnum);</pre>
 
 <p>
 Преобразует Lua значение по индексу index в целое со знаком
@@ -4774,7 +4791,7 @@ Lua значение должно быть целым, или числом ил�
 
 </p><hr><h3><a name="lua_tolstring"><code>lua_tolstring</code></a></h3><p>
 <span class="apii">[-0, +0, <em>m</em>]</span>
-</p><pre>const char *lua_tolstring (lua_State *L, int index, size_t *len);</pre>
+</p><pre class="api">const char *lua_tolstring (lua_State *L, int index, size_t *len);</pre>
 
 <p>
 Преобразует Lua значение по индексу index в C&nbsp;строку.
@@ -4804,15 +4821,15 @@ Lua значение должно быть строкой или числом;
 (поскольку в этом случае она может создать новую строку).
 
 </p><hr><h3><a name="lua_tonumber"><code>lua_tonumber</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>lua_Number lua_tonumber (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">lua_Number lua_tonumber (lua_State *L, int index);</pre>
 
 <p>
 Эквивалент <a href="#lua_tonumberx"><code>lua_tonumberx</code></a> с <code>isnum</code> = <code>NULL</code>.
 
 </p><hr><h3><a name="lua_tonumberx"><code>lua_tonumberx</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>lua_Number lua_tonumberx (lua_State *L, int index, int *isnum);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">lua_Number lua_tonumberx (lua_State *L, int index, int *isnum);</pre>
 
 <p>
 Преобразует Lua значение по индексу index в C&nbsp;тип <a href="#lua_Number"><code>lua_Number</code></a>
@@ -4826,8 +4843,8 @@ Lua значение должно быть числом или строкой, �
 он указывает на логическое значение, которое показывает успешность операции.
 
 </p><hr><h3><a name="lua_topointer"><code>lua_topointer</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>const void *lua_topointer (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">const void *lua_topointer (lua_State *L, int index);</pre>
 
 <p>
 Преобразует Lua значение по индексу index в пустой C&nbsp;указатель (<code>void*</code>).
@@ -4841,14 +4858,14 @@ Lua значение должно быть числом или строкой, �
 
 </p><hr><h3><a name="lua_tostring"><code>lua_tostring</code></a></h3><p>
 <span class="apii">[-0, +0, <em>m</em>]</span>
-</p><pre>const char *lua_tostring (lua_State *L, int index);</pre>
+</p><pre class="api">const char *lua_tostring (lua_State *L, int index);</pre>
 
 <p>
 Эквивалент <a href="#lua_tolstring"><code>lua_tolstring</code></a> с <code>len</code> = <code>NULL</code>.
 
 </p><hr><h3><a name="lua_tothread"><code>lua_tothread</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>lua_State *lua_tothread (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">lua_State *lua_tothread (lua_State *L, int index);</pre>
 
 <p>
 Преобразует Lua значение по индексу index в Lua поток
@@ -4857,8 +4874,8 @@ Lua значение должно быть числом или строкой, �
 иначе, функция возвращает <code>NULL</code>.
 
 </p><hr><h3><a name="lua_touserdata"><code>lua_touserdata</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>void *lua_touserdata (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">void *lua_touserdata (lua_State *L, int index);</pre>
 
 <p>
 Если значение по индексу index это полные пользовательские данные,
@@ -4868,8 +4885,8 @@ Lua значение должно быть числом или строкой, �
 Иначе, возвращает <code>NULL</code>.
 
 </p><hr><h3><a name="lua_type"><code>lua_type</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_type (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_type (lua_State *L, int index);</pre>
 
 <p>
 Возвращает тип значения по правильному индексу index,
@@ -4888,22 +4905,22 @@ Lua значение должно быть числом или строкой, �
 <a name="pdf-LUA_TLIGHTUSERDATA"><code>LUA_TLIGHTUSERDATA</code></a>.
 
 </p><hr><h3><a name="lua_typename"><code>lua_typename</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>const char *lua_typename (lua_State *L, int tp);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">const char *lua_typename (lua_State *L, int tp);</pre>
 
 <p>
 Возвращает имя типа, кодированного значением <code>tp</code>,
 которое должно быть одним из возвращаемых <a href="#lua_type"><code>lua_type</code></a>.
 
 </p><hr><h3><a name="lua_Unsigned"><code>lua_Unsigned</code></a></h3>
-<pre>typedef ... lua_Unsigned;</pre>
+<pre class="api">typedef ... lua_Unsigned;</pre>
 
 <p>
 Беззнаковая версия <a href="#lua_Integer"><code>lua_Integer</code></a>.
 
 </p><hr><h3><a name="lua_upvalueindex"><code>lua_upvalueindex</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_upvalueindex (int i);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_upvalueindex (int i);</pre>
 
 <p>
 Возвращает псевдоиндекс, который представляет <code>i</code>-е upvalue
@@ -4911,14 +4928,14 @@ Lua значение должно быть числом или строкой, �
 Значение <code>i</code>должно быть в диапазоне <em>[1,256]</em>.
 
 </p><hr><h3><a name="lua_version"><code>lua_version</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>lua_Number lua_version (lua_State *L);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">lua_Number lua_version (lua_State *L);</pre>
 
 <p>
 Возвращает адрес номера версии, хранящейся в ядре Lua.
 
 </p><hr><h3><a name="lua_WarnFunction"><code>lua_WarnFunction</code></a></h3>
-<pre>typedef void (*lua_WarnFunction) (void *ud, const char *msg, int tocont);</pre>
+<pre class="api">typedef void (*lua_WarnFunction) (void *ud, const char *msg, int tocont);</pre>
 
 <p>
 Тип функций предупреждения, вызываемых Lua для генерации предупреждений.
@@ -4933,8 +4950,8 @@ Lua значение должно быть числом или строкой, �
 Более подробную информацию о предупреждениях см. в разделе <a href="#pdf-warn"><code>warn</code></a>.
 
 </p><hr><h3><a name="lua_warning"><code>lua_warning</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>void lua_warning (lua_State *L, const char *msg, int tocont);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">void lua_warning (lua_State *L, const char *msg, int tocont);</pre>
 
 <p>
 Выводит предупреждение с указанным сообщением.
@@ -4945,7 +4962,7 @@ Lua значение должно быть числом или строкой, �
 Более подробную информацию о предупреждениях см. в разделе <a href="#pdf-warn"><code>warn</code></a>.
 
 </p><hr><h3><a name="lua_Writer"><code>lua_Writer</code></a></h3>
-<pre>typedef int (*lua_Writer) (lua_State *L,
+<pre class="api">typedef int (*lua_Writer) (lua_State *L,
 						   const void* p,
 						   size_t sz,
 						   void* ud);</pre>
@@ -4969,8 +4986,8 @@ Lua значение должно быть числом или строкой, �
 любое другое значение означает ошибку и предотвращает повторный вызов функции записи <a href="#lua_dump"><code>lua_dump</code></a>.
 
 </p><hr><h3><a name="lua_xmove"><code>lua_xmove</code></a></h3><p>
-<span class="apii">[-?, +?, –]</span>
-</p><pre>void lua_xmove (lua_State *from, lua_State *to, int n);</pre>
+<span class="apii">[-?, +?, &ndash;]</span>
+</p><pre class="api">void lua_xmove (lua_State *from, lua_State *to, int n);</pre>
 
 <p>
 Обмен значениями между разными потоками одного состояния.
@@ -4981,7 +4998,7 @@ Lua значение должно быть числом или строкой, �
 
 </p><hr><h3><a name="lua_yield"><code>lua_yield</code></a></h3><p>
 <span class="apii">[-?, +?, <em>v</em>]</span>
-</p><pre>int lua_yield (lua_State *L, int nresults);</pre>
+</p><pre class="api">int lua_yield (lua_State *L, int nresults);</pre>
 
 <p>
 Функция аналогична <a href="#lua_yieldk"><code>lua_yieldk</code></a>,
@@ -4994,7 +5011,7 @@ Lua значение должно быть числом или строкой, �
 
 </p><hr><h3><a name="lua_yieldk"><code>lua_yieldk</code></a></h3><p>
 <span class="apii">[-?, +?, <em>v</em>]</span>
-</p><pre>int lua_yieldk (lua_State *L,
+</p><pre class="api">int lua_yieldk (lua_State *L,
 				int nresults,
 				lua_KContext ctx,
 				lua_KFunction k);</pre>
@@ -5015,7 +5032,7 @@ Lua значение должно быть числом или строкой, �
 Lua вызывает переданную функцию продолжения <code>k</code>,
 для продолжения выполнения C функции, которая передала управление (см. <a href="#4.5">§4.5</a>).
 Эта функция продолжения получает тот же стек из предыдущей функции,
-но <code>n</code> результатов будут удалены и заменены аргументами,
+но все результаты (<code>nresults</code>) будут удалены и заменены аргументами,
 переданными в <a href="#lua_resume"><code>lua_resume</code></a>.
 Кроме того, функция продолжения получает значение <code>ctx</code>,
 переданное в <a href="#lua_yieldk"><code>lua_yieldk</code></a>.
@@ -5100,7 +5117,7 @@ Lua не имеет встроенных отладочных средств.
 </li>
 
 <li><b><code>srclen</code></b>: 
-The length of the string <code>source</code>.
+Длина строки <code>source</code>.
 </li>
 
 <li><b><code>short_src</code></b>: 
@@ -5197,29 +5214,29 @@ The length of the string <code>source</code>.
 </ul>
 
 <hr><h3><a name="lua_gethook"><code>lua_gethook</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>lua_Hook lua_gethook (lua_State *L);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">lua_Hook lua_gethook (lua_State *L);</pre>
 
 <p>
 Возвращает текущую функцию перехватчик.
 
 </p><hr><h3><a name="lua_gethookcount"><code>lua_gethookcount</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_gethookcount (lua_State *L);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_gethookcount (lua_State *L);</pre>
 
 <p>
 Возвращает количество перехватчиков.
 
 </p><hr><h3><a name="lua_gethookmask"><code>lua_gethookmask</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_gethookmask (lua_State *L);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_gethookmask (lua_State *L);</pre>
 
 <p>
 Возвращает текущую маску перехватов.
 
 </p><hr><h3><a name="lua_getinfo"><code>lua_getinfo</code></a></h3><p>
 <span class="apii">[-(0|1), +(0|1|2), <em>m</em>]</span>
-</p><pre>int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar);</pre>
+</p><pre class="api">int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar);</pre>
 
 <p>
 Предоставляет информацию о специфике функции или о вызове функции.
@@ -5268,7 +5285,7 @@ The length of the string <code>source</code>.
 </li>
 
 <li><b>'<code>S</code>'</b>: 
-заполняет поля <code>source</code>, <code>short_src</code>,
+заполняет поля <code>source</code>, <code>srclen</code>, <code>short_src</code>,
 <code>linedefined</code>, <code>lastlinedefined</code>, and <code>what</code>;
 </li>
 
@@ -5296,8 +5313,8 @@ The length of the string <code>source</code>.
 даже в этом случае допустимые параметры обрабатываются корректно.
 
 </p><hr><h3><a name="lua_getlocal"><code>lua_getlocal</code></a></h3><p>
-<span class="apii">[-0, +(0|1), –]</span>
-</p><pre>const char *lua_getlocal (lua_State *L, const lua_Debug *ar, int n);</pre>
+<span class="apii">[-0, +(0|1), &ndash;]</span>
+</p><pre class="api">const char *lua_getlocal (lua_State *L, const lua_Debug *ar, int n);</pre>
 
 <p>
 Предоставляет информацию о локальной переменной или временном значении заданной записи активации
@@ -5328,8 +5345,8 @@ The length of the string <code>source</code>.
 когда индекс больше чем количество активных локальных переменных.
 
 </p><hr><h3><a name="lua_getstack"><code>lua_getstack</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>int lua_getstack (lua_State *L, int level, lua_Debug *ar);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">int lua_getstack (lua_State *L, int level, lua_Debug *ar);</pre>
 
 <p>
 Предоставляет информацию о исполняемом (runtime) стеке интерпретатора.
@@ -5346,8 +5363,8 @@ The length of the string <code>source</code>.
 в противном случае возвращает 1.
 
 </p><hr><h3><a name="lua_getupvalue"><code>lua_getupvalue</code></a></h3><p>
-<span class="apii">[-0, +(0|1), –]</span>
-</p><pre>const char *lua_getupvalue (lua_State *L, int funcindex, int n);</pre>
+<span class="apii">[-0, +(0|1), &ndash;]</span>
+</p><pre class="api">const char *lua_getupvalue (lua_State *L, int funcindex, int n);</pre>
 
 <p>
 Предоставляет информацию о <code>n</code>-ном upvalue замыкания
@@ -5360,7 +5377,7 @@ The length of the string <code>source</code>.
 См. <a href="#pdf-debug.getupvalue"><code>debug.getupvalue</code></a> для дополнительной информации об upvalues.
 
 </p><hr><h3><a name="lua_Hook"><code>lua_Hook</code></a></h3>
-<pre>typedef void (*lua_Hook) (lua_State *L, lua_Debug *ar);</pre>
+<pre class="api">typedef void (*lua_Hook) (lua_State *L, lua_Debug *ar);</pre>
 
 <p>
 Тип для отладочных функций перехватчиков.
@@ -5402,8 +5419,8 @@ Lua идентифицирует эти события следующими ко
 (т.е. без значений).
 
 </p><hr><h3><a name="lua_sethook"><code>lua_sethook</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>void lua_sethook (lua_State *L, lua_Hook f, int mask, int count);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">void lua_sethook (lua_State *L, lua_Hook f, int mask, int count);</pre>
 
 <p>
 Устанавливает отладочную функцию-перехватчик.
@@ -5446,8 +5463,8 @@ Lua идентифицирует эти события следующими ко
 Перехват отключается установкой <code>mask</code> = 0.
 
 </p><hr><h3><a name="lua_setlocal"><code>lua_setlocal</code></a></h3><p>
-<span class="apii">[-(0|1), +0, –]</span>
-</p><pre>const char *lua_setlocal (lua_State *L, const lua_Debug *ar, int n);</pre>
+<span class="apii">[-(0|1), +0, &ndash;]</span>
+</p><pre class="api">const char *lua_setlocal (lua_State *L, const lua_Debug *ar, int n);</pre>
 
 <p>
 Устанавливает значение локальной переменной в данной записи активации (ar).
@@ -5460,11 +5477,11 @@ Lua идентифицирует эти события следующими ко
 
 </p><p>
 Параметры <code>ar</code> и <code>n</code> такие же, как
-в функции <a href="#lua_getlocal"><code>lua_getlocal</code></a>.
+в функции <a href="#lua_getlocal"><code>lua_getlocal</code></a>, за тем исключением что <code>ar</code> не может быть <code>NULL</code>, поскольку <code>lua_setlocal</code> работает только с записями активации.
 
 </p><hr><h3><a name="lua_setupvalue"><code>lua_setupvalue</code></a></h3><p>
-<span class="apii">[-(0|1), +0, –]</span>
-</p><pre>const char *lua_setupvalue (lua_State *L, int funcindex, int n);</pre>
+<span class="apii">[-(0|1), +0, &ndash;]</span>
+</p><pre class="api">const char *lua_setupvalue (lua_State *L, int funcindex, int n);</pre>
 
 <p>
 Устанавливает значение для upvalue замыкания.
@@ -5481,8 +5498,8 @@ Lua идентифицирует эти события следующими ко
 в функции <a href="#lua_getupvalue"><code>lua_getupvalue</code></a>.
 
 </p><hr><h3><a name="lua_upvalueid"><code>lua_upvalueid</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>void *lua_upvalueid (lua_State *L, int funcindex, int n);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">void *lua_upvalueid (lua_State *L, int funcindex, int n);</pre>
 
 <p>
 Возвращает уникальный идентификатор для upvalue под номером <code>n</code>
@@ -5501,8 +5518,8 @@ Lua замыкания, которые совместно используют u
 но <code>n</code> не может быть больше количества upvalue.
 
 </p><hr><h3><a name="lua_upvaluejoin"><code>lua_upvaluejoin</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>void lua_upvaluejoin (lua_State *L, int funcindex1, int n1,
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">void lua_upvaluejoin (lua_State *L, int funcindex1, int n1,
 									int funcindex2, int n2);</pre>
 <p>
 Делает <code>n1</code>-ое upvalue Lua замыкания по индексу <code>funcindex1</code>
@@ -5558,7 +5575,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_addchar"><code>luaL_addchar</code></a></h3><p>
 <span class="apii">[-?, +?, <em>m</em>]</span>
-</p><pre>void luaL_addchar (luaL_Buffer *B, char c);</pre>
+</p><pre class="api">void luaL_addchar (luaL_Buffer *B, char c);</pre>
 
 <p>
 Добавляет байт <code>c</code> в буфер <code>B</code>
@@ -5566,7 +5583,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_addgsub"><code>luaL_addgsub</code></a></h3><p>
 <span class="apii">[-?, +?, <em>m</em>]</span>
-</p><pre>const void luaL_addgsub (luaL_Buffer *B, const char *s,
+</p><pre class="api">const void luaL_addgsub (luaL_Buffer *B, const char *s,
 						 const char *p, const char *r);</pre>
 
 <p>
@@ -5577,7 +5594,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_addlstring"><code>luaL_addlstring</code></a></h3><p>
 <span class="apii">[-?, +?, <em>m</em>]</span>
-</p><pre>void luaL_addlstring (luaL_Buffer *B, const char *s, size_t l);</pre>
+</p><pre class="api">void luaL_addlstring (luaL_Buffer *B, const char *s, size_t l);</pre>
 
 <p>
 Добавляет строку по указателю <code>s</code> длиной <code>l</code> 
@@ -5586,8 +5603,8 @@ Lua замыкания, которые совместно используют u
 Строка может содержать встроенные нули.
 
 </p><hr><h3><a name="luaL_addsize"><code>luaL_addsize</code></a></h3><p>
-<span class="apii">[-?, +?, –]</span>
-</p><pre>void luaL_addsize (luaL_Buffer *B, size_t n);</pre>
+<span class="apii">[-?, +?, &ndash;]</span>
+</p><pre class="api">void luaL_addsize (luaL_Buffer *B, size_t n);</pre>
 
 <p>
 Добавляет в буфер <code>B</code>
@@ -5596,7 +5613,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_addstring"><code>luaL_addstring</code></a></h3><p>
 <span class="apii">[-?, +?, <em>m</em>]</span>
-</p><pre>void luaL_addstring (luaL_Buffer *B, const char *s);</pre>
+</p><pre class="api">void luaL_addstring (luaL_Buffer *B, const char *s);</pre>
 
 <p>
 Добавляет завершаемую нулём строку по указателю <code>s</code>
@@ -5605,7 +5622,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_addvalue"><code>luaL_addvalue</code></a></h3><p>
 <span class="apii">[-?, +?, <em>m</em>]</span>
-</p><pre>void luaL_addvalue (luaL_Buffer *B);</pre>
+</p><pre class="api">void luaL_addvalue (luaL_Buffer *B);</pre>
 
 <p>
 Добавляет значение с вершины стека в буфер <code>B</code>
@@ -5619,7 +5636,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_argcheck"><code>luaL_argcheck</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>void luaL_argcheck (lua_State *L,
+</p><pre class="api">void luaL_argcheck (lua_State *L,
 					int cond,
 					int arg,
 					const char *extramsg);</pre>
@@ -5631,7 +5648,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_argerror"><code>luaL_argerror</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>int luaL_argerror (lua_State *L, int arg, const char *extramsg);</pre>
+</p><pre class="api">int luaL_argerror (lua_State *L, int arg, const char *extramsg);</pre>
 
 <p>
 Вызывает ошибку, сообщающую о проблеме с аргументом <code>arg</code>
@@ -5644,7 +5661,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_argexpected"><code>luaL_argexpected</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>void luaL_argexpected (lua_State *L,
+</p><pre class="api">void luaL_argexpected (lua_State *L,
 					   int cond,
 					   int arg,
 					   const char *tname);</pre>
@@ -5655,7 +5672,7 @@ Lua замыкания, которые совместно используют u
 со стандартным сообщением (см. <a href="#luaL_typeerror"><code>luaL_typeerror</code></a>).
 
 </p><hr><h3><a name="luaL_Buffer"><code>luaL_Buffer</code></a></h3>
-<pre>typedef struct luaL_Buffer luaL_Buffer;</pre>
+<pre class="api">typedef struct luaL_Buffer luaL_Buffer;</pre>
 
 <p>
 Тип для <em>строкового буфера</em>.
@@ -5712,8 +5729,8 @@ Lua замыкания, которые совместно используют u
 плюс результирующая строка на вершине.
 
 </p><hr><h3><a name="luaL_buffaddr"><code>luaL_buffaddr</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>char *luaL_buffaddr (luaL_Buffer *B);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">char *luaL_buffaddr (luaL_Buffer *B);</pre>
 
 <p>
 Возвращает адрес текущего содержимого буфера <code>B</code>
@@ -5721,8 +5738,8 @@ Lua замыкания, которые совместно используют u
 Обратите внимание, что любое добавление в буфер может сделать этот адрес недействительным.
 
 </p><hr><h3><a name="luaL_buffinit"><code>luaL_buffinit</code></a></h3><p>
-<span class="apii">[-0, +?, –]</span>
-</p><pre>void luaL_buffinit (lua_State *L, luaL_Buffer *B);</pre>
+<span class="apii">[-0, +?, &ndash;]</span>
+</p><pre class="api">void luaL_buffinit (lua_State *L, luaL_Buffer *B);</pre>
 
 <p>
 Инициализирует буфер <code>B</code>
@@ -5731,8 +5748,8 @@ Lua замыкания, которые совместно используют u
 буфер должен быть определён как переменная.
 
 </p><hr><h3><a name="luaL_bufflen"><code>luaL_bufflen</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>size_t luaL_bufflen (luaL_Buffer *B);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">size_t luaL_bufflen (luaL_Buffer *B);</pre>
 
 <p>
 Возвращает размер текущего содержимого буфера <code>B</code>
@@ -5740,7 +5757,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_buffinitsize"><code>luaL_buffinitsize</code></a></h3><p>
 <span class="apii">[-?, +?, <em>m</em>]</span>
-</p><pre>char *luaL_buffinitsize (lua_State *L, luaL_Buffer *B, size_t sz);</pre>
+</p><pre class="api">char *luaL_buffinitsize (lua_State *L, luaL_Buffer *B, size_t sz);</pre>
 
 <p>
 Эквивалентно последовательности
@@ -5748,8 +5765,8 @@ Lua замыкания, которые совместно используют u
 <a href="#luaL_prepbuffsize"><code>luaL_prepbuffsize</code></a>.
 
 </p><hr><h3><a name="luaL_buffsub"><code>luaL_buffsub</code></a></h3><p>
-<span class="apii">[-?, +?, –]</span>
-</p><pre>void luaL_buffsub (luaL_Buffer *B, int n);</pre>
+<span class="apii">[-?, +?, &ndash;]</span>
+</p><pre class="api">void luaL_buffsub (luaL_Buffer *B, int n);</pre>
 
 <p>
 Удаляет <code>n</code> байт из буфера <code>B</code>
@@ -5758,7 +5775,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_callmeta"><code>luaL_callmeta</code></a></h3><p>
 <span class="apii">[-0, +(0|1), <em>e</em>]</span>
-</p><pre>int luaL_callmeta (lua_State *L, int obj, const char *e);</pre>
+</p><pre class="api">int luaL_callmeta (lua_State *L, int obj, const char *e);</pre>
 
 <p>
 Вызывает метаметод.
@@ -5774,7 +5791,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_checkany"><code>luaL_checkany</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>void luaL_checkany (lua_State *L, int arg);</pre>
+</p><pre class="api">void luaL_checkany (lua_State *L, int arg);</pre>
 
 <p>
 Проверяет, что функция имеет аргумент любого типа
@@ -5782,7 +5799,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_checkinteger"><code>luaL_checkinteger</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>lua_Integer luaL_checkinteger (lua_State *L, int arg);</pre>
+</p><pre class="api">lua_Integer luaL_checkinteger (lua_State *L, int arg);</pre>
 
 <p>
 Проверяет, что аргумент функции <code>arg</code> это целое
@@ -5791,7 +5808,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_checklstring"><code>luaL_checklstring</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>const char *luaL_checklstring (lua_State *L, int arg, size_t *l);</pre>
+</p><pre class="api">const char *luaL_checklstring (lua_State *L, int arg, size_t *l);</pre>
 
 <p>
 Проверяет, что аргумент функции <code>arg</code> это строка,
@@ -5805,7 +5822,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_checknumber"><code>luaL_checknumber</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>lua_Number luaL_checknumber (lua_State *L, int arg);</pre>
+</p><pre class="api">lua_Number luaL_checknumber (lua_State *L, int arg);</pre>
 
 <p>
 Проверяет, что аргумент функции <code>arg</code> это число,
@@ -5813,7 +5830,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_checkoption"><code>luaL_checkoption</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>int luaL_checkoption (lua_State *L,
+</p><pre class="api">int luaL_checkoption (lua_State *L,
 					  int arg,
 					  const char *def,
 					  const char *const lst[]);</pre>
@@ -5835,7 +5852,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_checkstack"><code>luaL_checkstack</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>void luaL_checkstack (lua_State *L, int sz, const char *msg);</pre>
+</p><pre class="api">void luaL_checkstack (lua_State *L, int sz, const char *msg);</pre>
 
 <p>
 Увеличивает размер стека до <code>top + sz</code> элементов,
@@ -5845,7 +5862,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_checkstring"><code>luaL_checkstring</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>const char *luaL_checkstring (lua_State *L, int arg);</pre>
+</p><pre class="api">const char *luaL_checkstring (lua_State *L, int arg);</pre>
 
 <p>
 Проверяет, что аргумент функции <code>arg</code> это строка,
@@ -5858,7 +5875,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_checktype"><code>luaL_checktype</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>void luaL_checktype (lua_State *L, int arg, int t);</pre>
+</p><pre class="api">void luaL_checktype (lua_State *L, int arg, int t);</pre>
 
 <p>
 Проверяет, что аргумент функции <code>arg</code> имеет тип <code>t</code>.
@@ -5866,7 +5883,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_checkudata"><code>luaL_checkudata</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>void *luaL_checkudata (lua_State *L, int arg, const char *tname);</pre>
+</p><pre class="api">void *luaL_checkudata (lua_State *L, int arg, const char *tname);</pre>
 
 <p>
 Проверяет, что аргумент функции <code>arg</code> это пользовательские данные
@@ -5875,14 +5892,14 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_checkversion"><code>luaL_checkversion</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>void luaL_checkversion (lua_State *L);</pre>
+</p><pre class="api">void luaL_checkversion (lua_State *L);</pre>
 
 <p>
 Проверяет, используют ли код, выполняющий вызов, и вызываемая библиотека Lua одну и ту же версию Lua и одни и те же числовые типы.
 
 </p><hr><h3><a name="luaL_dofile"><code>luaL_dofile</code></a></h3><p>
 <span class="apii">[-0, +?, <em>m</em>]</span>
-</p><pre>int luaL_dofile (lua_State *L, const char *filename);</pre>
+</p><pre class="api">int luaL_dofile (lua_State *L, const char *filename);</pre>
 
 <p>
 Загружает и запускает данный файл.
@@ -5895,8 +5912,8 @@ Lua замыкания, которые совместно используют u
 (За исключением ошибок нехватки памяти, которые генерируются автоматически.)
 
 </p><hr><h3><a name="luaL_dostring"><code>luaL_dostring</code></a></h3><p>
-<span class="apii">[-0, +?, –]</span>
-</p><pre>int luaL_dostring (lua_State *L, const char *str);</pre>
+<span class="apii">[-0, +?, &ndash;]</span>
+</p><pre class="api">int luaL_dostring (lua_State *L, const char *str);</pre>
 
 <p>
 Загружает и запускает переданную строку.
@@ -5909,7 +5926,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_error"><code>luaL_error</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>int luaL_error (lua_State *L, const char *fmt, ...);</pre>
+</p><pre class="api">int luaL_error (lua_State *L, const char *fmt, ...);</pre>
 
 <p>
 Вызывает ошибку.
@@ -5926,7 +5943,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_execresult"><code>luaL_execresult</code></a></h3><p>
 <span class="apii">[-0, +3, <em>m</em>]</span>
-</p><pre>int luaL_execresult (lua_State *L, int stat);</pre>
+</p><pre class="api">int luaL_execresult (lua_State *L, int stat);</pre>
 
 <p>
 Эта функция выдаёт возвращаемые значения для связанных с процессами функций
@@ -5936,7 +5953,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_fileresult"><code>luaL_fileresult</code></a></h3><p>
 <span class="apii">[-0, +(1|3), <em>m</em>]</span>
-</p><pre>int luaL_fileresult (lua_State *L, int stat, const char *fname);</pre>
+</p><pre class="api">int luaL_fileresult (lua_State *L, int stat, const char *fname);</pre>
 
 <p>
 Эта функция выдаёт возвращаемые значения для связанных с файлами функций
@@ -5947,7 +5964,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_getmetafield"><code>luaL_getmetafield</code></a></h3><p>
 <span class="apii">[-0, +(0|1), <em>m</em>]</span>
-</p><pre>int luaL_getmetafield (lua_State *L, int obj, const char *e);</pre>
+</p><pre class="api">int luaL_getmetafield (lua_State *L, int obj, const char *e);</pre>
 
 <p>
 Помещает на стек поле <code>e</code> из метатаблицы объекта по индексу <code>obj</code>
@@ -5957,7 +5974,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_getmetatable"><code>luaL_getmetatable</code></a></h3><p>
 <span class="apii">[-0, +1, <em>m</em>]</span>
-</p><pre>int luaL_getmetatable (lua_State *L, const char *tname);</pre>
+</p><pre class="api">int luaL_getmetatable (lua_State *L, const char *tname);</pre>
 
 <p>
 Помещает на стек метатаблицу, ассоциированную с именем <code>tname</code>
@@ -5967,7 +5984,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_getsubtable"><code>luaL_getsubtable</code></a></h3><p>
 <span class="apii">[-0, +1, <em>e</em>]</span>
-</p><pre>int luaL_getsubtable (lua_State *L, int idx, const char *fname);</pre>
+</p><pre class="api">int luaL_getsubtable (lua_State *L, int idx, const char *fname);</pre>
 
 <p>
 Гарантирует, что значение <code>t[fname]</code> это таблица,
@@ -5978,7 +5995,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_gsub"><code>luaL_gsub</code></a></h3><p>
 <span class="apii">[-0, +1, <em>m</em>]</span>
-</p><pre>const char *luaL_gsub (lua_State *L,
+</p><pre class="api">const char *luaL_gsub (lua_State *L,
 					   const char *s,
 					   const char *p,
 					   const char *r);</pre>
@@ -5990,7 +6007,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_len"><code>luaL_len</code></a></h3><p>
 <span class="apii">[-0, +0, <em>e</em>]</span>
-</p><pre>lua_Integer luaL_len (lua_State *L, int index);</pre>
+</p><pre class="api">lua_Integer luaL_len (lua_State *L, int index);</pre>
 
 <p>
 Возвращает "длину" значения по индексу index как число;
@@ -5999,8 +6016,8 @@ Lua замыкания, которые совместно используют u
 (Это может случиться только через метаметоды.)
 
 </p><hr><h3><a name="luaL_loadbuffer"><code>luaL_loadbuffer</code></a></h3><p>
-<span class="apii">[-0, +1, –]</span>
-</p><pre>int luaL_loadbuffer (lua_State *L,
+<span class="apii">[-0, +1, &ndash;]</span>
+</p><pre class="api">int luaL_loadbuffer (lua_State *L,
 					 const char *buff,
 					 size_t sz,
 					 const char *name);</pre>
@@ -6010,8 +6027,8 @@ Lua замыкания, которые совместно используют u
 с <code>mode</code> = <code>NULL</code>.
 
 </p><hr><h3><a name="luaL_loadbufferx"><code>luaL_loadbufferx</code></a></h3><p>
-<span class="apii">[-0, +1, –]</span>
-</p><pre>int luaL_loadbufferx (lua_State *L,
+<span class="apii">[-0, +1, &ndash;]</span>
+</p><pre class="api">int luaL_loadbufferx (lua_State *L,
 					  const char *buff,
 					  size_t sz,
 					  const char *name,
@@ -6033,7 +6050,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_loadfile"><code>luaL_loadfile</code></a></h3><p>
 <span class="apii">[-0, +1, <em>m</em>]</span>
-</p><pre>int luaL_loadfile (lua_State *L, const char *filename);</pre>
+</p><pre class="api">int luaL_loadfile (lua_State *L, const char *filename);</pre>
 
 <p>
 Эквивалентно <a href="#luaL_loadfilex"><code>luaL_loadfilex</code></a>
@@ -6041,7 +6058,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_loadfilex"><code>luaL_loadfilex</code></a></h3><p>
 <span class="apii">[-0, +1, <em>m</em>]</span>
-</p><pre>int luaL_loadfilex (lua_State *L, const char *filename,
+</p><pre class="api">int luaL_loadfilex (lua_State *L, const char *filename,
 											const char *mode);</pre>
 
 <p>
@@ -6064,8 +6081,8 @@ Lua замыкания, которые совместно используют u
 эта функция только загружает фрагмент; но не запускает его.
 
 </p><hr><h3><a name="luaL_loadstring"><code>luaL_loadstring</code></a></h3><p>
-<span class="apii">[-0, +1, –]</span>
-</p><pre>int luaL_loadstring (lua_State *L, const char *s);</pre>
+<span class="apii">[-0, +1, &ndash;]</span>
+</p><pre class="api">int luaL_loadstring (lua_State *L, const char *s);</pre>
 
 <p>
 Загружает строку как Lua фрагмент.
@@ -6080,8 +6097,8 @@ Lua замыкания, которые совместно используют u
 эта функция только загружает фрагмент; но не запускает его.
 
 </p><hr><h3><a name="luaL_makeseed"><code>luaL_makeseed</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>unsigned int luaL_makeseed (lua_State *L);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">unsigned int luaL_makeseed (lua_State *L);</pre>
 
 <p>
 Возвращает значение со слабой попыткой генерации случайных чисел.
@@ -6090,7 +6107,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_newlib"><code>luaL_newlib</code></a></h3><p>
 <span class="apii">[-0, +1, <em>m</em>]</span>
-</p><pre>void luaL_newlib (lua_State *L, const luaL_Reg l[]);</pre>
+</p><pre class="api">void luaL_newlib (lua_State *L, const luaL_Reg l[]);</pre>
 
 <p>
 Создаёт новую таблицу и регистрирует в ней функции из списка <code>l</code>.
@@ -6105,7 +6122,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_newlibtable"><code>luaL_newlibtable</code></a></h3><p>
 <span class="apii">[-0, +1, <em>m</em>]</span>
-</p><pre>void luaL_newlibtable (lua_State *L, const luaL_Reg l[]);</pre>
+</p><pre class="api">void luaL_newlibtable (lua_State *L, const luaL_Reg l[]);</pre>
 
 <p>
 Создаёт новую таблицу с размером, оптимизированным для хранения всех записей
@@ -6121,7 +6138,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_newmetatable"><code>luaL_newmetatable</code></a></h3><p>
 <span class="apii">[-0, +1, <em>m</em>]</span>
-</p><pre>int luaL_newmetatable (lua_State *L, const char *tname);</pre>
+</p><pre class="api">int luaL_newmetatable (lua_State *L, const char *tname);</pre>
 
 <p>
 Если реестр уже содержит ключ <code>tname</code>, возвращает 0.
@@ -6135,9 +6152,19 @@ Lua замыкания, которые совместно используют u
 В обоих случаях помещает на стек финальное значение ассоциированное с
 <code>tname</code> в реестре.
 
+</p><p>
+Примечание по использованию: Будьте осторожны при использовании возвращаемого значения этой функции для
+условной инициализации новой метатаблицы
+(например, путём добавления к ней метаметодов).
+
+Если инициализация вызовет ошибку,
+метатаблица не будет инициализирована должным образом,
+но последующее выполнение этого кода обнаружит, что
+метатаблица уже существует, и пропустит инициализацию.
+
 </p><hr><h3><a name="luaL_newstate"><code>luaL_newstate</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>lua_State *luaL_newstate (void);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">lua_State *luaL_newstate (void);</pre>
 
 <p>
 Создаёт новое Lua состояние.
@@ -6152,8 +6179,8 @@ Lua замыкания, которые совместно используют u
 если не удалось выделить память.
 
 </p><hr><h3><a name="luaL_opt"><code>luaL_opt</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>T luaL_opt (L, func, arg, dflt);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">T luaL_opt (L, func, arg, dflt);</pre>
 
 <p>
 Макрос определён следующим образом:
@@ -6169,7 +6196,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_optinteger"><code>luaL_optinteger</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>lua_Integer luaL_optinteger (lua_State *L,
+</p><pre class="api">lua_Integer luaL_optinteger (lua_State *L,
 							 int arg,
 							 lua_Integer d);</pre>
 
@@ -6181,7 +6208,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_optlstring"><code>luaL_optlstring</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>const char *luaL_optlstring (lua_State *L,
+</p><pre class="api">const char *luaL_optlstring (lua_State *L,
 							 int arg,
 							 const char *d,
 							 size_t *l);</pre>
@@ -6205,7 +6232,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_optnumber"><code>luaL_optnumber</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>lua_Number luaL_optnumber (lua_State *L, int arg, lua_Number d);</pre>
+</p><pre class="api">lua_Number luaL_optnumber (lua_State *L, int arg, lua_Number d);</pre>
 
 <p>
 Если аргумент функции <code>arg</code> это число,
@@ -6215,7 +6242,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_optstring"><code>luaL_optstring</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>const char *luaL_optstring (lua_State *L,
+</p><pre class="api">const char *luaL_optstring (lua_State *L,
 							int arg,
 							const char *d);</pre>
 
@@ -6227,7 +6254,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_prepbuffer"><code>luaL_prepbuffer</code></a></h3><p>
 <span class="apii">[-?, +?, <em>m</em>]</span>
-</p><pre>char *luaL_prepbuffer (luaL_Buffer *B);</pre>
+</p><pre class="api">char *luaL_prepbuffer (luaL_Buffer *B);</pre>
 
 <p>
 Эвивалентно <a href="#luaL_prepbuffsize"><code>luaL_prepbuffsize</code></a>
@@ -6235,7 +6262,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_prepbuffsize"><code>luaL_prepbuffsize</code></a></h3><p>
 <span class="apii">[-?, +?, <em>m</em>]</span>
-</p><pre>char *luaL_prepbuffsize (luaL_Buffer *B, size_t sz);</pre>
+</p><pre class="api">char *luaL_prepbuffsize (luaL_Buffer *B, size_t sz);</pre>
 
 <p>
 Возвращает адрес пространства размером <code>sz</code>,
@@ -6246,15 +6273,15 @@ Lua замыкания, которые совместно используют u
 с размером строки, для фактического добавления её в буфер.
 
 </p><hr><h3><a name="luaL_pushfail"><code>luaL_pushfail</code></a></h3><p>
-<span class="apii">[-0, +1, –]</span>
-</p><pre>void luaL_pushfail (lua_State *L);</pre>
+<span class="apii">[-0, +1, &ndash;]</span>
+</p><pre class="api">void luaL_pushfail (lua_State *L);</pre>
 
 <p>
 Помещает значение <b>fail</b> на стек (см. <a href="#6">§6</a>).
 
 </p><hr><h3><a name="luaL_pushresult"><code>luaL_pushresult</code></a></h3><p>
 <span class="apii">[-?, +1, <em>m</em>]</span>
-</p><pre>void luaL_pushresult (luaL_Buffer *B);</pre>
+</p><pre class="api">void luaL_pushresult (luaL_Buffer *B);</pre>
 
 <p>
 Завершает использование буфера <code>B</code>,
@@ -6262,7 +6289,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_pushresultsize"><code>luaL_pushresultsize</code></a></h3><p>
 <span class="apii">[-?, +1, <em>m</em>]</span>
-</p><pre>void luaL_pushresultsize (luaL_Buffer *B, size_t sz);</pre>
+</p><pre class="api">void luaL_pushresultsize (luaL_Buffer *B, size_t sz);</pre>
 
 <p>
 Эквивалентно последовательности <a href="#luaL_addsize"><code>luaL_addsize</code></a>,
@@ -6270,7 +6297,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_ref"><code>luaL_ref</code></a></h3><p>
 <span class="apii">[-1, +0, <em>m</em>]</span>
-</p><pre>int luaL_ref (lua_State *L, int t);</pre>
+</p><pre class="api">int luaL_ref (lua_State *L, int t);</pre>
 
 <p>
 Создаёт и возвращает <em>ссылку</em> (reference) в таблице по индексу <code>t</code>,
@@ -6303,7 +6330,7 @@ Lua замыкания, которые совместно используют u
 от любой ссылки, возвращаемой <a href="#luaL_ref"><code>luaL_ref</code></a>.
 
 </p><hr><h3><a name="luaL_Reg"><code>luaL_Reg</code></a></h3>
-<pre>typedef struct luaL_Reg {
+<pre class="api">typedef struct luaL_Reg {
   const char *name;
   lua_CFunction func;
 } luaL_Reg;</pre>
@@ -6316,7 +6343,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_requiref"><code>luaL_requiref</code></a></h3><p>
 <span class="apii">[-0, +1, <em>e</em>]</span>
-</p><pre>void luaL_requiref (lua_State *L, const char *modname,
+</p><pre class="api">void luaL_requiref (lua_State *L, const char *modname,
 					lua_CFunction openf, int glb);</pre>
 
 <p>
@@ -6334,7 +6361,7 @@ Lua замыкания, которые совместно используют u
 
 </p><hr><h3><a name="luaL_setfuncs"><code>luaL_setfuncs</code></a></h3><p>
 <span class="apii">[-nup, +0, <em>m</em>]</span>
-</p><pre>void luaL_setfuncs (lua_State *L, const luaL_Reg *l, int nup);</pre>
+</p><pre class="api">void luaL_setfuncs (lua_State *L, const luaL_Reg *l, int nup);</pre>
 
 <p>
 Регистрирует все функции в массиве <code>l</code>
@@ -6354,8 +6381,8 @@ Lua замыкания, которые совместно используют u
 который заполняется значением <b>false</b>.
 
 </p><hr><h3><a name="luaL_setmetatable"><code>luaL_setmetatable</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>void luaL_setmetatable (lua_State *L, const char *tname);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">void luaL_setmetatable (lua_State *L, const char *tname);</pre>
 
 <p>
 Устанавливает метатаблицей объекта на вершине стека
@@ -6363,14 +6390,14 @@ Lua замыкания, которые совместно используют u
 в реестре (см. <a href="#luaL_newmetatable"><code>luaL_newmetatable</code></a>).
 
 </p><hr><h3><a name="luaL_alloc"><code>luaL_alloc</code></a></h3>
-<pre>void *luaL_alloc (void *ud, void *ptr, size_t osize, size_t nsize);</pre>
+<pre class="api">void *luaL_alloc (void *ud, void *ptr, size_t osize, size_t nsize);</pre>
 
 <p>
 Стандартная функция выделения памяти для Lua (см. <a href="#lua_Alloc"><code>lua_Alloc</code></a>),
 построенная на основе функций C <code>realloc</code> и <code>free</code>.
 
 </p><hr><h3><a name="luaL_Stream"><code>luaL_Stream</code></a></h3>
-<pre>typedef struct luaL_Stream {
+<pre class="api">typedef struct luaL_Stream {
   FILE *f;
   lua_CFunction closef;
 } luaL_Stream;</pre>
@@ -6402,7 +6429,7 @@ false с сообщением об ошибке, в случае ошибки.
 
 </p><hr><h3><a name="luaL_testudata"><code>luaL_testudata</code></a></h3><p>
 <span class="apii">[-0, +0, <em>m</em>]</span>
-</p><pre>void *luaL_testudata (lua_State *L, int arg, const char *tname);</pre>
+</p><pre class="api">void *luaL_testudata (lua_State *L, int arg, const char *tname);</pre>
 
 <p>
 Эта функция работает как <a href="#luaL_checkudata"><code>luaL_checkudata</code></a>,
@@ -6411,7 +6438,7 @@ false с сообщением об ошибке, в случае ошибки.
 
 </p><hr><h3><a name="luaL_tolstring"><code>luaL_tolstring</code></a></h3><p>
 <span class="apii">[-0, +1, <em>e</em>]</span>
-</p><pre>const char *luaL_tolstring (lua_State *L, int idx, size_t *len);</pre>
+</p><pre class="api">const char *luaL_tolstring (lua_State *L, int idx, size_t *len);</pre>
 
 <p>
 Конвертирует любое Lua значение по индексу idx в C&nbsp;строку
@@ -6428,7 +6455,7 @@ false с сообщением об ошибке, в случае ошибки.
 
 </p><hr><h3><a name="luaL_traceback"><code>luaL_traceback</code></a></h3><p>
 <span class="apii">[-0, +1, <em>m</em>]</span>
-</p><pre>void luaL_traceback (lua_State *L, lua_State *L1, const char *msg,
+</p><pre class="api">void luaL_traceback (lua_State *L, lua_State *L1, const char *msg,
 					 int level);</pre>
 
 <p>
@@ -6439,7 +6466,7 @@ false с сообщением об ошибке, в случае ошибки.
 
 </p><hr><h3><a name="luaL_typeerror"><code>luaL_typeerror</code></a></h3><p>
 <span class="apii">[-0, +0, <em>v</em>]</span>
-</p><pre>int luaL_typeerror (lua_State *L, int arg, const char *tname);</pre>
+</p><pre class="api">int luaL_typeerror (lua_State *L, int arg, const char *tname);</pre>
 
 <p>
 Вызывает ошибку типа для аргумента <code>arg</code>
@@ -6449,15 +6476,15 @@ false с сообщением об ошибке, в случае ошибки.
 Эта функция никогда не возвращает управление.
 
 </p><hr><h3><a name="luaL_typename"><code>luaL_typename</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>const char *luaL_typename (lua_State *L, int index);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">const char *luaL_typename (lua_State *L, int index);</pre>
 
 <p>
 Возвращает имя типа для значения по индексу index.
 
 </p><hr><h3><a name="luaL_unref"><code>luaL_unref</code></a></h3><p>
-<span class="apii">[-0, +0, –]</span>
-</p><pre>void luaL_unref (lua_State *L, int t, int ref);</pre>
+<span class="apii">[-0, +0, &ndash;]</span>
+</p><pre class="api">void luaL_unref (lua_State *L, int t, int ref);</pre>
 
 <p>
 Освобождает ссылку (см. <a href="#luaL_ref"><code>luaL_ref</code></a>).
@@ -6474,7 +6501,7 @@ false с сообщением об ошибке, в случае ошибки.
 
 </p><hr><h3><a name="luaL_where"><code>luaL_where</code></a></h3><p>
 <span class="apii">[-0, +1, <em>m</em>]</span>
-</p><pre>void luaL_where (lua_State *L, int lvl);</pre>
+</p><pre class="api">void luaL_where (lua_State *L, int lvl);</pre>
 
 <p>
 Помещает на стек строку, идентифицирующую текущую позицию
@@ -6561,7 +6588,7 @@ Lua имеет следующие стандартные библиотеки:
 
 <p>
 <span class="apii">[-0, +0, <em>e</em>]</span>
-</p><pre>void luaL_openlibs (lua_State *L);</pre>
+</p><pre class="api">void luaL_openlibs (lua_State *L);</pre>
 
 <p>
 Открывает все стандартные библиотеки Lua переданному состоянию <code>L</code>.
@@ -6571,7 +6598,7 @@ Lua имеет следующие стандартные библиотеки:
 <p>
 <span class="apii">[-0, +0, <em>e</em>]</span>
 </p>
-<pre>void luaL_openselectedlibs (lua_State *L, int load, int preload);</pre>
+<pre class="api">void luaL_openselectedlibs (lua_State *L, int load, int preload);</pre>
 <p>
 
 Открывает (загружает) и предварительно загружает выбранные стандартные библиотеки в состояние <code>L</code>.
@@ -6859,7 +6886,7 @@ Lua не проверяет правильность бинарных фрагм
 для проверки, что таблица пустая.
 
 </p><p>
-Порядок перечисления индексов не определён,
+Порядок перечисления индексов неопределён,
 <em>даже для числовых индексов</em>.
 (Для просмотра таблицы в числовом порядке, используйте числовой <b>for</b>.)
 
@@ -6885,8 +6912,7 @@ Lua не проверяет правильность бинарных фрагм
 
 </p><p>
 См. функцию <a href="#pdf-next"><code>next</code></a>
-для предострежений о модификации таблицы во время просмотра.
-
+для получения более подробной информации об итерировании.
 </p><p>
 </p><hr><h3><a name="pdf-pcall"><code>pcall (f [, arg1, ···])</code></a></h3>
 
@@ -9096,7 +9122,7 @@ Lua генерирует начальное значение с
 </p><p>
 На POSIX системах
 эта функция также создаёт файл с этим именем,
-для избежания рисков беззопасности.
+для избежания рисков безопасности.
 (Кто-нибудь другой может создать файл с неправильными разрешениями
 в промежуток времени между получением имени файла и его созданием.)
 Вы по прежнему должны открыть файл для его использования
@@ -9113,6 +9139,7 @@ Lua генерирует начальное значение с
 <p>
 Эта библиотека предоставляет Lua программам функциональность отладочного интерфейса
 (<a href="#4.7">§4.7</a>).
+</p><p>
 Используя эту библиотеку, вы должны проявлять внимательность.
 Различные функции этой билиотеки нарушают базовые предположения
 о Lua коде
@@ -9121,6 +9148,8 @@ Lua генерирует начальное значение с
 что Lua программы не падают)
 и следовательно могут скомпрометировать защищённый код.
 Кроме того, некоторые функции в этой библиотеке могут быть медленными.
+Рекомендуется всегда явно подключать эту библиотеку
+перед её использованием.
 
 </p><p>
 Все функции в этой библиотеке предоставляются в таблице
@@ -9129,8 +9158,8 @@ Lua генерирует начальное значение с
 имеют опциональный первый аргумент, определяющий поток.
 По умолчанию, это всегда текущий поток.
 
-</p><p>
-</p><hr><h3><a name="pdf-debug.debug"><code>debug.debug ()</code></a></h3>
+</p>
+<hr><h3><a name="pdf-debug.debug"><code>debug.debug ()</code></a></h3>
 
 <p>
 Входит в интерактивный режим с пользователем,
@@ -9605,6 +9634,9 @@ Lua пропускает первую строку фрагмента файла
 <li>
 Слово <b>global</b> является зарезервированным словом.
 Не используйте его в качестве обычного имени.
+<p>
+Опция компиляции <code>LUA_COMPAT_GLOBAL</code> (см. <code>luaconf.h</code>)
+делает <code>global</code> обычным словом.
 </li>
 
 <li>
@@ -9701,8 +9733,8 @@ Lua пропускает первую строку фрагмента файла
 
 	block ::= {stat} [retstat]
 
-	stat ::=  ‘<b>;</b>’ | 
-		 varlist ‘<b>=</b>’ explist | 
+	stat ::=  &lsquo;<b>;</b>&rsquo; | 
+		 varlist &lsquo;<b>=</b>&rsquo; explist | 
 		 functioncall | 
 		 label | 
 		 <b>break</b> | 
@@ -9711,72 +9743,73 @@ Lua пропускает первую строку фрагмента файла
 		 <b>while</b> exp <b>do</b> block <b>end</b> | 
 		 <b>repeat</b> block <b>until</b> exp | 
 		 <b>if</b> exp <b>then</b> block {<b>elseif</b> exp <b>then</b> block} [<b>else</b> block] <b>end</b> | 
-		 <b>for</b> Name ‘<b>=</b>’ exp ‘<b>,</b>’ exp [‘<b>,</b>’ exp] <b>do</b> block <b>end</b> | 
+		 <b>for</b> Name &lsquo;<b>=</b>&rsquo; exp &lsquo;<b>,</b>&rsquo; exp [&lsquo;<b>,</b>&rsquo; exp] <b>do</b> block <b>end</b> | 
 		 <b>for</b> namelist <b>in</b> explist <b>do</b> block <b>end</b> | 
 		 <b>function</b> funcname funcbody | 
 		 <b>local</b> <b>function</b> Name funcbody | 
 		 <b>global</b> <b>function</b> Name funcbody | 
-		 <b>local</b> attnamelist [‘<b>=</b>’ explist] | 
-		 <b>global</b> attnamelist | 
-		 <b>global</b> [attrib] ‘<b>*</b>’  
+		 <b>local</b> attnamelist [&lsquo;<b>=</b>&rsquo; explist] | 
+		 <b>global</b> attnamelist [&lsquo;<b>=</b>&rsquo; explist] | 
+		 <b>global</b> [attrib] &lsquo;<b>*</b>&rsquo; 
 
-	attnamelist ::=  [attrib] Name [attrib] {‘<b>,</b>’ Name [attrib]}
+	attnamelist ::=  [attrib] Name [attrib] {&lsquo;<b>,</b>&rsquo; Name [attrib]}
 
-	attrib ::= ‘<b>&lt;</b>’ Name ‘<b>&gt;</b>’
-	
-	retstat ::= <b>return</b> [explist] [‘<b>;</b>’]
+	attrib ::= &lsquo;<b>&lt;</b>&rsquo; Name &lsquo;<b>&gt;</b>&rsquo;
 
-	label ::= ‘<b>::</b>’ Name ‘<b>::</b>’
+	retstat ::= <b>return</b> [explist] [&lsquo;<b>;</b>&rsquo;]
 
-	funcname ::= Name {‘<b>.</b>’ Name} [‘<b>:</b>’ Name]
+	label ::= &lsquo;<b>::</b>&rsquo; Name &lsquo;<b>::</b>&rsquo;
 
-	varlist ::= var {‘<b>,</b>’ var}
+	funcname ::= Name {&lsquo;<b>.</b>&rsquo; Name} [&lsquo;<b>:</b>&rsquo; Name]
 
-	var ::=  Name | prefixexp ‘<b>[</b>’ exp ‘<b>]</b>’ | prefixexp ‘<b>.</b>’ Name 
+	varlist ::= var {&lsquo;<b>,</b>&rsquo; var}
 
-	namelist ::= Name {‘<b>,</b>’ Name}
+	var ::=  Name | prefixexp &lsquo;<b>[</b>&rsquo; exp &lsquo;<b>]</b>&rsquo; | prefixexp &lsquo;<b>.</b>&rsquo; Name 
 
-	explist ::= exp {‘<b>,</b>’ exp}
+	namelist ::= Name {&lsquo;<b>,</b>&rsquo; Name}
 
-	exp ::=  <b>nil</b> | <b>false</b> | <b>true</b> | Numeral | LiteralString | ‘<b>...</b>’ | functiondef | 
+	explist ::= exp {&lsquo;<b>,</b>&rsquo; exp}
+
+	exp ::=  <b>nil</b> | <b>false</b> | <b>true</b> | Numeral | LiteralString | &lsquo;<b>...</b>&rsquo; | functiondef | 
 		 prefixexp | tableconstructor | exp binop exp | unop exp 
 
-	prefixexp ::= var | functioncall | ‘<b>(</b>’ exp ‘<b>)</b>’
+	prefixexp ::= var | functioncall | &lsquo;<b>(</b>&rsquo; exp &lsquo;<b>)</b>&rsquo;
 
-	functioncall ::=  prefixexp args | prefixexp ‘<b>:</b>’ Name args 
+	functioncall ::=  prefixexp args | prefixexp &lsquo;<b>:</b>&rsquo; Name args 
 
-	args ::=  ‘<b>(</b>’ [explist] ‘<b>)</b>’ | tableconstructor | LiteralString 
+	args ::=  &lsquo;<b>(</b>&rsquo; [explist] &lsquo;<b>)</b>&rsquo; | tableconstructor | LiteralString 
 
 	functiondef ::= <b>function</b> funcbody
 
-	funcbody ::= ‘<b>(</b>’ [parlist] ‘<b>)</b>’ block <b>end</b>
+	funcbody ::= &lsquo;<b>(</b>&rsquo; [parlist] &lsquo;<b>)</b>&rsquo; block <b>end</b>
 
-	parlist ::= namelist [‘<b>,</b>’ varargparam] | varargparam
+	parlist ::= namelist [&lsquo;<b>,</b>&rsquo; varargparam] | varargparam
 
-	varargparam ::= ‘<b>...</b>’ [Name]
+	varargparam ::= &lsquo;<b>...</b>&rsquo; [Name]
 
-	tableconstructor ::= ‘<b>{</b>’ [fieldlist] ‘<b>}</b>’
+	tableconstructor ::= &lsquo;<b>{</b>&rsquo; [fieldlist] &lsquo;<b>}</b>&rsquo;
 
 	fieldlist ::= field {fieldsep field} [fieldsep]
 
-	field ::= ‘<b>[</b>’ exp ‘<b>]</b>’ ‘<b>=</b>’ exp | Name ‘<b>=</b>’ exp | exp
+	field ::= &lsquo;<b>[</b>&rsquo; exp &lsquo;<b>]</b>&rsquo; &lsquo;<b>=</b>&rsquo; exp | Name &lsquo;<b>=</b>&rsquo; exp | exp
 
-	fieldsep ::= ‘<b>,</b>’ | ‘<b>;</b>’
+	fieldsep ::= &lsquo;<b>,</b>&rsquo; | &lsquo;<b>;</b>&rsquo;
 
-	binop ::=  ‘<b>+</b>’ | ‘<b>-</b>’ | ‘<b>*</b>’ | ‘<b>/</b>’ | ‘<b>//</b>’ | ‘<b>^</b>’ | ‘<b>%</b>’ | 
-		 ‘<b>&amp;</b>’ | ‘<b>~</b>’ | ‘<b>|</b>’ | ‘<b>&gt;&gt;</b>’ | ‘<b>&lt;&lt;</b>’ | ‘<b>..</b>’ | 
-		 ‘<b>&lt;</b>’ | ‘<b>&lt;=</b>’ | ‘<b>&gt;</b>’ | ‘<b>&gt;=</b>’ | ‘<b>==</b>’ | ‘<b>~=</b>’ | 
+	binop ::=  &lsquo;<b>+</b>&rsquo; | &lsquo;<b>-</b>&rsquo; | &lsquo;<b>*</b>&rsquo; | &lsquo;<b>/</b>&rsquo; | &lsquo;<b>//</b>&rsquo; | &lsquo;<b>^</b>&rsquo; | &lsquo;<b>%</b>&rsquo; | 
+		 &lsquo;<b>&amp;</b>&rsquo; | &lsquo;<b>~</b>&rsquo; | &lsquo;<b>|</b>&rsquo; | &lsquo;<b>&gt;&gt;</b>&rsquo; | &lsquo;<b>&lt;&lt;</b>&rsquo; | &lsquo;<b>..</b>&rsquo; | 
+		 &lsquo;<b>&lt;</b>&rsquo; | &lsquo;<b>&lt;=</b>&rsquo; | &lsquo;<b>&gt;</b>&rsquo; | &lsquo;<b>&gt;=</b>&rsquo; | &lsquo;<b>==</b>&rsquo; | &lsquo;<b>~=</b>&rsquo; | 
 		 <b>and</b> | <b>or</b>
 
-	unop ::= ‘<b>-</b>’ | <b>not</b> | ‘<b>#</b>’ | ‘<b>~</b>’
+	unop ::= &lsquo;<b>-</b>&rsquo; | <b>not</b> | &lsquo;<b>#</b>&rsquo; | &lsquo;<b>~</b>&rsquo;
 
 </pre>
-
 <p>
-
-</p><p class="footer">
+<p class="footer">
 Last update:
-Fri Apr 24 03:10:00 UTC 2026 Last change: revised for Lua 5.5.0
+Fri Jul 24 14:07:32 UTC 2026
 </p>
+<!--
+Last change: revised for Lua 5.5.1
+-->
 
 </body></html>

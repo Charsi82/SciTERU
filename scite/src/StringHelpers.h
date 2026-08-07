@@ -179,6 +179,8 @@ bool IsDBCSLeadByte(int codePage, char ch) noexcept;
 
 // Escape processing
 
+std::string ShellEscape(std::string_view sv);
+std::string ShellDoubleQuoteEscape(std::string_view sv);
 std::string Slash(const std::string &s, bool quoteQuotes);
 std::string UnSlashLowOctalString(std::string_view sv);
 std::string UnSlashString(std::string_view sv);

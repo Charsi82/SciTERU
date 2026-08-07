@@ -912,8 +912,8 @@ return function(tabs, panel_width, colorback, colorfore)
 		local linenumber = "[" .. (line_number + 1) .. "] "
 		if line_text == '' then return linenumber .. ' - empty line' end
 		line_text = linenumber .. line_text
-  		local from, to = utf8.offset(line_text, ELLIPSIS_LEN)
-		if not from then return line_text end
+		local from, to = utf8.offset(line_text, ELLIPSIS_LEN)
+		if not from then return line_text:to_utf8(editor.CodePage) end
 		return line_text:sub(1, to):to_utf8(editor.CodePage)..'..'
 	end
 

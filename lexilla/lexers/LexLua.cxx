@@ -85,9 +85,6 @@ const LexicalClass lexicalClasses[] = {
 	18, "SCE_LUA_WORD7", "identifier", "Other keywords",
 	19, "SCE_LUA_WORD8", "identifier", "Other keywords",
 	20, "SCE_LUA_LABEL", "label", "Labels",
-#ifndef RB_FLL
-	21, "SCE_LUA_WORD9", "identifier", "Other keywords",
-#endif
 };
 
 // Options used for LexerLua
@@ -587,7 +584,6 @@ void LexerLua::Lex(Sci_PositionU startPos, Sci_Position length, int initStyle, I
 								sc.ForwardBytes(ws2);
 							}
 							sc.SetState(SCE_LUA_OPERATOR);
-							sc.Forward();
 						}
 					}
 				}

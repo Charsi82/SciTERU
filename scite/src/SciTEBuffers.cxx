@@ -701,7 +701,7 @@ namespace {
 
 std::vector<SA::Line> LinesFromString(const std::string &s) {
 	std::vector<SA::Line> result;
-	if (s.length()) {
+	if (!s.empty()) {
 		size_t start = 0;
 		for (;;) {
 			const SA::Line line = IntegerFromText(s.c_str() + start) - 1;
@@ -718,7 +718,7 @@ std::vector<SA::Line> LinesFromString(const std::string &s) {
 std::string StringFromLines(const std::vector<SA::Line> &lines) {
 	std::string result;
 	for (const SA::Line line : lines) {
-		if (result.length()) {
+		if (!result.empty()) {
 			result.append(",");
 		}
 		std::string sLine = std::to_string(line + 1);
@@ -888,7 +888,7 @@ void SciTEBase::SaveSessionFile(const GUI::gui_char *sessionName) {
 
 				if (props.GetInt("session.bookmarks")) {
 					const std::string bmString = StringFromLines(buff.bookmarks);
-					if (bmString.length()) {
+					if (!bmString.empty()) {
 						propKey = IndexPropKey("buffer", i, "bookmarks");
 						fprintf(sessionFile, "%s=%s\n", propKey.c_str(), bmString.c_str());
 					}
@@ -902,7 +902,7 @@ void SciTEBase::SaveSessionFile(const GUI::gui_char *sessionName) {
 
 				if (props.GetInt("fold") && props.GetInt("session.folds")) {
 					const std::string foldsString = StringFromLines(buff.foldState);
-					if (foldsString.length()) {
+					if (!foldsString.empty()) {
 						propKey = IndexPropKey("buffer", i, "folds");
 						fprintf(sessionFile, "%s=%s\n", propKey.c_str(), foldsString.c_str());
 					}
@@ -1009,7 +1009,7 @@ void SciTEBase::RestoreState(const Buffer &buffer, bool restoreBookmarks) {
 		wEditor.SetCodePage(codePage);
 	}
 #ifdef RB_EUM
-	props.Set("editor.unicode.mode", std::to_string((int)CurrentBuffer()->unicodeMode + IDM_ENCODING_DEFAULT)); //!-add-[EditorUnicodeMode]
+	props.Set("editor.unicode.mode", std::to_string(static_cast<int>(CurrentBuffer()->unicodeMode) + IDM_ENCODING_DEFAULT)); //!-add-[EditorUnicodeMode]
 #endif // RB_EUM
 
 	RemoveFindMarks();
@@ -1632,7 +1632,7 @@ bool SciTEBase::ToolIsImmediate(int item) {
 	propName += itemSuffix;
 
 	const std::string_view command = props.GetWild(propName, FileNameExt().AsUTF8());
-	if (command.length()) {
+	if (!command.empty()) {
 		JobMode jobMode(props, item, FileNameExt().AsUTF8());
 		return jobMode.jobType == JobSubsystem::immediate;
 	}
@@ -1702,7 +1702,7 @@ void SciTEBase::SetToolsMenu() {
 		std::string prefix = "command.name." + sCmdID + ".";
 		const std::string sFNE = FileNameExt().AsUTF8();
 		std::string sMenuItem = props.GetNewExpandString(prefix, sFNE);
-		if (sMenuItem.length()) {
+		if (!sMenuItem.empty()) {
 			prefix = "command.shortcut." + sCmdID + ".";
 			std::string sMnemonic = props.GetNewExpandString(prefix, sFNE);
 			if (items < 10 && sMnemonic.empty())
@@ -1719,14 +1719,14 @@ void SciTEBase::SetToolsMenu() {
 			int ischecked = IntegerFromString(val, 0);
 			if (toMenu > 0 && toMenu < toolMax) {
 				if (arrMenu[toMenu].GetID() == 0)
-					arrMenu[toMenu].CreatePopUp(&arrMenu[0]);
+					arrMenu[toMenu].CreatePopUp();
 				if (issep)
 					arrMenu[toMenu].Add();
 				arrMenu[toMenu].Add(lsMenuItem.c_str(), itemID, 1 + ischecked, sMnemonic.c_str());
 			}
 			else {
 				if (issep)
-					arrMenu[0].Add(0, -1, true, 0, menuPos++);
+					arrMenu[0].Add(nullptr, -1, 1, nullptr, menuPos++);
 				arrMenu[0].Add(lsMenuItem.c_str(), itemID, 1 + ischecked, sMnemonic.c_str(), menuPos++);
 			}
 		}
@@ -1761,7 +1761,7 @@ void SciTEBase::SetToolsMenu() {
 				}
 				else {
 					if (menuPos == TOOLS_START + 1)
-						arrMenu[0].Add(0, -1, true, 0, menuPos++);
+						arrMenu[0].Add(nullptr, -1, 1, nullptr, menuPos++);
 					arrMenu[0].AddSubMenu(lcommandName.c_str(), arrMenu[items], menuPos++);
 				}
 			}
@@ -1782,7 +1782,7 @@ void SciTEBase::ToolsMenu(int item) {
 	const std::string itemSuffix = StdStringFromInteger(item) + ".";
 	const std::string propName = std::string("command.") + itemSuffix;
 	std::string command(props.GetWild(propName, FileNameExt().AsUTF8()));
-	if (command.length()) {
+	if (!command.empty()) {
 		JobMode jobMode(props, item, FileNameExt().AsUTF8());
 		if (jobQueue.IsExecuting() && (jobMode.jobType != JobSubsystem::immediate))
 			// Busy running a tool and running a second can cause failures.
@@ -2241,7 +2241,7 @@ void SciTEBase::ShowMessages(SA::Line line) {
 			if (msgCurrent.find(message) == std::string::npos) {
 				// Only append unique messages
 				std::string stylesCurrent = wEditor.AnnotationGetStyles(sourceLine);
-				if (msgCurrent.length()) {
+				if (!msgCurrent.empty()) {
 					msgCurrent += "\n";
 					stylesCurrent += '\0';
 				}
@@ -2321,7 +2321,7 @@ void SciTEBase::GoMessage(int dir) {
 							topLine--;
 						}
 					}
-					if (topic.length() > 0 && 0 == strncmp(">Internal search", topic.c_str(), 16)) {
+					if (!topic.empty() && 0 == strncmp(">Internal search", topic.c_str(), 16)) {
 						// get base path from topic text
 						size_t toPos = topic.length() - 1;
 						while (toPos >= 0 && pathSepChar != topic[toPos]) toPos--;

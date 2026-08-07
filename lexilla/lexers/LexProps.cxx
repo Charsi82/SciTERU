@@ -44,7 +44,7 @@ constexpr bool isAssignChar(char ch) noexcept {
 #endif
 
 #ifdef RB_PCF
-	char ColourisePropsLine(
+char ColourisePropsLine(
 #else
 void ColourisePropsLine(
 #endif // RB_PCF
