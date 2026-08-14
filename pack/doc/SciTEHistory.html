@@ -630,6 +630,11 @@
 	<td>Nathaniel Braun</td>
       </tr><tr>
 	<td>Stephan T. Lavavej</td>
+	<td>RealMalWare</td>
+	<td>p4p3r of CYBERONE</td>
+	<td>Schreiner</td>
+      </tr><tr>
+	<td>Chris Clark</td>
       </tr>
     </table>
     <p>
@@ -638,6 +643,176 @@
         Icons</a> Copyright(C) 1998 by Dean S. Jones<br />
     </p>
     <h2 id="Releases">Releases</h2>
+    <h3>
+       <a href="https://www.scintilla.org/scite565.zip">Release 5.6.5</a>
+    </h3>
+    <ul>
+	<li>SciTE</li>
+	<ul>
+		<li>
+		Released 4 August 2026.
+		</li>
+		<li>
+		Provide executables for Windows on ARM. Distribution building on Windows made more flexible with standard build executed with scripts\build_all.bat.
+		</li>
+		<li>
+		On GTK, fix Find in Files not finding text that includes characters that are significant to the shell such as '$', '"', and '`'.
+		</li>
+		<li>
+		Quote variables in command properties to allow more characters such as ' ' to work in file names.
+		</li>
+		<li>
+		Implement unsafe.path.characters property to prevent running shell commands on paths that contain potentially unsafe characters.
+		</li>
+		<li>
+		On Windows, add icon.busy property to change the SciTE taskbar icon while a command is executing.
+		</li>
+	</ul>
+	<li>Lexilla 5.5.2</li>
+	<ul>
+		<li>
+		JavaScript: in cpp, XML, and HTML lexers, only recognize regular expression literal when initial '/' is followed by another '/' on the same line.
+		</li>
+		<li>
+		Lexilla may be built without exporting any entry points by defining the preprocessor symbol LEXILLA_NO_EXPORT.
+		This is only useful when building a static library.
+		<a href="https://github.com/ScintillaOrg/lexilla/issues/311">Issue #311</a>.
+		</li>
+	</ul>
+	<li>Scintilla 5.6.5</li>
+	<ul>
+		<li>
+		Add SC_UPDATE_TEXT and SC_UPDATE_LINE_COUNT flags to SCN_UPDATEUI notifications.
+		This can help improve performance by client code switching from listening for changes with rapid
+		SCN_MODIFIED to delayed SCN_UPDATEUI notifications.
+		</li>
+		<li>
+		On Qt, prepare for drawing asynchronously to avoid styling inside the draw handler.
+		This may improve performance and matches other platforms.
+		</li>
+		<li>
+		On Cocoa, fix problem where styling and update UI notifications were performed inside drawing
+		instead of before drawing which could cause drawing to be abandoned unnecessarily.
+		</li>
+		<li>
+		Increase interior width of MarkerSymbol::Plus and Minus to match stroke width setting.
+		</li>
+		<li>
+		Improve performance of fold discovery in some situations by styling progressively larger
+		blocks of lines.
+		</li>
+		<li>
+		Don't use std::async and std::future in single threaded situations.
+		This avoids crashes with some runtime libraries as well as minor performance costs.
+		<a href="https://github.com/geany/geany/issues/4620">Geany Issue #4620</a>.
+		</li>
+	</ul>
+    </ul>
+    <h3>
+       <a href="https://www.scintilla.org/scite564.zip">Release 5.6.4</a>
+    </h3>
+    <ul>
+	<li>SciTE</li>
+	<ul>
+		<li>
+		Released 6 July 2026.
+		</li>
+		<li>
+		Add allow.local.script, allow.script.lexer, and properties.local.enable
+		properties to avoid some potential problems with running untrusted code.
+		Protect SciteDefaultHome and SciteUserHome so they can not be modified in
+		local or directory options.
+		<a href="https://sourceforge.net/p/scintilla/bugs/2389/">Bug #2389</a>.
+		</li>
+	</ul>
+	<li>Lexilla 5.5.1</li>
+	<ul>
+		<li>
+		Baan: Fix stack out-of-bounds write for with long preprocessor token and long identifier.
+		<a href="https://github.com/ScintillaOrg/lexilla/issues/364">Issue #364</a>.
+		</li>
+		<li>
+		XML and HTML: Change CDATA styling so that only the contents are in SCE_H_CDATA.
+		The "CDATA" is styled as SCE_H_SGML_COMMAND and the punctuation as SCE_H_SGML_DEFAULT.
+		<a href="https://github.com/ScintillaOrg/lexilla/issues/365">Issue #365</a>.
+		</li>
+	</ul>
+	<li>Scintilla 5.6.4</li>
+	<ul>
+		<li>
+		On Qt improve display for fractional scaling by providing SCI_SETSCALETECHNIQUE API.
+		The SCALE_TECHNIQUE_PIXEL_ALIGNED value will eliminate potential 'seams' between lines
+		and between runs on a line.
+		<a href="https://sourceforge.net/p/scintilla/bugs/2450/">Bug #2450</a>.
+		</li>
+		<li>
+		Scintilla.iface is augmented with comments indicating which APIs take pixel values so may
+		be automatically scaled by wrappers.
+		For compatibility this is currently indicated in comments after each affected API but this will
+		change to using the 'pixels' type in a future version,
+		Downstream projects should examine this and make any needed changes, such as using floating
+		point types for wrapper methods.
+		To help migration, the scripts/FilterPixels.py script can convert this Scintilla.iface into the previous form
+		with no mention of 'pixels' or into the final form with 'pixels' as the only type for these features.
+		</li>
+		<li>
+		On Qt always place ScintillaEditBase library in scintilla/bin instead of depending on Qt version.
+		</li>
+		<li>
+		Optimize SCI_CHANGEINSERTION that sets empty insertion by not producing empty undo action
+		and potential save point change.
+		<a href="https://sourceforge.net/p/scintilla/feature-requests/1588/">Feature #1588</a>.
+		</li>
+	</ul>
+    </ul>
+    <h3>
+       <a href="https://www.scintilla.org/scite563.zip">Release 5.6.3</a>
+    </h3>
+    <ul>
+	<li>SciTE</li>
+	<ul>
+		<li>
+		Released 6 June 2026.
+		</li>
+	</ul>
+	<li>Lexilla 5.5.0</li>
+	<ul>
+		<li>
+		Fortran: Fold enumeration type and select rank. Treat GFortran !GCC$ as preprocessor.
+		<a href="https://github.com/ScintillaOrg/lexilla/issues/363">Issue #363</a>,
+		<a href="https://sourceforge.net/p/scintilla/bugs/2509/">Bug #2509</a>.
+		</li>
+		<li>
+		LaTeX: Fix issues at end of file.
+		<a href="https://github.com/ScintillaOrg/lexilla/issues/355">Issue #355</a>,
+		<a href="https://github.com/ScintillaOrg/lexilla/pull/358">Pull request #358</a>.
+		</li>
+		<li>
+		LaTeX: Fix non-terminating optional argument by lexing as SCE_L_MATH.
+		<a href="https://github.com/ScintillaOrg/lexilla/issues/360">Issue #360</a>.
+		</li>
+	</ul>
+	<li>Scintilla 5.6.3</li>
+	<ul>
+		<li>
+		Restore selection and scroll position for undo and redo on additional views instead of just the view
+		performing the undo or redo.
+		<a href="https://github.com/notepad-plus-plus/notepad-plus-plus/pull/18014">Notepad++ Pull Request #18014</a>.
+		</li>
+		<li>
+		Improve performance of rectangular paste when many spaces must be inserted.
+		<a href="https://sourceforge.net/p/scintilla/bugs/2302/">Bug #2302</a>.
+		</li>
+		<li>
+		On Win32, close the clipboard before inserting pasted or dropped text so that the clipboard is not blocked while
+		the insertion is performed.
+		<a href="https://sourceforge.net/p/scintilla/bugs/2507/">Bug #2507</a>.
+		</li>
+		<li>
+		On Qt with Wayland, fix failures with displaying calltips and autocompletion lists.
+		</li>
+	</ul>
+    </ul>
     <h3>
        <a href="https://www.scintilla.org/scite562.zip">Release 5.6.2</a>
     </h3>

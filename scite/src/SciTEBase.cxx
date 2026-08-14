@@ -64,9 +64,16 @@
 #include "Searcher.h"
 #include "SciTEBase.h"
 
+namespace {
+
+constexpr int minimumSplit = 20;
+constexpr int baseSplitHorizontal = 300;
+constexpr int baseSplitVertical = 100;
+
 #ifdef RB_OMC
-constexpr int _MAX_EXTENSION_RECURSIVE_CALL = 100; //!-add-[OnMenuCommand]
+constexpr int max_extension_recursive_call = 100; //!-add-[OnMenuCommand]
 #endif // RB_OMC
+}
 
 Searcher::Searcher() {
 	wholeWord = false;
@@ -317,7 +324,7 @@ SciTEBase::SciTEBase(Extension *ext) : apis(true), pwFocussed(&wEditor), extende
 
 	timerMask = 0;
 	delayBeforeAutoSave = 0;
-	
+
 #ifdef RB_OnSendEditor
 	wEditor.pBase = this; //!-add-[OnSendEditor]
 #endif // RB_OnSendEditor
@@ -556,6 +563,35 @@ void SciTEBase::CheckMenusSave() {
 }
 //!-end-[SaveEnabled]
 #endif // RB_SE
+
+void SciTEBase::OutputAppendString(std::string_view s) {
+	wOutput.AppendText(s.length(), s.data());
+	if (scrollOutput) {
+		const SA::Line line = wOutput.LineCount();
+		const SA::Position lineStart = wOutput.LineStart(line);
+		wOutput.GotoPos(lineStart);
+	}
+}
+
+void SciTEBase::SetOutputVisibility(bool show) {
+	if (show) {
+		if (heightOutput <= 0) {
+			if (previousHeightOutput < minimumSplit) {
+				heightOutput = NormaliseSplit(splitVertical ? baseSplitHorizontal : baseSplitVertical);
+				previousHeightOutput = heightOutput;
+			} else {
+				heightOutput = NormaliseSplit(previousHeightOutput);
+			}
+		}
+	} else {
+		if (heightOutput > 0) {
+			heightOutput = NormaliseSplit(0);
+			WindowSetFocus(wEditor);
+		}
+	}
+	SizeSubWindows();
+	Redraw();
+}
 
 SystemAppearance SciTEBase::CurrentAppearance() const noexcept {
 	return {};
@@ -1273,10 +1309,6 @@ std::string SciTEBase::EncodeString(const std::string &s) {
 
 namespace {
 
-constexpr int minimumSplit = 20;
-constexpr int baseSplitHorizontal = 300;
-constexpr int baseSplitVertical = 100;
-
 std::string UnSlashAsNeeded(const std::string &s, bool escapes, bool regularExpression) {
 	if (escapes) {
 		if (regularExpression) {
@@ -1741,15 +1773,6 @@ void SciTEBase::UIClosed() {
 void SciTEBase::UIHasFocus() {
 }
 
-void SciTEBase::OutputAppendString(std::string_view s) {
-	wOutput.AppendText(s.length(), s.data());
-	if (scrollOutput) {
-		const SA::Line line = wOutput.LineCount();
-		const SA::Position lineStart = wOutput.LineStart(line);
-		wOutput.GotoPos(lineStart);
-	}
-}
-
 void SciTEBase::OutputAppendStringSynchronised(std::string_view s) {
 	// This may be called from secondary thread so always use Send instead of Call
 	wOutput.Send(SCI_APPENDTEXT, s.length(), SptrFromString(s.data()));
@@ -1812,26 +1835,6 @@ void SciTEBase::Execute() {
 	}
 	CheckMenus();
 	dirNameAtExecute = filePath.Directory();
-}
-
-void SciTEBase::SetOutputVisibility(bool show) {
-	if (show) {
-		if (heightOutput <= 0) {
-			if (previousHeightOutput < minimumSplit) {
-				heightOutput = NormaliseSplit(splitVertical ? baseSplitHorizontal : baseSplitVertical);
-				previousHeightOutput = heightOutput;
-			} else {
-				heightOutput = NormaliseSplit(previousHeightOutput);
-			}
-		}
-	} else {
-		if (heightOutput > 0) {
-			heightOutput = NormaliseSplit(0);
-			WindowSetFocus(wEditor);
-		}
-	}
-	SizeSubWindows();
-	Redraw();
 }
 
 // Background threads that are send text to the output pane want it to be made visible.
@@ -3448,7 +3451,7 @@ void SciTEBase::SetLineNumberWidth() {
 void SciTEBase::MenuCommand(int cmdID, int source) {
 #ifdef RB_OMC
 	//!-start-[OnMenuCommand]
-	if (extender && OnMenuCommandCallsCount < _MAX_EXTENSION_RECURSIVE_CALL) {
+	if (extender && OnMenuCommandCallsCount < max_extension_recursive_call) {
 		OnMenuCommandCallsCount++;
 		bool result = extender->OnMenuCommand(cmdID, source);
 		OnMenuCommandCallsCount--;
@@ -4847,7 +4850,7 @@ void SciTEBase::ContextMenu(GUI::ScintillaWindow& wSource, GUI::Point pt, GUI::P
 		}
 		else {
 			mnu.Add(localiser.Text("Close").c_str(), IDM_CLOSE, IsMenuItemEnabled(IDM_CLOSE));
-		}
+}
 	}
 
 	mnu.Show(pt, wCmd);

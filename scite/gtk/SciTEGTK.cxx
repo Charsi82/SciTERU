@@ -28,6 +28,7 @@
 #include <chrono>
 #include <atomic>
 #include <mutex>
+#include <thread>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -427,6 +428,16 @@ public:
 #endif
 };
 
+// Abstract base class of actions that are invoked from a worker thread but performed on the main thread
+struct MainAction {
+	SciTEGTK *pSciTE {};
+	virtual void Perform() = 0;
+	MainAction(SciTEGTK *pSciTE_) : pSciTE(pSciTE_) {}
+	virtual ~MainAction() = default;
+};
+
+struct ActionGrepEnd;
+
 class SciTEGTK : public SciTEBase, UserStripWatcher {
 
 	friend class UserStrip;
@@ -525,6 +536,7 @@ protected:
 
 	void GetWindowPosition(int *left, int *top, int *width, int *height, int *maximize) override;
 
+	void ShowOutputOnMainThread() override;
 	void SizeContentWindows() override;
 	void SizeSubWindows() override;
 	bool UpdateOutputSize();
@@ -625,6 +637,8 @@ protected:
 
 	// GTK Signal Handlers
 
+	static gboolean MainActionCallback(void *ptr);
+
 	void FindInFilesCmd();
 	void FindInFilesDotDot();
 	void FindInFilesBrowse();
@@ -713,6 +727,8 @@ public:
 	void CreateUI();
 	void LayoutUI();
 	void Run(int argc, char *argv[]);
+	void OutputAppendStringSynchronised(std::string_view sv) override;
+	void GrepEnd(ActionGrepEnd *page);
 	void Execute() override;
 	void StopExecute() override;
 	static int PollTool(SciTEGTK *scitew);
@@ -1187,6 +1203,20 @@ void SciTEGTK::GetWindowPosition(int *left, int *top, int *width, int *height, i
 	gtk_window_get_position(GTK_WINDOW(PWidget(wSciTE)), left, top);
 	gtk_window_get_size(GTK_WINDOW(PWidget(wSciTE)), width, height);
 	*maximize = (gdk_window_get_state(WindowFromWidget(PWidget(wSciTE))) & GDK_WINDOW_STATE_MAXIMIZED) != 0;
+}
+
+struct ActionShowOutput : MainAction {
+	ActionShowOutput(SciTEGTK *pSciTE_) noexcept :
+		MainAction(pSciTE_) {
+	}
+	void Perform() override {
+		pSciTE->SetOutputVisibility(true);
+	}
+};
+
+
+void SciTEGTK::ShowOutputOnMainThread() {
+	g_idle_add(MainActionCallback, new ActionShowOutput(this));
 }
 
 void SciTEGTK::SizeContentWindows() {
@@ -1831,6 +1861,16 @@ void SciTEGTK::PrintSetup() {
 	pageSetup.reset(newPageSetup);
 }
 
+gboolean SciTEGTK::MainActionCallback(void *ptr) {
+#ifndef GDK_VERSION_3_6
+	ThreadLockMinder minder;
+#endif
+	MainAction *pma = static_cast<MainAction *>(ptr);
+	pma->Perform();
+	delete pma;
+	return FALSE;
+}
+
 std::string SciTEGTK::GetRangeInUIEncoding(GUI::ScintillaWindow &win, SA::Span span) {
 	const SA::Position len = span.Length();
 	if (len == 0)
@@ -2029,14 +2069,29 @@ void DialogFindInFiles::FillCombosInDialog() {
 	wComboFindInFiles.FillFromMemory(pSearcher->memFinds.AsVector());
 }
 
+struct ActionGrepEnd : MainAction {
+	SA::Position positionEnd = 0;
+	std::string directory;
+	std::string files;
+	std::string excluded;
+	std::string what;
+	GrepFlags gf {};
+	ActionGrepEnd(SciTEGTK *pSciTE_) noexcept :
+		MainAction(pSciTE_) {
+	}
+	void Perform() override {
+		pSciTE->GrepEnd(this);
+	}
+};
+
 void SciTEGTK::FindInFilesCmd() {
 	dlgFindInFiles.GrabFields();
 
-	const char *dirEntry = dlgFindInFiles.comboDir.Text();
+	const std::string dirEntry = dlgFindInFiles.comboDir.Text();
 	props.Set("find.directory", dirEntry);
 	memDirectory.Insert(dirEntry);
 
-	const char *filesEntry = dlgFindInFiles.wComboFiles.Text();
+	const std::string filesEntry = dlgFindInFiles.wComboFiles.Text();
 	props.Set("find.files", filesEntry);
 	memFiles.Insert(filesEntry);
 
@@ -2049,20 +2104,41 @@ void SciTEGTK::FindInFilesCmd() {
 	SelectionIntoProperties();
 	std::string findCommand = props.GetNewExpandString("find.command");
 	if (findCommand == "") {
-		findCommand = sciteExecutable.AsInternal();
-		findCommand += " -grep ";
-		findCommand += (wholeWord ? "w" : "~");
-		findCommand += (matchCase ? "c" : "~");
-		findCommand += props.GetInt("find.in.dot") ? "d" : "~";
-		findCommand += props.GetInt("find.in.binary") ? "b" : "~";
-		findCommand += " \"";
-		findCommand += props.GetString("find.files");
-		findCommand += "\" \"";
-		findCommand += props.GetString("find.exclude");
-		findCommand += "\" \"";
-		const std::string quotedForm = ShellDoubleQuoteEscape(props.Get("find.what"));
-		findCommand += quotedForm;
-		findCommand += "\"";
+		GrepFlags gf = GrepFlags::none;
+		if (wholeWord)
+			gf = gf | GrepFlags::wholeWord;
+		if (matchCase)
+			gf = gf | GrepFlags::matchCase;
+		if (props.GetInt("find.in.dot"))
+			gf = gf | GrepFlags::dot;
+		if (props.GetInt("find.in.binary"))
+			gf = gf | GrepFlags::binary;
+		if (scrollOutput == 1)
+			gf = gf | GrepFlags::scroll;
+		ActionGrepEnd *page = new ActionGrepEnd(this);
+		page->directory = dirEntry;
+		page->files = props.GetString("find.files");
+		page->excluded = props.GetString("find.exclude");
+		page->what = findWhat;
+		// On another thread
+		jobQueue.SetCancelFlag(0);
+		jobQueue.SetExecuting(true);
+		CheckMenus();
+		if (scrollOutput)
+			wOutput.GotoPos(wOutput.TextLength());
+		page->positionEnd = wOutput.CurrentPos();
+		page->gf = gf;
+		try {
+			std::thread thread([page] {
+				SA::Position tempEnd = 0;	// Satisfies InternalGrep signature but thrown away
+				page->pSciTE->InternalGrep(page->gf, page->directory, page->files, page->excluded, page->what, tempEnd);
+				g_idle_add(MainActionCallback, page);
+			});
+			thread.detach();
+		} catch (std::system_error &) {
+			// Show warning
+		}
+		return;
 	}
 	AddCommand(findCommand, props.GetString("find.directory"), JobSubsystem::cli);
 	if (jobQueue.HasCommandToRun())
@@ -2071,6 +2147,16 @@ void SciTEGTK::FindInFilesCmd() {
 		FillCombos(dlgFindInFiles);
 		FillCombosForGrep();
 	}
+}
+
+void SciTEGTK::GrepEnd(ActionGrepEnd *page) {
+	if (FlagIsSet(page->gf, GrepFlags::scroll) && returnOutputToCommand) {
+		wOutput.GotoPos(page->positionEnd);
+	}
+	jobQueue.SetCancelFlag(0);
+	jobQueue.SetExecuting(false);
+	returnOutputToCommand = true;
+	CheckMenus();
 }
 
 void SciTEGTK::FindInFilesDotDot() {
@@ -2368,6 +2454,20 @@ static void SetupChild(gpointer) {
 	setpgid(0, 0);
 }
 
+struct ActionAppendString : MainAction {
+	std::string s;
+	ActionAppendString(SciTEGTK *pSciTE_, std::string_view sv) noexcept :
+		MainAction(pSciTE_), s(sv) {
+	}
+	void Perform() override {
+		pSciTE->OutputAppendString(s);
+	}
+};
+
+void SciTEGTK::OutputAppendStringSynchronised(std::string_view sv) {
+	g_idle_add(MainActionCallback, new ActionAppendString(this, sv));
+}
+
 void SciTEGTK::Execute() {
 	if (buffers.SavingInBackground())
 		// May be saving file that should be used by command so wait until all saved
@@ -2438,6 +2538,7 @@ void SciTEGTK::StopExecute() {
 #endif
 		triedKill = true;
 	}
+	jobQueue.SetCancelFlag(true);
 }
 
 void SciTEGTK::GotoCmd() {
@@ -3546,7 +3647,7 @@ void SciTEGTK::CreateMenu() {
 	                                      {"/Edit/Block Co_mment or Uncomment", "<control>Q", menuSig, IDM_BLOCK_COMMENT, 0},
 	                                      {"/Edit/Bo_x Comment", "<control><shift>B", menuSig, IDM_BOX_COMMENT, 0},
 	                                      {"/Edit/Stream Comme_nt", "<control><shift>Q", menuSig, IDM_STREAM_COMMENT, 0},
-	                                      {"/Edit/Make _Selection Uppercase", "<control><shift>U", menuSig, IDM_UPRCASE, 0},
+	                                      {"/Edit/Make _Selection Uppercase", "<control><alt>U", menuSig, IDM_UPRCASE, 0},
 	                                      {"/Edit/Make Selection _Lowercase", "<control>U", menuSig, IDM_LWRCASE, 0},
 	                                      {"/Edit/Reverse Selected Lines", NULL, menuSig, IDM_LINEREVERSE, 0},
 	                                      {"/Edit/Para_graph", NULL, NULL, 0, "<Branch>"},

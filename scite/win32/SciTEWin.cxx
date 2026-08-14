@@ -654,7 +654,7 @@ void SciTEWin::ReadPropertiesInitial() {
 		mii.dwTypeData = buff;
 		mii.cch = 255;
 		if (GetMenuItemInfo(mainMenu, cmdID, FALSE, &mii)) {
-			std::string tmp = GUI::UTF8FromString(buff).data();
+			std::string tmp = GUI::UTF8FromString(buff);
 			size_t pos = tmp.find('\t');
 			if (pos == std::string::npos)
 				tmp.append("\t").append(p.menuKey);
@@ -676,26 +676,38 @@ void SciTEWin::ReadProperties() {
 			CallChildren(SA::Message::SetFoldMarginHiColour, 1, lightMargin);
 		}
 	}
-
 #ifdef RB_TABTOP
 	toptab_h = std::clamp(props.GetInt("tabbar.top.height", 2), -4, 4);
 	toptab_clr = ColourOfProperty(props, "tabbar.top.colour", ColourRGB(0xFA, 0xAA, 0x3C));
 #endif // RB_TABTOP
-
 }
 
 namespace {
+
+GUI::gui_string executableDirectory;
+
+bool SetScitePath() noexcept {
+	try {
+		GUI::gui_char path[MAX_PATH + 1]{};
+		if (::GetModuleFileNameW({}, path, MAX_PATH) == 0)
+			return false;
+
+		FilePath pathSciTE(path);
+		// Convert potential 8.3 name segments to long name
+		pathSciTE.FixName();
+		// Remove the SciTE.exe
+		executableDirectory = pathSciTE.Directory().AsText();
+		return true;
+	} catch (...) {
+		return false;
+	}
+}
 
 FilePath GetSciTEPath(const FilePath &home) {
 	if (home.IsSet()) {
 		return home;
 	}
-	GUI::gui_char path[MAX_PATH+1]{};
-	if (::GetModuleFileNameW({}, path, MAX_PATH) == 0)
-		return {};
-	// Remove the SciTE.exe
-	const FilePath pathSciTE(path);
-	return pathSciTE.Directory();
+	return executableDirectory;
 }
 
 }
@@ -718,11 +730,10 @@ FilePath SciTEWin::GetSciteUserHome() {
 
 #ifdef RB_SUH
 	//!-start-[scite.userhome]
-	GUI::gui_string userhome;
 	if (!home) {
-		userhome = GUI::StringFromUTF8(props.GetExpandedString("scite.userhome").c_str());
-		if (userhome.length())
-			home = const_cast<GUI::gui_char*>(userhome.c_str());
+		if (GUI::gui_string userhome = GUI::StringFromUTF8(props.GetExpandedString("scite.userhome")); !userhome.empty()) {
+			return GetSciTEPath(userhome);
+		}
 	}
 	//!-end-[scite.userhome]
 #endif // RB_SUH
@@ -2626,6 +2637,11 @@ void RestrictDLLPath() noexcept {
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int) {
 
 	RestrictDLLPath();
+
+	if (!SetScitePath()) {
+		::MessageBoxW({}, L"Failed to set SciTE path", L"Error", MB_OK | MB_ICONERROR);
+		return 1;
+	}
 
 #ifndef NO_EXTENSIONS
 	MultiplexExtension multiExtender;

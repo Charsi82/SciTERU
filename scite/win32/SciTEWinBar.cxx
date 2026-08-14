@@ -2,8 +2,8 @@
 /** @file SciTEWinBar.cxx
  ** Bar and menu code for the Windows version of the editor.
  **/
- // Copyright 1998-2003 by Neil Hodgson <neilh@scintilla.org>
- // The License.txt file describes the conditions under which this software may be distributed.
+// Copyright 1998-2003 by Neil Hodgson <neilh@scintilla.org>
+// The License.txt file describes the conditions under which this software may be distributed.
 
 #include "SciTEWin.h"
 
@@ -16,7 +16,7 @@ COLORREF toptab_clr = 0;
  * Set up properties for FileTime, FileDate, CurrentTime, CurrentDate and FileAttr.
  */
 void SciTEWin::SetFileProperties(
-	PropSetFile& ps) {			///< Property set to update.
+	PropSetFile &ps) {			///< Property set to update.
 
 	constexpr int TEMP_LEN = 100;
 	wchar_t temp[TEMP_LEN] = L"";
@@ -31,13 +31,13 @@ void SciTEWin::SetFileProperties(
 		if (::FileTimeToSystemTime(&lft, &st) == 0)
 			st = SYSTEMTIME();
 		::GetTimeFormatW(LOCALE_USER_DEFAULT,
-			0, &st,
-			nullptr, temp, TEMP_LEN);
+				 0, &st,
+				 nullptr, temp, TEMP_LEN);
 		ps.Set("FileTime", GUI::UTF8FromString(temp));
 
 		::GetDateFormatW(LOCALE_USER_DEFAULT,
-			DATE_SHORTDATE, &st,
-			nullptr, temp, TEMP_LEN);
+				 DATE_SHORTDATE, &st,
+				 nullptr, temp, TEMP_LEN);
 		ps.Set("FileDate", GUI::UTF8FromString(temp));
 
 		const DWORD attr = ::GetFileAttributesW(filePath.AsInternal());
@@ -61,26 +61,26 @@ void SciTEWin::SetFileProperties(
 	}
 
 	::GetDateFormatW(LOCALE_USER_DEFAULT,
-		DATE_SHORTDATE, nullptr,     	// Current date
-		nullptr, temp, TEMP_LEN);
+			 DATE_SHORTDATE, nullptr,     	// Current date
+			 nullptr, temp, TEMP_LEN);
 	ps.Set("CurrentDate", GUI::UTF8FromString(temp));
 
 	::GetTimeFormatW(LOCALE_USER_DEFAULT,
-		0, nullptr,     	// Current time
-		nullptr, temp, TEMP_LEN);
+			 0, nullptr,     	// Current time
+			 nullptr, temp, TEMP_LEN);
 	ps.Set("CurrentTime", GUI::UTF8FromString(temp));
 }
 
 /**
  * Update the status bar text.
  */
-void SciTEWin::SetStatusBarText(const char* s) {
+void SciTEWin::SetStatusBarText(const char *s) {
 	GUI::gui_string barText = GUI::StringFromUTF8(s);
 	::SendMessage(HwndOf(wStatusBar),
-		SB_SETTEXT, 0, reinterpret_cast<LPARAM>(barText.c_str()));
+		      SB_SETTEXT, 0, reinterpret_cast<LPARAM>(barText.c_str()));
 }
 
-void SciTEWin::UpdateTabs(const std::vector<GUI::gui_string>& tabNames) {
+void SciTEWin::UpdateTabs(const std::vector<GUI::gui_string> &tabNames) {
 	// Synchronize the tab control titles with those passed in.
 
 	// Find the first element that differs between the two vectors.
@@ -110,7 +110,7 @@ void SciTEWin::UpdateTabs(const std::vector<GUI::gui_string>& tabNames) {
 		TabCtrl_DeleteItem(HwndOf(wTabBar), tabChange - 1);
 
 		GUI::gui_string tabNameNext = tabNames.at(tabChange - 1);
-		TCITEMW tie{};
+		TCITEMW tie {};
 		tie.mask = TCIF_TEXT | TCIF_IMAGE;
 		tie.iImage = -1;
 		tie.pszText = tabNameNext.data();
@@ -120,7 +120,7 @@ void SciTEWin::UpdateTabs(const std::vector<GUI::gui_string>& tabNames) {
 	while (tabNames.size() > tabNamesCurrent.size()) {
 		// Add new tabs
 		GUI::gui_string tabNameNext = tabNames.at(tabChange);
-		TCITEMW tie{};
+		TCITEMW tie {};
 		tie.mask = TCIF_TEXT | TCIF_IMAGE;
 		tie.iImage = -1;
 		tie.pszText = tabNameNext.data();
@@ -134,7 +134,7 @@ void SciTEWin::UpdateTabs(const std::vector<GUI::gui_string>& tabNames) {
 		// Update tabs that are different
 		if (tabNames.at(tabChange) != tabNamesCurrent.at(tabChange)) {
 			GUI::gui_string tabNameCopy(tabNames.at(tabChange));
-			TCITEMW tie{};
+			TCITEMW tie {};
 			tie.mask = TCIF_TEXT | TCIF_IMAGE;
 			tie.iImage = -1;
 			tie.pszText = tabNameCopy.data();
@@ -146,9 +146,9 @@ void SciTEWin::UpdateTabs(const std::vector<GUI::gui_string>& tabNames) {
 	assert(tabNamesCurrent == tabNames);
 }
 
-void SciTEWin::TabInsert(int index, const GUI::gui_char* title) {
+void SciTEWin::TabInsert(int index, const GUI::gui_char *title) {
 	// This is no longer called as UpdateTabs performs all changes to tabs
-	TCITEMW tie{};
+	TCITEMW tie {};
 	tie.mask = TCIF_TEXT | TCIF_IMAGE;
 	tie.iImage = -1;
 	GUI::gui_string titleCopy(title);
@@ -181,20 +181,20 @@ GUI::Point ClientFromScreen(HWND hWnd, GUI::Point ptScreen) noexcept {
 
 namespace {
 
-	int TabAtPoint(HWND hWnd, GUI::Point pt) noexcept {
-		TCHITTESTINFO thti{};
-		thti.pt.x = pt.x;
-		thti.pt.y = pt.y;
-		thti.flags = 0;
-		return TabCtrl_HitTest(hWnd, &thti);
-	}
+int TabAtPoint(HWND hWnd, GUI::Point pt) noexcept {
+	TCHITTESTINFO thti {};
+	thti.pt.x = pt.x;
+	thti.pt.y = pt.y;
+	thti.flags = 0;
+	return TabCtrl_HitTest(hWnd, &thti);
+}
 
 }
 
 /**
  * Manage Windows specific notifications.
  */
-void SciTEWin::Notify(SCNotification* notification) {
+void SciTEWin::Notify(SCNotification *notification) {
 	switch (notification->nmhdr.code) {
 	case TCN_SELCHANGE:
 		// Change of tab
@@ -280,7 +280,7 @@ void SciTEWin::Notify(SCNotification* notification) {
 		// Click on a control
 		if (notification->nmhdr.idFrom == IDM_STATUSWIN) {
 			// Click on the status bar
-			const NMMOUSE* pNMMouse = reinterpret_cast<NMMOUSE*>(notification);
+			const NMMOUSE *pNMMouse = reinterpret_cast<NMMOUSE *>(notification);
 			switch (pNMMouse->dwItemSpec) {
 			case 0: 		/* Display of status */
 				sbNum++;
@@ -297,62 +297,62 @@ void SciTEWin::Notify(SCNotification* notification) {
 
 	case TTN_GETDISPINFO:
 		// Ask for tooltip text
-	{
+		{
 #ifndef RB_UT
-		const GUI::gui_char* ttext = nullptr;
+			const GUI::gui_char *ttext = nullptr;
 #endif
-		NMTTDISPINFOW* pDispInfo = reinterpret_cast<NMTTDISPINFOW*>(notification);
-		// Toolbar tooltips
+			NMTTDISPINFOW *pDispInfo = reinterpret_cast<NMTTDISPINFOW *>(notification);
+			// Toolbar tooltips
 #ifndef RB_UT
-		switch (notification->nmhdr.idFrom) {
-		case IDM_NEW:
-			ttext = GUI_TEXT("New");
-			break;
-		case IDM_OPEN:
-			ttext = GUI_TEXT("Open");
-			break;
-		case IDM_SAVE:
-			ttext = GUI_TEXT("Save");
-			break;
-		case IDM_CLOSE:
-			ttext = GUI_TEXT("Close");
-			break;
-		case IDM_PRINT:
-			ttext = GUI_TEXT("Print");
-			break;
-		case IDM_CUT:
-			ttext = GUI_TEXT("Cut");
-			break;
-		case IDM_COPY:
-			ttext = GUI_TEXT("Copy");
-			break;
-		case IDM_PASTE:
-			ttext = GUI_TEXT("Paste");
-			break;
-		case IDM_CLEAR:
-			ttext = GUI_TEXT("Delete");
-			break;
-		case IDM_UNDO:
-			ttext = GUI_TEXT("Undo");
-			break;
-		case IDM_REDO:
-			ttext = GUI_TEXT("Redo");
-			break;
-		case IDM_FIND:
-			ttext = GUI_TEXT("Find");
-			break;
-		case IDM_REPLACE:
-			ttext = GUI_TEXT("Replace");
-			break;
-		case IDM_MACRORECORD:
-			ttext = GUI_TEXT("Record Macro");
-			break;
-		case IDM_MACROSTOPRECORD:
-			ttext = GUI_TEXT("Stop Recording");
-			break;
-		case IDM_MACROPLAY:
-			ttext = GUI_TEXT("Run Macro");
-			break;
+			switch (notification->nmhdr.idFrom) {
+			case IDM_NEW:
+				ttext = GUI_TEXT("New");
+				break;
+			case IDM_OPEN:
+				ttext = GUI_TEXT("Open");
+				break;
+			case IDM_SAVE:
+				ttext = GUI_TEXT("Save");
+				break;
+			case IDM_CLOSE:
+				ttext = GUI_TEXT("Close");
+				break;
+			case IDM_PRINT:
+				ttext = GUI_TEXT("Print");
+				break;
+			case IDM_CUT:
+				ttext = GUI_TEXT("Cut");
+				break;
+			case IDM_COPY:
+				ttext = GUI_TEXT("Copy");
+				break;
+			case IDM_PASTE:
+				ttext = GUI_TEXT("Paste");
+				break;
+			case IDM_CLEAR:
+				ttext = GUI_TEXT("Delete");
+				break;
+			case IDM_UNDO:
+				ttext = GUI_TEXT("Undo");
+				break;
+			case IDM_REDO:
+				ttext = GUI_TEXT("Redo");
+				break;
+			case IDM_FIND:
+				ttext = GUI_TEXT("Find");
+				break;
+			case IDM_REPLACE:
+				ttext = GUI_TEXT("Replace");
+				break;
+			case IDM_MACRORECORD:
+				ttext = GUI_TEXT("Record Macro");
+				break;
+			case IDM_MACROSTOPRECORD:
+				ttext = GUI_TEXT("Stop Recording");
+				break;
+			case IDM_MACROPLAY:
+				ttext = GUI_TEXT("Run Macro");
+				break;
 		default:
 		{
 #else
@@ -370,52 +370,51 @@ void SciTEWin::Notify(SCNotification* notification) {
 			//!-end-[user.toolbar]
 #endif // !RB_UT
 					// notification->nmhdr.idFrom appears to be the buffer number for tabbar tooltips
-			const GUI::Point ptClient = ClientFromScreen(HwndOf(wTabBar), PointOfCursor());
-			const int index = TabAtPoint(HwndOf(wTabBar), ptClient);
-			if (index >= 0) {
-				GUI::gui_string path = buffers.buffers[index].file.AsText();
-				// Handle '&' characters in path, since they are interpreted in
-				// tooltips.
-				size_t amp = 0;
-				while ((amp = path.find(L'&', amp)) != GUI::gui_string::npos) {
-					path.insert(amp, L"&");
-					amp += 2;
-				}
-				StringCopy(tooltipText, path.c_str());
-				pDispInfo->lpszText = tooltipText;
-			}
+					const GUI::Point ptClient = ClientFromScreen(HwndOf(wTabBar), PointOfCursor());
+					const int index = TabAtPoint(HwndOf(wTabBar), ptClient);
+					if (index >= 0) {
+						GUI::gui_string path = buffers.buffers[index].file.AsText();
+						// Handle '&' characters in path, since they are interpreted in
+						// tooltips.
+						size_t amp = 0;
+						while ((amp = path.find(L'&', amp)) != GUI::gui_string::npos) {
+							path.insert(amp, L"&");
+							amp += 2;
+						}
+						StringCopy(tooltipText, path.c_str());
+						pDispInfo->lpszText = tooltipText;
+					}
 #ifndef RB_UT
-		}
-		break;
-		}
-	if (ttext) {
-		GUI::gui_string localised = localiser.Text(GUI::UTF8FromString(ttext));
-		StringCopy(tooltipText, localised.c_str());
-		pDispInfo->lpszText = tooltipText;
+				}
+				break;
+			}
+			if (ttext) {
+				GUI::gui_string localised = localiser.Text(GUI::UTF8FromString(ttext));
+				StringCopy(tooltipText, localised.c_str());
+				pDispInfo->lpszText = tooltipText;
 #endif // !RB_UT			
+			}
+			break;
 		}
-	break;
-	}
 
 	case SCN_CHARADDED:
 		if ((notification->nmhdr.idFrom == IDM_RUNWIN) &&
-			jobQueue.IsExecuting() &&
-			hWriteSubProcess) {
+				jobQueue.IsExecuting() &&
+				hWriteSubProcess) {
 			const char chToWrite = static_cast<char>(notification->ch);
 			if (chToWrite != '\r') {
 				DWORD bytesWrote = 0;
 				::WriteFile(hWriteSubProcess, &chToWrite,
-					1, &bytesWrote, nullptr);
+					    1, &bytesWrote, nullptr);
 			}
-		}
-		else {
+		} else {
 			SciTEBase::Notify(notification);
 		}
 		break;
 
 	case SCN_FOCUSIN:
 		if ((notification->nmhdr.idFrom == IDM_SRCWIN) ||
-			(notification->nmhdr.idFrom == IDM_RUNWIN))
+				(notification->nmhdr.idFrom == IDM_RUNWIN))
 			wFocus = static_cast<HWND>(notification->nmhdr.hwndFrom);
 		SciTEBase::Notify(notification);
 		break;
@@ -438,7 +437,7 @@ void SciTEWin::ShowStatusBar() {
 	SizeSubWindows();
 }
 
-void SciTEWin::ActivateWindow(const char*) {
+void SciTEWin::ActivateWindow(const char *) {
 	// This does nothing as, on Windows, you can no longer activate yourself
 }
 
@@ -483,8 +482,7 @@ void SciTEWin::SizeContentWindows() {
 	if (splitVertical) {
 		wEditor.SetPosition(GUI::Rectangle(0, 0, w - heightOutput - heightBar, h));
 		wOutput.SetPosition(GUI::Rectangle(w - heightOutput, 0, w, h));
-	}
-	else {
+	} else {
 		wEditor.SetPosition(GUI::Rectangle(0, 0, w, h - heightOutput - heightBar));
 		wOutput.SetPosition(GUI::Rectangle(0, h - heightOutput, w, h));
 	}
@@ -503,15 +501,15 @@ void SciTEWin::SizeSubWindows() {
 
 	if (tabVisible) {	// ? hide one tab only
 		showTab = tabHideOne ?
-			TabCtrl_GetItemCount(HwndOf(wTabBar)) > 1 :
-		true;
+			  TabCtrl_GetItemCount(HwndOf(wTabBar)) > 1 :
+			  true;
 	}
 
 	bands[bandTab].visible = showTab;
 	if (showTab && tabMultiLine) {
 		wTabBar.SetPosition(GUI::Rectangle(
-			rcClient.left, rcClient.top + visHeightTools,
-			rcClient.right, rcClient.top + heightTab + visHeightTools));
+					    rcClient.left, rcClient.top + visHeightTools,
+					    rcClient.right, rcClient.top + heightTab + visHeightTools));
 	}
 
 	const RECT r = { rcClient.left, 0, rcClient.right, 0 };
@@ -534,13 +532,13 @@ void SciTEWin::SizeSubWindows() {
 	if (heightContent <= 0)
 		heightContent = 1;
 
-	for (const Band& band : bands) {
+	for (const Band &band : bands) {
 		if (band.visible && !band.expands)
 			heightContent -= band.height;
 	}
 	if (heightContent <= 0) {
 		heightContent = rcClient.Height();
-		for (size_t i = 0; i < bands.size(); i++) {
+		for (size_t i=0; i<bands.size(); i++) {
 			if (i != bandContents)
 				bands[i].visible = false;
 		}
@@ -552,21 +550,20 @@ void SciTEWin::SizeSubWindows() {
 	HDWP hdwp = BeginDeferWindowPos(10);
 
 	int yPos = rcClient.top;
-	for (const Band& band : bands) {
+	for (const Band &band : bands) {
 		if (band.visible) {
 			const GUI::Rectangle rcToSet(rcClient.left, yPos, rcClient.right, yPos + band.height);
 			if (hdwp)
 				hdwp = ::DeferWindowPos(hdwp, HwndOf(band.win),
-					{}, rcToSet.left, rcToSet.top, rcToSet.Width(), rcToSet.Height(),
-					SWP_NOZORDER | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+							{}, rcToSet.left, rcToSet.top, rcToSet.Width(), rcToSet.Height(),
+							SWP_NOZORDER|SWP_NOACTIVATE|SWP_SHOWWINDOW);
 			yPos += band.height;
-		}
-		else {
+		} else {
 			const GUI::Rectangle rcToSet(rcClient.left, rcClient.top - 41, rcClient.Width(), rcClient.top - 40);
 			if (hdwp)
 				hdwp = ::DeferWindowPos(hdwp, HwndOf(band.win),
-					{}, rcToSet.left, rcToSet.top, rcToSet.Width(), rcToSet.Height(),
-					SWP_NOZORDER | SWP_NOACTIVATE | SWP_HIDEWINDOW);
+							{}, rcToSet.left, rcToSet.top, rcToSet.Width(), rcToSet.Height(),
+							SWP_NOZORDER|SWP_NOACTIVATE|SWP_HIDEWINDOW);
 		}
 	}
 	if (hdwp)
@@ -588,7 +585,7 @@ void SciTEWin::SizeSubWindows() {
 
 
 void SciTEWin::SetMenuItem(int menuNumber, int position, int itemID,
-	const GUI::gui_char * text, const GUI::gui_char * mnemonic) {
+			   const GUI::gui_char *text, const GUI::gui_char *mnemonic) {
 	// On Windows the menu items are modified if they already exist or are created
 	HMENU hmenu = ::GetSubMenu(::GetMenu(MainHWND()), menuNumber);
 
@@ -620,15 +617,14 @@ void SciTEWin::SetMenuItem(int menuNumber, int position, int itemID,
 	if (::GetMenuState(hmenu, itemID, MF_BYCOMMAND) == static_cast<UINT>(-1)) {
 		// Not present so insert
 		::InsertMenuW(hmenu, position, MF_BYPOSITION | typeFlags, itemID, sTextMnemonic.c_str());
-	}
-	else {
+	} else {
 		::ModifyMenuW(hmenu, itemID, MF_BYCOMMAND | typeFlags, itemID, sTextMnemonic.c_str());
 	}
 
 	if (itemID >= IDM_TOOLS && itemID < IDM_TOOLS + toolMax) {
 		// Stow the keycode for later retrieval.
 		// Do this even if 0, in case the menu already existed (e.g. ModifyMenu)
-		MENUITEMINFO mii{};
+		MENUITEMINFO mii {};
 		mii.cbSize = sizeof(MENUITEMINFO);
 		mii.fMask = MIIM_DATA;
 		mii.dwItemData = keycode;
@@ -647,8 +643,7 @@ void SciTEWin::DestroyMenuItem(int menuNumber, int itemID) {
 	if (itemID) {
 		HMENU hmenu = ::GetSubMenu(hmenuBar, menuNumber);
 		::DeleteMenu(hmenu, itemID, MF_BYCOMMAND);
-	}
-	else {
+	} else {
 		::DeleteMenu(hmenuBar, menuNumber, MF_BYPOSITION);
 	}
 }
@@ -708,17 +703,17 @@ void SciTEWin::CheckMenus() {
 
 	SciTEBase::CheckMenus();
 	::CheckMenuRadioItem(::GetMenu(MainHWND()), IDM_EOL_CRLF, IDM_EOL_LF,
-		static_cast<int>(wEditor.EOLMode()) - static_cast<int>(SA::EndOfLine::CrLf) + IDM_EOL_CRLF, 0);
+			     static_cast<int>(wEditor.EOLMode()) - static_cast<int>(SA::EndOfLine::CrLf) + IDM_EOL_CRLF, 0);
 	::CheckMenuRadioItem(::GetMenu(MainHWND()), IDM_ENCODING_DEFAULT, IDM_ENCODING_UCOOKIE,
-		static_cast<int>(CurrentBuffer()->unicodeMode) + IDM_ENCODING_DEFAULT, 0);
+			     static_cast<int>(CurrentBuffer()->unicodeMode) + IDM_ENCODING_DEFAULT, 0);
 }
 
 void SciTEWin::LocaliseMenu(HMENU hmenu) {
 	for (int i = 0; i <= ::GetMenuItemCount(hmenu); i++) {
-		MENUITEMINFOW mii{};
+		MENUITEMINFOW mii {};
 		mii.cbSize = sizeof(mii);
 		mii.fMask = MIIM_CHECKMARKS | MIIM_DATA | MIIM_ID |
-			MIIM_STATE | MIIM_SUBMENU | MIIM_TYPE;
+			    MIIM_STATE | MIIM_SUBMENU | MIIM_TYPE;
 		mii.dwTypeData = nullptr;
 		if (!::GetMenuItemInfoW(hmenu, i, TRUE, &mii)) {
 			continue;
@@ -777,55 +772,54 @@ void SciTEWin::LocaliseDialog(HWND wDialog) {
 namespace {
 
 #ifndef RB_UT
-	struct BarButton {
-		int id;
-		int cmd;
-	};
+struct BarButton {
+	int id;
+	int cmd;
+};
 
-	BarButton bbs[] = {
-		{ -1,           0 },
-		{ STD_FILENEW,  IDM_NEW },
-		{ STD_FILEOPEN, IDM_OPEN },
-		{ STD_FILESAVE, IDM_SAVE },
-		{ 0,            IDM_CLOSE },
-		{ -1,           0 },
-		{ STD_PRINT,    IDM_PRINT },
-		{ -1,           0 },
-		{ STD_CUT,      IDM_CUT },
-		{ STD_COPY,     IDM_COPY },
-		{ STD_PASTE,    IDM_PASTE },
-		{ STD_DELETE,   IDM_CLEAR },
-		{ -1,           0 },
-		{ STD_UNDO,     IDM_UNDO },
-		{ STD_REDOW,    IDM_REDO },
-		{ -1,           0 },
-		{ STD_FIND,     IDM_FIND },
-		{ STD_REPLACE,  IDM_REPLACE },
-	};
+BarButton bbs[] = {
+	{ -1,           0 },
+	{ STD_FILENEW,  IDM_NEW },
+	{ STD_FILEOPEN, IDM_OPEN },
+	{ STD_FILESAVE, IDM_SAVE },
+	{ 0,            IDM_CLOSE },
+	{ -1,           0 },
+	{ STD_PRINT,    IDM_PRINT },
+	{ -1,           0 },
+	{ STD_CUT,      IDM_CUT },
+	{ STD_COPY,     IDM_COPY },
+	{ STD_PASTE,    IDM_PASTE },
+	{ STD_DELETE,   IDM_CLEAR },
+	{ -1,           0 },
+	{ STD_UNDO,     IDM_UNDO },
+	{ STD_REDOW,    IDM_REDO },
+	{ -1,           0 },
+	{ STD_FIND,     IDM_FIND },
+	{ STD_REPLACE,  IDM_REPLACE },
+};
 #endif // !RB_UT
 
-	WNDPROC stDefaultTabProc = nullptr;
-	LRESULT CALLBACK TabWndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam) {
+WNDPROC stDefaultTabProc = nullptr;
+LRESULT CALLBACK TabWndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam) {
 
-		static bool bDragBegin = false;
-		static int iDraggingTab = -1;
-		static int iLastClickTab = -1;
-		static HWND hwndLastFocus{};
+	static bool bDragBegin = false;
+	static int iDraggingTab = -1;
+	static int iLastClickTab = -1;
+	static HWND hwndLastFocus {};
 
-		if (iMessage == WM_LBUTTONDOWN) {
-			const GUI::Point pt = PointFromLong(lParam);
-			iLastClickTab = TabAtPoint(hWnd, pt);
-		}
+	if (iMessage == WM_LBUTTONDOWN) {
+		const GUI::Point pt = PointFromLong(lParam);
+		iLastClickTab = TabAtPoint(hWnd, pt);
+	}
 
-		LRESULT retResult;
-		if (stDefaultTabProc != nullptr) {
-			retResult = CallWindowProc(stDefaultTabProc, hWnd, iMessage, wParam, lParam);
-		}
-		else {
-			retResult = ::DefWindowProc(hWnd, iMessage, wParam, lParam);
-		}
+	LRESULT retResult;
+	if (stDefaultTabProc != nullptr) {
+		retResult = CallWindowProc(stDefaultTabProc, hWnd, iMessage, wParam, lParam);
+	} else {
+		retResult = ::DefWindowProc(hWnd, iMessage, wParam, lParam);
+	}
 
-		switch (iMessage) {
+	switch (iMessage) {
 
 #ifdef RB_TAB_DB_CLICK
 			//!-start-[close_on_dbl_clk]
@@ -884,17 +878,16 @@ namespace {
 				const int tab = TabAtPoint(hWnd, pt);
 				if (tab > -1 && iDraggingTab > -1 && iDraggingTab != tab) {
 					::SendMessage(::GetParent(hWnd),
-						WM_COMMAND,
-						IDC_SHIFTTAB,
-						MAKELPARAM(iDraggingTab, tab));
+						      WM_COMMAND,
+						      IDC_SHIFTTAB,
+						      MAKELPARAM(iDraggingTab, tab));
 				}
 				iDraggingTab = -1;
 			}
 		}
 		break;
 
-		case WM_KEYDOWN:
-		{
+	case WM_KEYDOWN: {
 			if (wParam == VK_ESCAPE) {
 				if (bDragBegin) {
 					if (hwndLastFocus) ::SetFocus(hwndLastFocus);
@@ -909,34 +902,31 @@ namespace {
 		}
 		break;
 
-		case WM_MOUSEMOVE:
-		{
+	case WM_MOUSEMOVE: {
 
 			const GUI::Point pt = PointFromLong(lParam);
 			const int tab = TabAtPoint(hWnd, pt);
 			const int tabcount = TabCtrl_GetItemCount(hWnd);
 
 			if (wParam == MK_LBUTTON &&
-				tabcount > 1 &&
-				tab > -1 &&
-				iLastClickTab == tab &&
-				!bDragBegin) {
+					tabcount > 1 &&
+					tab > -1 &&
+					iLastClickTab == tab &&
+					!bDragBegin) {
 				iDraggingTab = tab;
 				::SetCapture(hWnd);
 				hwndLastFocus = ::SetFocus(hWnd);
 				bDragBegin = true;
 				HCURSOR hcursor = ::LoadCursor(::GetModuleHandle(nullptr),
-					MAKEINTRESOURCE(IDC_DRAGDROP));
+							       MAKEINTRESOURCE(IDC_DRAGDROP));
 				if (hcursor) ::SetCursor(hcursor);
-			}
-			else {
+			} else {
 				if (bDragBegin) {
 					if (tab > -1 && iDraggingTab > -1 /*&& iDraggingTab != tab*/) {
 						HCURSOR hcursor = ::LoadCursor(::GetModuleHandle(nullptr),
-							MAKEINTRESOURCE(IDC_DRAGDROP));
+									       MAKEINTRESOURCE(IDC_DRAGDROP));
 						if (hcursor) ::SetCursor(hcursor);
-					}
-					else {
+					} else {
 						::SetCursor(::LoadCursor({}, IDC_NO));
 					}
 				}
@@ -972,10 +962,10 @@ namespace {
 				const GUI::Point ptClient = ClientFromScreen(hWnd, PointOfCursor());
 				const int tab = TabAtPoint(hWnd, ptClient);
 
-				const RECT tabrc{};
+				const RECT tabrc {};
 				if (tab != -1 &&
-					tab != iDraggingTab &&
-					TabCtrl_GetItemRect(hWnd, tab, &tabrc)) {
+						tab != iDraggingTab &&
+						TabCtrl_GetItemRect(hWnd, tab, &tabrc)) {
 
 					HDC hDC = ::GetDC(hWnd);
 					if (hDC) {
@@ -1023,10 +1013,10 @@ namespace {
 			}
 		}
 		break;
-		}
-
-		return retResult;
 	}
+
+	return retResult;
+}
 
 }
 
@@ -1055,29 +1045,29 @@ void SciTEWin::Creation() {
 	constexpr int heightWindow = 100;	// Temporary until stretched to fit
 
 	wContent = ::CreateWindowExW(
-		flatterUI ? 0 : WS_EX_CLIENTEDGE,
-		classNameInternal,
-		L"Source",
-		WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
-		0, 0,
-		widthWindow, heightWindow,
-		MainHWND(),
-		HmenuID(IDM_CONTENTWIN),
-		hInstance,
-		&contents);
+			   flatterUI ? 0 : WS_EX_CLIENTEDGE,
+			   classNameInternal,
+			   L"Source",
+			   WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+			   0, 0,
+			   widthWindow, heightWindow,
+			   MainHWND(),
+			   HmenuID(IDM_CONTENTWIN),
+			   hInstance,
+			   &contents);
 	wContent.Show();
 
 	wEditor.SetScintilla(::CreateWindowExW(
-		0,
-		L"Scintilla",
-		L"Source",
-		WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
-		0, 0,
-		widthWindow, heightWindow,
-		HwndOf(wContent),
-		HmenuID(IDM_SRCWIN),
-		hInstance,
-		nullptr));
+				     0,
+				     L"Scintilla",
+				     L"Source",
+				     WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+				     0, 0,
+				     widthWindow, heightWindow,
+				     HwndOf(wContent),
+				     HmenuID(IDM_SRCWIN),
+				     hInstance,
+				     nullptr));
 	if (!wEditor.CanCall())
 		exit(FALSE);
 	wEditor.Show();
@@ -1086,16 +1076,16 @@ void SciTEWin::Creation() {
 	WindowSetFocus(wEditor);
 
 	wOutput.SetScintilla(::CreateWindowExW(
-		0,
-		L"Scintilla",
-		L"Run",
-		WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
-		0, 0,
-		widthWindow, heightWindow,
-		HwndOf(wContent),
-		HmenuID(IDM_RUNWIN),
-		hInstance,
-		nullptr));
+				     0,
+				     L"Scintilla",
+				     L"Run",
+				     WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+				     0, 0,
+				     widthWindow, heightWindow,
+				     HwndOf(wContent),
+				     HmenuID(IDM_RUNWIN),
+				     hInstance,
+				     nullptr));
 	if (!wOutput.CanCall())
 		exit(FALSE);
 	wOutput.Show();
@@ -1107,31 +1097,31 @@ void SciTEWin::Creation() {
 	::DragAcceptFiles(MainHWND(), true);
 
 	const HRESULT hrCreation = CoCreateInstance(CLSID_TaskbarList, nullptr, CLSCTX_INPROC_SERVER,
-		IID_ITaskbarList3, reinterpret_cast<LPVOID*>(&pTaskBar));
+		IID_ITaskbarList3, reinterpret_cast<LPVOID *>(&pTaskBar));
 	if (FAILED(hrCreation)) {
 		pTaskBar = nullptr;
 	}
 
 	HWND hwndToolBar = ::CreateWindowExW(
-		0,
-		TOOLBARCLASSNAME,
-		L"",
-		WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS |
-		TBSTYLE_FLAT | TBSTYLE_TOOLTIPS | CCS_NORESIZE,
-		0, 0,
-		widthWindow, tbLarge ? heightToolsBig : heightTools,
-		MainHWND(),
-		HmenuID(IDM_TOOLWIN),
-		hInstance,
-		nullptr);
+				   0,
+				   TOOLBARCLASSNAME,
+				   L"",
+				   WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS |
+				   TBSTYLE_FLAT | TBSTYLE_TOOLTIPS | CCS_NORESIZE,
+				   0, 0,
+				   widthWindow, tbLarge ? heightToolsBig : heightTools,
+				   MainHWND(),
+				   HmenuID(IDM_TOOLWIN),
+				   hInstance,
+				   nullptr);
 	wToolBar = hwndToolBar;
 
 #ifndef RB_UT //!-remove-[user.toolbar]
 	::SendMessage(hwndToolBar, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
 	::SendMessage(hwndToolBar, TB_SETBITMAPSIZE, 0, tbLarge ? MAKELPARAM(24, 24) : MAKELPARAM(16, 16));
 	::SendMessage(hwndToolBar, TB_LOADIMAGES,
-		tbLarge ? IDB_STD_LARGE_COLOR : IDB_STD_SMALL_COLOR,
-		reinterpret_cast<LPARAM>(HINST_COMMCTRL));
+		      tbLarge ? IDB_STD_LARGE_COLOR : IDB_STD_SMALL_COLOR,
+		      reinterpret_cast<LPARAM>(HINST_COMMCTRL));
 
 	TBADDBITMAP addbmp = { hInstance, IDR_CLOSEFILE };
 
@@ -1162,12 +1152,12 @@ void SciTEWin::Creation() {
 
 	wToolBar.Show();
 
-	INITCOMMONCONTROLSEX icce{};
+	INITCOMMONCONTROLSEX icce {};
 	icce.dwSize = sizeof(icce);
 	icce.dwICC = ICC_TAB_CLASSES;
 	InitCommonControlsEx(&icce);
 
-	constexpr const wchar_t* tabClassName = L"SciteTabCtrl";
+	constexpr const wchar_t *tabClassName = L"SciteTabCtrl";
 	WNDCLASS wndClass = {};
 	if (::GetClassInfoW({}, WC_TABCONTROL, &wndClass) == 0)
 		exit(FALSE);
@@ -1180,22 +1170,22 @@ void SciTEWin::Creation() {
 		exit(FALSE);
 
 	wTabBar = ::CreateWindowExW(
-		0,
-		tabClassName,
-		L"Tab",
-		WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS |
-		TCS_FOCUSNEVER | TCS_TOOLTIPS,
-		0, 0,
-		widthWindow, heightTab,
-		MainHWND(),
-		HmenuID(IDM_TABWIN),
-		hInstance,
-		nullptr);
+			  0,
+			  tabClassName,
+			  L"Tab",
+			  WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS |
+			  TCS_FOCUSNEVER | TCS_TOOLTIPS,
+			  0, 0,
+			  widthWindow, heightTab,
+			  MainHWND(),
+			  HmenuID(IDM_TABWIN),
+			  hInstance,
+			  nullptr);
 
 	if (!wTabBar.Created())
 		exit(FALSE);
 
-	LOGFONTW lfIconTitle{};
+	LOGFONTW lfIconTitle {};
 	if (::SystemParametersInfoW(SPI_GETICONTITLELOGFONT, sizeof(lfIconTitle), &lfIconTitle, FALSE) == 0)
 		exit(FALSE);
 	fontTabs = ::CreateFontIndirectW(&lfIconTitle);
@@ -1211,23 +1201,23 @@ void SciTEWin::Creation() {
 	CreateStrip(L"FilterStrip", &filterStrip);
 
 	wStatusBar = ::CreateWindowExW(
-		0,
-		STATUSCLASSNAME,
-		L"",
-		WS_CHILD | WS_CLIPSIBLINGS,
-		0, 0,
-		widthWindow, heightStatus,
-		MainHWND(),
-		HmenuID(IDM_STATUSWIN),
-		hInstance,
-		nullptr);
+			     0,
+			     STATUSCLASSNAME,
+			     L"",
+			     WS_CHILD | WS_CLIPSIBLINGS,
+			     0, 0,
+			     widthWindow, heightStatus,
+			     MainHWND(),
+			     HmenuID(IDM_STATUSWIN),
+			     hInstance,
+			     nullptr);
 	wStatusBar.Show();
 	const int widths[] = { 4000 };
 	// Perhaps we can define a syntax to create more parts,
 	// but it is probably an overkill for a marginal feature
 	::SendMessage(HwndOf(wStatusBar),
-		SB_SETPARTS, 1,
-		reinterpret_cast<LPARAM>(widths));
+		      SB_SETPARTS, 1,
+		      reinterpret_cast<LPARAM>(widths));
 
 	bands.emplace_back(true, tbLarge ? heightToolsBig : heightTools, false, wToolBar);
 	bands.emplace_back(true, heightTab, false, wTabBar);

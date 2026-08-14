@@ -826,7 +826,6 @@ protected:
 	void GoMatchingBrace(bool select);
 	void GoMatchingPreprocCond(int direction, bool select);
 	virtual void FindReplace(bool replace) = 0;
-	void OutputAppendString(std::string_view s);
 	virtual void OutputAppendStringSynchronised(std::string_view s);
 	virtual void Execute();
 	virtual void StopExecute() = 0;
@@ -918,7 +917,6 @@ protected:
 	void BookmarkToggle(SA::Line lineno = -1);
 	void BookmarkNext(bool forwardScan = true, bool select = false);
 	void BookmarkSelectAll();
-	void SetOutputVisibility(bool show);
 	virtual void ShowOutputOnMainThread();
 	void ToggleOutputVisible();
 	virtual void SizeContentWindows() = 0;
@@ -1127,6 +1125,8 @@ public:
 	// WorkerListener
 	void PostOnMainThread(int cmd, Worker *pWorker) override = 0;
 	virtual void WorkerCommand(int cmd, Worker *pWorker);
+	void OutputAppendString(std::string_view s);
+	void SetOutputVisibility(bool show);
 };
 
 const char *LineEndString(SA::EndOfLine eolMode) noexcept;

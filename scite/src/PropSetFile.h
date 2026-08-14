@@ -46,6 +46,11 @@ public:
 	[[nodiscard]] intptr_t GetInteger(std::string_view key, intptr_t defaultValue=0) const;
 	[[nodiscard]] long long GetLongLong(std::string_view key, long long defaultValue=0) const;
 
+	template <typename T>
+	[[nodiscard]] T GetEnum(std::string_view key, T defaultValue) const {
+			return static_cast<T>(GetInt(key, static_cast<int>(defaultValue)));
+	}
+
 	enum class ReadLineState { active, excludedModule, conditionFalse };
 	ReadLineState ReadLine(const std::string &lineBuffer, ReadLineState rls, const FilePath &directoryForImports, const ImportFilter &filter,
 			       FilePathSet *imports, size_t depth);

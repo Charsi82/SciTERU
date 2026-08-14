@@ -945,11 +945,11 @@ void SciTEBase::ReadProperties() {
 
 	props.SetPath("AbbrevPath", pathAbbreviations);
 
-	const SA::Technology tech = static_cast<SA::Technology>(props.GetInt("technology"));
+	const SA::Technology tech = props.GetEnum("technology", SA::Technology::Default);
 	wEditor.SetTechnology(tech);
 	wOutput.SetTechnology(tech);
 
-	const SA::Bidirectional bidirectional = static_cast<SA::Bidirectional>(props.GetInt("bidirectional"));
+	const SA::Bidirectional bidirectional = props.GetEnum("bidirectional", SA::Bidirectional::Disabled);
 	wEditor.SetBidirectional(bidirectional);
 	wOutput.SetBidirectional(bidirectional);
 
@@ -965,7 +965,7 @@ void SciTEBase::ReadProperties() {
 	const int outputCodePage = props.GetInt("output.code.page", codePage);
 	wOutput.SetCodePage(outputCodePage);
 
-	characterSet = static_cast<SA::CharacterSet>(props.GetInt("character.set", static_cast<int>(SA::CharacterSet::Default)));
+	characterSet = props.GetEnum("character.set", SA::CharacterSet::Default);
 
 	SetRepresentations();
 
@@ -983,11 +983,11 @@ void SciTEBase::ReadProperties() {
 	}
 	imeAutoComplete = props.GetInt("ime.autocomplete", 0) == 1;
 
-	const SA::Accessibility accessibility = static_cast<SA::Accessibility>(props.GetInt("accessibility", 1));
+	const SA::Accessibility accessibility = props.GetEnum("accessibility", SA::Accessibility::Enabled);
 	wEditor.SetAccessibility(accessibility);
 	wOutput.SetAccessibility(accessibility);
 
-	wrapStyle = static_cast<SA::Wrap>(props.GetInt("wrap.style", static_cast<int>(SA::Wrap::Word)));
+	wrapStyle = props.GetEnum("wrap.style", SA::Wrap::Word);
 
 	CallChildren(SA::Message::SetMouseSelectionRectangularSwitch, props.GetInt("selection.rectangular.switch.mouse", 0));
 	CallChildren(SA::Message::SetMultipleSelection, props.GetInt("selection.multiple", 1));
@@ -1013,7 +1013,7 @@ void SciTEBase::ReadProperties() {
 	SetElementColour(SA::Element::Caret, "caret.fore");
 	SetElementColour(SA::Element::CaretAdditional, "caret.additional.fore");
 
-	const SA::CaretStyle caretStyle = static_cast<SA::CaretStyle>(props.GetInt("caret.style", static_cast<int>(SA::CaretStyle::Line)));
+	const SA::CaretStyle caretStyle = props.GetEnum("caret.style", SA::CaretStyle::Line);
 	wEditor.SetCaretStyle(caretStyle);
 	wOutput.SetCaretStyle(caretStyle);
 
@@ -1044,7 +1044,7 @@ void SciTEBase::ReadProperties() {
 			wEditor.SetCaretLineVisible(false);
 		}
 		wEditor.SetCaretLineBackAlpha(
-			static_cast<SA::Alpha>(props.GetInt("caret.line.back.alpha", static_cast<int>(SA::Alpha::NoAlpha))));
+			props.GetEnum("caret.line.back.alpha", SA::Alpha::NoAlpha));
 	} else {
 		// New scheme
 		const int layer = IntegerFromString(caretLineLayer, 0);
@@ -1063,12 +1063,10 @@ void SciTEBase::ReadProperties() {
 	if (!outputCaretLineBack.empty()) {
 		wOutput.SetCaretLineVisible(true);
 		wOutput.SetCaretLineBack(ColourFromString(outputCaretLineBack));
-	}
-	else {
+	} else {
 		wOutput.SetCaretLineVisible(false);
 	}
-	wOutput.SetCaretLineBackAlpha(
-		static_cast<SA::Alpha>(props.GetInt("output.caret.line.back.alpha", static_cast<int>(SA::Alpha::NoAlpha))));
+	wOutput.SetCaretLineBackAlpha(props.GetEnum("output.caret.line.back.alpha", SA::Alpha::NoAlpha));
 	//!-end-[output.caret]
 #endif // RB_OUTCARET
 
@@ -1078,7 +1076,7 @@ void SciTEBase::ReadProperties() {
 	alphaIndicator = static_cast<SA::Alpha>(indicatorsAlpha);
 	underIndicator = props.GetInt("indicators.under", 0) == 1;
 
-	closeFind = static_cast<CloseFind>(props.GetInt("find.close.on.find", 1));
+	closeFind = props.GetEnum("find.close.on.find", CloseFind::closeAlways);
 
 	const std::string controlCharSymbol = props.GetString("control.char.symbol");
 	if (!controlCharSymbol.empty()) {
@@ -1128,8 +1126,7 @@ void SciTEBase::ReadProperties() {
 	wEditor.SetVisiblePolicy(static_cast<SA::VisiblePolicy>(visiblePolicy), visibleLines);
 
 	wEditor.SetEdgeColumn(props.GetInt("edge.column", 0));
-	wEditor.SetEdgeMode(static_cast<SA::EdgeVisualStyle>(
-				    props.GetInt("edge.mode", static_cast<int>(SA::EdgeVisualStyle::None))));
+	wEditor.SetEdgeMode(props.GetEnum("edge.mode", SA::EdgeVisualStyle::None));
 	wEditor.SetEdgeColour(
 		ColourOfProperty(props, "edge.colour", ColourRGB(0xff, 0xda, 0xda)));
 
@@ -1243,7 +1240,7 @@ void SciTEBase::ReadProperties() {
 	const int autoCChooseSingle = props.GetInt("autocomplete.choose.single");
 	wEditor.AutoCSetChooseSingle(autoCChooseSingle);
 
-	const Scintilla::MultiAutoComplete autoCMulti = static_cast<Scintilla::MultiAutoComplete>(props.GetInt("autocomplete.multi"));
+	const Scintilla::MultiAutoComplete autoCMulti = props.GetEnum("autocomplete.multi", SA::MultiAutoComplete::Once);
 	wEditor.AutoCSetMulti(autoCMulti);
 
 	wEditor.AutoCSetCancelAtStart(false);
@@ -1261,7 +1258,7 @@ void SciTEBase::ReadProperties() {
 	ReadFontProperties();
 
 	wEditor.SetPrintMagnification(props.GetInt("print.magnification"));
-	wEditor.SetPrintColourMode(static_cast<SA::PrintOption>(props.GetInt("print.colour.mode")));
+	wEditor.SetPrintColourMode(props.GetEnum("print.colour.mode", SA::PrintOption::Normal));
 
 	jobQueue.clearBeforeExecute = props.GetInt("clear.before.execute");
 	jobQueue.timeCommands = props.GetInt("time.commands");
@@ -1285,19 +1282,21 @@ void SciTEBase::ReadProperties() {
 
 	SetLineNumberWidth();
 
+	const SA::CursorShape marginCursor = props.GetEnum("margin.cursor", SA::CursorShape::ReverseArrow);
+	for (int m=0; m<3; m++) {
+		wEditor.SetMarginCursorN(m, marginCursor);
+	}
+
 	bufferedDraw = props.GetInt("buffered.draw");
 	wEditor.SetBufferedDraw(bufferedDraw);
 	wOutput.SetBufferedDraw(bufferedDraw);
 
-	const SA::PhasesDraw phasesDraw = static_cast<SA::PhasesDraw>(
-			props.GetInt("phases.draw", static_cast<int>(SA::PhasesDraw::Two)));
+	const SA::PhasesDraw phasesDraw = props.GetEnum("phases.draw", SA::PhasesDraw::Two);
 	wEditor.SetPhasesDraw(phasesDraw);
 	wOutput.SetPhasesDraw(phasesDraw);
 
-	wEditor.SetLayoutCache(static_cast<SA::LineCache>(
-				       props.GetInt("cache.layout", static_cast<int>(SA::LineCache::Caret))));
-	wOutput.SetLayoutCache(static_cast<SA::LineCache>(
-				       props.GetInt("output.cache.layout", static_cast<int>(SA::LineCache::Caret))));
+	wEditor.SetLayoutCache(props.GetEnum("cache.layout", SA::LineCache::Caret));
+	wOutput.SetLayoutCache(props.GetEnum("output.cache.layout", SA::LineCache::Caret));
 
 	wEditor.SetLayoutThreads(props.GetInt("threads.layout", 1));
 
@@ -1373,14 +1372,14 @@ void SciTEBase::ReadProperties() {
 	const std::vector<std::string> fileSets = StringSplit(props.GetNewExpandString("find.files"), '|');
 	memFiles.AppendList(fileSets);
 
-	wEditor.SetWrapVisualFlags(static_cast<SA::WrapVisualFlag>(props.GetInt("wrap.visual.flags")));
-	wEditor.SetWrapVisualFlagsLocation(static_cast<SA::WrapVisualLocation>(props.GetInt("wrap.visual.flags.location")));
+	wEditor.SetWrapVisualFlags(props.GetEnum("wrap.visual.flags", SA::WrapVisualFlag::None));
+	wEditor.SetWrapVisualFlagsLocation(props.GetEnum("wrap.visual.flags.location", SA::WrapVisualLocation::Default));
 	wEditor.SetWrapStartIndent(props.GetInt("wrap.visual.startindent"));
-	wEditor.SetWrapIndentMode(static_cast<SA::WrapIndentMode>(props.GetInt("wrap.indent.mode")));
+	wEditor.SetWrapIndentMode(props.GetEnum("wrap.indent.mode", SA::WrapIndentMode::Fixed));
 
-	idleStyling = static_cast<SA::IdleStyling>(props.GetInt("idle.styling", static_cast<int>(SA::IdleStyling::None)));
+	idleStyling = props.GetEnum("idle.styling", SA::IdleStyling::None);
 	wEditor.SetIdleStyling(idleStyling);
-	wOutput.SetIdleStyling(static_cast<SA::IdleStyling>(props.GetInt("output.idle.styling", static_cast<int>(SA::IdleStyling::None))));
+	wOutput.SetIdleStyling(props.GetEnum("output.idle.styling", SA::IdleStyling::None));
 
 	if (props.GetInt("os.x.home.end.keys")) {
 		AssignKey(SA::Keys::Home, SA::KeyMod::Norm, SCI_SCROLLTOSTART);
@@ -1428,7 +1427,7 @@ void SciTEBase::ReadProperties() {
 	SetToolBar();//!-add-[user.toolbar]
 #endif // RB_UT
 
-	wEditor.SetFoldFlags(static_cast<SA::FoldFlag>(props.GetInt("fold.flags")));
+	wEditor.SetFoldFlags(props.GetEnum("fold.flags", SA::FoldFlag::None));
 
 	// To put the folder markers in the line number region
 	//wEditor.SetMarginMaskN(0, SC_MASK_FOLDERS);
@@ -1451,8 +1450,8 @@ void SciTEBase::ReadProperties() {
 		// insert and delete events.
 	}
 
-	const SA::UndoSelectionHistoryOption undoSelectionHistory = static_cast<SA::UndoSelectionHistoryOption>(
-		props.GetInt("undo.selection.history", 1));
+	const SA::UndoSelectionHistoryOption undoSelectionHistory =
+		props.GetEnum("undo.selection.history", SA::UndoSelectionHistoryOption::Enabled);
 	wEditor.SetUndoSelectionHistory(undoSelectionHistory);
 	wOutput.SetUndoSelectionHistory(undoSelectionHistory);
 
@@ -1577,8 +1576,7 @@ void SciTEBase::ReadProperties() {
 			      ColourAlphaOfProperty(props, "bookmark.fore", ColourRGBA(0xbe, 0, 0)));
 	wEditor.MarkerSetBackTranslucent(markerBookmark,
 			      ColourAlphaOfProperty(props, "bookmark.back", ColourRGBA(0xe2, 0x40, 0x40)));
-	wEditor.MarkerSetAlpha(markerBookmark,
-			       static_cast<SA::Alpha>(props.GetInt("bookmark.alpha", static_cast<int>(SA::Alpha::NoAlpha))));
+	wEditor.MarkerSetAlpha(markerBookmark, props.GetEnum("bookmark.alpha", SA::Alpha::NoAlpha));
 	wEditor.MarkerSetStrokeWidth(markerBookmark, props.GetInt("bookmark.stroke.width", 100));
 
 	const std::string bookMarkXPM = props.GetString("bookmark.pixmap");
@@ -1608,7 +1606,7 @@ void SciTEBase::ReadProperties() {
 	wOutput.SetHScrollBar(props.GetInt("output.horizontal.scrollbar", 1));
 
 	wEditor.SetEndAtLastLine(props.GetInt("end.at.last.line", 1));
-	wEditor.SetCaretSticky(static_cast<SA::CaretSticky>(props.GetInt("caret.sticky", 0)));
+	wEditor.SetCaretSticky(props.GetEnum("caret.sticky", SA::CaretSticky::Off));
 
 	// Clear all previous indicators.
 	wEditor.SetIndicatorCurrent(indicatorHighlightCurrentWord);
@@ -1830,7 +1828,7 @@ void SciTEBase::ReadFontProperties() {
 	// Set styles
 	// For each window set the global default style, then the language default style, then the other global styles, then the other language styles
 
-	const SA::FontQuality fontQuality = static_cast<SA::FontQuality>(props.GetInt("font.quality"));
+	const SA::FontQuality fontQuality = props.GetEnum("font.quality", SA::FontQuality::QualityDefault);
 	wEditor.SetFontQuality(fontQuality);
 	wOutput.SetFontQuality(fontQuality);
 

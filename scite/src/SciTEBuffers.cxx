@@ -287,7 +287,7 @@ void BufferList::RemoveCurrent() {
 
 #ifdef RB_ZSOC
 		//!-start-[ZorderSwitchingOnClose]
-		if (SciTEBase::GetProps()->GetInt("buffers.zorder.switching", 0)) {
+		if (SciTEBase::GetProps()->GetInt("buffers.zorder.switching")) {
 			SetCurrent(stack[stackcurrent]);
 		}
 		//!-end-[ZorderSwitchingOnClose]
