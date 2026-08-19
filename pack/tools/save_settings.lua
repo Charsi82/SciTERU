@@ -29,7 +29,7 @@ end
 local function SaveSettings()
 	local file = props["scite.userhome"]..'\\SciTE.session'
 	if not pcall(io.input, file) then return end
-	text = io.read('*a')
+	text = io.read('a')
 	
 	local ini_file = props["scite.userhome"]..'\\props_settings.ini'
 	local ini = gui.ini_file(ini_file)

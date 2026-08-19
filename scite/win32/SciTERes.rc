@@ -175,12 +175,13 @@ BEGIN
 	MENUITEM "Open Lua Startup Scr&ipt", 		IDM_OPENLUAEXTERNALFILE
 	MENUITEM SEPARATOR
 	
-#ifdef RB_UserPropertiesFilesSubmenu
+#ifdef RB_UserPropertiesFilesSubmenu1
 //!-start-[UserPropertiesFilesSubmenu]
-	POPUP "&Edit Properties"
-	BEGIN
-		MENUITEM SEPARATOR
-	END
+//! удалено - добавляем в коде без сепаратора
+	//POPUP "&Edit Properties"
+	//BEGIN
+	//	MENUITEM SEPARATOR
+	//END
 //!-end-[UserPropertiesFilesSubmenu]
 #endif // RB_UserPropertiesFilesSubmenu
 

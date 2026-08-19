@@ -50,12 +50,16 @@ end
 
 -- Добавляем свой обработчик события OnSwitchFile
 AddEventHandler("OnSwitchFile", function(file)
-	SetReadOnly(editor.ReadOnly)
+	if file ~= '' then
+		SetReadOnly(editor.ReadOnly)
+	end
 end)
 
 -- Добавляем свой обработчик события OnOpen
 AddEventHandler("OnOpen", function(file)
-	SetReadOnly(editor.ReadOnly)
+	if file ~= '' then
+		SetReadOnly(editor.ReadOnly)
+	end
 end)
 
 -- Добавляем свой обработчик события, возникающего при вызове пункта меню "Read-Only"

@@ -445,7 +445,7 @@ function MacroLoadFromFile(filename)
   local fl = io.open(filename)
   if fl ~= nil then
     fl:seek("set")
-    macro_load(fl:read("*a"))
+    macro_load(fl:read("a"))
     fl:close()
   end
   is_load_from_file = false

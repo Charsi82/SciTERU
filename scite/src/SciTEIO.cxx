@@ -997,7 +997,9 @@ void SciTEBase::CheckReload() {
 			CurrentBuffer()->fileModTime = 0;
 			CurrentBuffer()->fileModLastAsk = 0;
 			CurrentBuffer()->isDirty = true;
+#ifndef RB_EDDC // disabled becase call from SetBuffersMenu()
 			CheckMenus();
+#endif
 			SetWindowName();
 			SetBuffersMenu();
 #ifdef RB_CFE

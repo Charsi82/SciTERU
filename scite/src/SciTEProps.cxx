@@ -81,12 +81,28 @@ void SciTEBase::SetImportMenu() {
 		DestroyMenuItem(menuOptions, importCmdID + i);
 	}
 	if (!importFiles.empty()) {
+#ifdef RB_UserPropertiesFilesSubmenu
+		std::sort(importFiles.begin(), importFiles.end(), [](const auto& a, const auto& b) {
+			auto get_group = [](const std::wstring& s) -> int {
+				int ret = 0; // A -> a -> A/ -> a/
+				if (s.find(L'/') != std::wstring::npos) ret += 2;
+				auto first = s.front();
+				if (first >= L'a' && first <= L'z') ret++;
+				return ret;
+				};
+			int ga = get_group(a.Name().AsText());
+			int gb = get_group(b.Name().AsText());
+			if (ga != gb) return ga < gb;
+			return a < b;
+			});
+#endif
 		for (int stackPos = 0; stackPos < static_cast<int>(importFiles.size()) && stackPos < importMax; stackPos++) {
 			const int itemID = importCmdID + stackPos;
 			if (importFiles[stackPos].IsSet()) {
 				GUI::gui_string entry = localiser.Text("Open");
 				entry += GUI_TEXT(" ");
 				entry += importFiles[stackPos].Name().AsText();
+				Substitute(entry, L"/", L"\\");
 				SetMenuItem(menuOptions, IMPORT_START + stackPos, itemID, entry.c_str());
 			}
 		}

@@ -842,9 +842,6 @@
     <ResourceCompile Include="..\win32\SciTERes.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Win32\SciBall.ico" />
-  </ItemGroup>
-  <ItemGroup>
     <Filter Include="lexers">
       <UniqueIdentifier>{833cbf6a-dae4-42e3-8736-17e59c6ab5fe}</UniqueIdentifier>
     </Filter>
@@ -854,5 +851,18 @@
     <Filter Include="scintilla">
       <UniqueIdentifier>{037cd6f4-2089-474c-8a5b-00a17a18606e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="images">
+      <UniqueIdentifier>{5ff97aad-f926-44b6-9e3c-4c7d068cb51a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Busy.ico">
+      <Filter>images</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Win32\SciBall.ico">
+      <Filter>images</Filter>
+    </None>
   </ItemGroup>
 </Project>

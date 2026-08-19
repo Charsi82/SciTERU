@@ -360,23 +360,23 @@ tree:add_item("qwerty3", nil, 1)]]
 	
 	------ radio buttons ------
 	
-	local rbtn = tab4:add_radiobutton("radio_11") -- caption, id, stop
+	local rbtn = tab4:add_radiobutton("radio_11") -- caption, stop
 	local RadioBtn1_ID = rbtn:get_ctrl_id()
 	rbtn:position(550, 390)
 	rbtn:check(1)
 	callbacks[RadioBtn1_ID] = function(state) label_text:set_text('radio_11_clicked') end
 
-	local rbtn2 = tab4:add_radiobutton("radio_12", true) -- caption, id, stop
+	local rbtn2 = tab4:add_radiobutton("radio_12", true) -- caption, stop
 	local RadioBtn2_ID = rbtn2:get_ctrl_id()
 	rbtn2:position(550 + 5 + rbtn:size(), 390)
 	callbacks[RadioBtn2_ID] = function(state) label_text:set_text('radio_12_clicked') end
 	
-	local rbtn = tab4:add_radiobutton("radio_21") -- caption, id, stop
+	local rbtn = tab4:add_radiobutton("radio_21") -- caption, stop
 	local RadioBtn3_ID = rbtn:get_ctrl_id()
 	rbtn:position(550, 410)
 	callbacks[RadioBtn3_ID] = function(state) label_text:set_text('radio_21_clicked') end
 
-	local rbtn2 = tab4:add_radiobutton("radio_22", true) -- caption, id, stop
+	local rbtn2 = tab4:add_radiobutton("radio_22", true) -- caption, stop
 	local RadioBtn4_ID = rbtn2:get_ctrl_id()
 	rbtn2:check(1)
 	rbtn2:position(550 + 5 + rbtn:size(), 410)

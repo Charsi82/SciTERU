@@ -11,7 +11,7 @@
 local file = props["SciteDefaultHome"].."\\languages\\cpp.properties"
 local classic = 'import languages\\cpp_style_classic'
 io.input(file)
-local text = io.read('*a')
+local text = io.read('a')
 local find = string.find(text, '#'..classic)
 if find == nil then
 	text = string.gsub(text, classic, '#'..classic)

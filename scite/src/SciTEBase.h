@@ -936,18 +936,16 @@ protected:
 
 	virtual void CheckMenus();
 	
-#ifndef RB_ExtContextMenu
-	//!-remove-[ExtendedContextMenu]
-	virtual void AddToPopUp(const char *label, int cmd = 0, bool enabled = true) = 0;
-#else
+#ifdef RB_ExtContextMenu
 	//!-start-[ExtendedContextMenu]
 	int IsMenuItemEnabled(int cmd);
-	//void GenerateMenu(MenuEx* subMenu, const char*& userContextItem,
-	//	const char*& endDefinition, int& item, bool& isAdded, int parent = 0); 
 	void GenerateMenu(std::vector<MenuEx>& subMenu, const char*& userContextItem,
 		const char*& endDefinition, int& item, bool& isAdded, int parent = 0);
-	bool GenerateMenuFrom(std::vector<MenuEx>& subMenu, std::string& data);
+	bool GenerateMenuFrom(std::vector<MenuEx>& subMenu, std::string data);
 	//!-end-[ExtendedContextMenu]
+#else
+	//!-remove-[ExtendedContextMenu]
+	virtual void AddToPopUp(const char *label, int cmd = 0, bool enabled = true) = 0;
 #endif // RB_ExtContextMenu
 
 #ifdef RB_SUBMENU

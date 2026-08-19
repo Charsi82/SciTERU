@@ -548,13 +548,10 @@ void SciTEBase::WorkerCommand(int cmd, Worker *pWorker) {
 #ifdef RB_SE
 //!-start-[SaveEnabled]
 void SciTEBase::CheckMenusSave() {
-	bool bSaveAllEnabled = false;
-	for (int i = 0; i < buffers.length; i++) {
-		if (buffers.buffers[i].DocumentNotSaved()) {
-			bSaveAllEnabled = true;
-			break;
-		}
-	}
+	const bool bSaveAllEnabled = std::any_of(
+		buffers.buffers.begin(),
+		buffers.buffers.end(),
+		[](const auto& doc) { return doc.DocumentNotSaved(); });
 	EnableAMenuItem(IDM_SAVEALL, bSaveAllEnabled);
 	if (!CurrentBuffer()->ShouldNotSave() && !CurrentBuffer()->pFileWorker)
 		EnableAMenuItem(IDM_SAVE, CurrentBuffer()->DocumentNotSaved());
@@ -3914,7 +3911,9 @@ void SciTEBase::MenuCommand(int cmdID, int source) {
 		CurrentBuffer()->isReadOnly = !CurrentBuffer()->isReadOnly;
 		wEditor.SetReadOnly(CurrentBuffer()->isReadOnly);
 		UpdateStatusBar(true);
+#ifndef RB_EDDC // disabled becase call from SetBuffersMenu()
 		CheckMenus();
+#endif
 		SetBuffersMenu();
 		SetWindowName();
 		break;
@@ -4522,7 +4521,9 @@ void SciTEBase::Notify(SCNotification *notification) {
 				CurrentBuffer()->isDirty = false;
 			}
 		}
+#ifndef RB_EDDC // disabled becase call from SetBuffersMenu()
 		CheckMenus();
+#endif
 		SetWindowName();
 		SetBuffersMenu();
 		break;
@@ -4536,7 +4537,9 @@ void SciTEBase::Notify(SCNotification *notification) {
 				jobQueue.isBuilt = false;
 			}
 		}
+#ifndef RB_EDDC // disabled becase call from SetBuffersMenu()
 		CheckMenus();
+#endif
 		SetWindowName();
 		SetBuffersMenu();
 		break;
@@ -4800,7 +4803,7 @@ void SciTEBase::CheckMenus() {
 	{
 		for (size_t item = 0; item < languageMenu.size(); item++)
 		{
-			if (languageMenu[item].menuItem[0] == '#') continue;
+			//if (languageMenu[item].menuItem[0] == '#') continue;	 //?
 			const int itemID = IDM_LANGUAGE + static_cast<int>(item);
 			CheckAMenuItem(itemID, false);
 			const std::string fn = "x." + languageMenu[item].extension;
@@ -4829,11 +4832,10 @@ void SciTEBase::ContextMenu(GUI::ScintillaWindow& wSource, GUI::Point pt, GUI::P
 	}
 	else {
 		userContextMenu = props.GetNewExpandString("user.context.menu.", ExtensionFileName());
-		if (userContextMenu.empty()) userContextMenu = props.GetNewExpandString("user.context.menu");
+		if (userContextMenu.empty())
+			userContextMenu = props.GetNewExpandString("user.context.menu");
 	}
-	bool isAdded = GenerateMenuFrom(subMenu, userContextMenu);
-
-	if (!isAdded) {
+	if (!GenerateMenuFrom(subMenu, std::move(userContextMenu))) {
 		mnu.Add(localiser.Text("Undo").c_str(), IDM_UNDO, IsMenuItemEnabled(IDM_UNDO));
 		mnu.Add(localiser.Text("Redo").c_str(), IDM_REDO, IsMenuItemEnabled(IDM_REDO));
 		mnu.Add();
@@ -4850,21 +4852,17 @@ void SciTEBase::ContextMenu(GUI::ScintillaWindow& wSource, GUI::Point pt, GUI::P
 		}
 		else {
 			mnu.Add(localiser.Text("Close").c_str(), IDM_CLOSE, IsMenuItemEnabled(IDM_CLOSE));
-}
+		}
 	}
-
 	mnu.Show(pt, wCmd);
 }
 
-#define CallFocused(P) PaneFocused().Call(reinterpret_cast<SA::Message>(P),0,0)
-
 int SciTEBase::IsMenuItemEnabled(int cmd) {
+	auto CallFocused = [this](SA::Message P) { return PaneFocused().Call(P); };
 	switch (cmd)
 	{
 	case IDM_DROPSELECTION:
 	{
-		//return ((contextSelection >= 0) && (PaneFocused().SelectionMode() == SA::SelectionMode::Stream)) ? 1 : 0;
-		//return (PaneFocused().Selections() > 1 && PaneFocused().SelectionMode() == SA::SelectionMode::Stream) ? 1 : 0;
 		return (PaneFocused().Selections() > 1) ? 1 : 0;
 	}
 	case IDM_SAVEALL:
@@ -4926,6 +4924,9 @@ int SciTEBase::IsMenuItemEnabled(int cmd) {
 	case IDM_MACRORECORD:
 		return recording ? 0 : 1;
 		break;
+	case IDM_SPLITVERTICAL:
+		return splitVertical ? 2 : 1;
+		break;
 	case IDM_MACROSTOPRECORD:
 		return recording ? 1 : 0;
 		break;
@@ -4939,8 +4940,7 @@ int SciTEBase::IsMenuItemEnabled(int cmd) {
 	return 1;
 }
 
-
-bool SciTEBase::GenerateMenuFrom(std::vector<MenuEx>& subMenu, std::string& DataContextMenu)
+bool SciTEBase::GenerateMenuFrom(std::vector<MenuEx>& subMenu, std::string DataContextMenu)
 {
 	bool isAdded = false;
 	int item = 0;
@@ -4954,20 +4954,22 @@ bool SciTEBase::GenerateMenuFrom(std::vector<MenuEx>& subMenu, std::string& Data
 void SciTEBase::GenerateMenu(std::vector<MenuEx>& subMenu, const char*& userContextItem,
 	const char*& endDefinition, int& item, bool& isAdded, int parent)
 {
+	static constexpr std::string_view svPopupBegin = "POPUPBEGIN";
+	static constexpr std::string_view svPopupEnd = "POPUPEND";
 	while (userContextItem < endDefinition) {
 		const char* caption = userContextItem;
 		userContextItem += strlen(userContextItem) + 1;
 		if (userContextItem < endDefinition) {
-			if (strcmp(userContextItem, "POPUPBEGIN") == 0) {
-				userContextItem += strlen(userContextItem) + 1;
+			if (svPopupBegin == userContextItem) {
+				userContextItem += std::size(svPopupBegin) + 1;
 				item++;
-				MenuEx& mnu = subMenu.emplace_back(MenuEx{});
+				MenuEx& mnu = subMenu.emplace_back();
 				mnu.CreatePopUp();
 				subMenu[parent].AddSubMenu(localiser.Text(caption), mnu);
 				GenerateMenu(subMenu, userContextItem, endDefinition, item, isAdded, item);
 			}
-			else if (strcmp(userContextItem, "POPUPEND") == 0) {
-				userContextItem += strlen(userContextItem) + 1;
+			else if (svPopupEnd == userContextItem) {
+				userContextItem += std::size(svPopupEnd) + 1;
 				break;
 			}
 			else {

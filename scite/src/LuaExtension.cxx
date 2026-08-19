@@ -401,14 +401,14 @@ int cf_scite_menu_command(lua_State *L) {
 		return pos;
 	}
 
-	inline void str_replace(GUI::gui_string& str, GUI::gui_string f, GUI::gui_string r) {
-		GUI::gui_string::size_type pos = 0;
-		while (((pos = str.find(f, pos)) != GUI::gui_string::npos) && (pos < str.length()))
-		{
-			str.replace(pos, f.length(), r);
-			pos += r.length();
-		}
-	}
+	//inline void str_replace(GUI::gui_string& str, GUI::gui_string f, GUI::gui_string r) {
+	//	GUI::gui_string::size_type pos = 0;
+	//	while (((pos = str.find(f, pos)) != GUI::gui_string::npos) && (pos < str.length()))
+	//	{
+	//		str.replace(pos, f.length(), r);
+	//		pos += r.length();
+	//	}
+	//}
 
 	int cf_editor_insert_abbrev(lua_State* L) {
 		GUI::gui_string s = GUI::StringFromUTF8(luaL_checkstring(L, 1));
@@ -449,7 +449,8 @@ int cf_scite_menu_command(lua_State *L) {
 						if (!val.empty())
 							r = GUI::StringFromUTF8(val);
 					}
-					str_replace(r, GUI_TEXT("\\"), GUI_TEXT("\\\\")); //TODO> Must be "Slash" from StringHelper.cxx
+					//str_replace(r, GUI_TEXT("\\"), GUI_TEXT("\\\\")); //TODO> Must be "Slash" from StringHelper.cxx
+					Substitute(r, L"\\", L"\\\\");
 					s.replace(spos, epos - spos + 1, r);
 					epos = spos + r.length();
 				}
@@ -2113,7 +2114,6 @@ bool LuaExtension::OnOpen(const char *filename) {
 	}
 	//!-end-[StartupScriptReload]
 #endif // RB_SSR
-
 	return CallNamedFunction("OnOpen", filename);
 }
 

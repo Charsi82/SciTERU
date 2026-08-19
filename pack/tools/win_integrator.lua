@@ -90,14 +90,13 @@ local grbox3 = panel_3:add_groupbox(' Интеграция в Windows: ')
 grbox3:position(5, 5)
 grbox3:size(wnd_w - 30, 90)
 
--- local RadioBtn1 = wnd:add_radiobutton("Английский", RadioBtn1_ID, true) -- caption, id, auto
-local RadioBtn1 = panel_lang:add_radiobutton("Английский", true) -- caption, id, auto
+local RadioBtn1 = panel_lang:add_radiobutton("Английский") -- caption, opt_stop_group
 local RadioBtn1_ID = RadioBtn1:get_ctrl_id()
 RadioBtn1:position(20, 20)
 callbacks[RadioBtn1_ID] = function() SetLang('eng') end
-local RadioBtn1_tt = panel_lang:add_tooltip(RadioBtn1_ID) -- CtrlID[, bBaloonStyle = false]
+local RadioBtn1_tt = panel_lang:add_tooltip(RadioBtn1_ID)
 
-local RadioBtn2 = panel_lang:add_radiobutton("Русский", true) -- caption, id, auto
+local RadioBtn2 = panel_lang:add_radiobutton("Русский", true) -- caption, opt_stop_group
 local RadioBtn2_ID = RadioBtn2:get_ctrl_id()
 RadioBtn2:position(155, 20)
 callbacks[RadioBtn2_ID] = function() SetLang('ru') end
@@ -121,7 +120,7 @@ local label1 = panel_expl:add_label(0, "Связать файлы заданны
 label1:position(15, cb3_posy - 25)
 label1:size(200, 20)
 
-local cbbox = panel_expl:add_combobox( 0 -- id, style
+local cbbox = panel_expl:add_combobox( 0 --style
 + 0x0002 + 0x0040 + 0x0100)
 local ComboBox1_ID = cbbox:get_ctrl_id()
 -- wnd:add(cbbox, "none")
@@ -144,7 +143,7 @@ local function RegSessionPath()
 	regwrite("HKCR\\Applications\\SCITE.EXE\\shell\\edit\\command\\", '', props['SciteDefaultHome'] .. '\\SciTE.exe "%1"')
 end
 
--- при закрытии окна принудительно обновляем записи реестра с путями, т.к. они путь к папке с программой мог измениться
+-- при закрытии окна принудительно обновляем записи реестра с путями, т.к. путь к папке с программой мог измениться
 local function ApplyAssociations()
 	regwrite("HKCR\\SciTE.File", '', "SciTE file")
 	regwrite("HKCR\\SciTE.File\\DefaultIcon", '', props["SciteDefaultHome"] .. "\\SciTE.exe,1")

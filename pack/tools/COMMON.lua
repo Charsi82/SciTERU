@@ -284,7 +284,7 @@ function os_copy(source_path, dest_path)
 	----------------------------------------------
 	return with_open_file(source_path, "rb")(function(source)
 		return with_open_file(dest_path, "wb")(function(dest)
-			assert(dest:write(assert(source:read("*a"))))
+			assert(dest:write(assert(source:read("a"))))
 			return true
 		end)
 	end)]]
@@ -387,6 +387,7 @@ AddEventHandler("OnMenuCommand", function(msg, source)
 end)
 
 function run_script(path)
+	local print_time = (tonumber(props['time.commands']) or 0) ~= 0
 	local secs = tonumber(props['lua.runtime.quota']) or 0
 	if secs > 0 then
 		local st = os.clock()
@@ -398,9 +399,13 @@ function run_script(path)
 		end
 		debug.sethook(check, '', 100000)
 	end
+	local command_time = os.clock()
 	local res, err = pcall(dofile, path)
 	if not res then print(err) end
 	if secs > 0 then debug.sethook() end
+	if print_time then
+		print(string.format("Time: %.2f ms", (os.clock() - command_time)*1000 ))
+	end
 end
 
 function PathCollapse(s) return (s:gsub(props['SciteDefaultHome'], "$SciteDefaultHome", 1)) end

@@ -314,6 +314,7 @@ void BufferList::SetCurrent(BufferIndex index) noexcept {
 	current = index;
 #ifdef RB_BUFFNUMBER
 	SciTEBase::GetProps()->Set("BufferNumber", std::to_string(current + 1)); //!-add-[BufferNumber]
+	SciTEBase::GetProps()->Set("BuffersCount", std::to_string(length)); //!-add-[BufferNumber]
 #endif // RB_BUFFNUMBER
 
 }
@@ -530,7 +531,9 @@ void SciTEBase::SetDocumentAt(BufferIndex index, bool updateStack) {
 	}
 
 	SetBuffersMenu();
+#ifndef RB_EDDC // disabled becase call from SetBuffersMenu()
 	CheckMenus();
+#endif
 	UpdateStatusBar(true);
 
 	if (extender) {
@@ -1696,6 +1699,7 @@ void SciTEBase::SetToolsMenu() {
 	arrMenu[0].RemoveItems(IDM_MACRO_SEP, IDM_MACROLIST);
 
 	// menu creation
+	bool skip_first_sep = true;
 	for (items = 0; items < toolMax; items++) {
 		int itemID = IDM_TOOLS + items;
 		const std::string sCmdID = StdStringFromInteger(items);
@@ -1718,10 +1722,11 @@ void SciTEBase::SetToolsMenu() {
 			val = props.GetNewExpandString(prefix, sFNE);
 			int ischecked = IntegerFromString(val, 0);
 			if (toMenu > 0 && toMenu < toolMax) {
-				if (arrMenu[toMenu].GetID() == 0)
+				if (!arrMenu[toMenu].GetID())
 					arrMenu[toMenu].CreatePopUp();
-				if (issep)
+				if (issep && !skip_first_sep)
 					arrMenu[toMenu].Add();
+				skip_first_sep = false;
 				arrMenu[toMenu].Add(lsMenuItem.c_str(), itemID, 1 + ischecked, sMnemonic.c_str());
 			}
 			else {

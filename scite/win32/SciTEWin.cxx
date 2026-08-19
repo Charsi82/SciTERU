@@ -328,8 +328,8 @@ SciTEWin::SciTEWin(Extension *ext) : SciTEBase(ext) {
 
 	hAccTable = ::LoadAcceleratorsW(hInstance, L"ACCELS"); // md
 #ifdef RB_UT
-	hToolbarBitmap = 0; //!-add-[user.toolbar]
-	oldToolbarBitmapID = 0; //!-add-[user.toolbar]
+	hToolbarBitmap = {}; //!-add-[user.toolbar]
+	oldToolbarBitmapID = {}; //!-add-[user.toolbar]
 #endif // RB_UT
 
 	cmdWorker.pSciTE = this;

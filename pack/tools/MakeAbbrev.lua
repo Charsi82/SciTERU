@@ -27,7 +27,7 @@ if key == nil then return end
 local abbrev_file_text = ''
 local abbrev_file = io.open(props["AbbrevPath"])
 if abbrev_file then
-	abbrev_file_text = abbrev_file:read('*a').."\r\n"
+	abbrev_file_text = abbrev_file:read('a').."\r\n"
 	abbrev_file:close()
 end
 

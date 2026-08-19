@@ -513,6 +513,9 @@
   <ItemGroup>
     <Manifest Include="SciTE.exe.manifest" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="Busy.ico" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
