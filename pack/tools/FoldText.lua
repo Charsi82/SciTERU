@@ -137,7 +137,7 @@ end
 local function fold()
 	num_pos = ""
 	local current_level = 0
-	for i = 0, editor.LineCount do
+	for i = 0, editor.LineCount-1 do
 		local new_level = get_level(i)
 		if new_level == nil then
 			set_level(i, current_level, false)
@@ -148,9 +148,11 @@ local function fold()
 	end
 end
 
-AddEventHandler("OnOpen", function(file)
+local function try_fold()
 	if string.find(props['fold.text.ext'], string.lower(props['FileExt']), 1, true) ~= nil then
 		fold()
 	end
-end)
+end
 
+AddEventHandler("OnOpen", try_fold)
+AddEventHandler("OnSave", try_fold)

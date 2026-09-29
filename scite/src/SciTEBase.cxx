@@ -463,8 +463,9 @@ intptr_t SciTEBase::ScintillaWindowEditor::Call(SA::Message msg, uintptr_t wPara
 		case SA::Message::MarkerDelete:
 		case SA::Message::MarkerDeleteAll:
 			return true;
+		default:
+			return false;
 		}
-		return false;
 	};
 
 	auto isNotStringParams = [](SA::Message msg) -> bool
@@ -474,8 +475,9 @@ intptr_t SciTEBase::ScintillaWindowEditor::Call(SA::Message msg, uintptr_t wPara
 		case SA::Message::MarkerAdd:
 		case SA::Message::MarkerDelete:
 			return true;
+		default:
+			return false;
 		}
-		return false;
 	};
 
 	const char* result = nullptr;
@@ -535,7 +537,7 @@ void SciTEBase::WorkerCommand(int cmd, Worker *pWorker) {
 		UpdateProgress(pWorker);
 #ifdef RB_SE
 		CheckMenusSave(); //!-add-[SaveEnabled]
-#endif / RB_SE
+#endif // RB_SE
 		break;
 	case WORK_FILEPROGRESS:
 		UpdateProgress(pWorker);
@@ -628,19 +630,17 @@ GUI::ScintillaWindow &SciTEBase::PaneSource(int destination) noexcept {
 #else	
 		return wEditor;
 #endif // RB_OnSendEditor
-	else if (destination == IDM_RUNWIN)
+	if (destination == IDM_RUNWIN)
 		return wOutput;
-	else
-		return PaneFocused();
+	return PaneFocused();
 }
 
 intptr_t SciTEBase::CallFocusedElseDefault(int defaultValue, SA::Message msg, uintptr_t wParam, intptr_t lParam) {
 	if (wOutput.HasFocus())
 		return wOutput.Call(msg, wParam, lParam);
-	else if (wEditor.HasFocus())
+	if (wEditor.HasFocus())
 		return wEditor.Call(msg, wParam, lParam);
-	else
-		return defaultValue;
+	return defaultValue;
 }
 
 void SciTEBase::CallChildren(SA::Message msg, uintptr_t wParam, intptr_t lParam) {
@@ -1131,7 +1131,8 @@ void SciTEBase::HighlightCurrentWord(bool highlight) {
 	const bool noUserSelection = sel.start == sel.end;
 	std::string sWordToFind = RangeExtendAndGrab(wCurrent, sel,
 				  &SciTEBase::islexerwordcharforsel);
-	if (sWordToFind.empty() || (sWordToFind.find_first_of("\n\r ") != std::string::npos))
+	const std::string_view whitespace("\n\r ", 4);
+	if (sWordToFind.empty() || (sWordToFind.find_first_of(whitespace) != std::string::npos))
 		return; // No highlight when no selection or multi-lines selection.
 	if (noUserSelection && currentWordHighlight.statesOfDelay == CurrentWordHighlight::StatesOfDelay::noDelay) {
 		// Manage delay before highlight when no user selection but there is word at the caret.
@@ -3911,7 +3912,7 @@ void SciTEBase::MenuCommand(int cmdID, int source) {
 		CurrentBuffer()->isReadOnly = !CurrentBuffer()->isReadOnly;
 		wEditor.SetReadOnly(CurrentBuffer()->isReadOnly);
 		UpdateStatusBar(true);
-#ifndef RB_EDDC // disabled becase call from SetBuffersMenu()
+#ifndef RB_EDDC // disabled because call from SetBuffersMenu()
 		CheckMenus();
 #endif
 		SetBuffersMenu();
@@ -4521,7 +4522,7 @@ void SciTEBase::Notify(SCNotification *notification) {
 				CurrentBuffer()->isDirty = false;
 			}
 		}
-#ifndef RB_EDDC // disabled becase call from SetBuffersMenu()
+#ifndef RB_EDDC // disabled because call from SetBuffersMenu()
 		CheckMenus();
 #endif
 		SetWindowName();
@@ -4537,7 +4538,7 @@ void SciTEBase::Notify(SCNotification *notification) {
 				jobQueue.isBuilt = false;
 			}
 		}
-#ifndef RB_EDDC // disabled becase call from SetBuffersMenu()
+#ifndef RB_EDDC // disabled because call from SetBuffersMenu()
 		CheckMenus();
 #endif
 		SetWindowName();
@@ -4801,17 +4802,22 @@ void SciTEBase::CheckMenus() {
 	static std::string last_lang = "";
 	if (language != last_lang)
 	{
+		bool lang_changed = true;
 		for (size_t item = 0; item < languageMenu.size(); item++)
 		{
-			//if (languageMenu[item].menuItem[0] == '#') continue;	 //?
-			const int itemID = IDM_LANGUAGE + static_cast<int>(item);
-			CheckAMenuItem(itemID, false);
+			bool status = false;
 			const std::string fn = "x." + languageMenu[item].extension;
 			if (language == props.GetNewExpandString("lexer.", fn))
 			{
-				CheckAMenuItem(itemID, true);
+				status = true;
 				last_lang = language;
+				lang_changed = true;
 			}
+			CheckAMenuItem(IDM_LANGUAGE + static_cast<int>(item), status);
+		}
+		if (lang_changed && extender)
+		{
+			extender->OnLanguage(language.c_str());
 		}
 	}
 	//!-end-[LangMenuChecker]

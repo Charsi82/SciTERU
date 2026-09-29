@@ -52,7 +52,6 @@
 #include <memory>
 #include <numeric>
 #include <chrono>
-#include <ios>
 #include <ostream>
 #include <sstream>
 #include <iomanip>
@@ -90,6 +89,7 @@
 #include <vssym32.h>
 #include <shlwapi.h>
 #include <shlobj.h>
+#include <Htmlhelp.h>
 
 #include <direct.h>
 
@@ -148,6 +148,7 @@
 
 #include "SciTEWin.h"
 #include "DLLFunction.h"
+#include "WinBasics.h"
 #include "MultiplexExtension.h"
 #include "DirectorExtension.h"
 #include "LuaExtension.h"

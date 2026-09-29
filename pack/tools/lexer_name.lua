@@ -17,17 +17,13 @@ local function SetPropLexerName()
 	if props['FileName'] == '' then return end
 	local cur_lexer = props['Language']
 	if cur_lexer ~= last_lexer then
-		if cur_lexer == "hypertext" then
-			props["scite.lexer.name"] = "html"
-		else
-			props["scite.lexer.name"] = cur_lexer
-		end
+		props["scite.lexer.name"] = (cur_lexer == "hypertext") and "html" or cur_lexer
 		last_lexer = cur_lexer
 	end
 end
 
--- Добавляем свой обработчик события OnUpdateUI
-AddEventHandler("OnUpdateUI", SetPropLexerName)
+-- Добавляем свой обработчик события OnLanguage
+AddEventHandler("OnLanguage", SetPropLexerName)
 
 -- Добавляем свой обработчик события OnSwitchFile
 AddEventHandler("OnSwitchFile", SetPropLexerName)

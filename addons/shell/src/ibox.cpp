@@ -2,26 +2,32 @@
 #include "luaargs.hpp"
 #include "utf.h"
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#include <Windows.h>
+
 //------------------------------------------------------------------------------
-struct Rect : public RECT {
-	Rect() {
-		left = top = right = bottom = 0;
-	}
-	Rect(int Left, int Top, int Right, int Bottom) {
+struct Rect : public RECT
+{
+	Rect() noexcept { left = top = right = bottom = 0; }
+	Rect(int Left, int Top, int Right, int Bottom) noexcept
+	{
 		left = Left;
 		top = Top;
 		right = Right;
 		bottom = Bottom;
 	}
-	Rect(const Rect& rc) {
+
+	Rect(const Rect& rc) noexcept
+	{
 		left = rc.left;
 		top = rc.top;
 		right = rc.right;
 		bottom = rc.bottom;
 	}
-	Rect& operator = (const Rect& rc) {
-		if (this != &rc) {
+
+	Rect& operator = (const Rect& rc) noexcept
+	{
+		if (this != &rc)
+		{
 			left = rc.left;
 			top = rc.top;
 			right = rc.right;
@@ -29,8 +35,11 @@ struct Rect : public RECT {
 		}
 		return *this;
 	}
-	Rect& operator = (const Rect* rc) {
-		if (this != rc) {
+
+	Rect& operator = (const Rect* rc) noexcept
+	{
+		if (this != rc)
+		{
 			left = rc->left;
 			top = rc->top;
 			right = rc->right;
@@ -38,83 +47,100 @@ struct Rect : public RECT {
 		}
 		return *this;
 	}
-	int width() const
+
+	int width() const noexcept
 	{
 		return right - left;
 	}
-	int height() const
+
+	int height() const noexcept
 	{
 		return bottom - top;
 	}
-	void GetWindowRect(HWND hwnd) {
+
+	void GetWindowRect(HWND hwnd)
+	{
 		::GetWindowRect(hwnd, this);
 	}
-	void GetWindowRect(int ctrlID, HWND parent) {
+
+	void GetWindowRect(int ctrlID, HWND parent)
+	{
 		::GetWindowRect(::GetDlgItem(parent, ctrlID), this);
 	}
-	void GetClientRect(HWND hwnd) {
+
+	void GetClientRect(HWND hwnd)
+	{
 		::GetClientRect(hwnd, this);
 	}
-	void MapPoints(HWND hwnd) {
+
+	void MapPoints(HWND hwnd)
+	{
 		::MapWindowPoints(0, hwnd, static_cast<POINT*>(static_cast<void*>(this)), 2);
 	}
-	void MoveWindow(HWND hwnd, int left, int top, bool repaint = false) {
+
+	void MoveWindow(HWND hwnd, int left, int top, bool repaint = false) const
+	{
 		::MoveWindow(hwnd, left, top, width(), height(), repaint ? 1 : 0);
 	}
-	void MoveWindow(int ctrlID, HWND parent, int left, int top, bool repaint = false) {
+
+	void MoveWindow(int ctrlID, HWND parent, int left, int top, bool repaint = false) const
+	{
 		::MoveWindow(GetDlgItem(parent, ctrlID), left, top, width(), height(), repaint ? 1 : 0);
 	}
-	void AdjustWindowRect(HWND hwnd, bool hasMenu = false) {
+
+	void AdjustWindowRect(HWND hwnd, bool hasMenu = false)
+	{
 		::AdjustWindowRect(this, GetWindowLongPtr(hwnd, GWL_STYLE) & ~WS_OVERLAPPED, hasMenu ? 1 : 0);
 	}
 };
 
 //------------------------------------------------------------------------------
-
-
-int GetClientWidth(HWND hwnd)
+namespace
 {
-	Rect rc;
-	::GetClientRect(hwnd, &rc);
-	return rc.width();
-}
-
-int GetClientWidth(int ctrlID, HWND parent)
-{
-	Rect rc;
-	::GetClientRect(::GetDlgItem(parent, ctrlID), &rc);
-	return rc.width();
-}
-
-int GetWindowWidth(HWND hwnd)
-{
-	Rect rc;
-	::GetWindowRect(hwnd, &rc);
-	return rc.width();
-}
-
-int GetWindowWidth(int ctrlID, HWND parent)
-{
-	Rect rc;
-	::GetWindowRect(::GetDlgItem(parent, ctrlID), &rc);
-	return rc.width();
-}
-
-int GetWindowHeight(int ctrlID, HWND parent)
-{
-	Rect rc;
-	::GetWindowRect(::GetDlgItem(parent, ctrlID), &rc);
-	return rc.height();
-}
-
-//------------------------------------------------------------------------------
-class InputBox {
-	struct DlgData {
-		InputBox* self;
-		bool isFirst;
+	int GetClientWidth(HWND hwnd)
+	{
 		Rect rc;
-		DlgData() :self(nullptr), isFirst(true), rc()
-		{};
+		::GetClientRect(hwnd, &rc);
+		return rc.width();
+	}
+
+	int GetClientWidth(int ctrlID, HWND parent)
+	{
+		Rect rc;
+		::GetClientRect(::GetDlgItem(parent, ctrlID), &rc);
+		return rc.width();
+	}
+
+	int GetWindowWidth(HWND hwnd)
+	{
+		Rect rc;
+		::GetWindowRect(hwnd, &rc);
+		return rc.width();
+	}
+
+	int GetWindowWidth(int ctrlID, HWND parent)
+	{
+		Rect rc;
+		::GetWindowRect(::GetDlgItem(parent, ctrlID), &rc);
+		return rc.width();
+	}
+
+	int GetWindowHeight(int ctrlID, HWND parent)
+	{
+		Rect rc;
+		::GetWindowRect(::GetDlgItem(parent, ctrlID), &rc);
+		return rc.height();
+	}
+}
+//------------------------------------------------------------------------------
+class InputBox
+{
+	struct DlgData
+	{
+		InputBox* self{};
+		Rect rc{};
+		bool isFirst{true};
+		DlgData() = default;
 	};
 
 	enum { MAX_SHORT_STRING = 128, MAX_MIDDLE_STRING = 512, MAX_LONG_STRING = 1024 };
@@ -131,14 +157,14 @@ private:
 	InputBox();
 
 	int  PrepareTextOut(HWND hdlg);
-	BOOL OutText(HDC hdc);
-	void PrepareEdit(HWND hdlg);
+	BOOL OutText(HDC hdc) const;
+	void PrepareEdit(HWND hdlg) const;
 	void Layout(HWND hdlg);
 	void AdjustWidth(int ctrlID, HWND hdlg, int width);
-	void AdjustWidth(int ctrlID, HWND hdlg);
+	void AdjustWidth(int ctrlID, HWND hdlg) const;
 	void AdjustDlg(HWND hdlg);
 	void MoveY(int ctrlID, HWND hdlg, int dy);
-	void CenterButtons(HWND hdlg);
+	void CenterButtons(HWND hdlg) const;
 	void CalcDlgMinWidth(HWND hdlg);
 	static LRESULT CALLBACK EditHandler(HWND, UINT, WPARAM, LPARAM);
 	static LRESULT CALLBACK DlgHandler(HWND, UINT, WPARAM, LPARAM);
@@ -158,16 +184,16 @@ private:
 	int stcDy;
 	int charMinCount;  // ширина поля ввода в усреднённых символах
 	int minWidth;      // мин. ширина окна (в пикселах)
+	int onChar;
 	HICON smallIcon;
 	HICON bigIcon;
 	lua_State* luaState;
-	int onChar;
 };
 
 //------------------------------------------------------------------------------
 // Вычисляет прибл. ширину строки символов в пикселах по кол-ву этих символов
 //------------------------------------------------------------------------------
-int CalcAverWidth(HWND hwnd, int charCount)
+static int CalcAverWidth(HWND hwnd, int charCount)
 {
 	// Ширина = (усреднённая ширина символа) * (мин. кол-во символов)
 	TEXTMETRIC mtr;
@@ -188,8 +214,8 @@ void InputBox::CalcDlgMinWidth(HWND hdlg)
 	int btn = GetWindowWidth(IDOK, hdlg);
 
 	minWidth = CalcAverWidth(GetDlgItem(hdlg, IDC_EDITTEXT), charMinCount);
-	minWidth = max(minWidth, max(stc, edc));
-	minWidth = max(minWidth, 2 * btn + btnSpacing);
+	minWidth = std::max<>(minWidth, std::max<>(stc, edc));
+	minWidth = std::max<>(minWidth, 2 * btn + btnSpacing);
 
 	Rect rc;
 	rc.GetClientRect(hdlg);
@@ -213,7 +239,7 @@ void InputBox::AdjustWidth(int ctrlID, HWND hdlg, int width)
 //------------------------------------------------------------------------------
 // Подгоняет ширину контрола под ширину окна диалога
 //------------------------------------------------------------------------------
-void InputBox::AdjustWidth(int ctrlID, HWND hdlg)
+void InputBox::AdjustWidth(int ctrlID, HWND hdlg) const
 {
 	Rect rc, rcCtrl;
 	rc.GetClientRect(hdlg);
@@ -263,7 +289,7 @@ void InputBox::MoveY(int ctrlID, HWND hdlg, int y)
 //------------------------------------------------------------------------------
 // Центрирует кнопки по горизонтали, делает их равного размера
 //------------------------------------------------------------------------------
-void InputBox::CenterButtons(HWND hdlg)
+void InputBox::CenterButtons(HWND hdlg) const
 {
 	// Кнопка Ok для упрощения всегда помещается слева.
 	// Размеры и положение по вертикали берутся из таковых для кнопки Ok
@@ -292,29 +318,31 @@ int InputBox::PrepareTextOut(HWND hdlg)
 		return 0;
 
 	HWND hctrl = GetDlgItem(hdlg, IDC_PROMPTTEXT);
-	SIZE maxSize = { };
+	SIZE maxSize{};
 	HDC hdc = GetDC(hctrl);
 	SelectObject(hdc, GetStockObject(DEFAULT_GUI_FONT));
 	GetTextExtentPoint32(hdc, prompt, lstrlen(prompt), &maxSize);
 	maxSize.cx = 0;
 
-	SIZE size = { };
+	SIZE size{};
 	int lnCount = 1;
 	const wchar_t* prev = prompt;
 	const wchar_t* p = prompt;
 
-	for (; *p; ++p) {
+	for (; *p; ++p)
+	{
 		if (*p == '\r' || *p == '\n') {
-			GetTextExtentPoint32(hdc, prev, (int)(p - prev), &size);
-			maxSize.cx = max(size.cx, maxSize.cx);
+			GetTextExtentPoint32(hdc, prev, static_cast<int>(p - prev), &size);
+			maxSize.cx = std::max<int>(size.cx, maxSize.cx);
 			prev = p + 1;
 			lnCount++;
 		}
 	}
 
-	if (prev != p) {
-		GetTextExtentPoint32(hdc, prev, (int)(p - prev), &size);
-		maxSize.cx = max(size.cx, maxSize.cx);
+	if (prev != p)
+	{
+		GetTextExtentPoint32(hdc, prev, static_cast<int>(p - prev), &size);
+		maxSize.cx = std::max<int>(size.cx, maxSize.cx);
 	}
 
 	ReleaseDC(hdlg, hdc);
@@ -334,7 +362,7 @@ int InputBox::PrepareTextOut(HWND hdlg)
 //------------------------------------------------------------------------------
 // Выводит текст надписи
 //------------------------------------------------------------------------------
-BOOL InputBox::OutText(HDC hdc)
+BOOL InputBox::OutText(HDC hdc) const
 {
 	SelectObject(hdc, GetStockObject(DEFAULT_GUI_FONT));
 	SelectObject(hdc, reinterpret_cast<HBRUSH>(COLOR_BTNFACE + 1));
@@ -344,15 +372,17 @@ BOOL InputBox::OutText(HDC hdc)
 	const wchar_t* p = prompt;
 	int y = 0;
 
-	for (; *p; ++p) {
-		if (*p == L'\r' || *p == L'\n') {
-			TextOut(hdc, 0, y, prev, (int)(p - prev));
+	for (; *p; ++p)
+	{
+		if (*p == L'\r' || *p == L'\n')
+		{
+			TextOut(hdc, 0, y, prev, static_cast<int>(p - prev));
 			prev = p + 1;
 			y += stcDy;
 		}
 	}
 	if (prev != p)
-		TextOut(hdc, 0, y, prev, (int)(p - prev));
+		TextOut(hdc, 0, y, prev, static_cast<int>(p - prev));
 
 	//    return reinterpret_cast<BOOL>(GetStockObject(NULL_BRUSH));
 	return GetStockObject(NULL_BRUSH) ? TRUE : FALSE;
@@ -361,26 +391,27 @@ BOOL InputBox::OutText(HDC hdc)
 //------------------------------------------------------------------------------
 // Готовит edit для ввода текста.
 //------------------------------------------------------------------------------
-void InputBox::PrepareEdit(HWND hdlg)
+void InputBox::PrepareEdit(HWND hdlg) const
 {
 	HWND hctrl = GetDlgItem(hdlg, IDC_EDITTEXT);
 
 	HDC hdc = GetDC(hctrl);
 	SelectObject(hdc, GetStockObject(DEFAULT_GUI_FONT));
 
-	SIZE size = { 0, 0 };
-	Rect rc;
+	SIZE size{};
+	Rect rc{};
 	rc.GetClientRect(hctrl);
 	rc.right = 0;
 
-	int len = lstrlen(editText);
-	if (len) {
+	const int len = lstrlen(editText);
+	if (len)
+	{
 		GetTextExtentPoint32(hdc, editText, len, &size);
 		if (rc.right < size.cx)
 			rc.right = size.cx;
 	}
 
-	TEXTMETRIC tm = {};
+	TEXTMETRIC tm{};
 	GetTextMetrics(hdc, &tm);
 	if (rc.height() < tm.tmHeight)
 		rc.bottom = rc.top + tm.tmHeight;
@@ -424,14 +455,16 @@ void InputBox::Layout(HWND hdlg)
 //------------------------------------------------------------------------------
 void OutputMessage(lua_State* L)
 {
-	if (lua_isstring(L, -1)) {
+	if (lua_isstring(L, -1))
+	{
 		std::wstring tmp_str = StringFromUTF8(lua_tostring(L, -1));
 		lua_pop(L, 1);
-		if (lua_checkstack(L, 3)) {
+		if (lua_checkstack(L, 3))
+		{
 			lua_getglobal(L, "output");
 			lua_getfield(L, -1, "AddText");
 			lua_insert(L, -2);
-			lua_pushstring(L, UTF8FromString(tmp_str + L"\n\0").data());
+			lua_pushstring(L, UTF8FromString(tmp_str + L'\n').c_str());
 			lua_pcall(L, 2, 0, 0);
 		}
 	}
@@ -549,10 +582,12 @@ LRESULT CALLBACK InputBox::DlgHandler(HWND hdlg, UINT msg, WPARAM wParam, LPARAM
 		InputBox* self = data->self;
 		Rect* strc = &data->rc;
 
-		switch (msg) {
+		switch (msg)
+		{
 		case WM_COMMAND:
 		{
-			switch (LOWORD(wParam)) {
+			switch (LOWORD(wParam))
+			{
 			case IDOK:
 				if (!GetDlgItemText(hdlg, IDC_EDITTEXT, self->editText, MAX_MIDDLE_STRING)) {
 					self->editText[0] = L'\0';
@@ -571,7 +606,8 @@ LRESULT CALLBACK InputBox::DlgHandler(HWND hdlg, UINT msg, WPARAM wParam, LPARAM
 
 		case WM_GETICON:
 			// Возвращаем загруженные ранее иконки взамен стандартных
-			switch (wParam) {
+			switch (wParam)
+			{
 			case ICON_BIG:
 
 				//SetWindowLongPtr(hdlg, DWLP_MSGRESULT, reinterpret_cast<LONG_PTR>(self->bigIcon));
@@ -625,12 +661,14 @@ LRESULT CALLBACK InputBox::DlgHandler(HWND hdlg, UINT msg, WPARAM wParam, LPARAM
 
 				int newWidth = rc->width();
 
-				switch (wParam) {
+				switch (wParam)
+				{
 				case WMSZ_RIGHT:
 				case WMSZ_TOPRIGHT:
 				case WMSZ_BOTTOMRIGHT:
 				{
-					if (newWidth < self->minWidth) {
+					if (newWidth < self->minWidth)
+					{
 						//newWidth = self->minWidth;
 						rc->right = rc->left + self->minWidth;
 					}
@@ -640,7 +678,8 @@ LRESULT CALLBACK InputBox::DlgHandler(HWND hdlg, UINT msg, WPARAM wParam, LPARAM
 				case WMSZ_TOPLEFT:
 				case WMSZ_BOTTOMLEFT:
 				{
-					if (newWidth < self->minWidth) {
+					if (newWidth < self->minWidth)
+					{
 						//newWidth = self->minWidth;
 						rc->left = rc->right - self->minWidth;
 					}
@@ -661,10 +700,12 @@ LRESULT CALLBACK InputBox::DlgHandler(HWND hdlg, UINT msg, WPARAM wParam, LPARAM
 			GetWindowRect(hdlg, strc);
 			//dx = strc->width() - dx;
 
-			if (data->isFirst) {
+			if (data->isFirst)
+			{
 				data->isFirst = false;
 			}
-			else if (wParam == SIZE_RESTORED) {
+			else if (wParam == SIZE_RESTORED)
+			{
 				self->AdjustWidth(IDC_PROMPTTEXT, hdlg);
 				self->AdjustWidth(IDC_EDITTEXT, hdlg);
 				self->CenterButtons(hdlg);
@@ -694,19 +735,19 @@ InputBox::InputBox(const wchar_t* Caption, const wchar_t* Prompt, const wchar_t*
 	stcDy(0),
 	charMinCount(CharMinCount),
 	minWidth(0),
-	luaState(L),
-	onChar(OnChar)
+	onChar(OnChar),
+	luaState(L)
 {
 	wcsncpy_s(editText, Value, sizeof(editText));
 	wcsncpy_s(caption, Caption, sizeof(caption));
 	wcsncpy_s(prompt, Prompt, sizeof(prompt));
 
 	smallIcon = static_cast<HICON>(
-		LoadImage(GetModuleHandle(0), L"SCITE", IMAGE_ICON,
+		LoadImage(GetModuleHandle(nullptr), L"SCITE", IMAGE_ICON,
 			GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON),
 			LR_DEFAULTCOLOR));
 	bigIcon = static_cast<HICON>(
-		LoadImage(GetModuleHandle(0), L"SCITE", IMAGE_ICON,
+		LoadImage(GetModuleHandle(nullptr), L"SCITE", IMAGE_ICON,
 			48, 48, LR_DEFAULTCOLOR));
 }
 
@@ -726,16 +767,17 @@ const wchar_t* InputBox::Text() const
 //------------------------------------------------------------------------------
 // The next functions were borrowed from Steve Donovan's gui library
 //------------------------------------------------------------------------------
-BOOL CALLBACK CheckSciteWindow(HWND hwnd, LPARAM lParam)
-{
-	wchar_t buff[120];
-	GetClassName(hwnd, buff, sizeof(buff) / sizeof(buff[0]));
-	if (lstrcmp(buff, L"SciTEWindow") == 0) {
-		*reinterpret_cast<HWND*>(lParam) = hwnd;
-		return FALSE;
-	}
-	return TRUE;
-}
+//BOOL CALLBACK CheckSciteWindow(HWND hwnd, LPARAM lParam)
+//{
+//	wchar_t buff[120];
+//	GetClassName(hwnd, buff, std::size(buff));
+//	if (lstrcmp(buff, L"SciTEWindow") == 0)
+//	{
+//		*reinterpret_cast<HWND*>(lParam) = hwnd;
+//		return FALSE;
+//	}
+//	return TRUE;
+//}
 
 HWND FindScite()
 {
@@ -750,7 +792,8 @@ HWND FindScite()
 int InputBox::ShowModal()
 {
 	int result = (int)DialogBoxParam(GetModuleHandle(L"shell.dll"), L"IBOX_DLG", FindScite(), (DLGPROC)&DlgHandler, reinterpret_cast<LPARAM>(this));
-	if (result == -1) {
+	if (result == -1)
+	{
 		// Вообще-то, это означает, что произошла какая-то ошибка,
 		// но мы сделаем вид, что всё Ок: будто бы нажата Cancel
 		return IDCANCEL;
@@ -761,14 +804,14 @@ int InputBox::ShowModal()
 //------------------------------------------------------------------------------
 // shell.showinputbox(caption, prompt, default, check, modality, width)
 //------------------------------------------------------------------------------
-extern int showinputbox(lua_State* L)
+int showinputbox(lua_State* L)
 {
 	LuaArgs lua(L);
 	auto caption = StringFromUTF8(lua.gets(1, "InputBox"));
 	auto prompt = StringFromUTF8(lua.gets(2, "Enter:"));
 	auto value = StringFromUTF8(lua.gets(3, ""));
-	int         onchar = lua.getf(4);
-	int         width = lua.geti(5, 20);
+	int  onchar = lua.getf(4);
+	int  width = lua.geti(5, 20);
 
 	InputBox dlg(caption.data(), prompt.data(), value.data(), width, onchar, L);
 	bool res = dlg.ShowModal() == IDOK;

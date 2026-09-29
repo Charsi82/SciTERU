@@ -338,7 +338,7 @@ bool MultiplexExtension::OnClose(const char *filename) {
 #ifdef RB_OnSendEditor
 //!-start-[OnSendEditor]
 const char* MultiplexExtension::OnSendEditor(Scintilla::Message msg, uintptr_t wp, const char* lp) {
-	const char* result = NULL;
+	const char* result = nullptr;
 	for (Extension* pexp : extensions) {
 		result = pexp->OnSendEditor(msg, wp, lp);
 		if (result) break;
@@ -347,7 +347,7 @@ const char* MultiplexExtension::OnSendEditor(Scintilla::Message msg, uintptr_t w
 }
 
 const char* MultiplexExtension::OnSendEditor(Scintilla::Message msg, uintptr_t wp, long lp) {
-	const char* result = NULL;
+	const char* result = nullptr;
 	for (Extension* pexp : extensions) {
 		result = pexp->OnSendEditor(msg, wp, lp);
 		if (result) break;
@@ -356,6 +356,15 @@ const char* MultiplexExtension::OnSendEditor(Scintilla::Message msg, uintptr_t w
 }
 //!-end-[OnSendEditor]
 #endif
+
+#ifdef RB_LangMenuChecker
+void MultiplexExtension::OnLanguage(const char* lang)
+{
+	for (Extension* pexp : extensions) {
+		pexp->OnLanguage(lang);
+	}
+}
+#endif // RB_LangMenuChecker
 
 #ifdef RB_ONTABMOVE
 void MultiplexExtension::OnTabMove(int idx_from, int idx_to)

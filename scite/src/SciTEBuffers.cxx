@@ -1,4 +1,4 @@
-// SciTE - Scintilla based Text Editor
+﻿// SciTE - Scintilla based Text Editor
 /** @file SciTEBuffers.cxx
  ** Buffers and jobs management.
  **/
@@ -56,7 +56,7 @@
 #include "SciTEBase.h"
 
 #ifdef RB_FRLS
-constexpr GUI::gui_char pathSepChar = '\\';
+constexpr char pathSepChar = '\\';
 #endif //RB_FRLS
 
 const GUI::gui_char defaultSessionFileName[] = GUI_TEXT("SciTE.session");
@@ -531,7 +531,7 @@ void SciTEBase::SetDocumentAt(BufferIndex index, bool updateStack) {
 	}
 
 	SetBuffersMenu();
-#ifndef RB_EDDC // disabled becase call from SetBuffersMenu()
+#ifndef RB_EDDC // disabled because call from SetBuffersMenu()
 	CheckMenus();
 #endif
 	UpdateStatusBar(true);
@@ -1344,10 +1344,10 @@ GUI::gui_string BufferTitle([[maybe_unused]] int pos, const Buffer &buffer, Titl
 #ifdef RB_TTML
 	//!-start-[TabbarTitleMaxLength]
 	if (destination == Title::tab) {
-		int tabsTitleMaxLength = std::max(props.GetInt("tabbar.title.maxlength"), 6); //!-add-[TabbarTitleMaxLength]
+		size_t tabsTitleMaxLength = std::max(props.GetInt("tabbar.title.maxlength"), 6); //!-add-[TabbarTitleMaxLength]
 		if (buffer.isReadOnly && props.GetInt("read.only.indicator")) tabsTitleMaxLength -= 2;
 		if (buffer.DocumentNotSaved()) tabsTitleMaxLength -= 2;
-		if ((tabsTitleMaxLength > 0) && (title.length() - 3 > tabsTitleMaxLength)) {
+		if ((tabsTitleMaxLength > 0) && (title.length() > tabsTitleMaxLength + 3)) {
 			title.resize(tabsTitleMaxLength, L'\0');
 			title += GUI_TEXT("...");
 		}
@@ -2326,12 +2326,12 @@ void SciTEBase::GoMessage(int dir) {
 							topLine--;
 						}
 					}
-					if (!topic.empty() && 0 == strncmp(">Internal search", topic.c_str(), 16)) {
+					if (topic.starts_with(">Internal search")) {
 						// get base path from topic text
 						size_t toPos = topic.length() - 1;
-						while (toPos >= 0 && pathSepChar != topic[toPos]) toPos--;
+						while (toPos > 0 && pathSepChar != topic[toPos]) toPos--;
 						size_t fromPos = toPos - 1;
-						while (fromPos >= 0 && '"' != topic[fromPos]) fromPos--;
+						while (fromPos > 0 && '"' != topic[fromPos]) fromPos--;
 						if (fromPos > 0) {
 							std::string path = topic.substr(fromPos + 1, toPos - fromPos - 1);
 							path += source;

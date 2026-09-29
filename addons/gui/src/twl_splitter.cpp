@@ -86,6 +86,8 @@ void TSplitterB::mouse_up(Point& pt)
 		rt.top += (h - m_new_size);
 		h = m_new_size;
 		break;
+	default:
+		break;
 	}
 	if (m_line_visible) draw_line();
 	::ReleaseDC((HWND)m_form->handle(), m_line_dc);
@@ -106,13 +108,13 @@ void TSplitterB::update_size(short xx, short yy)
 	else
 		m_split = xx - m_start.x;
 	int size = 0, w = m_control->width(), h = m_control->height();
-	Alignment aa = align();
-	switch (aa)
+	switch (align())
 	{
 	case Alignment::alLeft:  size = w + m_split; break;
 	case Alignment::alRight: size = w - m_split; break;
 	case Alignment::alTop:   size = h + m_split; break;
 	case Alignment::alBottom:size = h - m_split; break;
+	default: break;
 	}
 	m_new_size = size;
 }

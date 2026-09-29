@@ -41,6 +41,8 @@
 
 #undef _WIN32_WINNT
 #define _WIN32_WINNT  0x0A00
+#undef NOMINMAX
+#define NOMINMAX 1
 #include <windows.h>
 #include <commctrl.h>
 
@@ -242,9 +244,7 @@ FilePath FilePath::Directory() const {
 		return { fileName };
 	}
 	if (size_t lenDirectory = fileName.rfind(pathSepChar); lenDirectory != GUI::gui_string::npos) {
-		if (lenDirectory < RootLength()) {
-			lenDirectory = RootLength();
-		}
+		lenDirectory = std::max(lenDirectory, RootLength());
 		return { fileName.substr(0, lenDirectory) };
 	}
 	return {};
@@ -805,7 +805,8 @@ std::string CommandExecute(const GUI::gui_char *command, const GUI::gui_char *di
 	FilePath(directoryForRun).SetWorkingDirectory();
 	FILE *fp = popen(command, "r");
 	if (fp) {
-		char buffer[16 * 1024];
+		constexpr size_t bufferSize = 16 * 1024;
+		char buffer[bufferSize];
 		size_t lenData = fread(buffer, 1, sizeof(buffer), fp);
 		while (lenData > 0) {
 			output.append(buffer, buffer+lenData);

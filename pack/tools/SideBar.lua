@@ -133,7 +133,7 @@ local tabs_menu = nil
 local function ResetTabsMenu()
 	if not tabs_menu then
 		tabs_menu = tabs:context_menu {
-				'Переместить панель|MoveSideBarMove',
+				L'MoveSideBar'..'|MoveSideBar',
 			}
 		
 	end
@@ -174,7 +174,7 @@ function SideBar_SwitchMode()
 	ResetTabsMenu()
 end
 
-function MoveSideBarMove()
+function MoveSideBar()
 	if tonumber(props['sidebar.win']) ~= 1 then
 		if props['sidebar.position'] == 'right' then
 			props['sidebar.position'] = 'left'

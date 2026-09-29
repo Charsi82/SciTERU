@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 /*
 SciTE Ru-Board additions defines
 */
@@ -379,13 +379,23 @@ SciTE Ru-Board additions defines
 // добавляет иконку для окна параметров
 #define RB_ICPW
 
-// добвляет свойство ZoomFactorPercent
+// добавляет свойство ZoomFactorPercent
 #define RB_ZFP
 
-// добвляет событие OnFindProperty, происходящее при смене своqства find.what
+// добавляет событие OnFindProperty, происходящее при смене своqства find.what
 #define RB_OFP
 
 // инициализаци индикаторов
 #define RB_InitIndicators
+
+// исправление лексера makefile
+// перенос инструкции не стилизуется как ошибка
+#define RB_LMF
+
+// вызов OnStrip(-1, 0) при закрытии пользовательской панели
+#define RB_UserStripClose
+
+// добавляет метод ForwardN для стайлера
+#define RB_StylerForwardN
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 

@@ -6,8 +6,8 @@ return function(tabs, panel_width, colorback, colorfore)
 	local tab2 = gui.panel(panel_width)
 	local list_abbrev = tab2:add_list(true)
 	list_abbrev:set_align()
-	list_abbrev:add_column("Сокращения", 60)
-	list_abbrev:add_column("Расширение", 600)
+	list_abbrev:add_column(L"IDS_SB_Abbrevs", 60)
+	list_abbrev:add_column(L"IDS_SB_Expansion", 600)
 
 	if colorback then list_abbrev:set_list_colour(colorfore, colorback) end
 	-- Переключатель способа предпросмотра аббревиатур: true = calltip, false = annotation
@@ -45,7 +45,7 @@ return function(tabs, panel_width, colorback, colorfore)
 		local sel_item = list_abbrev:get_selected_item()
 		if sel_item == -1 then return end
 		local expansion = list_abbrev:get_item_data(sel_item)
-		expansion = expansion:gsub('\\\\','\4'):gsub('\\r','\r'):gsub('(\\n','\n'):gsub('\\t','\t'):gsub('\4','\\'):gsub('%%%%','%%')
+		expansion = expansion:gsub('\\#','#'):gsub('\\\\','\4'):gsub('\\r','\r'):gsub('(\\n','\n'):gsub('\\t','\t'):gsub('\4','\\'):gsub('%%%%','%%')
 		local cp = editor:codepage()
 		if cp ~= 65001 then expansion = expansion:from_utf8(cp) end
 
@@ -82,11 +82,11 @@ return function(tabs, panel_width, colorback, colorfore)
 		end
 	end
 
+	AddEventHandler("OnLanguage", OnSwitch)
 	AddEventHandler("OnSwitchFile", OnSwitch)
-	AddEventHandler("OnOpen", OnSwitch)
 	AddEventHandler("OnSave", OnSwitch)
 	event('sb_tab_selected'):register(function(e, tab_id) if tab_id == 2 then OnSwitch() end end)
 	-------------------------
-	tabs:add_tab("Сокращения", tab2, props['ICO_READONLY']) -- caption, wnd, icon_index
+	tabs:add_tab(L'IDS_SB_Abbrevs', tab2, props['ICO_READONLY']) -- caption, wnd, icon_index
 	return tab2
 end

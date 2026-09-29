@@ -22,7 +22,8 @@ dofile(props["SciteDefaultHome"] .. "\\tools\\URL_detect.lua")
 -- 	return editor:textrange(editor:WordStartPosition(current_pos, true),
 -- 							editor:WordEndPosition(current_pos, true))
 -- end
-
+--------------------------------------------------------
+function L(ids) return scite.GetTranslation( ids ) end
 --------------------------------------------------------
 --- Returns current hotspot's text
 function GetCurrentHotspot()
@@ -326,7 +327,7 @@ function ReadAbbrevFile(file, abbr_table)
 			local line = line_iter()
 			if not line then return end
 			-- start [SciTE]
-			while string.sub(line, -1) == '\\' do line = string.sub(line, 1, -2) .. line_iter() end
+			while string.sub(line, -1) == '\\' do line = string.sub(line, 1, -2) .. (line_iter() or '') end
 			-- end [SciTE]
 			return line
 		end
@@ -387,7 +388,7 @@ AddEventHandler("OnMenuCommand", function(msg, source)
 end)
 
 function run_script(path)
-	local print_time = (tonumber(props['time.commands']) or 0) ~= 0
+	local print_time = (tonumber(props['time.commands.script']) or 0) ~= 0
 	local secs = tonumber(props['lua.runtime.quota']) or 0
 	if secs > 0 then
 		local st = os.clock()
@@ -404,7 +405,7 @@ function run_script(path)
 	if not res then print(err) end
 	if secs > 0 then debug.sethook() end
 	if print_time then
-		print(string.format("Time: %.2f ms", (os.clock() - command_time)*1000 ))
+		print(string.format("Time: %.2f ms\n", (os.clock() - command_time)*1000 ))
 	end
 end
 
@@ -510,4 +511,11 @@ function ApplySelection(selections)
 		end
 		for i = 0, active_block do editor:RotateSelection() end
 	end
+end
+
+function string.split(s, sep)
+	local t = {}
+	if not sep then sep = " " end
+	s:gsub("[^"..sep.."]+", function(ch) t[#t+1]=ch end)
+	return t
 end

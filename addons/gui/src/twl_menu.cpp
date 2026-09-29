@@ -8,6 +8,9 @@
 #include <list>
 #include <string>
 #include <vector>
+#ifdef __GNUC__
+	#include <algorithm>
+#endif
 #include "twl_menu.hpp"
 #include "lua.hpp"
 #include "luabinder.hpp"
@@ -34,12 +37,14 @@ UINT MessageHandler::add_item(UINT data)
 
 void MessageHandler::remove(UINT id)
 {
-	m_list.remove_if([id](const Item& item) { return item.id == id; });
+	//m_list.remove_if([id](const Item& item) { return item.id == id; });
+	std::erase_if(m_list, [id](const Item& item) { return item.id == id; });
 }
 
 bool MessageHandler::dispatch(UINT id)
 {
-	auto it = std::find_if(m_list.begin(), m_list.end(), [id](const Item& item) { return item.id == id; });
+	//auto it = std::find_if(m_list.begin(), m_list.end(), [id](const Item& item) { return item.id == id; });
+	auto it = std::ranges::find_if(m_list, [id](const Item& item) { return item.id == id; });
 	if (it != m_list.end())
 	{
 		if (it->data) trigger(it->data);
@@ -311,12 +316,14 @@ namespace
 	}
 }
 
+template<>
 const luaL_Reg LuaBinder<CMenu>::metamethods[] =
 {
 	{ "__gc",		do_destroy<CMenu> },
 	{ NULL, NULL }
 };
 
+template<>
 const luaL_Reg LuaBinder<CMenu>::methods[] =
 {
 	{ "count",   		do_item_count	},

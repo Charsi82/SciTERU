@@ -4,17 +4,17 @@
 #include <format>
 
 //#define GUILIB_LOG_ON
+#if defined(GUILIB_LOG_ON) || defined(_DEBUG)
 namespace
 {
 	class Log
 	{
 		std::ofstream outf;
 		void output(const char* txt);
-
 		Log();
 		~Log();
+
 	public:
-		static Log& Instance();
 		void add(const char* txt);
 	};
 
@@ -47,18 +47,16 @@ namespace
 	{
 		output(txt);
 	}
-
-	Log& Log::Instance()
-	{
-		static Log _log;
-		return _log;
-	}
 }
+#endif
 
-void log_add(const char* s)
+void log_add([[maybe_unused]] const char* s)
 {
 #if defined(GUILIB_LOG_ON) || defined(_DEBUG)
 	if (s && *s)
-		Log::Instance().add(s);
+	{
+		static Log _log;
+		_log.add(s);
+	}
 #endif
 }

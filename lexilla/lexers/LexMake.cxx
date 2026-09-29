@@ -72,6 +72,9 @@ class LexerMakeFile : public DefaultLexer {
 	WordList directives;
 	OptionsMake options;
 	OptionSetMake osMake;
+#ifdef RB_LMF
+	unsigned int vars{ SCE_MAKE_DEFAULT };
+#endif
 public:
 	LexerMakeFile() :
 		DefaultLexer("makefile", SCLEX_MAKEFILE, lexicalClasses, std::size(lexicalClasses)) {
@@ -138,6 +141,9 @@ void LexerMakeFile::ColouriseMakeLine(
 	Sci_PositionU i = 0;
 	Sci_Position lastNonSpace = -1;
 	unsigned int state = SCE_MAKE_DEFAULT;
+#ifdef RB_LMF
+	if (vars > 0) state = SCE_MAKE_IDENTIFIER;
+#endif // RB_LMF
 	bool bSpecial = false;
 
 	// check for a tab character in column 0 indicating a command
@@ -169,7 +175,11 @@ void LexerMakeFile::ColouriseMakeLine(
 			}
 		}
 	}
+#ifdef RB_LMF
+	int varCount = vars;
+#else
 	int varCount = 0;
+#endif // RB_LMF
 	char previous = 0;
 	while (i < lengthLine) {
 		if (lineBuffer[i] == '#' && !bCommand && (varCount == 0) && (previous != '\\')) {
@@ -211,11 +221,42 @@ void LexerMakeFile::ColouriseMakeLine(
 		previous = lineBuffer[i];
 		i++;
 	}
-	if (state == SCE_MAKE_IDENTIFIER) {
+#ifdef RB_LMF
+	vars = varCount;
+	std::string_view tmp{ lineBuffer };
+	Sci_PositionU eol_size = 0;
+	while (tmp.size() && AnyOf(tmp.back(), ' ', '\t', '\n', '\r'))
+	{
+		tmp.remove_suffix(1);
+		eol_size++;
+	}
+	bool continuation = tmp.ends_with('\\');
+	if (state == SCE_MAKE_IDENTIFIER)
+	{
+		if (vars && continuation)	   /* $(... \ */
+		{
+			styler.ColourTo(endPos - eol_size - 1, SCE_MAKE_IDENTIFIER);
+			styler.ColourTo(endPos, SCE_MAKE_DEFAULT);
+		} else {
 		styler.ColourTo(endPos, SCE_MAKE_IDEOL);	// Error, variable reference not ended
+			vars = 0;
+		}
 	} else {
+		if (vars && !continuation)
+		{
+			styler.ColourTo(endPos, SCE_MAKE_IDEOL);
+			vars = 0;
+		} else
 		styler.ColourTo(endPos, SCE_MAKE_DEFAULT);
 	}
+#else
+	if (state == SCE_MAKE_IDENTIFIER) {
+		styler.ColourTo(endPos, SCE_MAKE_IDEOL);	// Error, variable reference not ended
+	}
+	else {
+		styler.ColourTo(endPos, SCE_MAKE_DEFAULT);
+	}
+#endif // RB_LMF
 }
 
 void LexerMakeFile::Lex(Sci_PositionU startPos, Sci_Position length, int /* initStyle */, IDocument *pAccess) {

@@ -5,8 +5,38 @@
 // Copyright 1998-2003 by Neil Hodgson <neilh@scintilla.org>
 // The License.txt file describes the conditions under which this software may be distributed.
 
+#include <cstdlib>
+#include <cassert>
+
+#include <new>
+#include <compare>
+#include <tuple>
+#include <string>
+#include <string_view>
+#include <vector>
+#include <array>
+#include <deque>
+#include <map>
+#include <set>
+#include <optional>
+#include <algorithm>
+#include <ranges>
+#include <iterator>
+#include <memory>
+#include <chrono>
+#include <sstream>
+#include <atomic>
+#include <mutex>
+
+#define NOMINMAX 1
+#include <windows.h>
+#include <windowsx.h>
+#include <shlobj.h>
+
 #include "SciTEWin.h"
+
 #include "DLLFunction.h"
+#include "WinBasics.h"
 
 namespace {
 
@@ -85,7 +115,7 @@ SciTEWin *Caller(HWND hDlg, UINT message, LPARAM lParam) noexcept {
 	if (message == WM_INITDIALOG) {
 		::SetWindowLongPtr(hDlg, DWLP_USER, lParam);
 	}
-	return reinterpret_cast<SciTEWin *>(::GetWindowLongPtr(hDlg, DWLP_USER));
+	return PtrParam<SciTEWin *>(::GetWindowLongPtr(hDlg, DWLP_USER));
 }
 
 }
@@ -137,7 +167,7 @@ void SciTEWin::WarnUser(int warnID, const char* msg /* = NULL */, bool isCanBeAl
 		sound = warningFields[1];
 	}
 	int flashLen = 0;
-	if (warningFields.size() > 0) {
+	if (!warningFields.empty()) {
 		flashLen = IntegerFromString(warningFields[0], 0);
 	}
 
@@ -146,12 +176,12 @@ void SciTEWin::WarnUser(int warnID, const char* msg /* = NULL */, bool isCanBeAl
 	}
 	PlayThisSound(sound.c_str(), duration, hMM);
 
-	if (warning_msg.length() > 0 && isCanBeAlerted) {
-		warning_msg = GUI::UTF8FromString(localiser.Text(warning_msg)).c_str();
+	if (!warning_msg.empty() && isCanBeAlerted) {
+		warning_msg = GUI::UTF8FromString(localiser.Text(warning_msg));
 		warning_msg += "     ";
 		if (msg != NULL) {
 			warning_msg += "\n";
-			warning_msg += GUI::UTF8FromString(localiser.Text(msg)).c_str();
+			warning_msg += GUI::UTF8FromString(localiser.Text(msg));
 			warning_msg += "     ";
 		}
 		WindowMessageBox(wEditor, GUI::StringFromUTF8(warning_msg), MB_OK | MB_ICONWARNING);
@@ -261,7 +291,7 @@ bool SciTEWin::ModelessHandler(MSG *pmsg) {
 //  DoDialog is a bit like something in PC Magazine May 28, 1991, page 357
 INT_PTR SciTEWin::DoDialog(const WCHAR *resName, DLGPROC lpProc) {
 	const INT_PTR result =
-				   ::DialogBoxParam(hInstance, resName, MainHWND(), lpProc, reinterpret_cast<LPARAM>(this));
+				   ::DialogBoxParamW(hInstance, resName, MainHWND(), lpProc, FromPtr(this));
 
 	if (result == -1) {
 		const GUI::gui_string errorNum = GUI::StringFromInteger(::GetLastError());
@@ -279,7 +309,7 @@ HWND SciTEWin::CreateParameterisedDialog(LPCWSTR lpTemplateName, DLGPROC lpProc)
 				    lpTemplateName,
 				    MainHWND(),
 				    lpProc,
-				    reinterpret_cast<LPARAM>(this));
+				    FromPtr(this));
 }
 
 GUI::gui_string SciTEWin::DialogFilterFromProperty(const GUI::gui_string &filterProperty) {
@@ -317,7 +347,7 @@ void SciTEWin::CheckCommonDialogError() {
 }
 
 bool SciTEWin::OpenDialog(const FilePath &directory, const GUI::gui_string &filesFilter) {
-	enum {maxBufferSize=2048};
+	constexpr DWORD maxBufferSize = 2048;
 
 	DWORD filterDefault = 1;
 	std::vector<GUI::gui_string> filters = StringSplit(GUI::gui_string(filesFilter), L'|');
@@ -1438,7 +1468,7 @@ BOOL SciTEWin::GrepMessage(HWND hDlg, UINT message, WPARAM wParam) {
 				if (!directory.ends_with(pathSepString)) {
 					directory += pathSepString;
 				}
-				info.lParam = reinterpret_cast<LPARAM>(directory.c_str());
+				info.lParam = FromPtr(directory.data());
 
 				// Execute the browsing dialog.
 				LPITEMIDLIST pidl = ::SHBrowseForFolder(&info);

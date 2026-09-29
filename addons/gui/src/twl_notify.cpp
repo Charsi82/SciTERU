@@ -113,7 +113,8 @@ TMemo::TMemo(TEventWindow* form, int id, bool do_scroll, bool plain) : TNotifyWi
 void TMemo::set_font(const wchar_t* facename, int size, int flags, bool selection)
 {
 	enum { NORMAL, BOLD = 2, ITALIC = 4 };
-	CHARFORMAT cf{ sizeof(CHARFORMAT) };
+	CHARFORMAT cf{};
+	cf.cbSize = sizeof(CHARFORMAT);
 	cf.dwMask = CFM_FACE | CFM_BOLD | CFM_ITALIC;
 	wcscpy_s(cf.szFaceName, facename);
 	cf.dwEffects = 0;
@@ -242,7 +243,8 @@ void TMemo::auto_url_detect(bool yn)
 
 COLORREF TMemo::get_text_colour()
 {
-	CHARFORMAT cf{ sizeof(CHARFORMAT) };
+	CHARFORMAT cf{};
+	cf.cbSize = sizeof(CHARFORMAT);
 	cf.dwMask = CFM_COLOR;
 	send_msg(EM_GETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
 	return cf.crTextColor;
@@ -250,7 +252,8 @@ COLORREF TMemo::get_text_colour()
 
 void TMemo::set_text_colour(COLORREF colour)
 {
-	CHARFORMAT cf{ sizeof(CHARFORMAT) };
+	CHARFORMAT cf{};
+	cf.cbSize = sizeof(CHARFORMAT);
 	cf.dwMask = CFM_COLOR;
 	cf.crTextColor = colour;
 	send_msg(EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
@@ -367,7 +370,7 @@ void* TTabControl::get_data(int idx)
 	//item.mask = TCIF_PARAM;
 	//send_msg(TCM_GETITEM, idx, (LPARAM)&item);
 	//return (void*)item.lParam;
-	if (idx >= panels.size()) return nullptr;
+	if (idx >= static_cast<int>(panels.size())) return nullptr;
 	return panels[idx];
 }
 

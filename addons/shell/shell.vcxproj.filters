@@ -18,7 +18,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="src\shell.rc">
+    <ResourceCompile Include="src\Resource.rc">
       <Filter>Файлы ресурсов</Filter>
     </ResourceCompile>
   </ItemGroup>
@@ -68,9 +68,6 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="src\md5.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="src\resource.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="src\astyle\ASLocalizer.h">

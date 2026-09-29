@@ -576,6 +576,7 @@
     <ClCompile Include="..\..\scintilla\src\UndoHistory.cxx">
       <Filter>scintilla</Filter>
     </ClCompile>
+    <ClCompile Include="..\win32\WinBasics.cxx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\Cookie.h" />
@@ -837,6 +838,7 @@
       <Filter>scintilla</Filter>
     </ClInclude>
     <ClInclude Include="..\..\scintilla\src\RunThreads.h" />
+    <ClInclude Include="..\win32\WinBasics.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\win32\SciTERes.rc" />
@@ -856,12 +858,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Busy.ico">
-      <Filter>images</Filter>
-    </Image>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="..\Win32\SciBall.ico">
+      <Filter>images</Filter>
+    </None>
+    <None Include="..\Win32\Busy.ico">
       <Filter>images</Filter>
     </None>
   </ItemGroup>

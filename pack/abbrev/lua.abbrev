@@ -45,3 +45,4 @@ onmacro=AddEventHandler("OnMacro", function(cmd, msg)\n|\tMyHandler(cmd, msg)\ne
 onupdateui=AddEventHandler("OnUpdateUI", function()\n|\tif props['FileName'] ~= '' then\n\t\treturn MyHandler() -- true - break event\n\tend\nend)\n
 onuserlistselection=AddEventHandler("OnUserListSelection", function(tp, sel_value, sel_item_id)\n|\tif tp == 12 then\n\t\tMyHandler(sel_value)\n\tend\nend)\n
 onfinalise=AddEventHandler("OnFinalise", function()\n|\tif props['FileName'] ~= '' then\n\t\tMyHandler()\n\tend\nend)\n
+onlanguage=AddEventHandler("OnLanguage", function(lexer)\n|\tif props['FileName'] ~= '' then\n\t\tMyHandler(lexer)\n\tend\nend)\n

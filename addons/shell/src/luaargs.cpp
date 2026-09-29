@@ -1,4 +1,4 @@
-#ifdef _MSC_VER
+﻿#ifdef _MSC_VER
 #   if _MSC_VER > 7
 #       define _CRT_SECURE_NO_DEPRECATE 1
 #       define _SCL_SECURE_NO_DEPRECATE 1
@@ -7,24 +7,29 @@
 #endif
 
 #include <string>
+#ifdef __GNUC__
+#include <cstring>              // need both string and cstring for GCC
+#endif
 #include "luaargs.hpp"
 
 //------------------------------------------------------------------------------
 template<class T>
-class Stack {
+class Stack
+{
 public:
-    class Node {
+    class Node
+    {
         T el;
         Node *prev;
         Node();
     public:
         Node(T El, Node *Prev);
-        Node *Prev();
+        Node *Prev() const;
         T Get();
     };
 
 private:
-    Node *current;
+    Node* current{};
 
 public:
     Stack();
@@ -33,7 +38,8 @@ public:
     T pop();
 };
 
-struct Refs {
+struct Refs
+{
     Stack<const char*> strings;
     Stack<int> indices;
 };
@@ -45,7 +51,7 @@ Stack<T>::Node::Node(T El, Node *Prev)
 { }
 
 template<class T>
-inline typename Stack<T>::Node *Stack<T>::Node::Prev()
+inline typename Stack<T>::Node *Stack<T>::Node::Prev() const
 {
     return prev;
 }
@@ -58,14 +64,13 @@ inline T Stack<T>::Node::Get()
 
 //------------------------------------------------------------------------------
 template<class T>
-Stack<T>::Stack()
-    : current(0)
-{ }
+Stack<T>::Stack() = default;
 
 template<class T>
 Stack<T>::~Stack()
 {
-    while (current) {
+    while (current)
+    {
         typename Stack<T>::Node *p = current;
         current = current->Prev();
         delete p;
@@ -82,14 +87,15 @@ T Stack<T>::push(T el)
 template<typename T>
 T Stack<T>::pop()
 {
-    if (current) {
+    if (current)
+    {
         typename Stack<T>::Node *p = current;
         current = current->Prev();
         T el = p->Get();
         delete p;
         return el;
     } else {
-        return 0;
+        return {};
     }
 }
 
@@ -114,7 +120,8 @@ LuaArgs::~LuaArgs()
 int LuaArgs::count()
 {
     int ds = lua_gettop(L) - origin;
-    if (ds < 0) {
+    if (ds < 0)
+    {
         char err[64];
         sprintf(err, "Stack exhaustion : diff = %i\n", ds);
         lua_pushstring(L, err);
@@ -125,19 +132,20 @@ int LuaArgs::count()
 
 const char *LuaArgs::scopy(int idx)
 {
-    size_t len;
-    const char *src = lua_tolstring(L, idx, &len);
-    char *ret = new char[len+1];
-    ret[len] = '\0';
-    return strncpy(ret, src, len);
+    //size_t len;
+    //const char *src = lua_tolstring(L, idx, &len);
+    //char* ret = new char[len + 1] {};
+    //ret[len] = '\0';
+    //return strncpy(ret, src, len);
+    return scopy(lua_tostring(L, idx));
 }
 
 const char *LuaArgs::scopy(const char *src)
 {
-    size_t len = strlen(src);
-    char *ret = new char[len+1];
-    ret[len] = '\0';
-    return strncpy(ret, src, len);
+/*    size_t len = strlen(src);
+    char *ret = new char[len+1]{};
+    return strncpy(ret, src, len);*/
+    return strdup(src);
 }
 
 const char *LuaArgs::sref(int idx)
@@ -166,10 +174,12 @@ const char *LuaArgs::getS(int idx, const char *Default)
 
 const char *LuaArgs::gets(int idx, const char *key, const char *Default)
 {
-    if (tbl > 0 && lua_checkstack(L, 1)) {
+    if (tbl > 0 && lua_checkstack(L, 1))
+    {
         lua_getfield(L, tbl, key);
         bool success = lua_isstring(L, -1) != 0;
-        if (!success && idx > 0) {
+        if (!success && idx > 0)
+        {
             lua_pop(L, 1);
             lua_pushinteger(L, idx);
             lua_gettable(L, tbl);
@@ -179,7 +189,8 @@ const char *LuaArgs::gets(int idx, const char *key, const char *Default)
             Default = sref(-1);
         lua_pop(L, 1);
         return Default;
-    } else {
+    } else
+    {
         return gets(idx, Default);
     }
 }

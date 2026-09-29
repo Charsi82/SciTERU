@@ -85,8 +85,6 @@
 //#include <lauxlib.h>
 //#include <lualib.h>
 
-#define LUA_LIB
-#define LUA_BUILD_AS_DLL
 #include "lua.hpp"
 
 #include "lfs.h"
@@ -1118,13 +1116,17 @@ static int push_link_target(lua_State * L)
     }
     target = target2;
 #ifdef _WIN32
-    tsize = GetFinalPathNameByHandle(h, target, static_cast<DWORD>(size), FILE_NAME_OPENED);
+    DWORD ret = GetFinalPathNameByHandle(h, target, static_cast<DWORD>(size), FILE_NAME_OPENED);
+    if (ret==0) {
+      break;
+    }
+    tsize = ret;
 #else
     tsize = readlink(file, target, size);
-#endif
     if (tsize < 0) {            /* a readlink() error occurred */
       break;
     }
+#endif
     if (tsize < size) {
 #ifdef _WIN32
       if (tsize > 4 && strncmp(target, "\\\\?\\", 4) == 0) {

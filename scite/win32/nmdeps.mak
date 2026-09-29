@@ -20,6 +20,7 @@ DirectorExtension.obj: \
 	../src/MatchMarker.h \
 	../src/Searcher.h \
 	../src/SciTEBase.h \
+	WinBasics.h \
 	DirectorExtension.h
 GUIWin.obj: \
 	GUIWin.cxx \
@@ -61,6 +62,7 @@ SciTEWin.obj: \
 	Strips.h \
 	../src/SciTEKeys.h \
 	DLLFunction.h \
+	WinBasics.h \
 	../src/MultiplexExtension.h \
 	DirectorExtension.h \
 	../src/LuaExtension.h
@@ -100,6 +102,7 @@ Sc1.obj: \
 	Strips.h \
 	../src/SciTEKeys.h \
 	DLLFunction.h \
+	WinBasics.h \
 	../src/MultiplexExtension.h \
 	DirectorExtension.h \
 	../src/LuaExtension.h
@@ -137,7 +140,8 @@ SciTEWinBar.obj: \
 	UniqueInstance.h \
 	../src/StripDefinition.h \
 	Strips.h \
-	../src/SciTEKeys.h
+	../src/SciTEKeys.h \
+	WinBasics.h
 SciTEWinDlg.obj: \
 	SciTEWinDlg.cxx \
 	SciTEWin.h \
@@ -173,7 +177,8 @@ SciTEWinDlg.obj: \
 	../src/StripDefinition.h \
 	Strips.h \
 	../src/SciTEKeys.h \
-	DLLFunction.h
+	DLLFunction.h \
+	WinBasics.h
 Strips.obj: \
 	Strips.cxx \
 	SciTEWin.h \
@@ -209,7 +214,8 @@ Strips.obj: \
 	../src/StripDefinition.h \
 	Strips.h \
 	../src/SciTEKeys.h \
-	DLLFunction.h
+	DLLFunction.h \
+	WinBasics.h
 UniqueInstance.obj: \
 	UniqueInstance.cxx \
 	SciTEWin.h \
@@ -244,7 +250,12 @@ UniqueInstance.obj: \
 	UniqueInstance.h \
 	../src/StripDefinition.h \
 	Strips.h \
-	../src/SciTEKeys.h
+	../src/SciTEKeys.h \
+	WinBasics.h
+WinBasics.obj: \
+	WinBasics.cxx \
+	../src/GUI.h \
+	WinBasics.h
 Cookie.obj: \
 	../src/Cookie.cxx \
 	../src/GUI.h \

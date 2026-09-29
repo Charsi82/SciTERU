@@ -177,7 +177,7 @@ BEGIN
 	
 #ifdef RB_UserPropertiesFilesSubmenu1
 //!-start-[UserPropertiesFilesSubmenu]
-//! СѓРґР°Р»РµРЅРѕ - РґРѕР±Р°РІР»СЏРµРј РІ РєРѕРґРµ Р±РµР· СЃРµРїР°СЂР°С‚РѕСЂР°
+//! удалено - добавляем в коде без сепаратора
 	//POPUP "&Edit Properties"
 	//BEGIN
 	//	MENUITEM SEPARATOR

@@ -5,42 +5,44 @@
 // Copyright 2013 by Neil Hodgson <neilh@scintilla.org>
 // The License.txt file describes the conditions under which this software may be distributed.
 
+#include <cstdlib>
+#include <cassert>
+
+#include <new>
+#include <compare>
+#include <tuple>
+#include <string>
+#include <string_view>
+#include <vector>
+#include <array>
+#include <deque>
+#include <map>
+#include <set>
+#include <optional>
+#include <algorithm>
+#include <ranges>
+#include <iterator>
+#include <memory>
+#include <numeric>
+#include <chrono>
+#include <sstream>
+#include <atomic>
+#include <mutex>
+
+#define NOMINMAX 1
+#include <windows.h>
+#include <commctrl.h>
+#include <windowsx.h>
+#include <uxtheme.h>
+#include <vsstyle.h>
+#include <vssym32.h>
+#include <shlwapi.h>
+#include <shlobj.h>
+
 #include "SciTEWin.h"
+
 #include "DLLFunction.h"
-
-void *PointerFromWindow(HWND hWnd) noexcept {
-	return reinterpret_cast<void *>(::GetWindowLongPtr(hWnd, 0));
-}
-
-void SetWindowPointer(HWND hWnd, void *ptr) noexcept {
-	::SetWindowLongPtr(hWnd, 0, reinterpret_cast<LONG_PTR>(ptr));
-}
-
-void *SetWindowPointerFromCreate(HWND hWnd, LPARAM lParam) noexcept {
-	LPCREATESTRUCT pcs = reinterpret_cast<LPCREATESTRUCT>(lParam);
-	void *ptr = pcs->lpCreateParams;
-	SetWindowPointer(hWnd, ptr);
-	return ptr;
-}
-
-GUI::gui_string TextOfWindow(HWND hWnd) {
-	const int len = ::GetWindowTextLengthW(hWnd);
-	GUI::gui_string gsText(len, 0);
-	if (::GetWindowTextW(hWnd, gsText.data(), len + 1)) {
-		return gsText;
-	}
-	return {};
-}
-
-GUI::gui_string ClassNameOfWindow(HWND hWnd) {
-	// In the documentation of WNDCLASS:
-	// "The maximum length for lpszClassName is 256."
-	constexpr int maxClassNameLength = 256+1;	// +1 for NUL
-	GUI::gui_char className[maxClassNameLength];
-	if (::GetClassNameW(hWnd, className, maxClassNameLength))
-		return {className};
-	return {};
-}
+#include "WinBasics.h"
 
 void ComboBoxAppend(HWND hWnd, const GUI::gui_string &gs) noexcept {
 	ComboBox_AddString(hWnd, gs.c_str());
@@ -63,10 +65,9 @@ void CheckButton(const GUI::Window &wButton, bool checked) noexcept {
 }
 
 SIZE SizeButton(const GUI::Window &wButton) noexcept {
-	SIZE sz = { 0, 0 };
+	SIZE sz {};
 	// Push buttons can be measured with BCM_GETIDEALSIZE.
-	::SendMessage(HwndOf(wButton),
-		      BCM_GETIDEALSIZE, 0, reinterpret_cast<LPARAM>(&sz));
+	SendPointer(HwndOf(wButton), BCM_GETIDEALSIZE, 0, &sz);
 	return sz;
 }
 
@@ -85,7 +86,7 @@ int WidthText(HFONT hfont, GUI::gui_string_view text) noexcept {
 	return SizeText(hfont, text).cx;
 }
 
-int WidthControl(GUI::Window &w) {
+int WidthControl(const GUI::Window &w) noexcept {
 	const GUI::Rectangle rc = w.GetPosition();
 	return rc.Width();
 }
@@ -127,7 +128,7 @@ void SetComboText(const GUI::Window &w, const std::string &s, ComboSelection sel
 	}
 }
 
-void SetComboFromMemory(GUI::Window w, const ComboMemory &mem) {
+void SetComboFromMemory(const GUI::Window &w, const ComboMemory &mem) {
 	HWND combo = HwndOf(w);
 	ComboBox_ResetContent(combo);
 	for (size_t i = 0; i < mem.Length(); i++) {
@@ -137,7 +138,8 @@ void SetComboFromMemory(GUI::Window w, const ComboMemory &mem) {
 }
 
 constexpr WPARAM SubCommandOfWParam(WPARAM wParam) noexcept {
-	return wParam >> 16;
+	constexpr size_t wordBits = 16;
+	return wParam >> wordBits;
 }
 
 bool IsSameOrChild(const GUI::Window &wParent, HWND wChild) noexcept {
@@ -266,6 +268,35 @@ SearchOption toggles[] = {
 	{nullptr, 0, 0},
 };
 
+constexpr std::array<int, 4> imageScales { 96, 128, 144, 192 };
+constexpr std::array<int, 4> buttonImageSize { 16, 20, 24, 32 };
+
+// Quantize the scale factor to an index to select button images that match the scale.
+constexpr int ScaleIndex(int scale) {
+	int index = 3;
+	while (index > 0) {
+		if (scale >= imageScales[index]) {
+			return index;
+		}
+		index--;
+	}
+	// Treat scales below 96 same as 96
+	return 0;
+}
+
+// Reasonable default sizes for controls.
+
+constexpr int baseHeightButton = 19;
+
+constexpr int heightStatic = 21;
+
+constexpr int widthEdit = 100;
+
+constexpr int leftCombo = 50;
+constexpr int widthCombo = 300;
+constexpr int heightCombo = 80;
+constexpr int heightComboUser = 180;
+
 }
 
 GUI::Window Strip::CreateText(const char *text) {
@@ -274,7 +305,7 @@ GUI::Window Strip::CreateText(const char *text) {
 	GUI::Window w;
 	w.SetID(::CreateWindowExW(0, WC_STATICW, localised.c_str(),
 				 WS_CHILD | WS_CLIPSIBLINGS | SS_RIGHT,
-				 2, 2, width, 21,
+				 2, 2, width, heightStatic,
 				 Hwnd(), HmenuID(0), ::ApplicationInstance(), nullptr));
 	SetFontHandle(w, fontText);
 	w.Show();
@@ -284,7 +315,7 @@ GUI::Window Strip::CreateText(const char *text) {
 GUI::Window Strip::CreateButton(const char *text, size_t ident, bool check) {
 	GUI::gui_string localised = localiser->Text(text);
 	int width = WidthText(fontText, localised);
-	int height = 19 + (2 * ::GetSystemMetrics(SM_CYEDGE));
+	int height = baseHeightButton + (2 * ::GetSystemMetrics(SM_CYEDGE));
 	if (check) {
 		width += 6;
 		const int checkSize = ::GetSystemMetrics(SM_CXMENUCHECK);
@@ -294,18 +325,9 @@ GUI::Window Strip::CreateButton(const char *text, size_t ident, bool check) {
 		width += 2 * WidthText(fontText, GUI_TEXT(" "));	// Allow a bit of space
 	}
 
-	int bmpDimension = 16;
-	int resDifference = 0;
-	if (scale >= 192) {
-		bmpDimension = 32;
-		resDifference = 300;
-	} else if (scale >= 144) {
-		bmpDimension = 24;
-		resDifference = 200;
-	} else if (scale >= 120) {
-		bmpDimension = 20;
-		resDifference = 100;
-	}
+	const int scaleIndex = ScaleIndex(scale);
+	const int bmpDimension = buttonImageSize[scaleIndex];
+	const int resDifference = scaleIndex * 100;
 
 	if (check) {
 		height = bmpDimension + (3 * 2);
@@ -357,8 +379,7 @@ GUI::Window Strip::CreateButton(const char *text, size_t ident, bool check) {
 				::ApplicationInstance(), MAKEINTRESOURCE(resNum + resDifference), IMAGE_BITMAP,
 				bmpDimension, bmpDimension, flags));
 
-		::SendMessage(HwndOf(w),
-			      BM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(bm));
+		SendPointer(HwndOf(w), BM_SETIMAGE, IMAGE_BITMAP, bm);
 	}
 	SetFontHandle(w, fontText);
 	w.Show();
@@ -377,8 +398,7 @@ GUI::Window Strip::CreateButton(const char *text, size_t ident, bool check) {
 	toolInfo.uId = reinterpret_cast<UINT_PTR>(w.GetID());
 	toolInfo.lpszText = LPSTR_TEXTCALLBACK;
 	::GetClientRect(Hwnd(), &toolInfo.rect);
-	::SendMessageW(HwndOf(wToolTip), TTM_ADDTOOLW,
-		       0, reinterpret_cast<LPARAM>(&toolInfo));
+	SendPointer(HwndOf(wToolTip), TTM_ADDTOOLW, 0, &toolInfo);
 	::SendMessage(HwndOf(wToolTip), TTM_ACTIVATE, TRUE, 0);
 	return w;
 }
@@ -410,7 +430,7 @@ void Strip::Destruction() noexcept {
 	if (fontText)
 		::DeleteObject(fontText);
 	fontText = {};
-#ifdef THEME_AVAILABLE
+#ifndef DISABLE_THEMES
 	if (hTheme)
 		::CloseThemeData(hTheme);
 #endif
@@ -470,7 +490,7 @@ bool Strip::Command(WPARAM) {
 void Strip::Size() {
 }
 
-void Strip::Paint(HDC hDC) {
+void Strip::Paint(HDC hDC) const noexcept {
 	const GUI::Rectangle rcStrip = GetClientPosition();
 	const RECT rc = RECTFromRectangle(rcStrip);
 	HBRUSH hbrFace = CreateSolidBrush(::GetSysColor(COLOR_3DFACE));
@@ -481,7 +501,7 @@ void Strip::Paint(HDC hDC) {
 		// Draw close box
 		RECT rcClose = RECTFromRectangle(CloseArea());
 		if (hTheme) {
-#ifdef THEME_AVAILABLE
+#ifndef DISABLE_THEMES
 			int closeAppearence = CBS_NORMAL;
 			if (closeState == StripCloseState::over) {
 				closeAppearence = CBS_HOT;
@@ -509,7 +529,7 @@ bool Strip::HasClose() const noexcept {
 	return true;
 }
 
-GUI::Rectangle Strip::CloseArea() {
+GUI::Rectangle Strip::CloseArea() const noexcept {
 	if (HasClose()) {
 		GUI::Rectangle rcClose = GetClientPosition();
 		rcClose.right -= space;
@@ -521,7 +541,7 @@ GUI::Rectangle Strip::CloseArea() {
 	return GUI::Rectangle(-1, -1, -1, -1);
 }
 
-GUI::Rectangle Strip::LineArea(int line) {
+GUI::Rectangle Strip::LineArea(int line) const noexcept {
 	GUI::Rectangle rcLine = GetPosition();
 
 	rcLine.right -= rcLine.left;
@@ -541,21 +561,21 @@ int Strip::Lines() const noexcept {
 	return 1;
 }
 
-void Strip::InvalidateClose() {
+void Strip::InvalidateClose() const noexcept {
 	const RECT rc = RECTFromRectangle(CloseArea());
 	::InvalidateRect(Hwnd(), &rc, TRUE);
 }
 
-void Strip::Redraw() noexcept {
+void Strip::Redraw() const noexcept {
 	::InvalidateRect(Hwnd(), nullptr, TRUE);
 }
 
-bool Strip::MouseInClose(GUI::Point pt) {
+bool Strip::MouseInClose(GUI::Point pt) const noexcept {
 	const GUI::Rectangle rcClose = CloseArea();
 	return rcClose.Contains(pt);
 }
 
-void Strip::TrackMouse(GUI::Point pt) {
+void Strip::TrackMouse(GUI::Point pt) noexcept {
 	const StripCloseState closeStateStart = closeState;
 	if (MouseInClose(pt)) {
 		if (closeState == StripCloseState::none)
@@ -580,7 +600,7 @@ void Strip::TrackMouse(GUI::Point pt) {
 }
 
 void Strip::SetTheme() noexcept {
-#ifdef THEME_AVAILABLE
+#ifndef DISABLE_THEMES
 	if (hTheme)
 		::CloseThemeData(hTheme);
 	scale = USER_DEFAULT_SCREEN_DPI;
@@ -611,7 +631,7 @@ LRESULT Strip::CustomDraw(NMHDR *pnmh) noexcept {
 	if ((btnStyle & BS_AUTOCHECKBOX) != BS_AUTOCHECKBOX) {
 		return CDRF_DODEFAULT;
 	}
-#ifdef THEME_AVAILABLE
+#ifndef DISABLE_THEMES
 	LPNMCUSTOMDRAW pcd = reinterpret_cast<LPNMCUSTOMDRAW>(pnmh);
 	if (pcd->dwDrawStage == CDDS_PREERASE) {
 		::DrawThemeParentBackground(pnmh->hwndFrom, pcd->hdc, &pcd->rc);
@@ -711,7 +731,7 @@ LRESULT Strip::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) {
 		break;
 
 	case WM_WINDOWPOSCHANGED:
-		if ((reinterpret_cast<WINDOWPOS *>(lParam)->flags & SWP_SHOWWINDOW) && HideKeyboardCues())
+		if ((PtrParam<WINDOWPOS *>(lParam)->flags & SWP_SHOWWINDOW) && HideKeyboardCues())
 			UpdateUIState(Hwnd(), UIS_SET);
 		return ::DefWindowProc(Hwnd(), iMessage, wParam, lParam);
 
@@ -723,11 +743,9 @@ LRESULT Strip::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) {
 			return 0;
 		}
 
-#ifdef THEME_AVAILABLE
 	case WM_THEMECHANGED:
 		SetTheme();
 		break;
-#endif
 
 	case WM_LBUTTONDOWN:
 		if (MouseInClose(PointFromLong(lParam))) {
@@ -769,11 +787,11 @@ LRESULT Strip::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) {
 		return EditColour(reinterpret_cast<HWND>(lParam), reinterpret_cast<HDC>(wParam));
 
 	case WM_NOTIFY: {
-			NMHDR *pnmh = reinterpret_cast<LPNMHDR>(lParam);
+			NMHDR *pnmh = PtrParam<LPNMHDR>(lParam);
 			if (pnmh->code == NM_CUSTOMDRAW) {
 				return CustomDraw(pnmh);
 			} else if (pnmh->code == TTN_GETDISPINFO) {
-				NMTTDISPINFOW *pnmtdi = reinterpret_cast<LPNMTTDISPINFO>(lParam);
+				NMTTDISPINFOW *pnmtdi = PtrParam<LPNMTTDISPINFO>(lParam);
 				const int idButton = static_cast<int>(
 							     (pnmtdi->uFlags & TTF_IDISHWND) ?
 							     ::GetDlgCtrlID(reinterpret_cast<HWND>(pnmtdi->hdr.idFrom)) : pnmtdi->hdr.idFrom);
@@ -805,7 +823,7 @@ void Strip::AddToPopUp(const GUI::Menu &popup, const char *label, int cmd, bool 
 		::AppendMenu(menu, MF_STRING | (checked ? MF_CHECKED : 0), cmd, localised.c_str());
 }
 
-void Strip::ShowPopup() {
+void Strip::ShowPopup() const {
 }
 
 void Strip::CloseIfOpen() {
@@ -820,14 +838,14 @@ void BackgroundStrip::Creation() {
 
 	wExplanation = ::CreateWindowExW(0, WC_STATICW, L"",
 					WS_CHILD | WS_CLIPSIBLINGS,
-					2, 2, 100, 21,
+					2, 2, widthEdit, heightStatic,
 					Hwnd(), HmenuID(0), ::ApplicationInstance(), nullptr);
 	wExplanation.Show();
 	SetFontHandle(wExplanation, fontText);
 
 	wProgress = ::CreateWindowExW(0, PROGRESS_CLASS, L"",
 				     WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE,
-				     2, 2, 100, 21,
+				     2, 2, widthEdit, heightStatic,
 				     Hwnd(), HmenuID(0), ::ApplicationInstance(), nullptr);
 }
 
@@ -927,7 +945,7 @@ void SearchStrip::Creation() {
 
 	wText = CreateWindowExW(WS_EX_CLIENTEDGE, WC_EDITW, L"",
 			       WS_CHILD | WS_TABSTOP | WS_CLIPSIBLINGS | ES_AUTOHSCROLL,
-			       50, 2, 300, 21,
+			       leftCombo, 2, widthCombo, heightStatic,
 			       Hwnd(), HmenuID(IDC_INCFINDTEXT), ::ApplicationInstance(), nullptr);
 	wText.Show();
 
@@ -977,7 +995,7 @@ void SearchStrip::Size() {
 	Redraw();
 }
 
-void SearchStrip::Paint(HDC hDC) {
+void SearchStrip::Paint(HDC hDC) const noexcept {
 	Strip::Paint(hDC);
 }
 
@@ -1119,7 +1137,7 @@ void FindStrip::Creation() {
 
 	wText = ::CreateWindowExW(0, WC_COMBOBOXW, L"",
 			       WS_CHILD | WS_TABSTOP | WS_CLIPSIBLINGS | CBS_DROPDOWN | CBS_AUTOHSCROLL,
-			       50, 2, 300, 80,
+			       leftCombo, 2, widthCombo, heightCombo,
 			       Hwnd(), HmenuID(IDFINDWHAT), ::ApplicationInstance(), nullptr);
 	SetFontHandle(wText, fontText);
 	wText.Show();
@@ -1181,7 +1199,7 @@ void FindStrip::Size() {
 	Redraw();
 }
 
-void FindStrip::Paint(HDC hDC) {
+void FindStrip::Paint(HDC hDC) const noexcept {
 	Strip::Paint(hDC);
 }
 
@@ -1221,7 +1239,7 @@ void FindStrip::Next(bool markAll, bool invertDirection) {
 	}
 }
 
-void FindStrip::ShowPopup() {
+void FindStrip::ShowPopup() const {
 	GUI::Menu popup;
 	popup.CreatePopUp();
 	for (int i=SearchOption::tWord; i<=SearchOption::tUp; i++) {
@@ -1294,7 +1312,7 @@ void ReplaceStrip::Creation() {
 
 	wText = ::CreateWindowExW(0, WC_COMBOBOXW, L"",
 			       WS_CHILD | WS_TABSTOP | WS_CLIPSIBLINGS | CBS_DROPDOWN | CBS_AUTOHSCROLL,
-			       50, 2, 300, 80,
+			       leftCombo, 2, widthCombo, heightCombo,
 			       Hwnd(), HmenuID(IDFINDWHAT), ::ApplicationInstance(), nullptr);
 	SetFontHandle(wText, fontText);
 	wText.Show();
@@ -1306,7 +1324,7 @@ void ReplaceStrip::Creation() {
 
 	wReplace = ::CreateWindowExW(0, WC_COMBOBOXW, L"",
 				  WS_CHILD | WS_TABSTOP | CBS_DROPDOWN | CBS_AUTOHSCROLL,
-				  50, 2, 300, 80,
+				  leftCombo, 2, widthCombo, heightCombo,
 				  Hwnd(), HmenuID(IDREPLACEWITH), ::ApplicationInstance(), nullptr);
 	SetFontHandle(wReplace, fontText);
 	wReplace.Show();
@@ -1391,7 +1409,7 @@ void ReplaceStrip::Size() {
 	Redraw();
 }
 
-void ReplaceStrip::Paint(HDC hDC) {
+void ReplaceStrip::Paint(HDC hDC) const noexcept {
 	Strip::Paint(hDC);
 }
 
@@ -1424,7 +1442,7 @@ bool ReplaceStrip::KeyDown(WPARAM key) {
 	return false;
 }
 
-void ReplaceStrip::ShowPopup() {
+void ReplaceStrip::ShowPopup() const {
 	GUI::Menu popup;
 	popup.CreatePopUp();
 	for (int i = SearchOption::tWord; i <= SearchOption::tContext; i++) {
@@ -1557,7 +1575,7 @@ void FilterStrip::Creation() {
 
 	wText = ::CreateWindowExW(0, WC_COMBOBOXW, L"",
 		WS_CHILD | WS_TABSTOP | WS_CLIPSIBLINGS | CBS_DROPDOWN | CBS_AUTOHSCROLL,
-		50, 2, 300, 80,
+		leftCombo, 2, widthCombo, heightCombo,
 		Hwnd(), HmenuID(IDFINDWHAT), ::ApplicationInstance(), nullptr);
 	SetFontHandle(wText, fontText);
 	wText.Show();
@@ -1608,7 +1626,7 @@ void FilterStrip::Size() {
 	Redraw();
 }
 
-void FilterStrip::Paint(HDC hDC) {
+void FilterStrip::Paint(HDC hDC) const noexcept {
 	Strip::Paint(hDC);
 }
 
@@ -1636,7 +1654,7 @@ void FilterStrip::Filter(ChangingSource source) {
 	pSearcher->FilterAll(true);
 }
 
-void FilterStrip::ShowPopup() {
+void FilterStrip::ShowPopup() const {
 	GUI::Menu popup;
 	popup.CreatePopUp();
 	for (int i = SearchOption::tWord; i <= SearchOption::tContext; i++) {
@@ -1705,7 +1723,7 @@ void UserStrip::Creation() {
 	// Combo boxes automatically size to a reasonable height so create a temporary and measure
 	HWND wComboTest = ::CreateWindowExW(0, WC_COMBOBOXW, L"Aby",
 					   WS_CHILD | WS_TABSTOP | WS_CLIPSIBLINGS | CBS_DROPDOWN | CBS_AUTOHSCROLL,
-					   50, 2, 300, 80,
+					   leftCombo, 2, widthCombo, heightCombo,
 					   Hwnd(), {}, ::ApplicationInstance(), nullptr);
 	SetWindowFont(wComboTest, fontText, 0);
 	RECT rc;
@@ -1723,6 +1741,9 @@ void UserStrip::Close() {
 	Strip::Close();
 	if (pSciTEWin)
 		pSciTEWin->UserStripClosed();
+#ifdef RB_UserStripClose
+	if (extender) extender->OnUserStrip(-1, 0);
+#endif // RB_UserStripClose
 }
 
 void UserStrip::Size() {
@@ -1773,7 +1794,7 @@ void UserStrip::Size() {
 			if (ctl.controlType == UserControl::ucEdit)
 				rcSize.bottom = rcSize.top + lineHeight - 3;
 			if (ctl.controlType == UserControl::ucCombo)
-				rcSize.bottom = rcSize.top + 180;
+				rcSize.bottom = rcSize.top + heightComboUser;
 			const GUI::Rectangle rcControl(left, topWithFix, left + ctl.widthAllocated, topWithFix + rcSize.Height());
 			ctl.w.SetPosition(rcControl);
 			left += ctl.widthAllocated + 4;
@@ -1903,12 +1924,13 @@ void UserStrip::SetDescription(const char *description) {
 	// Create all the controls but with arbitrary initial positions which will be fixed up later.
 	size_t controlID=0;
 	int top = space;
+	constexpr int initialSpread = 60;
 	for (std::vector<UserControl> &line : psd->controls) {
 		int left = 0;
 		for (UserControl &ctl : line) {
 			switch (ctl.controlType) {
 			case UserControl::ucEdit:
-				ctl.widthDesired = 100;
+				ctl.widthDesired = widthEdit;
 				ctl.fixedWidth = false;
 				ctl.w = ::CreateWindowExW(WS_EX_CLIENTEDGE, WC_EDITW, ctl.text.c_str(),
 							 WS_CHILD | WS_TABSTOP | WS_CLIPSIBLINGS | ES_AUTOHSCROLL,
@@ -1917,11 +1939,11 @@ void UserStrip::SetDescription(const char *description) {
 				break;
 
 			case UserControl::ucCombo:
-				ctl.widthDesired = 100;
+				ctl.widthDesired = widthEdit;
 				ctl.fixedWidth = false;
 				ctl.w = ::CreateWindowExW(WS_EX_CLIENTEDGE, WC_COMBOBOXW, ctl.text.c_str(),
 							 WS_CHILD | WS_TABSTOP | WS_CLIPSIBLINGS | CBS_DROPDOWN | CBS_AUTOHSCROLL | WS_VSCROLL,
-							 left, top, ctl.widthDesired, 180,
+							 left, top, ctl.widthDesired, heightComboUser,
 							 Hwnd(), HmenuID(controlID), ::ApplicationInstance(), nullptr);
 				break;
 
@@ -1964,7 +1986,7 @@ void UserStrip::SetDescription(const char *description) {
 			ctl.w.Show();
 			SetFontHandle(ctl.w, fontText);
 			controlID++;
-			left += 60;
+			left += initialSpread;
 		}
 		top += lineHeight;
 	}

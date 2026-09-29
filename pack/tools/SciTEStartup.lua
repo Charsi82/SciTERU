@@ -149,6 +149,9 @@ end
 -- Лексер для текстовых файлов
 dofile (props["SciteDefaultHome"].."\\languages\\text.lua")
 
+-- Лексер для файлов unbound
+dofile (props["SciteDefaultHome"].."\\languages\\unbound.lua")
+
 ------------------------------------------------------------------------------
 
 AddEventHandler("OnMenuCommand", function(msg, source)

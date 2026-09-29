@@ -6,9 +6,6 @@
 // The License.txt file describes the conditions under which this software may be distributed.
 
 #include <cstdlib>
-#include <cstdint>
-#include <cstdio>
-#include <ctime>
 
 #include <compare>
 #include <tuple>
@@ -20,13 +17,11 @@
 #include <optional>
 #include <memory>
 #include <chrono>
+#include <sstream>
 #include <atomic>
 #include <mutex>
 
-#undef _WIN32_WINNT
-#define _WIN32_WINNT  0x0A00
 #include <windows.h>
-#include <commctrl.h>
 
 #include "ScintillaTypes.h"
 #include "ScintillaCall.h"
@@ -46,6 +41,7 @@
 #include "MatchMarker.h"
 #include "Searcher.h"
 #include "SciTEBase.h"
+#include "WinBasics.h"
 #include "DirectorExtension.h"
 
 namespace {
@@ -67,7 +63,7 @@ void SendDirector(const char *verb, const char *arg = nullptr) {
 		std::string addressedMessage;
 		if (wDestination) {
 			addressedMessage += ":";
-			std::string address = StdStringFromSizeT(reinterpret_cast<size_t>(wDestination));
+			std::string address = StdStringFromSizeT(FromPtr(wDestination));
 			addressedMessage += address;
 			addressedMessage += ":";
 		} else {
@@ -83,9 +79,9 @@ void SendDirector(const char *verb, const char *arg = nullptr) {
 		cds.cbData = static_cast<DWORD>(slashedMessage.length());
 		slashedMessage.append(1, '\0');	// Ensure NUL at end of string
 		cds.lpData = slashedMessage.data();
-		::SendMessage(wDestination, WM_COPYDATA,
-			      reinterpret_cast<WPARAM>(wReceiver),
-			      reinterpret_cast<LPARAM>(&cds));
+		SendPointer(wDestination, WM_COPYDATA,
+			      FromPtr(wReceiver),
+			      &cds);
 	}
 }
 
@@ -110,10 +106,10 @@ void CheckEnvironment(ExtensionAPI *phost) {
 				startedByDirector = true;
 				wDirector = HwndFromString(director);
 				// Director is just seen so identify this to it
-				::SendDirectorInteger("identity", reinterpret_cast<intptr_t>(wReceiver));
+				::SendDirectorInteger("identity", FromPtr(wReceiver));
 			}
 		}
-		std::string sReceiver = StdStringFromSizeT(reinterpret_cast<size_t>(wReceiver));
+		std::string sReceiver = StdStringFromSizeT(FromPtr(wReceiver));
 		phost->SetProperty("WindowID", sReceiver.c_str());
 	}
 }
@@ -121,7 +117,7 @@ void CheckEnvironment(ExtensionAPI *phost) {
 WCHAR DirectorExtension_ClassName[] = L"DirectorExtension";
 
 LRESULT HandleCopyData(LPARAM lParam) {
-	const COPYDATASTRUCT *pcds = reinterpret_cast<COPYDATASTRUCT *>(lParam);
+	const COPYDATASTRUCT *pcds = PtrParam<const COPYDATASTRUCT *>(lParam);
 	// Copy into an temporary buffer to ensure \0 terminated
 	if (pcds->lpData) {
 		std::string dataCopy(static_cast<const char *>(pcds->lpData), pcds->cbData);
@@ -134,7 +130,8 @@ LRESULT CALLBACK DirectorExtension_WndProc(
 	HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam) {
 	if (iMessage == WM_COPYDATA) {
 		return HandleCopyData(lParam);
-	} else if (iMessage == SDI) {
+	}
+	if (iMessage == SDI) {
 		return SDI;
 	}
 	return ::DefWindowProc(hWnd, iMessage, wParam, lParam);
@@ -185,8 +182,8 @@ bool DirectorExtension::Initialise(ExtensionAPI *host_) {
 	if (!hostSciTE) {
 		::exit(FALSE);
 	}
-	::SetWindowLongPtr(wReceiver, GWLP_USERDATA,
-			   reinterpret_cast<LONG_PTR>(hostSciTE->GetID()));
+	::SetWindowLongPtrW(wReceiver, GWLP_USERDATA,
+			   FromPtr(hostSciTE->GetID()));
 	CheckEnvironment(host);
 	return true;
 }

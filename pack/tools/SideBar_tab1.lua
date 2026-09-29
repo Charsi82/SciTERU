@@ -16,20 +16,16 @@ return function(tabs, panel_width, colorback, colorfore)
 	-- tab1:add(list_func, "top", list_func_height, true)
 	local list_func = tab1:add_list(true)
 	list_func:set_align("top", list_func_height, true)
-	list_func:add_column("Функции/Процедуры", 600)
+	list_func:add_column(L'Functions', 600)
 	if colorback then list_func:set_list_colour(colorfore, colorback) end
 
 	local tab11 = gui.panel(panel_width)
 	tab1:client(tab11)
 
-	-- local label = gui.label(nil, 0x4) -- black rect
-	-- tab11:add(label, "top", 2) -- heigth, w\o splitter
-	local lbl = tab11:add_label(0x4)
+	local lbl = tab11:add_label(0x4) -- black sepatator
 	lbl:set_align("top", 2)
-	-- local label = gui.label("   Закладки", 0x0) 
-	-- tab11:add(label, "top", 18) -- heigth, w\o splitter
-	local lbl = tab11:add_label(0x0, "   Закладки")
-	lbl:set_align("top", 18)
+	local lbl = tab11:add_label(0x0, L'Bookmarks')
+	lbl:set_align("top", 16)
 	-- tree bookmarks
 	local tree_style = 0 + 0x0001 + 0x0002 + 0x0004 --  + 0x4000
 	+ 0x0800
@@ -605,6 +601,28 @@ return function(tabs, panel_width, colorback, colorfore)
 			Lang2lpeg.SQL = lpeg.Ct(patt)
 		end -- ^----- SQL ------^--
 
+		do -- v----- BAT ------v--
+			local I = C(IDENTIFIER) * cl
+			local def = NL * P":" * Ct(I)
+			local patt = (def + 1) ^ 0 * EOF
+			Lang2lpeg.BAT = lpeg.Ct(patt)
+		end -- ^----- BAT ------^--
+
+		do -- v----- Make ------v--
+			local target = (IDENTIFIER + S"$-.()*{}/\\%") * P" " ^ 0
+			local I = C(target ^ 1) * cl
+			local def = NL * Ct(I) * P":"
+			local patt = (def + 1) ^ 0 * EOF
+			Lang2lpeg.Make = lpeg.Ct(patt)
+		end -- ^----- Make ------^--
+		
+		do -- v----- Unbound ------v--
+			local SPACE = S" \t"
+			local I = C(IDENTIFIER * SPACE ^ 1 * P'$' ^ -1 * IDENTIFIER * cl) * SPACE ^ 0 * par ^ 0
+			local def = NL ^ 0 * P"(" * SPACE ^ 0 * "def" * SPACE ^ 1 * Ct(I)
+			local patt = (def + 1) ^ 0 * EOF
+			Lang2lpeg.Unbound = lpeg.Ct(patt)
+		end -- ^----- Unbound ------^--
 	end
 
 	local Lang2CodeStart = {['Pascal'] = '^IMPLEMENTATION$'}
@@ -621,7 +639,9 @@ return function(tabs, panel_width, colorback, colorfore)
         ['rust'] = 'Rust',
         ['sql'] = 'SQL',
         ['lua'] = 'Lua',
-        ['nncrontab'] = 'nnCron'
+        ['nncrontab'] = 'nnCron',
+        ['makefile'] = 'Make',
+        ['script_unbound'] = 'Unbound',
     }
 
 	local Ext2Lang = {}
@@ -634,6 +654,7 @@ return function(tabs, panel_width, colorback, colorfore)
 			[props['file.patterns.wscript']] = 'VisualBasic',
 			['*.css'] = 'CSS',
 			['*.sql'] = 'SQL',
+			['*.bat;*.cmd'] = 'BAT',
 			[props['file.patterns.pascal']] = 'Pascal',
 			[props['file.patterns.py']] = 'Python',
 			[props['file.patterns.lua']] = 'Lua',
@@ -673,8 +694,8 @@ return function(tabs, panel_width, colorback, colorfore)
 		table_functions = lpegPattern:match(textAll, start_code_pos + 1) -- 2nd arg is the symbol index to start with
 	end
 
-	local _show_params = props['sidebar.fn.show.params'] == '1'
-	local _show_flags = props['sidebar.fn.show.flags'] == '1'
+	local _show_params = props['sidebar.functions.params'] == '1'
+	local _show_flags = props['sidebar.functions.flags'] == '1'
 
 	local function Functions_ListFILL()
 		if props['sidebar.show'] ~= '1' or props['sidebar.active.tab'] ~= '1' then return end
@@ -766,14 +787,14 @@ return function(tabs, panel_width, colorback, colorfore)
 
 	function Functions_ToggleParams()
 		_show_params = not _show_params
-		props['sidebar.fn.show.params'] = _show_params and 1 or 0
+		props['sidebar.functions.params'] = _show_params and 1 or 0
 		Functions_ListFILL()
 		UpdateListMenu()
 	end
 
 	function Functions_ToggleFlags()
 		_show_flags = not _show_flags
-		props['sidebar.fn.show.flags'] = _show_flags and 1 or 0
+		props['sidebar.functions.flags'] = _show_flags and 1 or 0
 		Functions_ListFILL()
 		UpdateListMenu()
 	end
@@ -964,7 +985,7 @@ return function(tabs, panel_width, colorback, colorfore)
 		if bm_count>0 then
 			local parent_item = get_or_add_parent_item()
 			tree_bookmarks:tree_remove_childs(parent_item)
-			for i = 0, editor.LineCount do
+			for i = 0, editor.LineCount-1 do
 				if (editor:MarkerGet(i) // 2 % 2 == 1) then
 					tree_bookmarks:add_item(GetLineText(i), parent_item, BM_LINE_IDX)
 				end
@@ -978,7 +999,7 @@ return function(tabs, panel_width, colorback, colorfore)
 		-- print('tab1:local function Bookmark_BeforeAdd(line)')
 		local parent_item = get_or_add_parent_item()
 		tree_bookmarks:tree_remove_childs(parent_item)
-        for i = 0, editor.LineCount do
+        for i = 0, editor.LineCount-1 do
             if (i == line) or (editor:MarkerGet(i) // 2 % 2 == 1) then
                 tree_bookmarks:add_item(GetLineText(i), parent_item, BM_LINE_IDX)
             end
@@ -1068,27 +1089,27 @@ return function(tabs, panel_width, colorback, colorfore)
 			Functions_ListFILL()
 		end
 	end
-
+	
 	AddEventHandler("OnSwitchFile", OnSwitch)
 	AddEventHandler("OnOpen", OnSwitch)
 	AddEventHandler("OnSave", OnSwitch)
     event('sb_tab_selected'):register(function(e, tab_id)
         if tab_id == 1 then OnSwitch() end
     end)
-	
+
     -------------------------
 	list_mnu = list_func:context_menu{
-		'POPUPBEGIN|Сортировать',
-		'По порядку|Functions_SortByOrder',
-		'По имени|Functions_SortByName',
+		'POPUPBEGIN|'..L'Sort',
+		L'SortByOrder'..'|Functions_SortByOrder',
+		L'SortByName'..'|Functions_SortByName',
 		'POPUPEND',
-		'Показать/скрыть флаги|Functions_ToggleFlags',
-		'Показать/скрыть параметры|Functions_ToggleParams',
+		L'ToggleFlags'..'|Functions_ToggleFlags',
+		L'ToggleParams'..'|Functions_ToggleParams',
 	}
 
 	UpdateListMenu()
 	-------------------------
 
-	tabs:add_tab("Функции", tab1, props['ICO_LIST_OF_FUNCTIONS_PROCEDURES']) -- caption, wnd, icon_index
+	tabs:add_tab(L'IDS_SB_Functions', tab1, props['ICO_LIST_OF_FUNCTIONS_PROCEDURES']) -- caption, wnd, icon_index
 	return tab1
 end

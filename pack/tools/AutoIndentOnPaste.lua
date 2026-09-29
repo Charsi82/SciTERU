@@ -1,3 +1,17 @@
+--[[--------------------------------------------------
+AutoIndentOnPaste.lua
+Authors: Charsi
+Version: 0.1beta
+------------------------------------------------------
+Description:
+	Автоматическое смещение второй и далее строк при вставке текста.
+	Пока работает только отступами в виде табов.
+------------------------------------------------------
+Connection:
+ In file SciTEStartup.lua add a line:
+    dofile (props["SciteDefaultHome"].."\\tools\\AutoIndentOnPaste.lua")
+--]]--------------------------------------------------
+
 local function OnPaste()
 	local txt = shell.getclipboardtext()
 	local tabs = {}
@@ -11,7 +25,7 @@ local function OnPaste()
 	AddEventHandler("OnUpdateUI", function()
 		local liness = editor:LineFromPosition(editor.SelectionStart)
 		local indent_after = editor.LineIndentation[liness]
-		local w = editor.UseTabs and props['tabsize'] or 1
+		local w = editor.UseTabs and tonumber(props['tabsize']) or 1
 		begin_spaces = begin_spaces * w
 		for i = 1, cnt do editor.LineIndentation[line + i] = tabs[i] * w - indent_after + indent_before + begin_spaces end
 	end, true)

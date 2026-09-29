@@ -100,14 +100,14 @@ local function GetClickedText()
     local cur_line, pos_cur = pane:GetCurLine()
     local pos_start, pos_end = 0, 0
     local q = "'"
-    local no_filepath_chars = '%s%)%(=%:%,%*%?%<%>%|"' .. q -- символы, недопутимые в имени файла
-    local no_filepath_end_char = '.\\/[(' -- символы, недопутимые в последнем символе имени файла
+    local no_filepath_chars = '%s%)%(=%:%,%*%?%<%>%|"' .. q -- символы, недопустимые в имени файла
+    local no_filepath_end_char = '.\\/[(' -- символы, недопустимые в последнем символе имени файла
     local re = '%a?:?\\?[^' .. no_filepath_chars ..
 				']+[^' .. no_filepath_chars .. no_filepath_end_char .. ']'
     repeat
         pos_end = pos_end + 1
         pos_start, pos_end = cur_line:find(re, pos_end)
-        if not pos_start then return end
+        if not pos_start then return '' end
     until (pos_start - 1 <= pos_cur) and (pos_end >= pos_cur)
     local line_start_pos = pane:PositionFromLine(
                                pane:LineFromPosition(pane.CurrentPos))
@@ -118,7 +118,7 @@ end
 local function OpenSelectedFilename(text, shift)
     if #text < open_selected_filename_minlength then return end
     if text:find('^file://') then return end
-    if text:find('^https*://') then return end
+    if text:find('^https?://') then return end
     if text:find(':%d+$') then return end
     text = text:gsub('/', '\\')
     local filename = GetOpenFilePath(text, shift) or text
@@ -126,12 +126,12 @@ local function OpenSelectedFilename(text, shift)
         filename = props['FileDir'] .. '\\' .. filename
     end
     filename = filename:gsub("\\$", "", 1)
-    if shell.fileexists(filename) then
-        local dirlist = gui.files(filename, true)
-        if #dirlist == 0 then
-            scite.Open(filename)
-        else
+    local bExist, isDir = shell.fileexists(filename)
+    if bExist then
+        if isDir then
             os.execute(string.format("explorer \"%s\"", filename:from_utf8(0)))
+        else
+            scite.Open(filename)
         end
     else
         -- Создание нового файла

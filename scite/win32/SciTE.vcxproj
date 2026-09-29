@@ -384,6 +384,7 @@
     <ClCompile Include="..\win32\SciTEWinDlg.cxx" />
     <ClCompile Include="..\win32\Strips.cxx" />
     <ClCompile Include="..\win32\UniqueInstance.cxx" />
+    <ClCompile Include="..\win32\WinBasics.cxx" />
     <!--    <ClCompile Include="..\lua\src\*.c" />-->
   </ItemGroup>
   <ItemGroup>
@@ -503,18 +504,17 @@
     <ClInclude Include="..\win32\SciTEWin.h" />
     <ClInclude Include="..\win32\Strips.h" />
     <ClInclude Include="..\win32\UniqueInstance.h" />
+    <ClInclude Include="..\win32\WinBasics.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\win32\SciTERes.rc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Win32\SciBall.ico" />
+    <None Include="..\Win32\Busy.ico" />
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="SciTE.exe.manifest" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="Busy.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

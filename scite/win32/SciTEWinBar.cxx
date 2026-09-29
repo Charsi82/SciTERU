@@ -1,12 +1,41 @@
-// SciTE - Scintilla based Text Editor
+﻿// SciTE - Scintilla based Text Editor
 /** @file SciTEWinBar.cxx
  ** Bar and menu code for the Windows version of the editor.
  **/
 // Copyright 1998-2003 by Neil Hodgson <neilh@scintilla.org>
 // The License.txt file describes the conditions under which this software may be distributed.
 
-#include "SciTEWin.h"
+#include <cstdlib>
+#include <cassert>
 
+#include <new>
+#include <compare>
+#include <tuple>
+#include <string>
+#include <string_view>
+#include <vector>
+#include <array>
+#include <deque>
+#include <map>
+#include <set>
+#include <optional>
+#include <algorithm>
+#include <ranges>
+#include <iterator>
+#include <memory>
+#include <chrono>
+#include <sstream>
+#include <atomic>
+#include <mutex>
+
+#define NOMINMAX 1
+#include <windows.h>
+#include <commctrl.h>
+#include <windowsx.h>
+#include <shlobj.h>
+
+#include "SciTEWin.h"
+#include "WinBasics.h"
 #ifdef RB_TABTOP
 int toptab_h = 0;
 COLORREF toptab_clr = 0;
@@ -52,8 +81,7 @@ void SciTEWin::SetFileProperties(
 			fa += "S";
 		}
 		ps.Set("FileAttr", fa);
-	}
-	else {
+	} else {
 		/* Reset values for new buffers with no file */
 		ps.Set("FileTime", "");
 		ps.Set("FileDate", "");
@@ -75,9 +103,8 @@ void SciTEWin::SetFileProperties(
  * Update the status bar text.
  */
 void SciTEWin::SetStatusBarText(const char *s) {
-	GUI::gui_string barText = GUI::StringFromUTF8(s);
-	::SendMessage(HwndOf(wStatusBar),
-		      SB_SETTEXT, 0, reinterpret_cast<LPARAM>(barText.c_str()));
+	const GUI::gui_string barText = GUI::StringFromUTF8(s);
+	SendPointer(HwndOf(wStatusBar), SB_SETTEXT, 0, barText.c_str());
 }
 
 void SciTEWin::UpdateTabs(const std::vector<GUI::gui_string> &tabNames) {
@@ -165,18 +192,6 @@ void SciTEWin::TabSelect(int index) {
 void SciTEWin::RemoveAllTabs() {
 	// This is no longer called as UpdateTabs performs all changes to tabs
 	TabCtrl_DeleteAllItems(HwndOf(wTabBar));
-}
-
-GUI::Point PointOfCursor() noexcept {
-	POINT ptCursor;
-	::GetCursorPos(&ptCursor);
-	return GUI::Point(ptCursor.x, ptCursor.y);
-}
-
-GUI::Point ClientFromScreen(HWND hWnd, GUI::Point ptScreen) noexcept {
-	POINT ptClient = { ptScreen.x, ptScreen.y };
-	::ScreenToClient(hWnd, &ptClient);
-	return GUI::Point(ptClient.x, ptClient.y);
 }
 
 namespace {
@@ -344,8 +359,7 @@ void SciTEWin::Notify(SCNotification *notification) {
 			case IDM_MACROPLAY:
 				ttext = GUI_TEXT("Run Macro");
 				break;
-		default:
-		{
+			default: {
 #else
 			//!-start-[user.toolbar]
 		std::string stext;
@@ -538,7 +552,8 @@ void SciTEWin::SizeSubWindows() {
 
 	// May need to copy some values out to other variables
 
-	HDWP hdwp = BeginDeferWindowPos(10);
+	constexpr int windowsToDefer = 20;
+	HDWP hdwp = ::BeginDeferWindowPos(windowsToDefer);
 
 	int yPos = rcClient.top;
 	for (const Band &band : bands) {
@@ -682,7 +697,8 @@ void SciTEWin::CheckMenus() {
 #ifdef RB_UT
 	//!-start-[user.toolbar]
 	// check user toolbar buttons status
-	if (props.GetInt("toolbar.visible")) {
+	//if (props.GetInt("toolbar.visible") != 0) {
+	if (tbVisible) {
 		if (HWND hToolBar = HwndOf(wToolBar)) {
 			const std::string fileNameForExtension = ExtensionFileName();
 			for (size_t i = 0; i < toolbarUsersPressableButtons.size(); i++) {
@@ -830,8 +846,7 @@ LRESULT CALLBACK TabWndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPar
 		//!-end-[close_on_dbl_clk]
 #endif // RB_TAB_DB_CLICK
 
-		case WM_MBUTTONDOWN:
-		{
+	case WM_MBUTTONDOWN: {
 			// Check if on tab bar
 			const GUI::Point pt = PointFromLong(lParam);
 			const int tab = TabAtPoint(hWnd, pt);
@@ -929,9 +944,7 @@ LRESULT CALLBACK TabWndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPar
 		}
 		break;
 
-		case WM_PAINT:
-		{
-
+	case WM_PAINT: {
 #ifdef RB_TABTOP
 			if (toptab_h) {
 				RECT tabrc{};
@@ -1114,9 +1127,9 @@ void SciTEWin::Creation() {
 #ifndef RB_UT //!-remove-[user.toolbar]
 	::SendMessage(hwndToolBar, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
 	::SendMessage(hwndToolBar, TB_SETBITMAPSIZE, 0, tbLarge ? MAKELPARAM(24, 24) : MAKELPARAM(16, 16));
-	::SendMessage(hwndToolBar, TB_LOADIMAGES,
+	SendPointer(hwndToolBar, TB_LOADIMAGES,
 		      tbLarge ? IDB_STD_LARGE_COLOR : IDB_STD_SMALL_COLOR,
-		      reinterpret_cast<LPARAM>(HINST_COMMCTRL));
+		      HINST_COMMCTRL);
 
 	TBADDBITMAP addbmp = { hInstance, IDR_CLOSEFILE };
 
@@ -1124,7 +1137,7 @@ void SciTEWin::Creation() {
 		addbmp.nID = IDR_CLOSEFILE24;
 	}
 
-	::SendMessage(hwndToolBar, TB_ADDBITMAP, 1, reinterpret_cast<LPARAM>(&addbmp));
+	SendPointer(hwndToolBar, TB_ADDBITMAP, 1, &addbmp);
 
 	TBBUTTON tbb[std::size(bbs)] = {};
 	for (unsigned int i = 0; i < std::size(bbs); i++) {
@@ -1142,7 +1155,7 @@ void SciTEWin::Creation() {
 		tbb[i].iString = 0;
 	}
 
-	::SendMessage(hwndToolBar, TB_ADDBUTTONS, std::size(bbs), reinterpret_cast<LPARAM>(tbb));
+	SendPointer(hwndToolBar, TB_ADDBUTTONS, std::size(bbs), tbb);
 #endif // !RB_UT
 
 	wToolBar.Show();
@@ -1207,12 +1220,11 @@ void SciTEWin::Creation() {
 			     hInstance,
 			     nullptr);
 	wStatusBar.Show();
-	const int widths[] = { 4000 };
+	constexpr int widerThanWindow = 4000;
+	const int widths = widerThanWindow;
 	// Perhaps we can define a syntax to create more parts,
 	// but it is probably an overkill for a marginal feature
-	::SendMessage(HwndOf(wStatusBar),
-		      SB_SETPARTS, 1,
-		      reinterpret_cast<LPARAM>(widths));
+	SendPointer(HwndOf(wStatusBar), SB_SETPARTS, 1, &widths);
 
 	bands.emplace_back(true, tbLarge ? heightToolsBig : heightTools, false, wToolBar);
 	bands.emplace_back(true, heightTab, false, wTabBar);
@@ -1384,13 +1396,11 @@ void SciTEWin::SetToolBar()
 	std::vector<TBBUTTON> tbb;
 	tbb.reserve(barbuttons.size());
 	for (size_t i = 0; i < barbuttons.size(); ++i) {
-		tbb.push_back(std::move(TBBUTTON{
-			barbuttons[i].id,
-			barbuttons[i].cmd,
-			TBSTATE_ENABLED,
-			static_cast<BYTE>((-1 == barbuttons[i].id) ? BTNS_SEP : BTNS_BUTTON),
-			0,
-			0 }));
+		auto& el = tbb.emplace_back();
+		el.iBitmap = barbuttons[i].id;
+		el.idCommand = barbuttons[i].cmd;
+		el.fsState = TBSTATE_ENABLED;
+		el.fsStyle = static_cast<BYTE>((-1 == barbuttons[i].id) ? BTNS_SEP : BTNS_BUTTON);
 	}
 	::SendMessage(hwndToolBar, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
 	::SendMessage(hwndToolBar, TB_ADDBUTTONS, barbuttons.size(), reinterpret_cast<LPARAM>(&tbb[0]));

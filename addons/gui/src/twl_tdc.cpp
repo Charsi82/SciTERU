@@ -7,8 +7,10 @@
 #include <string>
 #include <vector>
 #include <memory>
-
-#include "Twl.hpp"
+#ifdef __GNUC__
+#include <cstdint>
+#endif
+#include "twl.hpp"
 #include "lua.hpp"
 #include "luabinder.hpp"
 #include "utf.h"
@@ -37,7 +39,7 @@ namespace
 
 	int tdc_tostring(lua_State* L)
 	{
-		if (TDC* pTDC = lua_checkTDC(L))
+		if (lua_checkTDC(L))
 		{
 			lua_pushstring(L, twTDC::classname());
 			return 1;
@@ -345,6 +347,7 @@ namespace
 	}
 }
 
+template<>
 const luaL_Reg LuaBinder<twTDC>::metamethods[] =
 {
 	{ "__gc",		do_destroy<twTDC> },
@@ -352,6 +355,7 @@ const luaL_Reg LuaBinder<twTDC>::metamethods[] =
 	{ NULL, NULL }
 };
 
+template<>
 const luaL_Reg LuaBinder<twTDC>::methods[] =
 {
 	{ "color_back",		tdc_back_text		},

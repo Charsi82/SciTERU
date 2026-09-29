@@ -140,12 +140,14 @@ namespace
 	}
 }
 
+template<>
 const luaL_Reg LuaBinder<TToolTip>::metamethods[] =
 {
 	{ "__gc",		do_destroy<TToolTip> },
 	{ NULL, NULL}
 };
 
+template<>
 const luaL_Reg LuaBinder<TToolTip>::methods[] =
 {
 	{ "set_caption", tooltip_set_caption	},

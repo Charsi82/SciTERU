@@ -1,4 +1,4 @@
-// SciTE - Scintilla based Text Editor
+﻿// SciTE - Scintilla based Text Editor
 /** @file SciTEIO.cxx
  ** Manage input and output with the system.
  **/
@@ -69,7 +69,7 @@ namespace {
 	{
 		IShellLink* psl{};
 		WCHAR targetFilePath[MAX_PATH];
-		WIN32_FIND_DATA wfd = { 0 };
+		WIN32_FIND_DATA wfd{};
 
 		HRESULT hres = CoInitialize(NULL);
 		if (SUCCEEDED(hres))
@@ -997,7 +997,7 @@ void SciTEBase::CheckReload() {
 			CurrentBuffer()->fileModTime = 0;
 			CurrentBuffer()->fileModLastAsk = 0;
 			CurrentBuffer()->isDirty = true;
-#ifndef RB_EDDC // disabled becase call from SetBuffersMenu()
+#ifndef RB_EDDC // disabled because call from SetBuffersMenu()
 			CheckMenus();
 #endif
 			SetWindowName();
@@ -1560,7 +1560,8 @@ void SciTEBase::OpenFromStdin(bool UseOutputPane) {
 }
 
 void SciTEBase::OpenFilesFromStdin() {
-	char data[8 * 1024] {};
+	constexpr size_t stdinBlockSize = 8 * 1024;
+	char data[stdinBlockSize] {};
 
 	/* if stdin is blocked, do not execute this method */
 	if (IsStdinBlocked())
@@ -1612,7 +1613,11 @@ public:
 		if (pos >= valid) {
 			return 0;
 		}
-		return buffer[pos++];
+		const char nextValue = buffer[pos++];
+		if ((pos >= valid) && readAll) {
+			exhausted = true;
+		}
+		return nextValue;
 	}
 	[[nodiscard]] bool BufferContainsNull() noexcept {
 		EnsureData();
@@ -1638,9 +1643,9 @@ public:
 	}
 	// Deleted so FileReader objects can not be copied.
 	FileReader(const FileReader &) = delete;
-	const char *Next() {
+	bool Next() {
 		if (bf->Exhausted()) {
-			return nullptr;
+			return false;
 		}
 		lineToShow.clear();
 		while (!bf->Exhausted()) {
@@ -1659,12 +1664,15 @@ public:
 		if (!caseSensitive) {
 			LowerCaseAZ(lineToCompare);
 		}
-		return lineToCompare.c_str();
+		return true;
 	}
 	[[nodiscard]] int LineNumber() const noexcept {
 		return lineNum;
 	}
-	[[nodiscard]] std::string_view Original() const noexcept {
+	[[nodiscard]] std::string_view ComparisonText() const noexcept {
+		return lineToCompare;
+	}
+	[[nodiscard]] std::string_view OriginalText() const noexcept {
 		return lineToShow;
 	}
 	[[nodiscard]] bool BufferContainsNull() noexcept {
@@ -1720,10 +1728,10 @@ void SciTEBase::GrepRecursive(GrepFlags gf, const FilePath &baseDir, const char 
 			(excludedTypes.empty() || !fPath.Matches(excludedTypes))) {
 			FileReader fr(fPath, FlagIsSet(gf, GrepFlags::matchCase));
 			if (FlagIsSet(gf, GrepFlags::binary) || !fr.BufferContainsNull()) {
-				while (const char *line = fr.Next()) {
+				while (fr.Next()) {
 					if (((fr.LineNumber() % checkAfterLines) == 0) && jobQueue.Cancelled())
 						return;
-					if (LineMatches(line, searchString, FlagIsSet(gf, GrepFlags::wholeWord))) {
+					if (LineMatches(fr.ComparisonText(), searchString, FlagIsSet(gf, GrepFlags::wholeWord))) {
 #ifdef RB_FRLS
 						//!-start-[FindResultListStyle]
 						if (props.GetInt("lexer.errorlist.findliststyle", 1)) {
@@ -1735,16 +1743,16 @@ void SciTEBase::GrepRecursive(GrepFlags gf, const FilePath &baseDir, const char 
 						else
 						//!-end-[FindResultListStyle]
 #endif // RB_FRLS
-
 						os.append(fPath.AsUTF8());
 						os.append(":");
 						std::string lNumber = StdStringFromInteger(fr.LineNumber());
 						os.append(lNumber);
 						os.append(":");
+						
 #ifdef RB_FRLS
 							//!-start-[FindResultListStyle]
 							if (props.GetInt("lexer.errorlist.findliststyle", 1) == 1) {
-								lNumber = fr.Original();
+								lNumber = fr.OriginalText();
 								Substitute(lNumber, "\t", " ");
 								size_t startpos = lNumber.find_first_not_of("\n\r "); //TODO: Trimleft ...
 								lNumber = (startpos == std::string::npos) ? "" : lNumber.substr(startpos);
@@ -1756,7 +1764,7 @@ void SciTEBase::GrepRecursive(GrepFlags gf, const FilePath &baseDir, const char 
 								//!-end-[FindResultListStyle]
 #endif // RB_FRLS
 
-						os.append(fr.Original());
+						os.append(fr.OriginalText());
 						os.append("\n");
 					}
 				}

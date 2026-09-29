@@ -35,6 +35,9 @@ ctuOneDefinitionRuleViolation:scite/gtk/Strips.h
 // This is an unusual case where a pointer inside a std::string is needed later in the code.
 variableScope:scite/src/SciTEBase.cxx
 
+// Seems to be confused between whole vector and item in vector.
+knownConditionTrueFalse:scite/src/SciTEBase.cxx
+
 // Accessing 0th element of string is OK. Only triggers on non-threaded runs.
 //ctuArrayIndex:scite/src/SciTEBuffers.cxx
 
@@ -87,6 +90,9 @@ constParameterPointer:scite/src/SciTEIO.cxx
 
 // Not using const pointer as may change to mutate argument
 constParameterPointer:scite/src/Extender.h
+
+// Not using const pointer as may change to mutate argument
+constParameterPointer:scite/win32/WinBasics.cxx
 
 // Prefer uniform use of | instead of special casing first which is just assignment
 badBitmaskCheck:scite/win32/SciTEWin.cxx

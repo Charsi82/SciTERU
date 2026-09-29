@@ -37,16 +37,36 @@ function OnStrip(...) event("OnStrip")(...) end
 -- Пример использования:
 
 -- удалить старый обработчик и зарегистрировать новый
-event("OnStrip"):clear():register(
-function(e, id, state)
-	local changeNames = {'unknown', 'clicked', 'change', 'focusIn', 'focusOut','hover'}
+event("OnStrip"):clear()
+AddEventHandler("OnStrip", function(id, state)
+	if id == -1 then 
+		-- удаляем обработчик так как панели больше нет
+		event("OnStrip"):clear() 
+		return 
+	end
 	-- нажата кнопка в 5 позиции (с надписью Close), то закрываем панель
 	if id == 5 and state == 1 then scite.StripShow("") return end
-	if id == 2 and state == 1 then shell.msgbox("Button 9 at your service. :)","Hello!") return end
-	print('control '..id..' '..changeNames[state+1])
+	if id == 2 and state == 1 then print("Button 9 at your service. :)") return end
+	local NameState = {'unknown', 'clicked', 'change', 'focusIn', 'focusOut'}
+	print('control', id, NameState[state + 1])
 end)
 
 -- создать панель
-scite.StripShow("!'Label:'[Editbox](Button 9)\n'Label2:'{Combobox}((Close))")
+local user_panel = {
+	'!', -- добавить в правой части панели крестик для закрытия
+	"'Label:'", -- статик с текстом "Label:"
+	'[Editbox]', -- поле ввода
+	'(Button 9)', -- кнопка
+	'\n', -- переход на другую строку
+	"'Label2:'", -- статик с текстом "Label2:"
+	'{Combobox}', -- выпадающий список
+	'((Close))' -- кнопка выбранная по умолчанию
+}
+
+scite.StripShow(table.concat(user_panel))
+-- устанавливаем всплывающие подсказки
 scite.StripSetBtnTipText(5, 'Close')
 scite.StripSetBtnTipText(2, 'Hello')
+-- заполняем выпадающий список
+scite.StripSetList(4,'item1\nitem2\nitem3')
+scite.StripSet(4,'item1')

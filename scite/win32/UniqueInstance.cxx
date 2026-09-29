@@ -6,11 +6,36 @@
 // The License.txt file describes the conditions under which this software may be distributed.
 
 #include <cstdlib>
-#include <cstring>
+#include <cassert>
 
+#include <new>
+#include <compare>
+#include <tuple>
 #include <string>
+#include <string_view>
+#include <vector>
+#include <array>
+#include <deque>
+#include <map>
+#include <set>
+#include <optional>
+#include <algorithm>
+#include <ranges>
+#include <iterator>
+#include <memory>
+#include <chrono>
+#include <sstream>
+#include <atomic>
+#include <mutex>
+
+#define NOMINMAX 1
+#include <windows.h>
+#include <commctrl.h>
+#include <windowsx.h>
+#include <shlobj.h>
 
 #include "SciTEWin.h"
+#include "WinBasics.h"
 
 UniqueInstance::UniqueInstance() {
 	stw = nullptr;
@@ -59,7 +84,7 @@ bool UniqueInstance::AcceptToOpenFiles(bool bAccept) {
 }
 
 void UniqueInstance::CallSearchOnAllWindows() {
-	::EnumWindows(SearchOtherInstance, reinterpret_cast<LPARAM>(this));
+	::EnumWindows(SearchOtherInstance, FromPtr(this));
 }
 
 /**
@@ -175,7 +200,7 @@ void UniqueInstance::WindowCopyData(std::string_view s) {
 	cds.dwData = 0;
 	cds.cbData = static_cast<DWORD>(sCopy.length() + 1);
 	cds.lpData = sCopy.data();
-	::SendMessage(hOtherWindow, WM_COPYDATA, 0, reinterpret_cast<LPARAM>(&cds));
+	SendPointer(hOtherWindow, WM_COPYDATA, 0, &cds);
 }
 
 /**
@@ -222,7 +247,7 @@ void UniqueInstance::SendCommands(const char *cmdLine) {
 BOOL CALLBACK UniqueInstance::SearchOtherInstance(HWND hWnd, LPARAM lParam) {
 	BOOL bResult = TRUE;
 
-	UniqueInstance *ui = reinterpret_cast<UniqueInstance *>(lParam);
+	UniqueInstance *ui = PtrParam<UniqueInstance *>(lParam);
 
 	// First, avoid to send a message to ourself
 	if (hWnd != ui->stw->MainHWND()) {

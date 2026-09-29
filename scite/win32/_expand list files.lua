@@ -1,4 +1,5 @@
 --[[
+Copy makefile for building with gcc(mingw32-make)
 
 Find file '*.vcxproj' in current folder.
 Create backup *.vcxproj as *_bak.vcxproj.
@@ -14,8 +15,26 @@ Requirements: shell.dll
 ]]
 
 require 'shell'
-local cur_path = debug.getinfo(1,"S").short_src:match(".+\\")
+local cur_path = debug.getinfo(1,"S").source:match("@(.+\\)")
 print('current path: ', cur_path)
+
+-------------------------------------------------------------------------
+local root_path = cur_path:gsub("[^\\]+\\$", ''):gsub("[^\\]+\\$", '')
+local function FileCopy(from, to)
+	local status, msg = shell.fileCopy(root_path..from, root_path..to, true)
+	if not status then print(msg) end
+end
+
+-- scite
+FileCopy('addons\\make.bat', 'scite\\')
+-- scite makefile
+FileCopy('addons\\makefile_scite', 'scite\\makefile')
+-- lexilla
+FileCopy('addons\\make.bat', 'lexilla\\')
+-- lexilla makefile
+FileCopy('addons\\makefile_lexilla', 'lexilla\\makefile')
+-------------------------------------------------------------------------
+
 local projects = shell.findfiles( cur_path:to_utf8(0).."*.vcxproj" ) or {}
 print('founded', #projects, 'files')
 local project_name = projects[1] and projects[1].name
@@ -96,4 +115,5 @@ local text = table.concat(res,"\n"):gsub("<PropertyGroup Label=\"Globals\">","%1
 f = io.open(path,"wb")
 f:write(text)
 f:close()
+
 print("done.")

@@ -9,7 +9,7 @@ return function(tabs, panel_width, colorback, colorfore)
 	memo_path:set_align("top", 22)
 
 	local function create_memo_menu()
-		local ret = {"Копировать путь|sb_memo_path_copy", "Вставить и перейти|sb_memo_path_paste"}
+		local ret = {L'Copy Path'.."|sb_memo_path_copy", L'PasteAndGo'.."|sb_memo_path_paste"}
 		local result = gui.run_cmd("fsutil fsinfo drives")
 		local sep = false
 		for drive in result:gmatch("%a:\\") do
@@ -17,7 +17,7 @@ return function(tabs, panel_width, colorback, colorfore)
 				sep = true
 				table.insert(ret, '')
 			end
-			table.insert(ret, 'Перейти к диску ' .. drive .. "|sb_memo_goto('"..drive.."\\')")
+			table.insert(ret, L'GotoDrive'..' '..drive.."|sb_memo_goto('"..drive.."\\')")
 		end
 		return ret
 	end
@@ -453,31 +453,31 @@ return function(tabs, panel_width, colorback, colorfore)
 	end)
 
 	list_dir:context_menu{
-		'Выбрать папку...|FileMan_ChangeDir',
-		'Показать все файлы|FileMan_MaskAllFiles',
-		'C расширением выделенного файла|FileMan_MaskOnlyCurrentExt',
-		'Показать в Проводнике|FileMan_Explore',
-		'Перейти к текущему файлу|FileMan_SelectCurrentFile',
+		L'ChangeDir'..'|FileMan_ChangeDir',
+		L'MaskAllFiles'..'|FileMan_MaskAllFiles',
+		L'MaskOnlyCurrentExt'..'|FileMan_MaskOnlyCurrentExt',
+		L'Explore'..'|FileMan_Explore',
+		L'SelectCurrentFile'..'|FileMan_SelectCurrentFile',
 		'', -- separator
-		'Проверить синтаксис Lua|FileMan_LuaSyntax',
-		'Проверить все в папке|FileMan_LuaSyntax_all',
+		L'LuaSyntax'..'|FileMan_LuaSyntax',
+		L'LuaSyntax_all'..'|FileMan_LuaSyntax_all',
 		'', -- separator
-		'POPUPBEGIN|Посчитать CRC-сумму', -- submenu
-			'Посчитать MD5\tAlt+L|FileMan_CalcMD5',
-			'Посчитать SHA1|FileMan_CalcSHA1',
-			'Посчитать SHA-256|FileMan_CalcSHA256',
-			'Посчитать SHA-512|FileMan_CalcSHA512',
+		'POPUPBEGIN|'..L'Calc CRC', -- submenu
+			L'Calc MD5'..'\tAlt+L|FileMan_CalcMD5',
+			L'Calc SHA1'..'|FileMan_CalcSHA1',
+			L'Calc SHA-256'..'|FileMan_CalcSHA256',
+			L'Calc SHA-512'..'|FileMan_CalcSHA512',
 		'POPUPEND',
-		'Открыть в SciTE|FileMan_OpenSelectedItems',
-		'Выполнить|FileMan_FileExec',
-		'Выполнить с параметрами|FileMan_FileExecWithParams',
+		L'OpenSelectedItems'..'|FileMan_OpenSelectedItems',
+		L'FileExec'..'|FileMan_FileExec',
+		L'FileExecWithParams'..'|FileMan_FileExecWithParams',
 		'', -- separator
-		'Копировать в...|FileMan_FileCopy',
-		'Переместить в...|FileMan_FileMove',
-		'Переименовать|FileMan_FileRename',
-		'Удалить файл\tDel|FileMan_FileDelete',
+		L'FileCopy'..'|FileMan_FileCopy',
+		L'FileMove'..'|FileMan_FileMove',
+		L'FileRename'..'|FileMan_FileRename',
+		L'FileDelete'..'\tDel|FileMan_FileDelete',
 		'', -- separator
-		'Добавить в Избранное\tIns|Favorites_AddFile'
+		L'Favorites Add active buffer'..'\tIns|Favorites_AddFile'
 	}
 
 	----------------------------------------------------------
@@ -629,6 +629,6 @@ return function(tabs, panel_width, colorback, colorfore)
 	AddEventHandler("OnSave", OnSwitch)
 	event('sb_tab_selected'):register(function(e, tab_id) if tab_id == 0 then OnSwitch() end end)
 	-------------------------
-	tabs:add_tab("Проводник", tab0, props['ICO_FAVORITE_FOLDERS'])
+	tabs:add_tab(L'IDS_SB_Explorer', tab0, props['ICO_FAVORITE_FOLDERS'])
 	return tab0
 end

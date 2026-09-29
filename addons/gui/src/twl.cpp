@@ -16,6 +16,9 @@
 #include <list>
 #include <format>
 #include <cassert> // for assert
+#ifdef __GNUC__
+#include <memory>
+#endif
 
 #include "twl_utils.hpp"
 #include "twl.hpp"
@@ -31,15 +34,6 @@ constexpr wchar_t EW_CLASSNAME[] = L"EVNTWNDCLSS";
 //static HWND hModeless = NULL;
 //static Point g_mouse_pt_right{};
 HINSTANCE hInst{};
-
-// Miscelaneous functions!!
-namespace
-{
-	COLORREF RGBF(float r, float g, float b)
-	{
-		return RGB(byte(255 * r), byte(255 * g), byte(255 * b));
-	}
-}
 
 Rect::Rect(TEventWindow* pwin)
 {
@@ -81,8 +75,8 @@ TDC::TDC(TWin* ptr) :m_twin(ptr)
 
 TDC::~TDC()
 {
-	if (m_pen) DeleteObject(m_pen);	m_pen = NULL;
-	if (m_brush) DeleteObject(m_brush);	m_brush = NULL;
+	if (m_pen) { DeleteObject(m_pen); m_pen = NULL; }
+	if (m_brush) { DeleteObject(m_brush); m_brush = NULL; }
 	kill();
 }
 
@@ -101,7 +95,7 @@ void TDC::release(TWin* pw)
 
 void TDC::kill()
 {
-	if (m_hdc) DeleteDC(m_hdc); m_hdc = NULL;
+	if (m_hdc) { DeleteDC(m_hdc); m_hdc = NULL; }
 }
 
 HGDIOBJ TDC::select(HGDIOBJ obj) const
@@ -556,7 +550,7 @@ void TEventWindow::set_statusbar(int parts, int* widths)
 			SBARS_SIZEGRIP, // Includes a sizing grip
 			0, 0, 0, 0,              // Position and size are handled by parent
 			handle(),              // Handle to the parent window
-			(HMENU)statusbar_id,   // Unique child-window identifier
+			reinterpret_cast<HMENU>(statusbar_id),   // Unique child-window identifier
 			GetModuleHandle(NULL),   // Application instance handle
 			NULL                     // No additional data
 		);
@@ -665,10 +659,10 @@ void TWin::on_top() const  // *add 0.9.4
 
 //-TEventWindow class member definitions--
 TEventWindow::TEventWindow(const wchar_t* caption, TWin* parent, DWORD style_extra, bool is_child, DWORD style_override) :
-	m_style_extra(style_extra), m_children{}, m_client(nullptr), statusbar_id(0) //, m_hACCEL(NULL)
+	m_style_extra(style_extra), statusbar_id{}, m_children{}, m_client(nullptr) //, m_hACCEL(NULL)
 {
 	set_defaults();
-	if (style_override != -1) m_style = style_override;
+	if (style_override != (DWORD)(-1)) m_style = style_override;
 	create_window(caption, parent, is_child);
 	//m_dc->set_text_align(0);
 	enable_resize(true);
@@ -818,6 +812,8 @@ void TEventWindow::cursor(CursorType curs)
 			//case CursorType::HAND: new_cursor = LoadCursor(NULL,IDC_HAND); break;
 		case CursorType::UPARROW:
 			new_cursor = LoadCursor(NULL, IDC_UPARROW);
+			break;
+		default:
 			break;
 		}
 	}

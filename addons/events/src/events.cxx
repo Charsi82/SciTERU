@@ -1,7 +1,6 @@
-#include <vector>
+п»ї#include <vector>
 #include <map>
 #include <string>
-#include <windows.h>
 #include <memory>
 #include "lua.hpp"
 
@@ -13,12 +12,6 @@ void lua_print(lua_State* L, const char* fmt, Args ...args)
 	lua_getglobal(L, "print");
 	lua_pushfstring(L, fmt, args...);
 	lua_call(L, 1, 0);
-}
-
-void throw_error(lua_State* L, const char* msg)
-{
-	lua_pushstring(L, msg);
-	lua_error(L);
 }
 
 #ifdef DEBUG
@@ -60,7 +53,7 @@ namespace
 		lua_getglobal(L, "debug"); // stack: err debug
 		lua_getfield(L, -1, "traceback"); // stack: err debug debug.traceback
 
-		// debug.traceback() возвращает 1 значение
+		// debug.traceback() РІРѕР·РІСЂР°С‰Р°РµС‚ 1 Р·РЅР°С‡РµРЅРёРµ
 		if (lua_pcall(L, 0, 1, 0))
 		{
 			lua_pushstring(L, "Error in debug.traceback() call: ");
@@ -111,7 +104,7 @@ public:
 	void unreg(lua_State* L, int func_ref)
 	{
 		luaL_unref(L, LUA_REGISTRYINDEX, func_ref);
-		callbacks.erase(std::remove(callbacks.begin(), callbacks.end(), func_ref));
+		std::erase(callbacks, func_ref);
 	}
 
 	// unreg function from top stack
@@ -134,8 +127,8 @@ public:
 			//dump_stack(L);
 			int stack_size = lua_gettop(L);
 			lua_print(L, "recursive call trigger for event '%s'", name.c_str());
-			//for (int i = 1; i <= stack_size; ++i)
-				//lua_print(L, "arg [%d] [%s]", i, luaL_tolstring(L, i, 0));
+			for (int i = 1; i <= stack_size; ++i)
+				lua_print(L, "arg [%d] [%s]", i, lua_tostring(L, i));
 			luaL_traceback(L, L, "callback removed", 1);
 			lua_print(L, lua_tostring(L, -1));
 			lua_settop(L, stack_size);
@@ -253,14 +246,14 @@ namespace
 	Event* event_arg(lua_State* L, int idx = 1)
 	{
 		Event* ev_object = static_cast<Event*>(luaL_checkudata(L, idx, EVENTS_CLASS));
-		if (!ev_object) throw_error(L, "not a 'event' object");
+		if (!ev_object) luaL_error(L, "not a 'event' object");
 		return ev_object;
 	}
 
 	int do_event(lua_State* L)
 	{
 		const char* name = luaL_checkstring(L, 1);
-		if (!strlen(name)) throw_error(L, "empty name for event");
+		if (std::string_view(name).empty()) return luaL_error(L, "empty name for event");
 		lua_pushlightuserdata(L, CEventManager::Instance().get(name));
 		luaL_getmetatable(L, EVENTS_CLASS);
 		lua_setmetatable(L, -2);

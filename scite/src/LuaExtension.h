@@ -88,13 +88,17 @@ public:
 	const char* OnSendEditor(Scintilla::Message, uintptr_t, long) override; //!-add-[OnSendEditor]
 #endif // RB_OnSendEditor
 
+#ifdef RB_LangMenuChecker
+	void OnLanguage(const char*) override;
+#endif // RB_LangMenuChecker
+
 #ifdef RB_ONTABMOVE
 	void OnTabMove(int idx_from, int idx_to) override;
-#endif //RB_ONTABMOVE
+#endif // RB_ONTABMOVE
 
 #ifdef RB_OFP
 	void OnFindProperty(const char*) override;
-#endif //RB_OFP
+#endif // RB_OFP
 
 };
 

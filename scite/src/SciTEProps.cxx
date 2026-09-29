@@ -1,4 +1,4 @@
-// SciTE - Scintilla based Text Editor
+﻿// SciTE - Scintilla based Text Editor
 /** @file SciTEProps.cxx
  ** Properties management.
  **/
@@ -102,7 +102,6 @@ void SciTEBase::SetImportMenu() {
 				GUI::gui_string entry = localiser.Text("Open");
 				entry += GUI_TEXT(" ");
 				entry += importFiles[stackPos].Name().AsText();
-				Substitute(entry, L"/", L"\\");
 				SetMenuItem(menuOptions, IMPORT_START + stackPos, itemID, entry.c_str());
 			}
 		}
@@ -599,6 +598,7 @@ const char *propertiesToForward[] = {
 	"lexer.cpp.allow.dollars",
 	"lexer.cpp.allow.hashes",
 	"lexer.cpp.backquoted.strings",
+	"lexer.cpp.continuation.only.in.strings",
 	"lexer.cpp.enable.preprocessor",
 	"lexer.cpp.escape.sequence",
 	"lexer.cpp.hashquoted.strings",
@@ -1862,14 +1862,14 @@ void SciTEBase::ReadFontProperties() {
 #if defined (RB_SD) && !defined(GTK) //[StyleDefault]
 	if (!sval.find("fore:#"))
 	{
-		DWORD color = ::GetSysColor(COLOR_WINDOWTEXT);
+		const unsigned int color = ::GetSysColor(COLOR_WINDOWTEXT);
 		char sColor[8]{};
 		snprintf(sColor, std::size(sColor), ",fore:#%2X%2X%2X", color & 0xFF /*GetRed*/, (color >> 8) & 0xFF/*GetGreen*/, (color >> 16) & 0xFF /*GetBlue*/);
 		sval += sColor;
 	}
 	if (!sval.find("back:#"))
 	{
-		DWORD color = ::GetSysColor(COLOR_WINDOW);
+		const unsigned int color = ::GetSysColor(COLOR_WINDOW);
 		char sColor[8]{};
 		snprintf(sColor, std::size(sColor), ",back:#%2X%2X%2X", color & 0xFF /*GetRed*/, (color >> 8) & 0xFF/*GetGreen*/, (color >> 16) & 0xFF /*GetBlue*/);
 		sval += sColor;

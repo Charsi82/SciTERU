@@ -4,16 +4,19 @@
 # == CHANGE THE SETTINGS BELOW TO SUIT YOUR ENVIRONMENT =======================
 
 # Your platform. See PLATS for possible values.
-PLAT= guess
+PLAT= mingw
 
 CC= gcc -std=gnu99
+ifdef clang
+CC=clang -std=gnu99
+endif
 CFLAGS= -O2 -Wall -Wextra $(SYSCFLAGS) $(MYCFLAGS)
 LDFLAGS= $(SYSLDFLAGS) $(MYLDFLAGS)
 LIBS= -lm $(SYSLIBS) $(MYLIBS)
 
-AR= ar rcu
+AR= ar rcs
 RANLIB= ranlib
-RM= rm -f
+RM= del
 UNAME= uname
 
 SYSCFLAGS=
@@ -60,8 +63,11 @@ $(LUA_A): $(BASE_O)
 	$(AR) $@ $(BASE_O)
 	$(RANLIB) $@
 
-$(LUA_T): $(LUA_O) $(LUA_A)
-	$(CC) -o $@ $(LDFLAGS) $(LUA_O) $(LUA_A) $(LIBS)
+resfile.o: ../../lua\lua.rc
+	windres -o $@ $<
+
+$(LUA_T): $(LUA_O) $(LUA_A) resfile.o
+	$(CC) -o $@ $(LDFLAGS) $(LUA_O) $(LUA_A) $(LIBS) resfile.o
 
 $(LUAC_T): $(LUAC_O) $(LUA_A)
 	$(CC) -o $@ $(LDFLAGS) $(LUAC_O) $(LUA_A) $(LIBS)
@@ -70,7 +76,8 @@ test:
 	./$(LUA_T) -v
 
 clean:
-	$(RM) $(ALL_T) $(ALL_O)
+	$(RM) $(ALL_O) resfile.o
+# $(RM) $(ALL_T) $(ALL_O)
 
 depend:
 	@$(CC) $(CFLAGS) -MM l*.c

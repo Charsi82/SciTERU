@@ -127,17 +127,21 @@ public:
 #endif // RB_OMC
 
 #ifdef RB_OnSendEditor
-	virtual const char* OnSendEditor(Scintilla::Message, uintptr_t, const char*) { return 0; } //!-add-[OnSendEditor]
-	virtual const char* OnSendEditor(Scintilla::Message, uintptr_t, long) { return 0; } //!-add-[OnSendEditor]
+	virtual const char* OnSendEditor(Scintilla::Message, uintptr_t, const char*) { return nullptr; } //!-add-[OnSendEditor]
+	virtual const char* OnSendEditor(Scintilla::Message, uintptr_t, long) { return nullptr; } //!-add-[OnSendEditor]
 #endif // RB_OnSendEditor
+
+#ifdef RB_LangMenuChecker
+	virtual void OnLanguage(const char*) {};
+#endif // RB_LangMenuChecker
 
 #ifdef RB_ONTABMOVE
 	virtual void OnTabMove(int, int) {};
-#endif //RB_ONTABMOVE
+#endif // RB_ONTABMOVE
 
 #ifdef RB_OFP
 	virtual void OnFindProperty(const char*) {};
-#endif //RB_OFP
+#endif // RB_OFP
 
 #ifdef RB_ONKEY
 	virtual bool OnKey(int, int, char) { return false; } //!-change-[OnKey]

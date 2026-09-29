@@ -8,11 +8,6 @@
 #ifndef STRIPS_H
 #define STRIPS_H
 
-void *PointerFromWindow(HWND hWnd) noexcept;
-void SetWindowPointer(HWND hWnd, void *ptr) noexcept;
-void *SetWindowPointerFromCreate(HWND hWnd, LPARAM lParam) noexcept;
-GUI::gui_string TextOfWindow(HWND hWnd);
-GUI::gui_string ClassNameOfWindow(HWND hWnd);
 void ComboBoxAppend(HWND hWnd, const GUI::gui_string &gs) noexcept;
 
 class BaseWin : public GUI::Window {
@@ -56,21 +51,21 @@ protected:
 	virtual bool KeyDown(WPARAM key);
 	virtual bool Command(WPARAM wParam);
 	virtual void Size();
-	virtual void Paint(HDC hDC);
+	virtual void Paint(HDC hDC) const noexcept;
 	[[nodiscard]] virtual bool HasClose() const noexcept;
-	[[nodiscard]] GUI::Rectangle CloseArea();
-	[[nodiscard]] GUI::Rectangle LineArea(int line);
+	[[nodiscard]] GUI::Rectangle CloseArea() const noexcept;
+	[[nodiscard]] GUI::Rectangle LineArea(int line) const noexcept;
 	[[nodiscard]] virtual int Lines() const noexcept;
-	void InvalidateClose();
-	void Redraw() noexcept;
-	bool MouseInClose(GUI::Point pt);
-	void TrackMouse(GUI::Point pt);
+	void InvalidateClose() const noexcept;
+	void Redraw() const noexcept;
+	[[nodiscard]] bool MouseInClose(GUI::Point pt) const noexcept;
+	void TrackMouse(GUI::Point pt) noexcept;
 	void SetTheme() noexcept;
 	virtual LRESULT EditColour(HWND hwnd, HDC hdc) noexcept;
 	virtual LRESULT CustomDraw(NMHDR *pnmh) noexcept;
 	LRESULT WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) override;
 	void AddToPopUp(const GUI::Menu &popup, const char *label, int cmd, bool checked) const;
-	virtual void ShowPopup();
+	virtual void ShowPopup() const;
 public:
 	bool visible {false};
 	Strip() noexcept = default;
@@ -128,7 +123,7 @@ public:
 	void Next(bool select);
 	bool Command(WPARAM wParam) override;
 	void Size() override;
-	void Paint(HDC hDC) override;
+	void Paint(HDC hDC) const noexcept override;
 	[[nodiscard]] LRESULT EditColour(HWND hwnd, HDC hdc) noexcept override;
 	LRESULT WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam) override;
 };
@@ -169,10 +164,10 @@ public:
 	void Focus() noexcept;
 	bool KeyDown(WPARAM key) override;
 	void Next(bool markAll, bool invertDirection);
-	void ShowPopup() override;
+	void ShowPopup() const override;
 	bool Command(WPARAM wParam) override;
 	void Size() override;
-	void Paint(HDC hDC) override;
+	void Paint(HDC hDC) const noexcept override;
 	void CheckButtons() noexcept;
 	void ShowStrip();
 };
@@ -194,11 +189,11 @@ public:
 	[[nodiscard]] int Lines() const noexcept override;
 	void Focus() noexcept;
 	bool KeyDown(WPARAM key) override;
-	void ShowPopup() override;
+	void ShowPopup() const override;
 	void HandleReplaceCommand(int cmd, bool reverseFind = false);
 	bool Command(WPARAM wParam) override;
 	void Size() override;
-	void Paint(HDC hDC) override;
+	void Paint(HDC hDC) const noexcept override;
 	void CheckButtons() noexcept;
 	void ShowStrip();
 };
@@ -212,10 +207,10 @@ public:
 	void Focus() noexcept;
 	bool KeyDown(WPARAM key) override;
 	void Filter(ChangingSource source);
-	void ShowPopup() override;
+	void ShowPopup() const override;
 	bool Command(WPARAM wParam) override;
 	void Size() override;
-	void Paint(HDC hDC) override;
+	void Paint(HDC hDC) const noexcept override;
 	void CheckButtons() noexcept;
 	void ShowStrip();
 	void Close() override;

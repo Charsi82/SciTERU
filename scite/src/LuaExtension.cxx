@@ -1,4 +1,4 @@
-// SciTE - Scintilla based Text Editor
+﻿// SciTE - Scintilla based Text Editor
 // LuaExtension.cxx - Lua scripting extension
 // Copyright 1998-2000 by Neil Hodgson <neilh@scintilla.org>
 // The License.txt file describes the conditions under which this software may be distributed.
@@ -14,6 +14,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <array>
 #include <set>
 #include <optional>
 #include <memory>
@@ -1007,6 +1008,7 @@ bool call_function(lua_State *L, int nargs, bool ignoreFunctionReturnValue=false
 	}
 	return handled;
 }
+
 #ifdef RB_OnSendEditor
 	//!-start-[macro] [OnSendEditor]
 	const char* call_sfunction(lua_State* L, int nargs, bool ignoreFunctionReturnValue = false) {
@@ -1081,7 +1083,7 @@ bool call_function(lua_State *L, int nargs, bool ignoreFunctionReturnValue=false
 
 	//!-start-[OnSendEditor]
 	const char* CallNamedFunction(const char* name, lua_Integer numberArg, lua_Integer numberArg2, const char* stringArg) {
-		const char* handled = NULL;
+		const char* handled = nullptr;
 		if (luaState) {
 			lua_getglobal(luaState, name);
 			if (lua_isfunction(luaState, -1)) {
@@ -1098,7 +1100,7 @@ bool call_function(lua_State *L, int nargs, bool ignoreFunctionReturnValue=false
 	}
 
 	const char* CallNamedFunction(const char* name, lua_Integer numberArg, const char* stringArg, lua_Integer numberArg2) {
-		const char* handled = NULL;
+		const char* handled = nullptr;
 		if (luaState) {
 			lua_getglobal(luaState, name);
 			if (lua_isfunction(luaState, -1)) {
@@ -1115,7 +1117,7 @@ bool call_function(lua_State *L, int nargs, bool ignoreFunctionReturnValue=false
 	}
 
 	const char* CallNamedFunction(const char* name, lua_Integer numberArg, lua_Integer numberArg2, lua_Integer numberArg3) {
-		const char* handled = NULL;
+		const char* handled = nullptr;
 		if (luaState) {
 			lua_getglobal(luaState, name);
 			if (lua_isfunction(luaState, -1)) {
@@ -1131,7 +1133,7 @@ bool call_function(lua_State *L, int nargs, bool ignoreFunctionReturnValue=false
 		return handled;
 	}
 
-	std::string CallNamedFunction(const char* name, lua_Integer numberArg) {
+/*	std::string CallNamedFunction(const char* name, lua_Integer numberArg) {
 		std::string handled;
 		if (luaState) {
 			lua_getglobal(luaState, name);
@@ -1145,7 +1147,7 @@ bool call_function(lua_State *L, int nargs, bool ignoreFunctionReturnValue=false
 			}
 		}
 		return handled;
-	}
+	}*/
 	//!-end-[OnSendEditor]
 #endif // RB_OnSendEditor
 
@@ -1216,7 +1218,7 @@ int iface_function_helper(lua_State *L, const IFaceFunction &func) {
 
 	int arg = 2;
 
-	intptr_t params[2] = {0, 0};
+	std::array<intptr_t, 2> params {};
 
 	std::string stringResult;
 	bool needStringResult = false;
@@ -2348,6 +2350,14 @@ struct StylingContext {
 		return 0;
 	}
 
+#ifdef RB_StylerForwardN
+	static int ForwardN(lua_State* L) {
+		StylingContext* context = Context(L);
+		for (auto count = luaL_optinteger(L, 2, 1); count > 0; count--) context->Forward();
+		return 0;
+	}
+#endif // RB_StylerForwardN
+
 	static int Position(lua_State *L) {
 		const StylingContext *context = Context(L);
 		lua_pushinteger(L, context->currentPos);
@@ -2492,6 +2502,11 @@ bool LuaExtension::OnStyle(SA::Position startPos, SA::Position lengthDoc, int in
 			sc.PushMethod(luaState, StylingContext::EndStyling, "EndStyling");
 			sc.PushMethod(luaState, StylingContext::More, "More");
 			sc.PushMethod(luaState, StylingContext::Forward, "Forward");
+
+#ifdef RB_StylerForwardN
+			sc.PushMethod(luaState, StylingContext::ForwardN, "ForwardN");
+#endif // RB_StylerForwardN
+
 			sc.PushMethod(luaState, StylingContext::Position, "Position");
 			sc.PushMethod(luaState, StylingContext::AtLineStart, "AtLineStart");
 			sc.PushMethod(luaState, StylingContext::AtLineEnd, "AtLineEnd");
@@ -2614,7 +2629,7 @@ bool LuaExtension::OnMarginClick() {
 #ifdef RB_ULID
 //!-start-[UserListItemID]
 bool LuaExtension::OnUserListSelection(int listType, const char* selection, Scintilla::Position id) {
-	return CallNamedFunction("OnUserListSelection", listType, selection, id) != NULL;
+	return CallNamedFunction("OnUserListSelection", listType, selection, id) != nullptr;
 }
 //!-end-[UserListItemID]
 #else
@@ -2713,6 +2728,13 @@ const char* LuaExtension::OnSendEditor(Scintilla::Message msg, uintptr_t wp, lon
 }
 //!-end-[OnSendEditor]
 #endif //RB_OnSendEditor
+
+#ifdef RB_LangMenuChecker
+void LuaExtension::OnLanguage(const char* lang)
+{
+	CallNamedFunction("OnLanguage", lang);
+}
+#endif //RB_LangMenuChecker
 
 #ifdef RB_ONTABMOVE
 void LuaExtension::OnTabMove(int idx_from, int idx_to)

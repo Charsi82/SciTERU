@@ -38,7 +38,7 @@ Require: events.dll
 		print("hello from event ' .. event:name()))
 		-- ... some other actions ...
 		-- event:removeThisCallback() -- if handler run once
-		-- return true --  if nees stop event. same as e:stop()
+		-- return true --  if need stop event. same as e:stop()
 	end
 	
 	Событие:

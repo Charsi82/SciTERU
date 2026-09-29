@@ -149,7 +149,8 @@ SHAREDOBJS=\
 	StyleDefinition.o \
 	StyleWriter.o \
 	UniqueInstance.o \
-	Utf8_16.o
+	Utf8_16.o \
+	WinBasics.o
 
 OTHER_OBJS = $(SHAREDOBJS) $(LUA_OBJS) SciTERes.o SciTEWin.o
 

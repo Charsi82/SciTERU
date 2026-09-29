@@ -231,12 +231,14 @@ namespace
 	}
 }
 
+template<>
 const luaL_Reg LuaBinder<IniFile>::metamethods[] =
 {
 	{ "__gc",			do_destroy<IniFile> },
 	{ NULL, NULL }
 };
 
+template<>
 const luaL_Reg LuaBinder<IniFile>::methods[] =
 {
 	{ "set_section",	do_set_section		},

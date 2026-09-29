@@ -1,5 +1,5 @@
 // astyle.h
-// Copyright (c) 2025 The Artistic Style Authors.
+// Copyright (c) 2026 The Artistic Style Authors.
 // This code is licensed under the MIT License.
 // License.md describes the conditions under which this software may be distributed.
 
@@ -28,7 +28,7 @@
 	#include <cstring>              // need both string and cstring for GCC
 #endif
 
-#define ASTYLE_VERSION "3.6.8"
+#define ASTYLE_VERSION "3.6.18"
 
 namespace astyle {
 
@@ -158,6 +158,12 @@ enum IncludeDirectivePaddingMode
 	INCLUDE_PAD_AFTER
 };
 
+enum MaxCodeLengthMode
+{
+	MAXCODELENGTH_CODE,
+	MAXCODELENGTH_TOTAL
+};
+
 //-----------------------------------------------------------------------------
 // Class ASSourceIterator
 // A pure virtual class is used by ASFormatter and ASBeautifier instead of
@@ -249,6 +255,7 @@ public:
 	static const std::string AS_OPEN_BRACE, AS_CLOSE_BRACE;
 	static const std::string AS_OPEN_LINE_COMMENT, AS_OPEN_COMMENT, AS_CLOSE_COMMENT;
 	static const std::string AS_GSC_OPEN_COMMENT, AS_GSC_CLOSE_COMMENT;
+	static const std::string AS_OPEN_CONFLICT, AS_MIDDLE_CONFLICT, AS_CLOSE_CONFLICT;
 	static const std::string AS_BAR_DEFINE, AS_BAR_INCLUDE, AS_BAR_IF, AS_BAR_EL, AS_BAR_ENDIF;
 	static const std::string AS_AUTO, AS_RETURN;
 	static const std::string AS_CIN, AS_COUT, AS_CERR, AS_MAPPING;
@@ -297,18 +304,18 @@ protected:  // inline functions
 	bool isGSCStyle() const { return baseFileType == GSC_TYPE; }
 
 protected:  // functions definitions are at the end of ASResource.cpp
-	const std::string* findHeader(std::string_view line, int i,
+	[[nodiscard]] const std::string* findHeader(std::string_view line, int i,
 	                              const std::vector<const std::string*>* possibleHeaders) const;
-	bool findKeyword(std::string_view  line, int i, std::string_view  keyword) const;
-	const std::string* findOperator(std::string_view  line, int i,
+	[[nodiscard]] bool findKeyword(std::string_view  line, int i, std::string_view  keyword) const;
+	[[nodiscard]] const std::string* findOperator(std::string_view  line, int i,
 	                                const std::vector<const std::string*>* possibleOperators) const;
-	std::string_view getCurrentWord(std::string_view, size_t index) const;
-	bool isDigit(char ch) const;
-	bool isLegalNameChar(char ch) const;
-	bool isCharPotentialHeader(std::string_view line, size_t i) const;
-	bool isCharPotentialOperator(char ch) const;
-	bool isDigitSeparator(std::string_view line, int i) const;
-	char peekNextChar(std::string_view line, int i) const;
+	[[nodiscard]] std::string_view getCurrentWord(std::string_view, size_t index) const;
+	[[nodiscard]] bool isDigit(char ch) const;
+	[[nodiscard]] bool isLegalNameChar(char ch) const;
+	[[nodiscard]] bool isCharPotentialHeader(std::string_view line, size_t i) const;
+	[[nodiscard]] bool isCharPotentialOperator(char ch) const;
+	[[nodiscard]] bool isDigitSeparator(std::string_view line, int i) const;
+	[[nodiscard]] char peekNextChar(std::string_view line, int i) const;
 };  // Class ASBase
 
 //-----------------------------------------------------------------------------
@@ -333,6 +340,7 @@ public:
 	void setCStyle();
 	void setDefaultTabLength();
 	void setEmptyLineFill(bool state);
+	void setPreserveIndent(bool state);
 	void setForceTabXIndentation(int length);
 	void setAfterParenIndent(bool state);
 	void setJavaStyle();
@@ -352,43 +360,52 @@ public:
 	void setAlignMethodColon(bool state);
 	void setSpaceIndentation(int length = 4);
 	void setSwitchIndent(bool state);
+	void setNoIndentIfAfterElseMode(bool state);
 	void setTabIndentation(int length = 4, bool forceTabs = false);
 	void setPreprocDefineIndent(bool state);
 	void setPreprocConditionalIndent(bool state);
 	void setSqueezeWhitespace(bool state);
 	void setPreserveWhitespace(bool state);
 	void setLambdaIndentation(bool state);
-	int  getBeautifierFileType() const;
-	int  getFileType() const;
-	int  getIndentLength() const;
-	int  getTabLength() const;
-	std::string getIndentString() const;
-	std::string getNextWord(const std::string& line, size_t currPos) const;
-	bool getAlignMethodColon() const;
-	bool getBraceIndent() const;
-	bool getBlockIndent() const;
-	bool getCaseIndent() const;
-	bool getClassIndent() const;
-	bool getEmptyLineFill() const;
-	bool getForceTabIndentation() const;
-	bool getModeManuallySet() const;
-	bool getModifierIndent() const;
-	bool getNamespaceIndent() const;
-	bool getPreprocDefineIndent() const;
-	bool getSwitchIndent() const;
+	[[nodiscard]] int getBeautifierFileType() const;
+	[[nodiscard]] int getFileType() const;
+	[[nodiscard]] int getIndentLength() const;
+	[[nodiscard]] int getTabLength() const;
+	[[nodiscard]] int getMinConditionalIndent() const;
+
+	[[nodiscard]] int getIndentCount() const;
+	[[nodiscard]] int getSpaceIndentCount() const;
+	[[nodiscard]] int getPrevFinalLineIndentCount() const;
+	[[nodiscard]] int getPrevFinalLineSpaceIndentCount() const;
+
+	[[nodiscard]] std::string getIndentString() const;
+	[[nodiscard]] std::string getNextWord(const std::string& line, size_t currPos) const;
+	[[nodiscard]] bool getAlignMethodColon() const;
+	[[nodiscard]] bool getBraceIndent() const;
+	[[nodiscard]] bool getBlockIndent() const;
+	[[nodiscard]] bool getCaseIndent() const;
+	[[nodiscard]] bool getClassIndent() const;
+	[[nodiscard]] bool getEmptyLineFill() const;
+	[[nodiscard]] bool getForceTabIndentation() const;
+	[[nodiscard]] bool getModeManuallySet() const;
+	[[nodiscard]] bool getModifierIndent() const;
+	[[nodiscard]] bool getNamespaceIndent() const;
+	[[nodiscard]] bool getPreprocDefineIndent() const;
+	[[nodiscard]] bool getSwitchIndent() const;
 
 protected:
 	void deleteBeautifierVectors();
-	int  getNextProgramCharDistance(std::string_view line, int i) const;
-	int  indexOf(const std::vector<const std::string*>& container, const std::string* element) const;
+	[[nodiscard]] int  getNextProgramCharDistance(std::string_view line, int i) const;
+	[[nodiscard]] int  indexOf(const std::vector<const std::string*>& container, const std::string* element) const;
 	void setBlockIndent(bool state);
 	void setBraceIndent(bool state);
 	void setBraceIndentVtk(bool state);
-	std::string extractPreprocessorStatement(std::string_view line) const;
-	std::string trim(std::string_view str) const;
-	std::string rtrim(std::string_view str) const;
-	bool isNumericVariable(std::string_view word) const;
-	bool lineStartsWithNumericType(std::string_view line) const;
+	[[nodiscard]] std::string extractPreprocessorStatement(std::string_view line) const;
+	[[nodiscard]] std::string trim(std::string_view str) const;
+	[[nodiscard]] std::string rtrim(std::string_view str) const;
+	[[nodiscard]] bool isNumericVariable(std::string_view word) const;
+	[[nodiscard]] bool isGitConflictMarker(std::string_view line) const;
+	[[nodiscard]] bool lineStartsWithNumericType(std::string_view line) const;
 
 
 	// variables set by ASFormatter - must be updated in activeBeautifierStack
@@ -410,7 +427,10 @@ protected:
 	bool isInIndentableStruct;
 	bool isInIndentablePreproc;
 	bool lambdaIndicator;
+	int lambdaDepth;
+	int lastLambdaDepth;
 	bool preserveWhitespace;
+	bool shouldPreserveIndent;
 
 
 private:  // functions
@@ -430,35 +450,34 @@ private:  // functions
 	void clearObjCMethodDefinitionAlignment();
 	void deleteBeautifierContainer(std::vector<ASBeautifier*>*& container);
 	void deleteTempStacksContainer(std::vector<std::vector<const std::string*>*>*& container);
-	int  adjustIndentCountForBreakElseIfComments() const;
-	int  computeObjCColonAlignment(std::string_view line, int colonAlignPosition) const;
-	int  convertTabToSpaces(int i, int tabIncrementIn) const;
-	int  findObjCColonAlignment(std::string_view line) const;
-	int  getContinuationIndentAssign(std::string_view line, size_t currPos) const;
-	int  getContinuationIndentComma(std::string_view line, size_t currPos) const;
-	int  getObjCFollowingKeyword(std::string_view line, int bracePos) const;
-	bool isIndentedPreprocessor(std::string_view line, size_t currPos) const;
-	bool isLineEndComment(std::string_view line, int startPos) const;
-	bool isPreprocessorConditionalCplusplus(std::string_view line) const;
-	bool isInPreprocessorUnterminatedComment(std::string_view line);
-	bool isTopLevel() const;
-	bool statementEndsWithComma(std::string_view line, int index) const;
+	[[nodiscard]] int  adjustIndentCountForBreakElseIfComments() const;
+	[[nodiscard]] int  computeObjCColonAlignment(std::string_view line, int colonAlignPosition) const;
+	[[nodiscard]] int  convertTabToSpaces(int i, int tabIncrementIn) const;
+	[[nodiscard]] int  findObjCColonAlignment(std::string_view line) const;
+	[[nodiscard]] int  getContinuationIndentAssign(std::string_view line, size_t currPos) const;
+	[[nodiscard]] int  getContinuationIndentComma(std::string_view line, size_t currPos) const;
+	[[nodiscard]] int  getObjCFollowingKeyword(std::string_view line, int bracePos) const;
+	[[nodiscard]] bool isIndentedPreprocessor(std::string_view line, size_t currPos) const;
+	[[nodiscard]] bool isLineEndComment(std::string_view line, int startPos) const;
+	[[nodiscard]] bool isPreprocessorConditionalCplusplus(std::string_view line) const;
+	[[nodiscard]] bool isInPreprocessorUnterminatedComment(std::string_view line);
+	[[nodiscard]] bool isTopLevel() const;
+	[[nodiscard]] bool statementEndsWithComma(std::string_view line, int index) const;
 
-	std::string getIndentedSpaceEquivalent(std::string_view line_) const;
-	std::string preLineWS(int lineIndentCount, int lineSpaceIndentCount) const;
+	[[nodiscard]] std::string getIndentedSpaceEquivalent(std::string_view line_) const;
+	std::string preLineWS(int lineIndentCount, int lineSpaceIndentCount);
 	template<typename T> void deleteContainer(T& container);
 	template<typename T> void initContainer(T& container, T value);
-	std::vector<std::vector<const std::string*>*>* copyTempStacks(const ASBeautifier& other) const;
+	[[nodiscard]] std::vector<std::vector<const std::string*>*>* copyTempStacks(const ASBeautifier& other) const;
 	std::pair<int, int> computePreprocessorIndent();
 
 	bool handleHeaderSection(std::string_view line, size_t* i, bool closingBraceReached, bool *haveCaseIndent);
 	bool handleColonSection(std::string_view line, size_t* i, bool tabIncrementIn, char* ch);
 	void handleEndOfStatement(size_t i, bool *closingBraceReached, char* ch);
-	void handleParens(std::string_view line, size_t i, bool tabIncrementIn, bool * isInOperator, char ch);
+	void handleParens(std::string_view line, size_t i, bool tabIncrementIn, bool* isInOperator, char ch);
 	void handleClosingParen(std::string_view line, size_t i, bool tabIncrementIn);
-	void handlePotentialHeaderSection(std::string_view line, size_t* i, bool tabIncrementIn, bool *isInOperator);
-	void handlePotentialOperatorSection(std::string_view line, size_t* i, bool tabIncrementIn, bool haveAssignmentThisLine, bool isInOperator);
-
+	void handlePotentialHeaderSection(std::string_view line, size_t* i, bool tabIncrementIn, bool* isInOperator);
+	void handlePotentialOperatorSection(std::string_view line, size_t* i, bool tabIncrementIn, bool* haveAssignmentThisLine, bool isInOperator);
 
 private:  // variables
 	int beautifierFileType;
@@ -484,6 +503,7 @@ private:  // variables
 	std::vector<size_t>* continuationIndentStackSizeStack;
 	std::vector<int>* parenIndentStack;
 	std::vector<std::pair<int, int> >* preprocIndentStack;
+	std::vector<int>* lambdaDepthStack;
 	std::vector<std::pair<size_t, size_t> > squeezeWSStack;
 
 	ASSourceIterator* sourceIterator;
@@ -529,6 +549,7 @@ private:  // variables
 	bool isInTrailingReturnType;
 	bool modifierIndent;
 	bool switchIndent;
+	bool noIndentIfAfterElse;
 	bool caseIndent;
 	bool namespaceIndent;
 	bool blockIndent;
@@ -590,6 +611,8 @@ private:  // variables
 	int  prevFinalLineIndentCount;
 	int  defineIndentCount;
 	int  preprocBlockIndent;
+	int lambdaStartIndent;
+	int lambdaEndIndent;
 	size_t quoteContinuationIndent;
 	char quoteChar;
 	char prevNonSpaceCh;
@@ -602,14 +625,14 @@ private:  // variables
 // Class ASEnhancer
 //-----------------------------------------------------------------------------
 
-// TODO rewrite methods to return altered stings
+// TODO rewrite methods to return altered strings
 
 class ASEnhancer : protected ASBase
 {
 public:  // functions
 	ASEnhancer() = default;
 	void init(int, int, int, bool, bool, bool, bool, bool, bool, bool,
-	          std::vector<const std::pair<const std::string, const std::string>* >*);
+	          std::vector<const std::pair<const std::string, const std::string>* >*, bool);
 	void enhance(std::string& line, bool isInNamespace, bool isInPreprocessor, bool isInSQL);
 
 private:  // functions
@@ -671,6 +694,7 @@ private:
 	// SQL variables
 	bool nextLineIsDeclareIndent;           // begin declare section indent is reached
 	bool isInDeclareSection;                // need to indent a declare section
+	bool preserveIndent;
 
 };  // Class ASEnhancer
 
@@ -698,6 +722,7 @@ public:	// functions
 	void setAddBracesMode(bool state);
 	void setAddOneLineBracesMode(bool state);
 	void setRemoveBracesMode(bool state);
+	void setRemoveOneLineBracesMode(bool state);
 	void setAttachClass(bool state);
 	void setAttachClosingWhile(bool state);
 	void setAttachExternC(bool state);
@@ -708,6 +733,8 @@ public:	// functions
 	void setBreakClosingHeaderBracesMode(bool state);
 	void setBreakBlocksMode(bool state);
 	void setBreakClosingHeaderBlocksMode(bool state);
+	void setLineBetweenMembersMode(bool state);
+	void setLineBetweenAllMembersMode(bool state);
 	void setBreakElseIfsMode(bool state);
 	void setBreakOneLineBlocksMode(bool state);
 	void setBreakOneLineHeadersMode(bool state);
@@ -720,6 +747,7 @@ public:	// functions
 	void setParamTypeUnPaddingMode(bool state);
 	void setCloseTemplatesMode(bool state);
 	void setCommaPaddingMode(bool state);
+	void setPreserveBraceFormat(bool state);
 	void setDeleteEmptyLinesMode(bool state);
 	void setBreakReturnType(bool state);
 	void setBreakReturnTypeDecl(bool state);
@@ -728,6 +756,8 @@ public:	// functions
 	void setIndentCol1CommentsMode(bool state);
 	void setLineEndFormat(LineEndFormat fmt);
 	void setMaxCodeLength(int max);
+	void setMaxCodeLengthMode(MaxCodeLengthMode mode);
+	void setIgnoreSideCommentLengths(bool state);
 	void setObjCColonPaddingMode(ObjCColonPad mode);
 	void setOperatorPaddingMode(bool state);
 	void setNegationPaddingMode(NegationPaddingMode mode);
@@ -747,15 +777,17 @@ public:	// functions
 	void setBracketsInsidePaddingMode(bool state);
 	void setBracketsUnPaddingMode(bool state);
 
+	void setSemicolonUnPaddingMode(bool state);
+
 	void setPointerAlignment(PointerAlign alignment);
 	void setPreprocBlockIndent(bool state);
 	void setReferenceAlignment(ReferenceAlign alignment);
 	void setStripCommentPrefix(bool state);
 	void setTabSpaceConversionMode(bool state);
-	size_t getChecksumIn() const;
-	size_t getChecksumOut() const;
-	int  getChecksumDiff() const;
-	int  getFormatterFileType() const;
+	[[nodiscard]] size_t getChecksumIn() const;
+	[[nodiscard]] size_t getChecksumOut() const;
+	[[nodiscard]] int  getChecksumDiff() const;
+	[[nodiscard]] int  getFormatterFileType() const;
 	// retained for compatibility with release 2.06
 	// "Brackets" have been changed to "Braces" in 3.0
 	// they are referenced only by the old "bracket" options
@@ -870,6 +902,7 @@ private:  // functions
 	void updateFormattedLineSplitPointsPointerOrReference(size_t index);
 	size_t findFormattedLineSplitPoint() const;
 	size_t findNextChar(std::string_view line, char searchChar, int searchStart = 0) const;
+	size_t getEffectiveLineLength() const;
 	const std::string* checkForHeaderFollowingComment(std::string_view firstLine) const;
 	const std::string* getFollowingOperator() const;
 	std::string getPreviousWord(const std::string& line, int currPos, bool allowDots = false) const;
@@ -877,19 +910,17 @@ private:  // functions
 	                         bool endOnEmptyLine = false,
 	                         const std::shared_ptr<ASPeekStream>& streamArg = nullptr) const;
 
-
-
 	bool handleImmediatelyPostHeaderSection();
 	bool handlePassedSemicolonSection();
 	void handleAttachedReturnTypes();
 	void handleClosedBracesOrParens();
 	void handleBraces();
 	void handleBreakLine();
-	bool handlePotentialHeader(const std::string*);
+	bool handlePotentialHeader(const std::string*&);
 	void handleEndOfBlock();
 	void handleColonSection();
 	void handlePotentialHeaderPart2();
-	void handlePotentialOperator(const std::string*);
+	void handlePotentialOperator(const std::string*&);
 	void handleParens();
 	void handleOpenParens();
 
@@ -977,9 +1008,12 @@ private:  // variables
 	LineEndFormat lineEnd;
 	NegationPaddingMode negationPadMode;
 	IncludeDirectivePaddingMode includeDirectivePaddingMode;
+	MaxCodeLengthMode maxCodeLengthMode;
 
+	std::string preserveIndentLeading;
 	bool isVirgin;
 	bool isInVirginLine;
+	bool shouldPreserveBraceFormat;
 	bool shouldPadCommas;
 	bool shouldPadOperators;
 	bool shouldPadParensOutside;
@@ -988,6 +1022,7 @@ private:  // variables
 	bool shouldPadParensInside;
 	bool shouldPadHeader;
 	bool shouldStripCommentPrefix;
+	bool shouldIgnoreSideCommentLengths;
 	bool shouldUnPadParens;
 	bool shouldConvertTabs;
 	bool shouldIndentCol1Comments;
@@ -1033,6 +1068,7 @@ private:  // variables
 	bool foundTrailingReturnType;
 	bool foundCastOperator;
 	bool isInLineBreak;
+	bool isLineContinuation;
 	bool endOfAsmReached;
 	bool endOfCodeReached;
 	bool lineCommentNoIndent;
@@ -1080,6 +1116,7 @@ private:  // variables
 	int  shouldAddBraces;
 	bool shouldAddOneLineBraces;
 	bool shouldRemoveBraces;
+	bool shouldRemoveOneLineBraces;
 	bool shouldPadMethodColon;
 	bool shouldPadMethodPrefix;
 	bool shouldReparseCurrentChar;
@@ -1096,6 +1133,7 @@ private:  // variables
 	bool shouldPadBracketsOutside;
 	bool shouldPadBracketsInside;
 	bool shouldUnPadBrackets;
+	bool shouldUnPadSemicolon;
 	bool needHeaderOpeningBrace;
 	bool shouldBreakLineAtNextChar;
 	bool shouldKeepLineUnbroken;
@@ -1116,6 +1154,11 @@ private:  // variables
 	bool isImmediatelyPostPointerOrReference;
 	bool shouldBreakBlocks;
 	bool shouldBreakClosingHeaderBlocks;
+	bool shouldLineBetweenMembers;
+	bool shouldLineBetweenAllMembers;
+	bool needBlankBeforeNextMember;
+	bool lineBetweenMembersDoBlank;
+	bool lineBetweenMembersPassedClassClose;
 	bool isPrependPostBlockEmptyLineRequested;
 	bool isAppendPostBlockEmptyLineRequested;
 	bool isIndentablePreprocessor;
@@ -1132,6 +1175,9 @@ private:  // variables
 	bool isInAllocator;
 	bool isInMultlineStatement;
 	int isInExplicitBlock;
+	// brace nesting level at which isInStruct was set, so the flag can be
+	// cleared again when the struct body is closed
+	int structNestingLevel;
 
 private:  // inline functions
 	// append the CURRENT character (currentChar) to the current formatted line.

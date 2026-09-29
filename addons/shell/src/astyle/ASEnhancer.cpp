@@ -1,5 +1,5 @@
 // ASEnhancer.cpp
-// Copyright (c) 2025 The Artistic Style Authors.
+// Copyright (c) 2026 The Artistic Style Authors.
 // This code is licensed under the MIT License.
 // License.md describes the conditions under which this software may be distributed.
 
@@ -34,7 +34,8 @@ void ASEnhancer::init(int  _fileType,
                       bool _preprocBlockIndent,
                       bool _preprocDefineIndent,
                       bool _emptyLineFill,
-                      std::vector<const std::pair<const std::string, const std::string>* >* _indentableMacros)
+                      std::vector<const std::pair<const std::string, const std::string>* >* _indentableMacros,
+                      bool _preserveIndent)
 {
 	// formatting variables from ASFormatter and ASBeautifier
 	ASBase::init(_fileType);
@@ -48,6 +49,7 @@ void ASEnhancer::init(int  _fileType,
 	preprocDefineIndent = _preprocDefineIndent;
 	emptyLineFill = _emptyLineFill;
 	indentableMacros = _indentableMacros;
+	preserveIndent = _preserveIndent;
 	quoteChar = '\'';
 
 	// unindent variables
@@ -89,6 +91,9 @@ void ASEnhancer::enhance(std::string& line, bool isInNamespace, bool isInPreproc
 	shouldUnindentLine = true;
 	shouldUnindentComment = false;
 	lineNumber++;
+
+	if (preserveIndent)
+		return;
 
 	// check for beginning of event table
 	if (nextLineIsEventIndent)

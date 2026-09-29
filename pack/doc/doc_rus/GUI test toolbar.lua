@@ -1,4 +1,7 @@
 -- тест скриптового тулбара
+
+require"gui"
+
 local wnd = gui.window("test_toolbar")
 wnd:position(250, 250)
 wnd:size(500, 200)
@@ -16,7 +19,7 @@ local btn_size = 24
 wnd:add(toolbar_panel, "top", btn_size, false)
 local callbacks = {}
 
-for i = 1, 55 do
+for i = 1, 20 do
 	local btn = toolbar_panel:add_button()
 	btn:position((i - 1) * btn_size + 1, 0)
 	btn:size(btn_size, btn_size)

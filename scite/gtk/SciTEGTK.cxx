@@ -162,7 +162,7 @@ GtkWidget *pixmap_new(const char **xpm) {
 	return gtk_image_new_from_pixbuf(pixbuf);
 }
 
-void AddToolSpace(GtkToolbar *toolbar) {
+void AddToolSpace(GtkToolbar *toolbar) noexcept {
 	GtkToolItem *space = gtk_separator_tool_item_new();
 	gtk_widget_show(GTK_WIDGET(space));
 	gtk_toolbar_insert(toolbar, space, -1);
@@ -373,10 +373,8 @@ public:
 
 class DialogParameters : public Dialog {
 public:
-	bool paramDialogCanceled;
-	WEntry entryParam[SciTEBase::maxParam];
-	DialogParameters() :  paramDialogCanceled(true) {
-	}
+	bool paramDialogCanceled = true;
+	WEntry entryParam[SciTEBase::maxParam]{};
 };
 
 class FindDialog : public Dialog {
@@ -432,7 +430,7 @@ public:
 struct MainAction {
 	SciTEGTK *pSciTE {};
 	virtual void Perform() = 0;
-	MainAction(SciTEGTK *pSciTE_) : pSciTE(pSciTE_) {}
+	explicit MainAction(SciTEGTK *pSciTE_) noexcept : pSciTE(pSciTE_) {}
 	virtual ~MainAction() = default;
 };
 
@@ -445,15 +443,15 @@ class SciTEGTK : public SciTEBase, UserStripWatcher {
 private:
 	static MessageBoxChoice messageBoxResult;
 
-	static gint messageBoxKey(GtkWidget *w, GdkEventKey *event, gpointer p);
-	static void messageBoxDestroy(GtkWidget *, gpointer *);
-	static void messageBoxOK(GtkWidget *, gpointer p);
+	static gint messageBoxKey(GtkWidget *w, GdkEventKey *event, gpointer p) noexcept;
+	static void messageBoxDestroy(GtkWidget *, gpointer *) noexcept;
+	static void messageBoxOK(GtkWidget *, gpointer p) noexcept;
 
 protected:
 
 	GtkWidget *splitPane;
 
-	guint sbContextID;
+	guint sbContextID = 0;
 	GUI::Window wToolBarBox;
 	int toolbarDetachable;
 	int menuSource;
@@ -478,7 +476,7 @@ protected:
 	guint32 startupTimestamp;
 
 	guint timerID;
-	guint idlerID;
+	guint idlerID = 0;
 
 	BackgroundStrip backgroundStrip;
 	UserStrip userStrip;
@@ -578,7 +576,7 @@ protected:
 
 	std::string GetRangeInUIEncoding(GUI::ScintillaWindow &win, SA::Span span) override;
 
-	MessageBoxChoice WindowMessageBox(GUI::Window &w, const GUI::gui_string &msg, int style = mbsIconWarning) override;
+	MessageBoxChoice WindowMessageBox(GUI::Window &w, const GUI::gui_string &msg, MessageBoxStyle style = mbsIconWarning) override;
 	void FindMessageBox(const std::string &msg, const std::string *findItem=0) override;
 	void AboutDialog() override;
 	void QuitProgram() override;
@@ -632,7 +630,7 @@ protected:
 	void ShowBackgroundProgress(const GUI::gui_string &explanation, size_t size, size_t progress) override;
 
 	// Single instance
-	void SendFileName(int sendPipe, const char* filename);
+	void SendFileName(int sendPipe, const char* filename) const;
 	bool CheckForRunningInstance(int argc, char* argv[]);
 
 	// GTK Signal Handlers
@@ -736,7 +734,7 @@ public:
 	void PostOnMainThread(int cmd, Worker *pWorker) override;
 	static gboolean PostCallback(void *ptr);
 	// Single instance
-	void SetStartupTime(const char *timestamp);
+	void SetStartupTime(const char *timestamp) noexcept;
 };
 
 SciTEGTK *SciTEGTK::instance;
@@ -802,14 +800,14 @@ SciTEGTK::SciTEGTK(Extension *ext) : SciTEBase(ext) {
 
 SciTEGTK::~SciTEGTK()=default;
 
-static void destroyDialog(GtkWidget *, gpointer *window) {
+static void destroyDialog(GtkWidget *, gpointer *window) noexcept {
 	if (window) {
 		GUI::Window *pwin = reinterpret_cast<GUI::Window *>(window);
 		pwin->SetID(nullptr);
 	}
 }
 
-static void destroyDialogFindReplace(GtkWidget *, gpointer *window) {
+static void destroyDialogFindReplace(GtkWidget *, gpointer *window) noexcept {
 	if (window) {
 		DialogFindReplace *dlg = reinterpret_cast<DialogFindReplace *>(window);
 		dlg->SetID(nullptr);
@@ -821,24 +819,24 @@ void SciTEGTK::WarnUser(int) {}
 static GtkWidget *messageBoxDialog = 0;
 SciTEGTK::MessageBoxChoice SciTEGTK::messageBoxResult = MessageBoxChoice::cancel;
 
-gint SciTEGTK::messageBoxKey(GtkWidget *w, GdkEventKey *event, gpointer p) {
+gint SciTEGTK::messageBoxKey(GtkWidget *w, GdkEventKey *event, gpointer p) noexcept {
 	if (event->keyval == GKEY_Escape) {
 		g_signal_stop_emission_by_name(G_OBJECT(w), "key_press_event");
 		gtk_widget_destroy(GTK_WIDGET(w));
-		messageBoxDialog = 0;
+		messageBoxDialog = {};
 		messageBoxResult = static_cast<MessageBoxChoice>(GPOINTER_TO_INT(p));
 	}
 	return FALSE;
 }
 
-void SciTEGTK::messageBoxDestroy(GtkWidget *, gpointer *) {
-	messageBoxDialog = 0;
+void SciTEGTK::messageBoxDestroy(GtkWidget *, gpointer *) noexcept {
+	messageBoxDialog = {};
 	messageBoxResult = MessageBoxChoice::cancel;
 }
 
-void SciTEGTK::messageBoxOK(GtkWidget *, gpointer p) {
+void SciTEGTK::messageBoxOK(GtkWidget *, gpointer p) noexcept {
 	gtk_widget_destroy(GTK_WIDGET(messageBoxDialog));
-	messageBoxDialog = 0;
+	messageBoxDialog = {};
 	messageBoxResult = static_cast<MessageBoxChoice>(GPOINTER_TO_INT(p));
 }
 
@@ -890,10 +888,10 @@ FilePath SciTEGTK::GetDefaultDirectory() {
 	}
 #endif
 	if (where) {
-		return FilePath(where);
+		return {where};
 	}
 
-	return FilePath("");
+	return {""};
 }
 
 FilePath SciTEGTK::GetSciteDefaultHome() {
@@ -908,10 +906,10 @@ FilePath SciTEGTK::GetSciteDefaultHome() {
 	}
 #endif
 	if (where) {
-		return FilePath(where);
+		return {where};
 
 	}
-	return FilePath("");
+	return {""};
 }
 
 FilePath SciTEGTK::GetSciteUserHome() {
@@ -926,7 +924,7 @@ FilePath SciTEGTK::GetSciteUserHome() {
 		}
 	}
 
-	return FilePath(where);
+	return {where};
 }
 
 void SciTEGTK::SetStatusBarText(const char *s) {
@@ -1162,7 +1160,8 @@ void SciTEGTK::TimerStart(int mask) {
 	if (timerMask != maskNew) {
 		if (timerMask == 0) {
 			// Create a 1 second ticker
-			timerID = g_timeout_add(1000, TimerTick, this);
+			constexpr guint timerInterval = 1'000;
+			timerID = g_timeout_add(timerInterval, TimerTick, this);
 		}
 		timerMask = maskNew;
 	}
@@ -1206,7 +1205,7 @@ void SciTEGTK::GetWindowPosition(int *left, int *top, int *width, int *height, i
 }
 
 struct ActionShowOutput : MainAction {
-	ActionShowOutput(SciTEGTK *pSciTE_) noexcept :
+	explicit ActionShowOutput(SciTEGTK *pSciTE_) noexcept :
 		MainAction(pSciTE_) {
 	}
 	void Perform() override {
@@ -1229,8 +1228,7 @@ void SciTEGTK::SizeContentWindows() {
 
 	// Since SciTEBase::NormaliseSplit() doesn't use the actual Paned maximum
 	// position, it may return an invalid heightOutput...
-	if (heightOutput > max)
-		heightOutput = max;
+	heightOutput = std::min(heightOutput, max);
 
 	gtk_paned_set_position(GTK_PANED(splitPane), max - heightOutput);
 
@@ -1254,8 +1252,7 @@ GtkWidget *SciTEGTK::MenuItemFromAction(int itemID) {
 	it = mapMenuItemFromId.find(itemID);
 	if (it == mapMenuItemFromId.end())
 		return 0;
-	else
-		return it->second;
+	return it->second;
 }
 
 void SciTEGTK::SetMenuItem(int, int, int itemID, const char *text, const char *mnemonic) {
@@ -1379,11 +1376,11 @@ void SciTEGTK::CheckMenus() {
 /**
  * Replace any %xx escapes by their single-character equivalent.
  */
-static void unquote(char *s) {
+static void unquote(char *s) noexcept {
 	char *o = s;
 	while (*s) {
 		if ((*s == '%') && s[1] && s[2]) {
-			*o = IntFromHexDigit(s[1]) * 16 + IntFromHexDigit(s[2]);
+			*o = (IntFromHexDigit(s[1]) * 16) + IntFromHexDigit(s[2]);
 			s += 2;
 		} else {
 			*o = *s;
@@ -1457,7 +1454,7 @@ bool SciTEGTK::OpenDialog(const FilePath &directory, const GUI::gui_string &file
 
 		std::string openFilter = filesFilter;
 		if (openFilter.length()) {
-			std::replace(openFilter.begin(), openFilter.end(), '|', '\0');
+			std::ranges::replace(openFilter, '|', '\0');
 			size_t start = 0;
 			while (start < openFilter.length()) {
 				// Localise the filter name such as "All Source" -> "Alle Quelldateien"
@@ -1475,7 +1472,7 @@ bool SciTEGTK::OpenDialog(const FilePath &directory, const GUI::gui_string &file
 					gtk_file_filter_set_name(fileFilter, openFilter.c_str() + start);
 					start += strlen(openFilter.c_str() + start) + 1;
 					std::string oneSet(openFilter.c_str() + start);
-					std::replace(oneSet.begin(), oneSet.end(), ';', '\0');
+					std::ranges::replace(oneSet, ';', '\0');
 					size_t item = 0;
 					while (item < oneSet.length()) {
 						gtk_file_filter_add_pattern(fileFilter, oneSet.c_str() + item);
@@ -1661,7 +1658,7 @@ void SciTEGTK::SaveSessionDialog() {
 
 namespace {
 
-UniquePangoLayout PangoLayoutFromStyleDefinition(GtkPrintContext *context, const StyleDefinition &sd) {
+UniquePangoLayout PangoLayoutFromStyleDefinition(GtkPrintContext *context, const StyleDefinition &sd) noexcept {
 	UniquePangoLayout layout(gtk_print_context_create_pango_layout(context));
 	if (layout) {
 		pango_layout_set_alignment(layout.get(), PANGO_ALIGN_LEFT);
@@ -1683,6 +1680,16 @@ UniquePangoLayout PangoLayoutFromStyleDefinition(GtkPrintContext *context, const
 	}
 	return layout;
 }
+
+double LayoutHeight(PangoLayout *layout) noexcept {
+	gint layoutHeight;
+	pango_layout_get_size(layout, nullptr, &layoutHeight);
+	return doubleFromPangoUnits(layoutHeight);
+}
+
+constexpr double textSpace = 1.5;
+constexpr double lineSpace = 0.25;
+constexpr double footerAdvance = 0.5;
 
 }
 
@@ -1717,23 +1724,21 @@ void SciTEGTK::SetupFormat(Sci_RangeToFormat &frPrint, GtkPrintContext *context)
 	frPrint.rcPage.bottom = height;
 
 	std::string headerFormat = props.GetString("print.header.format");
-	if (headerFormat.size()) {
-		StyleDefinition sdHeader(props.GetString("print.header.style"));
+	if (!headerFormat.empty()) {
+		const StyleDefinition sdHeader(props.GetString("print.header.style"));
 		UniquePangoLayout layout = PangoLayoutFromStyleDefinition(context, sdHeader);
 		pango_layout_set_text(layout.get(), "Xg", -1);
-		gint layoutHeight;
-		pango_layout_get_size(layout.get(), NULL, &layoutHeight);
-		frPrint.rc.top += doubleFromPangoUnits(layoutHeight) * 1.5;
+		const double layoutHeight = LayoutHeight(layout.get());
+		frPrint.rc.top += layoutHeight * textSpace;
 	}
 
 	std::string footerFormat = props.GetString("print.footer.format");
-	if (footerFormat.size()) {
-		StyleDefinition sdFooter(props.GetString("print.footer.style"));
+	if (!footerFormat.empty()) {
+		const StyleDefinition sdFooter(props.GetString("print.footer.style"));
 		UniquePangoLayout layout = PangoLayoutFromStyleDefinition(context, sdFooter);
 		pango_layout_set_text(layout.get(), "Xg", -1);
-		gint layoutHeight;
-		pango_layout_get_size(layout.get(), NULL, &layoutHeight);
-		frPrint.rc.bottom -= doubleFromPangoUnits(layoutHeight) * 1.5;
+		const double layoutHeight = LayoutHeight(layout.get());
+		frPrint.rc.bottom -= layoutHeight * textSpace;
 	}
 }
 
@@ -1772,8 +1777,8 @@ void SciTEGTK::DrawPageThis(GtkPrintOperation * /* operation */, GtkPrintContext
 	propsPrint.Set("CurrentPage", pageString);
 
 	std::string headerFormat = props.GetString("print.header.format");
-	if (headerFormat.size()) {
-		StyleDefinition sdHeader(props.GetString("print.header.style"));
+	if (!headerFormat.empty()) {
+		const StyleDefinition sdHeader(props.GetString("print.header.style"));
 
 		UniquePangoLayout layout = PangoLayoutFromStyleDefinition(context, sdHeader);
 
@@ -1781,20 +1786,19 @@ void SciTEGTK::DrawPageThis(GtkPrintOperation * /* operation */, GtkPrintContext
 
 		pango_layout_set_text(layout.get(), propsPrint.GetExpandedString("print.header.format").c_str(), -1);
 
-		gint layout_height;
-		pango_layout_get_size(layout.get(), NULL, &layout_height);
-		const gdouble text_height = doubleFromPangoUnits(layout_height);
-		cairo_move_to(cr, frPrint.rc.left, frPrint.rc.top - text_height * 1.5);
+		const double text_height = LayoutHeight(layout.get());
+		cairo_move_to(cr, frPrint.rc.left, frPrint.rc.top - (text_height * textSpace));
 		pango_cairo_show_layout(cr, layout.get());
 
-		cairo_move_to(cr, frPrint.rc.left, frPrint.rc.top - text_height * 0.25);
-		cairo_line_to(cr, frPrint.rc.right, frPrint.rc.top - text_height * 0.25);
+		const double y = frPrint.rc.top - (text_height * lineSpace);
+		cairo_move_to(cr, frPrint.rc.left, y);
+		cairo_line_to(cr, frPrint.rc.right, y);
 		cairo_stroke(cr);
 	}
 
 	std::string footerFormat = props.GetString("print.footer.format");
-	if (footerFormat.size()) {
-		StyleDefinition sdFooter(props.GetString("print.footer.style"));
+	if (!footerFormat.empty()) {
+		const StyleDefinition sdFooter(props.GetString("print.footer.style"));
 
 		UniquePangoLayout layout = PangoLayoutFromStyleDefinition(context, sdFooter);
 
@@ -1802,14 +1806,13 @@ void SciTEGTK::DrawPageThis(GtkPrintOperation * /* operation */, GtkPrintContext
 
 		pango_layout_set_text(layout.get(), propsPrint.GetExpandedString("print.footer.format").c_str(), -1);
 
-		gint layout_height;
-		pango_layout_get_size(layout.get(), NULL, &layout_height);
-		const gdouble text_height = doubleFromPangoUnits(layout_height);
-		cairo_move_to(cr, frPrint.rc.left, frPrint.rc.bottom + text_height * 0.5);
+		const double text_height = LayoutHeight(layout.get());
+		cairo_move_to(cr, frPrint.rc.left, frPrint.rc.bottom + (text_height * footerAdvance));
 		pango_cairo_show_layout(cr, layout.get());
 
-		cairo_move_to(cr, frPrint.rc.left, frPrint.rc.bottom + text_height * 0.25);
-		cairo_line_to(cr, frPrint.rc.right, frPrint.rc.bottom + text_height * 0.25);
+		const double y = frPrint.rc.bottom + (text_height * lineSpace);
+		cairo_move_to(cr, frPrint.rc.left, y);
+		cairo_line_to(cr, frPrint.rc.right, y);
 		cairo_stroke(cr);
 	}
 
@@ -1874,10 +1877,10 @@ gboolean SciTEGTK::MainActionCallback(void *ptr) {
 std::string SciTEGTK::GetRangeInUIEncoding(GUI::ScintillaWindow &win, SA::Span span) {
 	const SA::Position len = span.Length();
 	if (len == 0)
-		return std::string();
-	std::string allocation(len * 3 + 1, 0);
+		return {};
+	std::string allocation((len * 3) + 1, 0);
 	win.SetTarget(span);
-	const SA::Position byteLength = win.TargetAsUTF8(&allocation[0]);
+	const SA::Position byteLength = win.TargetAsUTF8(allocation.data());
 	std::string sel(allocation, 0, byteLength);
 	return sel;
 }
@@ -1942,9 +1945,9 @@ static void FillComboFromMemory(WComboBoxEntry *combo, const ComboMemory &mem, b
 std::string SciTEGTK::EncodeString(const std::string &s) {
 	wEditor.SetLengthForEncode(s.length());
 	const SA::Position len = wEditor.EncodedFromUTF8(s.c_str(), nullptr);
-	std::vector<char> ret(len+1);
-	wEditor.EncodedFromUTF8(s.c_str(), &ret[0]);
-	return std::string(&ret[0], len);
+	std::string ret(len, '\0');
+	wEditor.EncodedFromUTF8(s.c_str(), ret.data());
+	return ret;
 }
 
 void DialogFindReplace::GrabFields() {
@@ -2076,7 +2079,7 @@ struct ActionGrepEnd : MainAction {
 	std::string excluded;
 	std::string what;
 	GrepFlags gf {};
-	ActionGrepEnd(SciTEGTK *pSciTE_) noexcept :
+	explicit ActionGrepEnd(SciTEGTK *pSciTE_) noexcept :
 		MainAction(pSciTE_) {
 	}
 	void Perform() override {
@@ -2121,7 +2124,7 @@ void SciTEGTK::FindInFilesCmd() {
 		page->excluded = props.GetString("find.exclude");
 		page->what = findWhat;
 		// On another thread
-		jobQueue.SetCancelFlag(0);
+		jobQueue.SetCancelFlag(false);
 		jobQueue.SetExecuting(true);
 		CheckMenus();
 		if (scrollOutput)
@@ -2153,7 +2156,7 @@ void SciTEGTK::GrepEnd(ActionGrepEnd *page) {
 	if (FlagIsSet(page->gf, GrepFlags::scroll) && returnOutputToCommand) {
 		wOutput.GotoPos(page->positionEnd);
 	}
-	jobQueue.SetCancelFlag(0);
+	jobQueue.SetCancelFlag(false);
 	jobQueue.SetExecuting(false);
 	returnOutputToCommand = true;
 	CheckMenus();
@@ -2214,6 +2217,9 @@ void SciTEGTK::FindInFilesResponse(int responseID) {
 
 		case GTK_RESPONSE_CANCEL:
 			dlgFindInFiles.Destroy();
+			break;
+
+		default:
 			break;
 	}
 }
@@ -2332,7 +2338,7 @@ void SciTEGTK::ResetExecution() {
 
 void SciTEGTK::ExecuteNext() {
 	icmd++;
-	if (icmd < jobQueue.commandCurrent && icmd < jobQueue.commandMax) {
+	if (icmd < jobQueue.commandCurrent && icmd < JobQueue::commandMax) {
 		Execute();
 	} else {
 		ResetExecution();
@@ -2340,7 +2346,8 @@ void SciTEGTK::ExecuteNext() {
 }
 
 void SciTEGTK::ContinueExecute(int fromPoll) {
-	char buf[8192];
+	constexpr size_t bufSize = 8192;
+	char buf[bufSize];
 	int count = read(fdFIFO, buf, sizeof(buf) - 1);
 	if (count > 0) {
 		buf[count] = '\0';
@@ -2362,21 +2369,21 @@ void SciTEGTK::ContinueExecute(int fromPoll) {
 		}
 		if ((lastFlags & jobRepSelYes)
 			|| ((lastFlags & jobRepSelAuto) && !exitStatus)) {
-			const int cpMin = wEditor.Send(SCI_GETSELECTIONSTART, 0, 0);
-			wEditor.Send(SCI_REPLACESEL,0,(sptr_t)(lastOutput.c_str()));
-			wEditor.Send(SCI_SETSEL, cpMin, cpMin+lastOutput.length());
+			const Scintilla::Position cpMin = wEditor.SelectionStart();
+			wEditor.ReplaceSel(lastOutput.c_str());
+			wEditor.SetSel(cpMin, cpMin+lastOutput.length());
 		}
 		sExitMessage.append("\n");
 		OutputAppendString(sExitMessage);
 		// Move selection back to beginning of this run so that F4 will go
 		// to first error of this run.
 		if ((scrollOutput == 1) && returnOutputToCommand)
-			wOutput.Send(SCI_GOTOPOS, originalEnd);
+			wOutput.GotoPos(originalEnd);
 		returnOutputToCommand = true;
 		g_source_remove(inputHandle);
 		inputHandle = 0;
 		g_io_channel_unref(inputChannel);
-		inputChannel = 0;
+		inputChannel = nullptr;
 		g_source_remove(pollID);
 		pollID = 0;
 		close(fdFIFO);
@@ -2494,8 +2501,8 @@ void SciTEGTK::Execute() {
 	}
 
 	if (jobQueue.jobQueue[icmd].jobType == JobSubsystem::shell) {
-		const gchar *argv[] = { "/bin/sh", "-c", jobQueue.jobQueue[icmd].command.c_str(), NULL };
-		g_spawn_async(NULL, const_cast<gchar**>(argv), NULL, GSpawnFlags{}, NULL, NULL, NULL, NULL);
+		const gchar *argv[] = { "/bin/sh", "-c", jobQueue.jobQueue[icmd].command.c_str(), nullptr };
+		g_spawn_async({}, const_cast<gchar**>(argv), {}, GSpawnFlags{}, {}, {}, {}, {});
 		ExecuteNext();
 	} else if (jobQueue.jobQueue[icmd].jobType == JobSubsystem::extension) {
 		if (extender)
@@ -2504,12 +2511,12 @@ void SciTEGTK::Execute() {
 	} else {
 		GError *error = NULL;
 		gint fdout;
-		const char *argv[] = { "/bin/sh", "-c", jobQueue.jobQueue[icmd].command.c_str(), NULL };
+		const char *argv[] = { "/bin/sh", "-c", jobQueue.jobQueue[icmd].command.c_str(), nullptr };
 
 		if (!g_spawn_async_with_pipes(
-			NULL, const_cast<gchar**>(argv), NULL,
-			G_SPAWN_DO_NOT_REAP_CHILD, SetupChild, NULL,
-			&pidShell, NULL, &fdout, NULL, &error
+			{}, const_cast<gchar **>(argv), {},
+			G_SPAWN_DO_NOT_REAP_CHILD, SetupChild, {},
+			&pidShell, {}, &fdout, {}, &error
 		)) {
 			OutputAppendString(">g_spawn_async_with_pipes: ");
 			OutputAppendString(error->message);
@@ -2523,9 +2530,10 @@ void SciTEGTK::Execute() {
 		triedKill = false;
 		fcntl(fdFIFO, F_SETFL, fcntl(fdFIFO, F_GETFL) | O_NONBLOCK);
 		inputChannel = g_io_channel_unix_new(fdout);
-		inputHandle = g_io_add_watch(inputChannel, G_IO_IN, (GIOFunc)IOSignal, this);
+		inputHandle = g_io_add_watch(inputChannel, G_IO_IN, reinterpret_cast<GIOFunc>(IOSignal), this);
 		// Also add a background task in case there is no output from the tool
-		pollID = g_timeout_add(20, reinterpret_cast<GSourceFunc>(SciTEGTK::PollTool), this);
+		constexpr guint pollInterval = 20; // milliseconds
+		pollID = g_timeout_add(pollInterval, reinterpret_cast<GSourceFunc>(SciTEGTK::PollTool), this);
 	}
 }
 
@@ -2555,6 +2563,9 @@ void SciTEGTK::GotoResponse(int responseID) {
 
 		case GTK_RESPONSE_CANCEL:
 			dlgGoto.Destroy();
+			break;
+
+		default:
 			break;
 	}
 }
@@ -2599,6 +2610,9 @@ void SciTEGTK::AbbrevResponse(int responseID) {
 
 		case GTK_RESPONSE_CANCEL:
 			dlgAbbrev.Destroy();
+			break;
+
+		default:
 			break;
 	}
 }
@@ -2657,7 +2671,7 @@ void SciTEGTK::TabSizeConvertCmd() {
 	dlgTabSize.Destroy();
 }
 
-#define RESPONSE_CONVERT 1001
+constexpr int RESPONSE_CONVERT = 1001;
 
 void SciTEGTK::TabSizeResponse(int responseID) {
 	switch (responseID) {
@@ -2671,6 +2685,9 @@ void SciTEGTK::TabSizeResponse(int responseID) {
 
 		case GTK_RESPONSE_CANCEL:
 			dlgTabSize.Destroy();
+			break;
+
+		default:
 			break;
 	}
 }
@@ -2806,11 +2823,11 @@ bool SciTEGTK::ParametersDialog(bool modal) {
 	return !dlgParameters.paramDialogCanceled;
 }
 
-#define RESPONSE_MARK_ALL 1002
-#define RESPONSE_REPLACE 1003
-#define RESPONSE_REPLACE_ALL 1004
-#define RESPONSE_REPLACE_IN_SELECTION 1005
-#define RESPONSE_REPLACE_IN_BUFFERS 1006
+constexpr int RESPONSE_MARK_ALL = 1002;
+constexpr int RESPONSE_REPLACE = 1003;
+constexpr int RESPONSE_REPLACE_ALL = 1004;
+constexpr int RESPONSE_REPLACE_IN_SELECTION = 1005;
+constexpr int RESPONSE_REPLACE_IN_BUFFERS = 1006;
 
 void SciTEGTK::FindReplaceResponse(int responseID) {
 	switch (responseID) {
@@ -2840,6 +2857,9 @@ void SciTEGTK::FindReplaceResponse(int responseID) {
 
 		case RESPONSE_REPLACE_IN_BUFFERS:
 			FRReplaceInBuffersCmd();
+			break;
+
+		default:
 			break;
 	}
 }
@@ -2941,7 +2961,6 @@ void SciTEGTK::DestroyFindReplace() {
 
 SciTEBase::MessageBoxChoice SciTEGTK::WindowMessageBox(GUI::Window &w, const GUI::gui_string &msg, MessageBoxStyle style) {
 	if (!messageBoxDialog) {
-		std::string sMsg(msg);
 		dialogsOnScreen++;
 		GtkAccelGroup *accel_group = gtk_accel_group_new();
 
@@ -2985,7 +3004,7 @@ SciTEBase::MessageBoxChoice SciTEGTK::WindowMessageBox(GUI::Window &w, const GUI
 			gtk_widget_show_all(explanation);
 			SetAboutMessage(scExplanation, "SciTE");
 		} else {
-			GtkWidget *label = gtk_label_new(sMsg.c_str());
+			GtkWidget *label = gtk_label_new(msg.c_str());
 #if GTK_CHECK_VERSION(3,14,0)
 			gtk_widget_set_margin_start(label, 10);
 			gtk_widget_set_margin_end(label, 10);
@@ -3094,7 +3113,8 @@ bool SciTEGTK::UpdateOutputSize() {
 	if (heightOutput > (max - 20)) {
 		heightOutput = max;
 		return true;
-	} else if (heightOutput < 20) {
+	}
+	if (heightOutput < 20) {
 		heightOutput = 0;
 		return true;
 	}
@@ -3187,9 +3207,8 @@ gint SciTEGTK::Key(GdkEventKey *event) {
 			    G_OBJECT(PWidget(wSciTE)), "key-release-event");
 			this->EndStackedTabbing();
 			return 1;
-		} else {
-			return 0;
 		}
+		return 0;
 	}
 
 	const int modifiers = event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK | GDK_MOD1_MASK | GDK_MOD4_MASK);
@@ -3451,20 +3470,19 @@ std::string SciTEGTK::TranslatePath(const char *path) {
 		std::string spathTranslated;
 		std::string spath(path, 1, strlen(path));
 		spath.append("/");
-		size_t end = spath.find("/");
+		size_t end = spath.find('/');
 		while (spath.length() > 1) {
 			std::string segment(spath, 0, end);
 			GUI::gui_string segmentLocalised = localiser.Text(segment);
-			std::replace(segmentLocalised.begin(), segmentLocalised.end(), '/', '|');
+			std::ranges::replace(segmentLocalised, '/', '|');
 			spathTranslated.append("/");
 			spathTranslated.append(segmentLocalised);
 			spath.erase(0, end + 1);
-			end = spath.find("/");
+			end = spath.find('/');
 		}
 		return spathTranslated;
-	} else {
-		return path ? path : std::string();
 	}
+	return path ? path : std::string();
 }
 
 void SciTEGTK::CreateTranslatedMenu(int n, const SciTEItemFactoryEntry items[],
@@ -3528,7 +3546,7 @@ void SciTEGTK::CreateTranslatedMenu(int n, const SciTEItemFactoryEntry items[],
 		std::string menuName(afterSlash, lastSlash ? (lastSlash-afterSlash) : 0);
 		GtkWidget *menuParent = menuBar;
 		if (!menuName.empty()) {
-			if (pulldowns.count(menuName) > 0) {
+			if (pulldowns.contains(menuName)) {
 				menuParent = pulldowns[menuName];
 			} else {
 				fprintf(stderr, "*** failed to find parent %s\n", psife->path);
@@ -3583,7 +3601,7 @@ void SciTEGTK::CreateTranslatedMenu(int n, const SciTEItemFactoryEntry items[],
 void SciTEGTK::CreateMenu() {
 
 	GCallback menuSig = G_CALLBACK(MenuSignal);
-	SciTEItemFactoryEntry menuItems[] = {
+	const SciTEItemFactoryEntry menuItems[] = {
 	                                      {"/_File", NULL, NULL, 0, "<Branch>"},
 	                                      {"/File/_New", "<control>N", menuSig, IDM_NEW, 0},
 	                                      {"/File/_Open...", "<control>O", menuSig, IDM_OPEN, 0},
@@ -3760,7 +3778,7 @@ void SciTEGTK::CreateMenu() {
 	                                      {"/Tools/_Switch Pane", "<control>F6", menuSig, IDM_SWITCHPANE, 0},
 	                                  };
 
-	SciTEItemFactoryEntry menuItemsOptions[] = {
+	const SciTEItemFactoryEntry menuItemsOptions[] = {
 	            {"/_Options", NULL, NULL, 0, "<Branch>"},
 	            {"/Options/Vertical _Split", "", menuSig, IDM_SPLITVERTICAL, "<CheckItem>"},
 	            {"/Options/_Wrap", "", menuSig, IDM_WRAP, "<CheckItem>"},
@@ -3786,11 +3804,11 @@ void SciTEGTK::CreateMenu() {
 	            {"/Options/_Edit Properties", "", 0, 0, "<Branch>"},
 	        };
 
-	SciTEItemFactoryEntry menuItemsLanguage[] = {
+	const SciTEItemFactoryEntry menuItemsLanguage[] = {
 	            {"/_Language", NULL, NULL, 0, "<Branch>"},
 	        };
 
-	SciTEItemFactoryEntry menuItemsBuffer[] = {
+	const SciTEItemFactoryEntry menuItemsBuffer[] = {
 	                                            {"/_Buffers", NULL, NULL, 0, "<Branch>"},
 	                                            {"/Buffers/_Previous", "<shift>F6", menuSig, IDM_PREVFILE, 0},
 	                                            {"/Buffers/_Next", "F6", menuSig, IDM_NEXTFILE, 0},
@@ -3809,7 +3827,7 @@ void SciTEGTK::CreateMenu() {
 	                                            {"/Buffers/Buffer9", "<alt>0", menuSig, bufferCmdID + 9, "/Buffers/Buffer0"},
 	                                        };
 
-	SciTEItemFactoryEntry menuItemsHelp[] = {
+	const SciTEItemFactoryEntry menuItemsHelp[] = {
 	                                          {"/_Help", NULL, NULL, 0, "<Branch>"},
 	                                          {"/Help/_Help", "F1", menuSig, IDM_HELP, 0},
 	                                          {"/Help/_SciTE Help", "", menuSig, IDM_HELP_SCITE, 0},
@@ -3941,12 +3959,12 @@ void SciTEGTK::CreateUI() {
 	                   G_CALLBACK(MousePress), gthis);
 
 	gtk_window_set_title(GTK_WINDOW(PWidget(wSciTE)), appName);
-	const int useDefault = 0x10000000;
+	constexpr int useDefault = 0x10'000'000;
 	int left = props.GetInt("position.left", useDefault);
 	int top = props.GetInt("position.top", useDefault);
 	int width = props.GetInt("position.width", useDefault);
 	int height = props.GetInt("position.height", useDefault);
-	bool maximize = props.GetInt("position.maximize", 0) ? true : false;
+	bool maximize = props.GetInt("position.maximize", 0) != 0;
 	if (width == -1 || height == -1) {
 		maximize = true;
 #if GTK_CHECK_VERSION(3,22,0)
@@ -3971,7 +3989,7 @@ void SciTEGTK::CreateUI() {
 		top = propsSession.GetInt("position.top", useDefault);
 		width = propsSession.GetInt("position.width", useDefault);
 		height = propsSession.GetInt("position.height", useDefault);
-		maximize = propsSession.GetInt("position.maximize", 0) ? true : false;
+		maximize = propsSession.GetInt("position.maximize", 0) != 0;
 	}
 
 	fileSelectorWidth = props.GetInt("fileselector.width", fileSelectorWidth);
@@ -4073,7 +4091,7 @@ void SciTEGTK::CreateUI() {
 	sbVisible = false;
 
 	static const GtkTargetEntry dragtypes[] = { { const_cast<gchar*>("text/uri-list"), 0, 0 } };
-	static const gint n_dragtypes = std::size(dragtypes);
+	static constexpr gint n_dragtypes = std::size(dragtypes);
 
 	gtk_drag_dest_set(PWidget(wSciTE), GTK_DEST_DEFAULT_ALL, dragtypes,
 	                  n_dragtypes, GDK_ACTION_COPY);
@@ -4243,8 +4261,8 @@ gboolean SciTEGTK::PostCallback(void *ptr) {
 	return FALSE;
 }
 
-void SciTEGTK::SetStartupTime(const char *timestamp) {
-	if (timestamp != NULL) {
+void SciTEGTK::SetStartupTime(const char *timestamp) noexcept {
+	if (timestamp) {
 		char *end;
 		// Reset errno from any previous errors
 		errno = 0;
@@ -4259,10 +4277,9 @@ void SciTEGTK::SetStartupTime(const char *timestamp) {
 // Make the path absolute if it is not already.
 // If filename is empty, we send a message to the existing instance to tell
 // it to present itself (ie. the window should come to the front)
-void SciTEGTK::SendFileName(int sendPipe, const char* filename) {
+void SciTEGTK::SendFileName(int sendPipe, const char* filename) const {
 
 	std::string command;
-	const char *pipeData;
 
 	if (strlen(filename) != 0) {
 		command = "open:";
@@ -4287,10 +4304,9 @@ void SciTEGTK::SendFileName(int sendPipe, const char* filename) {
 		}
 		command += "\n";
 	}
-	pipeData = command.c_str();
 
 	// Send it.
-	if (write(sendPipe, pipeData, strlen(pipeData)) == -1)
+	if (write(sendPipe, command.c_str(), command.length()) == -1)
 		perror("Unable to write to pipe");
 }
 
@@ -4298,7 +4314,7 @@ namespace {
 
 // GLib 2.70 changed the name of g_pattern_match_string to g_pattern_spec_match_string
 // and produces deprecation warnings when old name used.
-gboolean pattern_match_string(GPatternSpec *pspec, const gchar *string) {
+gboolean pattern_match_string(GPatternSpec *pspec, const gchar *string) noexcept {
 #if GLIB_CHECK_VERSION(2,70,0)
 	return g_pattern_spec_match_string(pspec, string);
 #else
@@ -4311,7 +4327,7 @@ gboolean pattern_match_string(GPatternSpec *pspec, const gchar *string) {
 bool SciTEGTK::CheckForRunningInstance(int argc, char *argv[]) {
 
 	const gchar *tmpdir = g_get_tmp_dir();
-	GDir *dir = g_dir_open(tmpdir, 0, NULL);
+	GDir *dir = g_dir_open(tmpdir, 0, {});
 	if (!dir) {
 		return false; // Couldn't open the directory
 	}
@@ -4330,17 +4346,20 @@ bool SciTEGTK::CheckForRunningInstance(int argc, char *argv[]) {
 			time(&ltime);// Get current time.
 			struct stat file_status;
 			stat(uniqueInstance.c_str(), &file_status); // Get status of lock file.
-			isLocked = difftime(ltime, file_status.st_mtime) <= 3.0; // Test whether the lock is fresh (<= 3 seconds) or not. Avoid perpetual lock if SciTE crashes during its launch and the lock file is present.
+			// Test whether the lock is fresh (<= 3 seconds) or not. Avoid perpetual lock if SciTE crashes during its launch and the lock file is present.
+			constexpr double freshTime = 3.0; // 50 milliseconds
+			constexpr int sleepForProcessStart = 50'000; // 50 milliseconds
+			isLocked = difftime(ltime, file_status.st_mtime) <= freshTime;
 			if (isLocked)
 				// Currently, another process of SciTE is launching. We are waiting for end of its initialisation.
-				usleep(50000);
+				usleep(sleepForProcessStart);
 		}
 	} while (isLocked);
 	if (fd != -1)
 		close(fd);
 
 	GPatternSpec *pattern = g_pattern_spec_new("SciTE.*.in");
-	char *pipeFileName = NULL;
+	char *pipeFileName = nullptr;
 	const char *filename;
 	// Find a working pipe in our temporary directory
 	while ((filename = g_dir_read_name(dir))) {
@@ -4358,7 +4377,7 @@ bool SciTEGTK::CheckForRunningInstance(int argc, char *argv[]) {
 						SendFileName(sendPipe, argv[ii]);
 					} else {
 						// Strip the beginning dash and add the final newline
-						if ((write(sendPipe, argv[ii]+1, strlen(argv[ii])-1) == -1) || (write(sendPipe, "\n", 1) == -1))
+						if ((write(sendPipe, argv[ii] + 1, strlen(argv[ii]) - 1) == -1) || (write(sendPipe, "\n", 1) == -1))
 							perror("Unable to write command to pipe");
 					}
 				}
@@ -4370,11 +4389,10 @@ bool SciTEGTK::CheckForRunningInstance(int argc, char *argv[]) {
 				if (close(sendPipe) == -1)
 					perror("Unable to close pipe");
 				break;
-			} else {
-				// We don't care about the error. Try another pipe.
-				g_free(pipeFileName);
-				pipeFileName = NULL;
 			}
+			// We don't care about the error. Try another pipe.
+			g_free(pipeFileName);
+			pipeFileName = nullptr;
 		}
 	}
 	g_pattern_spec_free(pattern);
@@ -4418,16 +4436,18 @@ void SciTEGTK::Run(int argc, char *argv[]) {
 	ProcessCommandLine(args, 0);
 
 	// Check if SciTE is already running.
-	if ((props.GetString("ipc.director.name").size() == 0) && props.GetInt ("check.if.already.open")) {
-		if (CheckForRunningInstance (argc, argv)) {
+	const bool checkOpenNoName = props.GetString("ipc.director.name").empty() && props.GetInt("check.if.already.open");
+	if (checkOpenNoName) {
+		if (CheckForRunningInstance(argc, argv)) {
 			// Returning from this function exits the program.
 			return;
 		}
 	}
 
 	CreateUI();
-	if ((props.GetString("ipc.director.name").size() == 0) && props.GetInt ("check.if.already.open"))
+	if (checkOpenNoName) {
 		unlink(uniqueInstance.c_str()); // Unlock.
+	}
 
 	// Process remaining switches and files
 #ifndef GDK_VERSION_3_6
@@ -4498,11 +4518,11 @@ int main(int argc, char *argv[]) {
 
 	// Get this now because gtk_init() clears it
 	const gchar *startup_id = g_getenv("DESKTOP_STARTUP_ID");
-	char *timestamp = NULL;
-	if (startup_id != NULL) {
+	char *timestamp = nullptr;
+	if (startup_id) {
 		char *pos = g_strrstr(startup_id, "_TIME");
-		if (pos != NULL) {
-			timestamp = pos + 5; // Skip "_TIME"
+		if (pos) {
+			timestamp = pos + strlen("_TIME"); // Skip "_TIME"
 		}
 	}
 

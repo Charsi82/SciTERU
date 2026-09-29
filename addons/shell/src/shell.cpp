@@ -1,6 +1,10 @@
-//build@ gcc -shared -o shell.dll -I shell.cpp scite.la -lstdc++
+п»ї//build@ gcc -shared -o shell.dll -I shell.cpp scite.la -lstdc++
 
 #include <Shlwapi.h>
+#ifdef __GNUC__
+	#include <cstdint>
+	#include <algorithm>
+#endif
 #include "utf.h" // Needs for WideString and UTF8 conversions
 #include "md5.h"
 #include "sha2/sha-256.h"
@@ -18,25 +22,25 @@ public:
 	{
 		if (lpszFileName)
 		{
-			// сохраняем оригинал
+			// СЃРѕС…СЂР°РЅСЏРµРј РѕСЂРёРіРёРЅР°Р»
 			m_sPathOriginal.append(lpszFileName);
 
 			if (::PathIsURL(lpszFileName))
 			{
 				m_sPath.append(lpszFileName);
 			}
-			else // делаем преобразования
+			else // РґРµР»Р°РµРј РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРёСЏ
 			{
-				// 1. Раскрываем переменные окружения
+				// 1. Р Р°СЃРєСЂС‹РІР°РµРј РїРµСЂРµРјРµРЅРЅС‹Рµ РѕРєСЂСѓР¶РµРЅРёСЏ
 				//CMemBuffer< wchar_t, 1024 > sExpanded;
 				std::wstring sExpanded(1024, 0);
 				::ExpandEnvironmentStrings(lpszFileName, sExpanded.data(), 1024);
-				// 2. Убираем в пути .. и . (приводим к каноническому виду)
+				// 2. РЈР±РёСЂР°РµРј РІ РїСѓС‚Рё .. Рё . (РїСЂРёРІРѕРґРёРј Рє РєР°РЅРѕРЅРёС‡РµСЃРєРѕРјСѓ РІРёРґСѓ)
 				std::wstring  sCanonical(1024, 0);
 				::PathCanonicalize(sCanonical.data(), sExpanded.data());
-				// 3. Убираем лишние пробелы
+				// 3. РЈР±РёСЂР°РµРј Р»РёС€РЅРёРµ РїСЂРѕР±РµР»С‹
 				::PathRemoveBlanks(sCanonical.data());
-				// 4. Проверяем существует ли преобразованный путь
+				// 4. РџСЂРѕРІРµСЂСЏРµРј СЃСѓС‰РµСЃС‚РІСѓРµС‚ Р»Рё РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРЅС‹Р№ РїСѓС‚СЊ
 				if (::PathFileExists(sCanonical.data()) == TRUE)
 				{
 					::PathMakePretty(sCanonical.data());
@@ -51,15 +55,15 @@ public:
 				}
 				else
 				{
-					// 5. Отделяем аргументы
+					// 5. РћС‚РґРµР»СЏРµРј Р°СЂРіСѓРјРµРЅС‚С‹
 					wchar_t* pArg = ::PathGetArgs(sCanonical.data());
 					m_sFileParams.append(pArg);
 					::PathRemoveArgs(sCanonical.data());
-					// 6. Делаем путь по красивше
+					// 6. Р”РµР»Р°РµРј РїСѓС‚СЊ РїРѕ РєСЂР°СЃРёРІС€Рµ
 					::PathUnquoteSpaces(sCanonical.data());
 					::PathRemoveBackslash(sCanonical.data());
 					::PathMakePretty(sCanonical.data());
-					// 7. Проверяем преобразованный путь это дирректория
+					// 7. РџСЂРѕРІРµСЂСЏРµРј РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРЅС‹Р№ РїСѓС‚СЊ СЌС‚Рѕ РґРёСЂСЂРµРєС‚РѕСЂРёСЏ
 					if (::PathIsDirectory(sCanonical.data()) != FALSE)
 					{
 						m_sPath.append(sCanonical);
@@ -67,9 +71,9 @@ public:
 					}
 					else
 					{
-						// 8. Добавляем расширение к файлу .exe, если нету
+						// 8. Р”РѕР±Р°РІР»СЏРµРј СЂР°СЃС€РёСЂРµРЅРёРµ Рє С„Р°Р№Р»Сѓ .exe, РµСЃР»Рё РЅРµС‚Сѓ
 						::PathAddExtension(sCanonical.data(), NULL);
-						// 9. Проверяем есть ли такой файл
+						// 9. РџСЂРѕРІРµСЂСЏРµРј РµСЃС‚СЊ Р»Рё С‚Р°РєРѕР№ С„Р°Р№Р»
 						if (::PathFileExists(sCanonical.data()))
 						{
 							m_sPath.append(sCanonical.data());
@@ -79,7 +83,7 @@ public:
 						}
 						else
 						{
-							// 10. Производим поиск
+							// 10. РџСЂРѕРёР·РІРѕРґРёРј РїРѕРёСЃРє
 							::PathFindOnPath(sCanonical.data(), NULL);
 							::PathMakePretty(sCanonical.data());
 							m_sPath.append(sCanonical);
@@ -148,7 +152,7 @@ public:
 };
 
 namespace {
-	// получить последнее сообщение об ошибке
+	// РїРѕР»СѓС‡РёС‚СЊ РїРѕСЃР»РµРґРЅРµРµ СЃРѕРѕР±С‰РµРЅРёРµ РѕР± РѕС€РёР±РєРµ
 	std::wstring GetLastErrorString(DWORD* lastErrorCode, size_t* iLenMsg)
 	{
 		LPWSTR lpMsgBuf = NULL;
@@ -214,6 +218,23 @@ namespace {
 		return 1;
 	}
 
+	int do_play_sound(lua_State* L)
+	{
+		auto file = luaL_checkstring(L, 1);
+		bool bPlayOK = PlaySoundA(file, {}, SND_ASYNC | SND_FILENAME);
+		lua_pushboolean(L, bPlayOK);
+		return 1;
+	}
+
+	int do_play_beep(lua_State* L)
+	{
+		DWORD soundFreq = static_cast<DWORD>(luaL_optinteger(L, 1, 1000));
+		DWORD duration = static_cast<DWORD>(luaL_optinteger(L, 2, 500));
+		bool bPlayOK = ::Beep(std::clamp<DWORD>(soundFreq, 20, 32767), std::clamp<DWORD>(duration, 0, 1000));
+		lua_pushboolean(L, bPlayOK);
+		return 1;
+	}
+
 	int getfileattr(lua_State* L)
 	{
 		auto fileNamePath = StringFromUTF8(luaL_checkstring(L, -1));
@@ -229,11 +250,12 @@ namespace {
 		return 1;
 	}
 
-	int fileexists(lua_State* L)
+	int file_exists(lua_State* L)
 	{
-		auto fileNamePath = StringFromUTF8(luaL_checkstring(L, 1));
+		const auto fileNamePath = StringFromUTF8(luaL_checkstring(L, 1));
 		lua_pushboolean(L, CPath::IsPathExist(fileNamePath.data()));
-		return 1;
+		lua_pushboolean(L, CPath::IsDirectory(fileNamePath.data()));
+		return 2;
 	}
 
 	int fileDelete(lua_State* L)
@@ -359,7 +381,7 @@ namespace {
 		return 2;
 	}
 
-	// запустить через CreateProcess в скрытом режиме
+	// Р·Р°РїСѓСЃС‚РёС‚СЊ С‡РµСЂРµР· CreateProcess РІ СЃРєСЂС‹С‚РѕРј СЂРµР¶РёРјРµ
 	bool RunProcessHide(CPath& path, DWORD* out_exitcode, std::wstring& strOut)
 	{
 		static constexpr int MAX_CMD = 1024;
@@ -369,7 +391,7 @@ namespace {
 		si.dwFlags = STARTF_USESHOWWINDOW;
 		si.wShowWindow = SW_HIDE;
 
-		// устанавливаем именованные каналы на потоки ввода/вывода
+		// СѓСЃС‚Р°РЅР°РІР»РёРІР°РµРј РёРјРµРЅРѕРІР°РЅРЅС‹Рµ РєР°РЅР°Р»С‹ РЅР° РїРѕС‚РѕРєРё РІРІРѕРґР°/РІС‹РІРѕРґР°
 		BOOL bUsePipes = FALSE;
 		HANDLE FWritePipe = NULL;
 		HANDLE FReadPipe = NULL;
@@ -383,8 +405,8 @@ namespace {
 			si.dwFlags = STARTF_USESTDHANDLES | si.dwFlags;
 		}
 
-		// запускаем процесс
-		std::wstring bufCmdLine(MAX_CMD, 0); // строковой буфер длиной MAX_CMD
+		// Р·Р°РїСѓСЃРєР°РµРј РїСЂРѕС†РµСЃСЃ
+		std::wstring bufCmdLine(MAX_CMD, 0); // СЃС‚СЂРѕРєРѕРІРѕР№ Р±СѓС„РµСЂ РґР»РёРЅРѕР№ MAX_CMD
 		//wcscat_s(bufCmdLine.data(), MAX_CMD, L"\"");
 		bufCmdLine.append(L"\"");
 		//wcscat_s(bufCmdLine.data(), MAX_CMD, path.GetPath());
@@ -400,18 +422,18 @@ namespace {
 		}
 
 		PROCESS_INFORMATION pi = { };
-		BOOL RetCode = ::CreateProcess(NULL, // не используем имя файла, все в строке запуска
-			bufCmdLine.data(), // строка запуска
+		BOOL RetCode = ::CreateProcess(NULL, // РЅРµ РёСЃРїРѕР»СЊР·СѓРµРј РёРјСЏ С„Р°Р№Р»Р°, РІСЃРµ РІ СЃС‚СЂРѕРєРµ Р·Р°РїСѓСЃРєР°
+			bufCmdLine.data(), // СЃС‚СЂРѕРєР° Р·Р°РїСѓСЃРєР°
 			NULL, // Process handle not inheritable
 			NULL, // Thread handle not inheritable
 			TRUE, // Set handle inheritance to FALSE
 			0, // No creation flags
 			NULL, // Use parent's environment block
-			NULL, //path.GetDirectory(), // устанавливаем дирректорию запуска
+			NULL, //path.GetDirectory(), // СѓСЃС‚Р°РЅР°РІР»РёРІР°РµРј РґРёСЂСЂРµРєС‚РѕСЂРёСЋ Р·Р°РїСѓСЃРєР°
 			&si, // STARTUPINFO
 			&pi); // PROCESS_INFORMATION
 
-		// если провалили запуск сообщаем об ошибке
+		// РµСЃР»Рё РїСЂРѕРІР°Р»РёР»Рё Р·Р°РїСѓСЃРє СЃРѕРѕР±С‰Р°РµРј РѕР± РѕС€РёР±РєРµ
 		if (RetCode == FALSE)
 		{
 			::CloseHandle(FReadPipe);
@@ -419,10 +441,10 @@ namespace {
 			return FALSE;
 		}
 
-		// закрываем описатель потока, в нем нет необходимости
+		// Р·Р°РєСЂС‹РІР°РµРј РѕРїРёСЃР°С‚РµР»СЊ РїРѕС‚РѕРєР°, РІ РЅРµРј РЅРµС‚ РЅРµРѕР±С…РѕРґРёРјРѕСЃС‚Рё
 		::CloseHandle(pi.hThread);
 
-		// ожидаем завершение работы процесса
+		// РѕР¶РёРґР°РµРј Р·Р°РІРµСЂС€РµРЅРёРµ СЂР°Р±РѕС‚С‹ РїСЂРѕС†РµСЃСЃР°
 		try
 		{
 			DWORD BytesToRead = 0;
@@ -430,7 +452,7 @@ namespace {
 			DWORD TotalBytesAvail = 0;
 			DWORD PipeReaded = 0;
 			DWORD exit_code = 0;
-			std::string bufStr(MAX_CMD, 0); // строковой буфер длиной MAX_CMD
+			std::string bufStr(MAX_CMD, 0); // СЃС‚СЂРѕРєРѕРІРѕР№ Р±СѓС„РµСЂ РґР»РёРЅРѕР№ MAX_CMD
 			while (::PeekNamedPipe(FReadPipe, NULL, 0, &BytesRead, &TotalBytesAvail, NULL))
 			{
 				if (TotalBytesAvail == 0)
@@ -469,7 +491,7 @@ namespace {
 						BytesRead += PipeReaded;
 						bufStr[PipeReaded] = '\0';
 						//MB2W wc(bufStr.data(), 866);
-						strOut += StringFromUTF8(ConvertFromUTF8(bufStr, CP_OEMCP).c_str()); // Текущая кодовая страница OEM системы
+						strOut += StringFromUTF8(ConvertFromUTF8(bufStr, CP_OEMCP).c_str()); // РўРµРєСѓС‰Р°СЏ РєРѕРґРѕРІР°СЏ СЃС‚СЂР°РЅРёС†Р° OEM СЃРёСЃС‚РµРјС‹
 					}
 				}
 			}
@@ -478,7 +500,7 @@ namespace {
 		{
 		}
 
-		// Код завершения процесса
+		// РљРѕРґ Р·Р°РІРµСЂС€РµРЅРёСЏ РїСЂРѕС†РµСЃСЃР°
 		::GetExitCodeProcess(pi.hProcess, out_exitcode);
 		::CloseHandle(pi.hProcess);
 		::CloseHandle(FReadPipe);
@@ -486,8 +508,8 @@ namespace {
 		return TRUE;
 	}
 
-	// запустить через ShellExecuteEx в скрытом режиме
-	// (см. шаманство с консолью)
+	// Р·Р°РїСѓСЃС‚РёС‚СЊ С‡РµСЂРµР· ShellExecuteEx РІ СЃРєСЂС‹С‚РѕРј СЂРµР¶РёРјРµ
+	// (СЃРј. С€Р°РјР°РЅСЃС‚РІРѕ СЃ РєРѕРЅСЃРѕР»СЊСЋ)
 	bool ExecuteHide(CPath& path, DWORD* out_exitcode, std::wstring& strOut)
 	{
 		HANDLE hSaveStdin = NULL;
@@ -496,14 +518,14 @@ namespace {
 		HANDLE hChildStdoutWr = NULL;
 		try
 		{
-			// подключаем консоль
+			// РїРѕРґРєР»СЋС‡Р°РµРј РєРѕРЅСЃРѕР»СЊ
 			STARTUPINFO si{};
 			si.cb = sizeof(STARTUPINFO);
 			si.dwFlags = STARTF_USESHOWWINDOW;
 			si.wShowWindow = SW_HIDE;
 			PROCESS_INFORMATION pi = { };
 			wchar_t command_line[] = L"cmd";
-			::CreateProcess(NULL, // не используем имя файла, все в строке запуска
+			::CreateProcess(NULL, // РЅРµ РёСЃРїРѕР»СЊР·СѓРµРј РёРјСЏ С„Р°Р№Р»Р°, РІСЃРµ РІ СЃС‚СЂРѕРєРµ Р·Р°РїСѓСЃРєР°
 				command_line, // Command line
 				NULL, // Process handle not inheritable
 				NULL, // Thread handle not inheritable
@@ -513,16 +535,19 @@ namespace {
 				NULL, // Use parent's starting directory
 				&si, // STARTUPINFO
 				&pi); // PROCESS_INFORMATION
-			// задержка чтобы консоль успела создаться
+			// Р·Р°РґРµСЂР¶РєР° С‡С‚РѕР±С‹ РєРѕРЅСЃРѕР»СЊ СѓСЃРїРµР»Р° СЃРѕР·РґР°С‚СЊСЃСЏ
 			::WaitForSingleObject(pi.hProcess, 100);
 			BOOL hResult = FALSE;
 			HMODULE hLib = LoadLibrary(L"Kernel32.dll");
 			if (hLib != NULL)
 			{
-				typedef BOOL(STDAPICALLTYPE* ATTACHCONSOLE)(DWORD dwProcessId);
-				ATTACHCONSOLE _AttachConsole = NULL;
-				_AttachConsole = (ATTACHCONSOLE)GetProcAddress(hLib, "AttachConsole");
-				if (_AttachConsole) hResult = _AttachConsole(pi.dwProcessId);
+				if (FARPROC _fp = GetProcAddress(hLib, "AttachConsole"))
+				{
+					using ATTACHCONSOLE = BOOL (WINAPI *)(DWORD);
+					ATTACHCONSOLE _AttachConsole{};
+					memcpy(&_AttachConsole, &_fp, sizeof(ATTACHCONSOLE));
+					hResult = _AttachConsole(pi.dwProcessId);
+				}
 				FreeLibrary(hLib);
 			}
 			if (hResult == FALSE) AllocConsole();
@@ -648,9 +673,9 @@ namespace {
 				// Read output from the child process, and write to parent's STDOUT.
 				const int BUFSIZE = 1024;
 				DWORD dwRead;
-				//CMemBuffer< wchar_t, BUFSIZE > bufStr; // строковой буфер
+				//CMemBuffer< wchar_t, BUFSIZE > bufStr; // СЃС‚СЂРѕРєРѕРІРѕР№ Р±СѓС„РµСЂ
 				std::wstring bufStr(BUFSIZE, 0);
-				//CMemBuffer< wchar_t, BUFSIZE > bufCmdLine; // строковой буфер
+				//CMemBuffer< wchar_t, BUFSIZE > bufCmdLine; // СЃС‚СЂРѕРєРѕРІРѕР№ Р±СѓС„РµСЂ
 				std::wstring bufCmdLine(BUFSIZE, 0);
 				for (;;)
 				{
@@ -697,7 +722,7 @@ namespace {
 
 	int exec(lua_State* L)
 	{
-		// считываем запускаемую команду
+		// СЃС‡РёС‚С‹РІР°РµРј Р·Р°РїСѓСЃРєР°РµРјСѓСЋ РєРѕРјР°РЅРґСѓ
 		CPath file(StringFromUTF8(luaL_checkstring(L, 1)).data());
 		auto verb = StringFromUTF8(lua_tostring(L, 2));
 		int noshow = lua_toboolean(L, 3);
@@ -717,10 +742,10 @@ namespace {
 		else
 		{
 			HANDLE hProcess = NULL;
-			// запускаем процесс
-			if (verb.size() && // если есть команда запуска
-				wcscmp(verb.data(), L"explore") == 0 && // если команда запуска explore
-				CPath::IsFileExists(file.GetPath())) // проверяем файл ли это
+			// Р·Р°РїСѓСЃРєР°РµРј РїСЂРѕС†РµСЃСЃ
+			if (verb.size() && // РµСЃР»Рё РµСЃС‚СЊ РєРѕРјР°РЅРґР° Р·Р°РїСѓСЃРєР°
+				wcscmp(verb.data(), L"explore") == 0 && // РµСЃР»Рё РєРѕРјР°РЅРґР° Р·Р°РїСѓСЃРєР° explore
+				CPath::IsFileExists(file.GetPath())) // РїСЂРѕРІРµСЂСЏРµРј С„Р°Р№Р» Р»Рё СЌС‚Рѕ
 			{
 				SHELLEXECUTEINFOW shinf = { }; shinf.cbSize = sizeof(SHELLEXECUTEINFOW);
 				shinf.lpFile = L"explorer.exe";
@@ -737,9 +762,9 @@ namespace {
 				if (bSuccess && shinf.hInstApp <= (HINSTANCE)32) bSuccess = FALSE;
 				hProcess = shinf.hProcess;
 			}
-			else if (verb.size() && // если есть команда запуска
-				wcscmp(verb.data(), L"select") == 0 && // если команда запуска select
-				CPath::IsPathExist(file.GetPath())) // проверяем правильный путь
+			else if (verb.size() && // РµСЃР»Рё РµСЃС‚СЊ РєРѕРјР°РЅРґР° Р·Р°РїСѓСЃРєР°
+				wcscmp(verb.data(), L"select") == 0 && // РµСЃР»Рё РєРѕРјР°РЅРґР° Р·Р°РїСѓСЃРєР° select
+				CPath::IsPathExist(file.GetPath())) // РїСЂРѕРІРµСЂСЏРµРј РїСЂР°РІРёР»СЊРЅС‹Р№ РїСѓС‚СЊ
 			{
 				SHELLEXECUTEINFOW shinf{};
 				shinf.cbSize = sizeof(SHELLEXECUTEINFOW);
@@ -784,7 +809,7 @@ namespace {
 
 			if (dowait != FALSE && hProcess != NULL)
 			{
-				// ждем пока процесс не завершится
+				// Р¶РґРµРј РїРѕРєР° РїСЂРѕС†РµСЃСЃ РЅРµ Р·Р°РІРµСЂС€РёС‚СЃСЏ
 				::WaitForSingleObject(hProcess, INFINITE);
 			}
 
@@ -1023,7 +1048,7 @@ static const luaL_Reg shell[] =
 	{ "msgbox",				msgbox			},
 	{ "getfileattr",		getfileattr		},
 	{ "setfileattr",		setfileattr		},
-	{ "fileexists",			fileexists		},
+	{ "fileexists",			file_exists		},
 	{ "getclipboardtext",	getclipboardtext},
 	{ "findfiles",			findfiles		},
 	{ "inputbox",			showinputbox	},
@@ -1035,10 +1060,13 @@ static const luaL_Reg shell[] =
 	{ "calc_sha1",			do_sha1			},
 	{ "calc_sha256",		do_sha256		},
 	{ "calc_sha512",		do_sha512		},
+	{ "play_sound",			do_play_sound	},
+	{ "beep",				do_play_beep	},
 	{ NULL, NULL }
 };
 
-extern "C" __declspec(dllexport)
+extern "C"
+__declspec(dllexport)
 int luaopen_shell(lua_State * L)
 {
 	lua_pushcfunction(L, do_astyle);
@@ -1055,9 +1083,9 @@ int luaopen_shell(lua_State * L)
 	luaL_register(L, "shell", shell); //Lua5.1
 #else
 	luaL_newlib(L, shell); //Lua5.2+
-#endif
 	lua_pushvalue(L, -1);  /* copy of module */
 	lua_setglobal(L, "shell");
+#endif
 
 	return 1;
 }

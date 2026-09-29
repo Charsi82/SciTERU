@@ -1,5 +1,5 @@
 // ASFormatter.cpp
-// Copyright (c) 2025 The Artistic Style Authors.
+// Copyright (c) 2026 The Artistic Style Authors.
 // This code is licensed under the MIT License.
 // License.md describes the conditions under which this software may be distributed.
 
@@ -47,7 +47,11 @@ ASFormatter::ASFormatter()
 	lineEnd = LINEEND_DEFAULT;
 	squeezeEmptyLineNum = std::string::npos;
 	maxCodeLength = std::string::npos;
+	maxCodeLengthMode = MAXCODELENGTH_CODE,
+	shouldIgnoreSideCommentLengths = false;
 	isInStruct = false;
+	structNestingLevel = 0;
+	shouldPreserveBraceFormat = false;
 	shouldPadCommas = false;
 	shouldPadOperators = false;
 	negationPadMode = NEGATION_PAD_NO_CHANGE;
@@ -74,6 +78,11 @@ ASFormatter::ASFormatter()
 	shouldAttachInline = false;
 	shouldBreakBlocks = false;
 	shouldBreakClosingHeaderBlocks = false;
+	shouldLineBetweenMembers = false;
+	shouldLineBetweenAllMembers = false;
+	needBlankBeforeNextMember = false;
+	lineBetweenMembersDoBlank = false;
+	lineBetweenMembersPassedClassClose = false;
 	shouldBreakClosingHeaderBraces = false;
 	shouldDeleteEmptyLines = false;
 	shouldBreakReturnType = false;
@@ -85,6 +94,7 @@ ASFormatter::ASFormatter()
 	shouldAddBraces = false;
 	shouldAddOneLineBraces = false;
 	shouldRemoveBraces = false;
+	shouldRemoveOneLineBraces = false;
 	shouldPadMethodColon = false;
 	shouldPadMethodPrefix = false;
 	shouldUnPadMethodPrefix = false;
@@ -95,6 +105,7 @@ ASFormatter::ASFormatter()
 	shouldPadBracketsOutside = false;
 	shouldPadBracketsInside = false;
 	shouldUnPadBrackets = false;
+	shouldUnPadSemicolon = false;
 	isInMultlineStatement = false;
 	isInExplicitBlock = 0;
 
@@ -171,7 +182,8 @@ void ASFormatter::init(ASSourceIterator* si)
 	               shouldIndentPreprocBlock,
 	               getPreprocDefineIndent(),
 	               getEmptyLineFill(),
-	               indentableMacros);
+	               indentableMacros,
+	               shouldPreserveIndent);
 
 	initContainer(preBraceHeaderStack, new std::vector<const std::string*>);
 	initContainer(parenStack, new std::vector<int>);
@@ -256,12 +268,14 @@ void ASFormatter::init(ASSourceIterator* si)
 	foundCastOperator = false;
 	foundQuestionMark = false;
 	isInLineBreak = false;
+	isLineContinuation = false;
 	endOfAsmReached = false;
 	endOfCodeReached = false;
 	isFormattingModeOff = false;
 	isInEnum = false;
 	isInContinuedPreProc = false;
 	isInStruct = false;
+	structNestingLevel = 0;
 	isInExecSQL = false;
 	isInAsm = false;
 	isInAsmOneLine = false;
@@ -367,7 +381,11 @@ void ASFormatter::buildLanguageVectors()
  */
 void ASFormatter::fixOptionVariableConflicts()
 {
-	if (formattingStyle == STYLE_ALLMAN)
+	if (shouldPreserveBraceFormat)
+	{
+		setBraceFormatMode(NONE_MODE);
+	}
+	else if (formattingStyle == STYLE_ALLMAN)
 	{
 		setBraceFormatMode(BREAK_MODE);
 	}
@@ -476,7 +494,10 @@ void ASFormatter::fixOptionVariableConflicts()
 		setBreakOneLineBlocksMode(false);
 	// don't allow add-braces and remove-braces
 	if (shouldAddBraces || shouldAddOneLineBraces)
+	{
 		setRemoveBracesMode(false);
+		setRemoveOneLineBracesMode(false);
+	}
 	// don't allow break-return-type and attach-return-type
 	if (shouldBreakReturnType)
 		shouldAttachReturnType = false;
@@ -519,6 +540,19 @@ bool ASFormatter::handleImmediatelyPostHeaderSection()
 			             && currentLine.find_first_not_of(" \t") != std::string::npos))
 				shouldBreakLineAtNextChar = true;
 			return false;
+		}
+	}
+	// should one-line braces be removed (keep the statement on one line)
+	else if (currentChar == '{' && shouldRemoveOneLineBraces)
+	{
+		if (isOneLineBlockReached(currentLine, charNum) == 1)
+		{
+			bool bracesRemoved = removeBracesFromStatement();
+			if (bracesRemoved)
+			{
+				shouldRemoveNextClosingBrace = true;
+				return false;
+			}
 		}
 	}
 
@@ -840,6 +874,14 @@ void ASFormatter::handleBraces()
 				shouldBreakLineAtNextChar = true;
 		}
 		bracesNestingLevel--;
+
+		// the struct body has been closed, so options that are suppressed
+		// inside a struct (e.g. unpad-paren) apply again to the code that follows
+		if (isInStruct && bracesNestingLevel <= structNestingLevel)
+		{
+			isInStruct = false;
+			structNestingLevel = 0;
+		}
 	}
 
 	// format braces
@@ -901,7 +943,7 @@ void ASFormatter::handleBreakLine()
 	}
 }
 
-bool ASFormatter::handlePotentialHeader(const std::string* newHeader)
+bool ASFormatter::handlePotentialHeader(const std::string *&newHeader)
 {
 	isNonParenHeader = false;
 	foundClosingHeader = false;
@@ -1146,6 +1188,15 @@ void ASFormatter::handleEndOfBlock()
 		{
 			isAppendPostBlockEmptyLineRequested = true;
 		}
+
+		// line-between-members=all: insert blank after field at class scope
+		if (shouldLineBetweenAllMembers
+		        && isBraceType(braceTypeStack->back(), DEFINITION_TYPE)
+		        && !isBraceType(braceTypeStack->back(), NAMESPACE_TYPE)
+		        && parenStack->back() == 0)
+		{
+			needBlankBeforeNextMember = true;
+		}
 	}
 	if (currentChar != ';'
 	        || foundStructHeader // #518
@@ -1262,6 +1313,7 @@ void ASFormatter::handlePotentialHeaderPart2()
 		        || currentLine[firstNum] == '/')
 		{
 			isInStruct = true;
+			structNestingLevel = bracesNestingLevel;
 		}
 	}
 
@@ -1374,7 +1426,7 @@ void ASFormatter::handlePotentialHeaderPart2()
 	}
 }
 
-void ASFormatter::handlePotentialOperator(const std::string *newHeader)
+void ASFormatter::handlePotentialOperator(const std::string *&newHeader)
 {
 
 	// check for Java ? wildcard
@@ -1468,6 +1520,12 @@ void ASFormatter::handleOpenParens()
 
 void ASFormatter::formatFirstOpenBrace(BraceType braceType)
 {
+	if (shouldPreserveBraceFormat)
+	{
+		appendCurrentChar();
+		return;
+	}
+
 	if (braceFormatMode == ATTACH_MODE || braceFormatMode == LINUX_MODE)
 	{
 		// break an enum if mozilla
@@ -1598,28 +1656,35 @@ void ASFormatter::formatFirstOpenBrace(BraceType braceType)
 
 void ASFormatter::formatOpenBrace()
 {
-	if (braceFormatMode == RUN_IN_MODE)
+	if (!shouldPreserveBraceFormat)
 	{
-		if (previousNonWSChar == '{'
-		        && braceTypeStack->size() > 2
-		        && !isBraceType((*braceTypeStack)[braceTypeStack->size() - 2],
-		                        SINGLE_LINE_TYPE))
+		if (braceFormatMode == RUN_IN_MODE)
+		{
+			if (previousNonWSChar == '{'
+			        && braceTypeStack->size() > 2
+			        && !isBraceType((*braceTypeStack)[braceTypeStack->size() - 2],
+			                        SINGLE_LINE_TYPE))
+				formatArrayRunIn();
+		}
+		else if (!isInLineBreak
+		         && !std::isblank(peekNextChar())
+		         && previousNonWSChar == '{'
+		         && braceTypeStack->size() > 2
+		         && !isBraceType((*braceTypeStack)[braceTypeStack->size() - 2],
+		                         SINGLE_LINE_TYPE))
 			formatArrayRunIn();
 	}
-	else if (!isInLineBreak
-	         && !std::isblank(peekNextChar())
-	         && previousNonWSChar == '{'
-	         && braceTypeStack->size() > 2
-	         && !isBraceType((*braceTypeStack)[braceTypeStack->size() - 2],
-	                         SINGLE_LINE_TYPE))
-		formatArrayRunIn();
 
 	appendCurrentChar();
 }
 
 void ASFormatter::formatCloseBrace(BraceType braceType)
 {
-	if (attachClosingBraceMode)
+	if (shouldPreserveBraceFormat)
+	{
+		appendCurrentChar();
+	}
+	else if (attachClosingBraceMode)
 	{
 		if (isEmptyLine(formattedLine)			// if a blank line precedes this
 		        || isImmediatelyPostPreprocessor
@@ -2098,24 +2163,26 @@ std::string ASFormatter::nextLine()
 		bool isPotentialOperator = isCharPotentialOperator(currentChar);
 		newHeader = nullptr;
 
-		if (isPotentialOperator)
+		// Skip operator detection for git conflict markers
+		if (isPotentialOperator && !isGitConflictMarker(currentLine))
 		{
 			newHeader = findOperator(operators);
 
 			handlePotentialOperator(newHeader);
 		}
 
-		// TODO check add flag to preserve space
 		size_t lastNonWsChar = currentLine.find_last_not_of(" \t", charNum - 1);
-		if (lastNonWsChar != std::string::npos && pointerAlignment == PTR_ALIGN_TYPE && !isGSCStyle() && !preserveWhitespace)
+
+		if (lastNonWsChar != std::string::npos && pointerAlignment == PTR_ALIGN_TYPE && !isGSCStyle() && !preserveWhitespace && !isInPreprocessor)
 		{
 			char lastChar = currentLine[lastNonWsChar];
 
-			//if (lastChar != '(' && !isalpha(lastChar)) {
-			//	formattedLine = rtrim(formattedLine);
-			//}
+			//fix SF605, possibly more cases pending
+			char nextChar = 0;
+			size_t nextCharPos = currentLine.find_first_not_of(" \t", lastNonWsChar+1);
+			if (nextCharPos != std::string::npos) nextChar = currentLine[nextCharPos];
 
-			if (lastChar == ',')
+			if (lastChar == ',' && nextChar != '+' && nextChar != '-')
 			{
 				formattedLine = rtrim(formattedLine);
 				formattedLine += ' ';
@@ -2158,6 +2225,27 @@ std::string ASFormatter::nextLine()
 			const size_t len = formattedLine.length();
 			size_t lastText = formattedLine.find_last_not_of(' ');
 			if (lastText != std::string::npos && lastText < len - 1)
+			{
+				formattedLine.resize(lastText + 1);
+				int size_diff = len - (lastText + 1);
+				spacePadNum -= size_diff;
+			}
+		}
+
+		// remove whitespace before semicolons
+		if (currentChar == ';' && shouldUnPadSemicolon)
+		{
+			const size_t len = formattedLine.length();
+			size_t lastText = formattedLine.find_last_not_of(" \t");
+			// npos means the line holds only the indent, so this is an empty
+			// statement on a line of its own and the indent must be kept.
+			// A preceding '(' or ';' is an empty expression in a 'for' header,
+			// e.g. "for ( ; ; )", where the spacing is owned by the paren
+			// options and is left unchanged.
+			if (lastText != std::string::npos
+			        && lastText < len - 1
+			        && formattedLine[lastText] != '('
+			        && formattedLine[lastText] != ';')
 			{
 				formattedLine.resize(lastText + 1);
 				int size_diff = len - (lastText + 1);
@@ -2221,6 +2309,31 @@ std::string ASFormatter::nextLine()
 	size_t readyFormattedLineLength = trim(readyFormattedLine).length();
 	bool isInNamespace = isBraceType(braceTypeStack->back(), NAMESPACE_TYPE);
 
+	// line-between-members: if a field line was just output, arm blank before the next member.
+	// This flag survives intermediate breakLine() calls (which can clear iPrependPostBlock).
+	if (lineBetweenMembersDoBlank)
+	{
+		bool doInsertBlank = true;
+		if (!shouldLineBetweenAllMembers)
+		{
+			// Non-all mode: insert blank only before methods/properties, not before data fields.
+			// A data field line ends with ';' but the character before ';' is not ')'.
+			// Method prototypes end with ');' and DO get a blank.
+			const std::string trimLine = trim(readyFormattedLine);
+			if (!trimLine.empty() && trimLine.back() == ';')
+			{
+				bool prevIsCloseParen = trimLine.size() >= 2
+										&& trimLine[trimLine.size() - 2] == ')';
+				if (!prevIsCloseParen)
+					doInsertBlank = false;
+			}
+		}
+		if (doInsertBlank)
+			prependEmptyLine = true;
+
+		lineBetweenMembersDoBlank = false;
+	}
+
 	if (prependEmptyLine		// prepend a blank line before this formatted line
 	        && readyFormattedLineLength > 0
 	        && previousReadyFormattedLineLength > 0)
@@ -2255,6 +2368,20 @@ std::string ASFormatter::nextLine()
 		}
 		isInPreprocessorBeautify = isInPreprocessor;	// used by ASEnhancer
 		isInBeautifySQL = isInExecSQL;					// used by ASEnhancer
+		// line-between-members=all: after outputting a field line, arm blank before next member.
+		// Skip if lineBetweenMembersPassedClassClose: the class scope just closed, meaning
+		// this is the last field before '}'. Arming doBlank here would produce a spurious
+		// blank before '}'.
+		if (needBlankBeforeNextMember && !lineBetweenMembersPassedClassClose)
+		{
+			lineBetweenMembersDoBlank = true;
+			needBlankBeforeNextMember = false;
+		}
+		else
+		{
+			needBlankBeforeNextMember = false;
+			lineBetweenMembersPassedClassClose = false;
+		}
 	}
 
 	prependEmptyLine = false;
@@ -2331,6 +2458,11 @@ void ASFormatter::setAddOneLineBracesMode(bool state)
 void ASFormatter::setRemoveBracesMode(bool state)
 {
 	shouldRemoveBraces = state;
+}
+
+void ASFormatter::setRemoveOneLineBracesMode(bool state)
+{
+	shouldRemoveOneLineBraces = state;
 }
 
 // retained for compatibility with release 2.06
@@ -2426,6 +2558,11 @@ void ASFormatter::setCommaPaddingMode(bool state)
 	shouldPadCommas = state;
 }
 
+void ASFormatter::setPreserveBraceFormat(bool state)
+{
+	shouldPreserveBraceFormat = state;
+}
+
 /**
  * set maximum code length
  *
@@ -2435,6 +2572,31 @@ void ASFormatter::setMaxCodeLength(int max)
 {
 	maxCodeLength = max;
 }
+
+
+/**
+ * set maximum code length mode
+ *
+ * @param max         the maximum code length.
+ */
+void ASFormatter::setMaxCodeLengthMode(MaxCodeLengthMode mode)
+{
+	maxCodeLengthMode = mode;
+}
+
+
+/**
+ * When true, trailing side comments are excluded from the line-length
+ * calculation used by max-code-length, so existing alignment of side
+ * comments is preserved instead of triggering a split.
+ *
+ * @param state         true to ignore side-comment lengths.
+ */
+void ASFormatter::setIgnoreSideCommentLengths(bool state)
+{
+	shouldIgnoreSideCommentLengths = state;
+}
+
 
 /**
  * set operator padding mode.
@@ -2582,6 +2744,19 @@ void ASFormatter::setParensUnPaddingMode(bool state)
 void ASFormatter::setBracketsUnPaddingMode(bool state)
 {
 	shouldUnPadBrackets = state;
+}
+
+/**
+ * set semicolon unpadding mode.
+ * options:
+ *    true     whitespace preceding a semicolon will be removed.
+ *    false    whitespace preceding a semicolon will not be changed.
+ *
+ * @param state         the padding mode.
+ */
+void ASFormatter::setSemicolonUnPaddingMode(bool state)
+{
+	shouldUnPadSemicolon = state;
 }
 
 /**
@@ -2806,6 +2981,29 @@ void ASFormatter::setBreakClosingHeaderBlocksMode(bool state)
 {
 	shouldBreakClosingHeaderBlocks = state;
 }
+
+/**
+ * set option to insert an empty line between class members (methods/properties).
+ *
+ * @param state        true = insert, false = don't insert.
+ */
+void ASFormatter::setLineBetweenMembersMode(bool state)
+{
+	shouldLineBetweenMembers = state;
+}
+
+/**
+ * set option to insert an empty line between all class members including fields.
+ *
+ * @param state        true = insert, false = don't insert.
+ */
+void ASFormatter::setLineBetweenAllMembersMode(bool state)
+{
+	shouldLineBetweenAllMembers = state;
+	if (state)
+		shouldLineBetweenMembers = true;
+}
+
 
 /**
  * set option to delete empty lines.
@@ -3041,6 +3239,12 @@ bool ASFormatter::getNextLine(bool emptyLineWasDeleted /*false*/)
 		assert(computeChecksumIn(currentLine));
 	}
 
+	// snapshot paren depth before this line's chars are parsed: if non-zero,
+	// this source line begins inside a paren that opened on a previous line,
+	// i.e. it is a continuation. Used by getEffectiveLineLength() so the
+	// first continuation line predicts the indent ASBeautifier will apply.
+	isLineContinuation = !parenStack->empty() && parenStack->back() > 0;
+
 	// reset variables for new line
 	inLineNumber++;
 	if (endOfAsmReached)
@@ -3143,6 +3347,9 @@ void ASFormatter::initNewLine()
 	size_t tabSize = getTabLength();
 	charNum = 0;
 
+	if (shouldPreserveIndent)
+		preserveIndentLeading = "";
+
 	// don't trim these
 	if (isInQuoteContinuation
 	        || (isInPreprocessor && !getPreprocDefineIndent()))
@@ -3203,6 +3410,8 @@ void ASFormatter::initNewLine()
 			tabIncrementIn += tabSize - 1 - ((tabIncrementIn + charNum) % tabSize);
 	}
 	leadingSpaces = charNum + tabIncrementIn;
+	if (shouldPreserveIndent)
+		preserveIndentLeading = currentLine.substr(0, charNum);
 
 	if (isSequenceReached(ASResource::AS_OPEN_COMMENT) || (isGSCStyle() && isSequenceReached(ASResource::AS_GSC_OPEN_COMMENT)))
 	{
@@ -3277,7 +3486,7 @@ void ASFormatter::appendChar(char ch, bool canBreakLine)
 		// These compares reduce the frequency of function calls.
 		if (isOkToSplitFormattedLine())
 			updateFormattedLineSplitPoints(ch);
-		if (formattedLine.length() > maxCodeLength)
+		if (getEffectiveLineLength() > maxCodeLength)
 			testForTimeToSplitFormattedLine();
 	}
 }
@@ -3295,7 +3504,7 @@ void ASFormatter::appendSequence(std::string_view sequence, bool canBreakLine)
 	if (canBreakLine && isInLineBreak)
 		breakLine();
 	formattedLine.append(sequence);
-	if (formattedLine.length() > maxCodeLength)
+	if (getEffectiveLineLength() > maxCodeLength)
 		testForTimeToSplitFormattedLine();
 }
 
@@ -3316,7 +3525,7 @@ void ASFormatter::appendOperator(std::string_view sequence, bool canBreakLine)
 		// These compares reduce the frequency of function calls.
 		if (isOkToSplitFormattedLine())
 			updateFormattedLineSplitPointsOperator(sequence);
-		if (formattedLine.length() > maxCodeLength)
+		if (getEffectiveLineLength() > maxCodeLength)
 			testForTimeToSplitFormattedLine();
 	}
 }
@@ -3337,7 +3546,7 @@ void ASFormatter::appendSpacePad()
 			// These compares reduce the frequency of function calls.
 			if (isOkToSplitFormattedLine())
 				updateFormattedLineSplitPoints(' ');
-			if (formattedLine.length() > maxCodeLength)
+			if (getEffectiveLineLength() > maxCodeLength)
 				testForTimeToSplitFormattedLine();
 		}
 	}
@@ -3359,7 +3568,7 @@ void ASFormatter::appendSpaceAfter()
 			// These compares reduce the frequency of function calls.
 			if (isOkToSplitFormattedLine())
 				updateFormattedLineSplitPoints(' ');
-			if (formattedLine.length() > maxCodeLength)
+			if (getEffectiveLineLength() > maxCodeLength)
 				testForTimeToSplitFormattedLine();
 		}
 	}
@@ -3376,9 +3585,13 @@ void ASFormatter::breakLine(bool isSplitLine /*false*/)
 	nextLineSpacePadNum = 0;
 	readyFormattedLine = formattedLine;
 	formattedLine.erase();
+	if (shouldPreserveIndent && !preserveIndentLeading.empty())
+	{
+		formattedLine = preserveIndentLeading;
+		preserveIndentLeading = "";
+	}
 	// queue an empty line prepend request if one exists
 	prependEmptyLine = isPrependPostBlockEmptyLineRequested;
-
 	if (!isSplitLine)
 	{
 		formattedLineCommentNum = std::string::npos;
@@ -3745,15 +3958,6 @@ bool ASFormatter::isDereferenceOrAddressOf() const
 		return false;
 	}
 
-	if ( currentChar == '*' && pointerAlignment == PTR_ALIGN_NAME )
-	{
-		size_t openParen = currentLine.rfind('(', charNum);
-		if (openParen != std::string::npos)
-		{
-			return true;
-		}
-	}
-
 	std::set<char> allowedChars = {'=', '.', '{', '>', '<', '?'};
 
 	if ( allowedChars.find(previousNonWSChar) != allowedChars.end()
@@ -3806,6 +4010,27 @@ bool ASFormatter::isDereferenceOrAddressOf() const
 	if ((currentChar == '*' && nextChar == '&')
 	        || (previousNonWSChar == '*' && currentChar == '&'))
 		return false;
+
+	// check for address-of after a pointer cast like (int *)&var
+	// isImmediatelyPostCast() only handles *, so we inline equivalent logic here
+	if (currentChar == '&' && previousNonWSChar == ')')
+	{
+		std::string line;
+		size_t paren = currentLine.rfind(')', charNum);
+		if (paren != std::string::npos)
+			line = currentLine;
+		else
+		{
+			line = readyFormattedLine;
+			paren = line.rfind(')');
+		}
+		if (paren != std::string::npos && paren > 0)
+		{
+			size_t lastCh = line.find_last_not_of(" \t", paren - 1);
+			if (lastCh != std::string::npos && line[lastCh] == '*')
+				return true;
+		}
+	}
 
 	if (!isBraceType(braceTypeStack->back(), COMMAND_TYPE)
 	        && parenStack->back() == 0)
@@ -3892,6 +4117,7 @@ bool ASFormatter::isPointerOrReferenceVariable(std::string_view word) const
 	        || word == "long"
 	        || word == "double"
 	        || word == "float"
+	        || word == "sizeof"
 	        || (word.length() >= 6     // check end of word for _t
 	            && word.compare(word.length() - 2, 2, "_t") == 0)
 	   )
@@ -3952,6 +4178,7 @@ bool ASFormatter::isUnaryOperator() const
 		size_t end = currentLine.rfind(')', charNum);
 		if (end == std::string::npos)
 			return false;
+
 		size_t lastChar = currentLine.find_last_not_of(" \t", end - 1);
 		if (lastChar == std::string::npos)
 			return false;
@@ -4490,7 +4717,7 @@ void ASFormatter::padOperators(const std::string* newOperator)
 	bool isSharpNullConditional = (newOperator == &ASResource::AS_QUESTION && isSharpStyle() &&
 	                               (nextNonWSChar == '.' || nextNonWSChar == '['));
 
-	bool isSpecialTemplateOperator = (isInTemplate || isImmediatelyPostTemplate) &&
+	bool isSpecialTemplateOperator = (isInTemplate || isImmediatelyPostTemplate || isSharpStyle()) &&
 	                                 (newOperator == &ASResource::AS_LS || newOperator == &ASResource::AS_GR);
 
 	std::string sBegin = currentLine.substr(0, charNum);
@@ -5411,6 +5638,12 @@ void ASFormatter::formatOpeningBrace(BraceType braceType)
 
 	parenStack->emplace_back(0);
 
+	if (shouldPreserveBraceFormat)
+	{
+		appendCurrentChar();
+		return;
+	}
+
 	bool breakBrace = isCurrentBraceBroken();
 
 	//478
@@ -5551,6 +5784,31 @@ void ASFormatter::formatClosingBrace(BraceType braceType)
 	if (parenStack->size() > 1)
 		parenStack->pop_back();
 
+	if (shouldPreserveBraceFormat)
+	{
+		appendCurrentChar();
+		return;
+	}
+
+	// suppress pending blank before class/struct closing brace (e.g. from =all field)
+	if (isBraceType(braceType, DEFINITION_TYPE)
+	        && !isBraceType(braceType, NAMESPACE_TYPE))
+	{
+		// Only clear iPrepend when formattedLine has no pending content.
+		// If formattedLine already holds a member (e.g. "int x;"), the blank
+		// belongs BEFORE that member, not before the class brace — preserve it.
+		if (trim(formattedLine).empty())
+			isPrependPostBlockEmptyLineRequested = false;
+		needBlankBeforeNextMember = false;
+		// Signal that the class scope has closed. The output section uses this to avoid
+		// arming lineBetweenMembersDoBlank for the last field before '}' — that would
+		// produce an unwanted blank before '}'.
+		// We do NOT clear lineBetweenMembersDoBlank here because formatClosingBrace()
+		// is called (line 862) BEFORE breakLine() fires (line 2030) in the same loop
+		// iteration, so the blank for the previous member line hasn't been output yet.
+		lineBetweenMembersPassedClassClose = true;
+	}
+
 	// mark state of immediately after empty block
 	// this state will be used for locating braces that appear immediately AFTER an empty block (e.g. '{} \n}').
 	if (previousCommandChar == '{')
@@ -5621,6 +5879,22 @@ void ASFormatter::formatClosingBrace(BraceType braceType)
 	{
 		isAppendPostBlockEmptyLineRequested = !currentHeader && shouldBreakBlocks;
 	}
+
+	// line-between-members: insert blank after method/property close at class scope
+	if (shouldLineBetweenMembers
+	        && isBraceType(braceTypeStack->back(), DEFINITION_TYPE))
+	{
+		isAppendPostBlockEmptyLineRequested = true;
+	}
+	// line-between-members: insert blank after top-level function close
+	else if (shouldLineBetweenMembers
+	         && (isBraceType(braceTypeStack->back(), NULL_TYPE)
+	             || isBraceType(braceTypeStack->back(), NAMESPACE_TYPE))
+	         && !isBraceType(braceType, DEFINITION_TYPE)
+	         && !isBraceType(braceType, NAMESPACE_TYPE))
+	{
+		isAppendPostBlockEmptyLineRequested = true;
+	}
 }
 
 /**
@@ -5662,6 +5936,9 @@ void ASFormatter::formatArrayBraces(BraceType braceType, bool isOpeningArrayBrac
  */
 void ASFormatter::formatRunIn()
 {
+	if (shouldPreserveBraceFormat)
+		return;
+
 	assert(braceFormatMode == RUN_IN_MODE || braceFormatMode == NONE_MODE);
 
 	// keep one line blocks returns true without indenting the run-in
@@ -6077,6 +6354,9 @@ bool ASFormatter::commentAndHeaderFollows()
 bool ASFormatter::isCurrentBraceBroken() const
 {
 	assert(braceTypeStack->size() > 1);
+
+	if (shouldPreserveBraceFormat)
+		return currentLineBeginsWithBrace;
 
 	bool breakBrace = false;
 	size_t stackEnd = braceTypeStack->size() - 1;
@@ -6531,7 +6811,7 @@ void ASFormatter::formatQuoteBody()
 		{
 			std::string delim = ')' + verbatimDelimiter;
 			int delimStart = charNum - delim.length();
-			if (delimStart > 0 && currentLine.substr(delimStart, delim.length()) == delim)
+			if (delimStart >= 0 && currentLine.substr(delimStart, delim.length()) == delim)
 			{
 				isInQuote = false;
 				isInVerbatimQuote = false;
@@ -6732,6 +7012,9 @@ std::string ASFormatter::getPreviousWord(const std::string& line, int currPos, b
 void ASFormatter::isLineBreakBeforeClosingHeader()
 {
 	assert(foundClosingHeader && previousNonWSChar == '}');
+
+	if (shouldPreserveBraceFormat)
+		return;
 
 	if (currentHeader == &ASResource::AS_WHILE && shouldAttachClosingWhile)
 	{
@@ -7788,7 +8071,8 @@ void ASFormatter::checkIfTemplateOpener()
 					if (parenDepth_ == 0)
 					{
 						// this is a template!
-						//isInTemplate = true;
+						// gl85 + sf585
+						isInTemplate = true; //!isInStruct;
 						templateDepth = maxTemplateDepth;
 					}
 					return;
@@ -7891,7 +8175,7 @@ void ASFormatter::updateFormattedLineSplitPoints(char appendedChar)
 		                 || (referenceAlignment == REF_SAME_AS_PTR && pointerAlignment == PTR_ALIGN_TYPE)))
 		   )
 		{
-			if (formattedLine.length() - 1 <= maxCodeLength)
+			if (getEffectiveLineLength() - 1 <= maxCodeLength)
 				maxWhiteSpace = formattedLine.length() - 1;
 			else
 				maxWhiteSpacePending = formattedLine.length() - 1;
@@ -7907,7 +8191,7 @@ void ASFormatter::updateFormattedLineSplitPoints(char appendedChar)
 		        && nextChar != '.'
 		        && !(nextChar == '-' && pointerSymbolFollows()))	// check for ->
 		{
-			if (formattedLine.length() <= maxCodeLength)
+			if (getEffectiveLineLength() <= maxCodeLength)
 				maxWhiteSpace = formattedLine.length();
 			else
 				maxWhiteSpacePending = formattedLine.length();
@@ -7916,7 +8200,7 @@ void ASFormatter::updateFormattedLineSplitPoints(char appendedChar)
 	// unpadded commas may split after the comma
 	else if (appendedChar == ',')
 	{
-		if (formattedLine.length() <= maxCodeLength)
+		if (getEffectiveLineLength() <= maxCodeLength)
 			maxComma = formattedLine.length();
 		else
 			maxCommaPending = formattedLine.length();
@@ -7931,7 +8215,7 @@ void ASFormatter::updateFormattedLineSplitPoints(char appendedChar)
 				parenNum = formattedLine.length() - 1;
 			else
 				parenNum = formattedLine.length();
-			if (formattedLine.length() <= maxCodeLength)
+			if (getEffectiveLineLength() <= maxCodeLength)
 				maxParen = parenNum;
 			else
 				maxParenPending = parenNum;
@@ -7941,7 +8225,7 @@ void ASFormatter::updateFormattedLineSplitPoints(char appendedChar)
 	{
 		if (nextChar != ' '  && nextChar != '}' && nextChar != '/')	// check for following comment
 		{
-			if (formattedLine.length() <= maxCodeLength)
+			if (getEffectiveLineLength() <= maxCodeLength)
 				maxSemi = formattedLine.length();
 			else
 				maxSemiPending = formattedLine.length();
@@ -7968,7 +8252,7 @@ void ASFormatter::updateFormattedLineSplitPointsOperator(std::string_view sequen
 	{
 		if (shouldBreakLineAfterLogical)
 		{
-			if (formattedLine.length() <= maxCodeLength)
+			if (getEffectiveLineLength() <= maxCodeLength)
 				maxAndOr = formattedLine.length();
 			else
 				maxAndOrPending = formattedLine.length();
@@ -7989,7 +8273,7 @@ void ASFormatter::updateFormattedLineSplitPointsOperator(std::string_view sequen
 	// comparison operators will split after the operator (counts as whitespace)
 	else if (sequence == "==" || sequence == "!=" || sequence == ">=" || sequence == "<=")
 	{
-		if (formattedLine.length() <= maxCodeLength)
+		if (getEffectiveLineLength() <= maxCodeLength)
 			maxWhiteSpace = formattedLine.length();
 		else
 			maxWhiteSpacePending = formattedLine.length();
@@ -8005,7 +8289,7 @@ void ASFormatter::updateFormattedLineSplitPointsOperator(std::string_view sequen
 		            || currentLine[charNum - 1] == ']'
 		            || currentLine[charNum - 1] == '\"'))
 		{
-			if (formattedLine.length() - 1 <= maxCodeLength)
+			if (getEffectiveLineLength() - 1 <= maxCodeLength)
 				maxWhiteSpace = formattedLine.length() - 1;
 			else
 				maxWhiteSpacePending = formattedLine.length() - 1;
@@ -8017,14 +8301,14 @@ void ASFormatter::updateFormattedLineSplitPointsOperator(std::string_view sequen
 		// split BEFORE if the line is too long
 		// do NOT use <= here, must allow for a brace attached to an array
 		size_t splitPoint = 0;
-		if (formattedLine.length() < maxCodeLength)
+		if (getEffectiveLineLength() < maxCodeLength)
 			splitPoint = formattedLine.length();
 		else
 			splitPoint = formattedLine.length() - 1;
 		// padded or unpadded arrays
 		if (previousNonWSChar == ']')
 		{
-			if (formattedLine.length() - 1 <= maxCodeLength)
+			if (getEffectiveLineLength() - 1 <= maxCodeLength)
 				maxWhiteSpace = splitPoint;
 			else
 				maxWhiteSpacePending = splitPoint;
@@ -8034,7 +8318,7 @@ void ASFormatter::updateFormattedLineSplitPointsOperator(std::string_view sequen
 		             || currentLine[charNum - 1] == ')'
 		             || currentLine[charNum - 1] == ']'))
 		{
-			if (formattedLine.length() <= maxCodeLength)
+			if (getEffectiveLineLength() <= maxCodeLength)
 				maxWhiteSpace = splitPoint;
 			else
 				maxWhiteSpacePending = splitPoint;
@@ -8101,7 +8385,7 @@ void ASFormatter::testForTimeToSplitFormattedLine()
 {
 	//	DO NOT ASSERT maxCodeLength HERE
 	// should the line be split
-	if (formattedLine.length() > maxCodeLength && !isLineReady)
+	if (getEffectiveLineLength() > maxCodeLength && !isLineReady)
 	{
 		size_t splitPoint = findFormattedLineSplitPoint();
 		if (splitPoint > 0 && splitPoint < formattedLine.length())
@@ -8221,7 +8505,7 @@ size_t ASFormatter::findFormattedLineSplitPoint() const
 			splitPoint = 0;
 	}
 	// if remaining line after split is too long
-	else if (formattedLine.length() - splitPoint > maxCodeLength)
+	else if (getEffectiveLineLength() - splitPoint > maxCodeLength)
 	{
 		// if end of the currentLine, find a new split point
 		size_t newCharNum;
@@ -8241,6 +8525,53 @@ size_t ASFormatter::findFormattedLineSplitPoint() const
 
 	return splitPoint;
 }
+
+
+size_t ASFormatter::getEffectiveLineLength() const
+{
+	size_t lineLength = formattedLine.length();
+
+	// Exclude trailing side-comment text from the length used for split decisions.
+	// A side comment has non-whitespace code preceding it on the same line; a
+	// stand-alone comment line (no preceding code) is left alone.
+	if (shouldIgnoreSideCommentLengths
+		&& formattedLineCommentNum != std::string::npos
+		&& formattedLineCommentNum > 0
+		&& formattedLineCommentNum < lineLength) {
+			size_t firstNonWs = formattedLine.find_first_not_of(" \t");
+			if (firstNonWs != std::string::npos && firstNonWs < formattedLineCommentNum)
+				lineLength = formattedLineCommentNum;
+	}
+
+	if (maxCodeLengthMode == MAXCODELENGTH_TOTAL) {
+		int predictedIndentCount = bracesNestingLevel;
+		int predictedSpaceIndent = 0;
+		if (getPrevFinalLineSpaceIndentCount()>0 && bracesNestingLevel == getPrevFinalLineIndentCount()){
+			predictedSpaceIndent = getPrevFinalLineSpaceIndentCount();
+		}
+		else if (isLineContinuation && bracesNestingLevel == getPrevFinalLineIndentCount()){
+			// First continuation line of a multi-line statement: the previous
+			// emitted line was the statement header (spaceIndentCount == 0),
+			// but ASBeautifier will indent this line by minConditionalIndent.
+			// Without this branch the predictor is one line behind and the
+			// first wrapped line escapes the max-code-length check.
+			predictedSpaceIndent = getMinConditionalIndent();
+		}
+
+		if (!formattedLine.empty()){
+			size_t firstChar = formattedLine.find_first_not_of(" \t");
+			if (firstChar != std::string::npos && formattedLine[firstChar] == '}'){
+				if (predictedIndentCount > 0)
+					predictedIndentCount--;
+				predictedSpaceIndent = 0;
+			}
+		}
+		size_t indentChars = getIndentLength() * predictedIndentCount + predictedSpaceIndent;
+		lineLength += indentChars;
+	}
+	return lineLength;
+}
+
 
 void ASFormatter::clearFormattedLineSplitPoints()
 {
@@ -8405,6 +8736,7 @@ bool ASFormatter::isArrayOperator() const
 		return true;
 	return false;
 }
+
 
 // Reset the flags that indicate various statement information.
 void ASFormatter::resetEndOfStatement()

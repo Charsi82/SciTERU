@@ -123,7 +123,7 @@ return function(tabs, panel_width, colorback, colorfore)
 			ini:write_string(line, GetLineText(line))
 			local parent_item = get_or_add_parent_item()
 			tree_bookmarks:tree_remove_childs(parent_item)
-			for i = 0, editor.LineCount do
+			for i = 0, editor.LineCount-1 do
 				if (editor:MarkerGet(i) // 2 % 2 == 1) or (i == line) then
 					tree_bookmarks:add_item(GetLineText(i), parent_item, BM_LINE_IDX)
 				end
@@ -673,7 +673,7 @@ trbar1:sel_clear() -- clear selection
 	local btn3 = tab4:add_button("-><-")
 	local Button6_ID = btn3:get_ctrl_id()
 	btn3:position(20, 395)
-	btn3:size(45, 20)
+	btn3:size(45, 25)
 
 	local move_modes = {"off", "on"}
 	local move_mode = 0
@@ -738,9 +738,9 @@ trbar1:sel_clear() -- clear selection
 		return false
 	end)
 	---------------------------------  
-	local btn99 = tab4:add_button("tip test")
+	local btn99 = tab4:add_button("Test tips")
 	local Button99_ID = btn99:get_ctrl_id()
-	btn99:position(20, 420)
+	btn99:position(20, 425)
 	btn99:size(100, 25)
 	-- tab4:set_tiptext(Button99_ID , 'tips', "caption", false, true, 2)
 	local function gen_color()
@@ -757,7 +757,7 @@ trbar1:sel_clear() -- clear selection
 		-- print('set tips: ', txt)
 	end
 
-	local btn999 = tab4:add_button("restart")
+	local btn999 = tab4:add_button("Restart")
 	local Button999_ID = btn999:get_ctrl_id()
 	btn999:position(20, 455)
 	btn999:size(100, 25)
@@ -773,6 +773,20 @@ trbar1:sel_clear() -- clear selection
 	local link = tab4:add_link("Go to <a href=\"file://D:\\\">disk D:\\</a>")
 	link:position(175, 30)
 	link:size(150, 20)
+	
+	--------- play sound ----------
+	local btn7 = tab4:add_button("PlaySound")
+	local Button7_ID = btn7:get_ctrl_id()
+	btn7:position(205, 395)
+	btn7:size(75, 25)
+	callbacks[Button7_ID] = function()
+		local fn = shell.play_sound
+		if type(fn)=='function' then
+			fn("c:\\windows\\media\\ring03.wav")
+		else
+			print('функция shell.play_sound не найдена')
+		end
+	end
 	
 	---------------------------------
 	tab4:on_paint(function(a)

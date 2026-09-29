@@ -219,13 +219,13 @@ static bool not_empty(const char *s) {
 
 static void CheckEnvironment(ExtensionAPI *host) {
 	if (!host)
-		return ;
+		return;
 	if (!fdDirector) {
 		std::string director = host->Property("ipc.director.name");
-		if (director.length() > 0) {
+		if (!director.empty()) {
 			startedByDirector = true;
 			fdDirector = OpenPipe(director.c_str());
-			AddSendPipe(fdDirector,NULL);  // we won't remove this pipe!
+			AddSendPipe(fdDirector, nullptr);  // we won't remove this pipe!
 		}
 	}
 }

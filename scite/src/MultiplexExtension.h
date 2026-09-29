@@ -117,6 +117,10 @@ public:
 	const char* OnSendEditor(Scintilla::Message, uintptr_t, long) override; //!-add-[OnSendEditor]
 #endif // RB_OnSendEditor
 
+#ifdef RB_LangMenuChecker
+	void OnLanguage(const char*) override;
+#endif // RB_OnSendEditor
+
 #ifdef RB_ONTABMOVE
 	void OnTabMove(int, int) override;
 #endif //RB_ONTABMOVE

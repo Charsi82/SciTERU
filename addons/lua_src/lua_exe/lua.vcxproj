@@ -18,13 +18,23 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="lua.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\lua.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\lua_lib\lua_staticlib.vcxproj">
+      <Project>{a2b543c4-8966-422f-87e8-5fdb54a28098}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{a2b543c4-8966-422f-87e8-5fdb54a28098}</ProjectGuid>
-    <RootNamespace>lualibmt</RootNamespace>
+    <ProjectGuid>{b945735c-1336-4b8e-8360-e08784226d0d}</ProjectGuid>
+    <RootNamespace>lua</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>lua_staticlib</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -41,13 +51,13 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -71,13 +81,19 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <TargetName>lua5.5</TargetName>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>Intermediate\bin\</OutDir>
     <IntDir>Intermediate\</IntDir>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <TargetName>lua5.5</TargetName>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>Intermediate\bin\</OutDir>
+    <IntDir>Intermediate\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>Intermediate\bin\</OutDir>
+    <IntDir>Intermediate\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>Intermediate\bin\</OutDir>
     <IntDir>Intermediate\</IntDir>
   </PropertyGroup>
@@ -88,11 +104,15 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "$(TargetPath)" "$(SolutionDir)../pack\utils\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -103,11 +123,15 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "$(TargetPath)" "$(SolutionDir)../pack\utils\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -116,91 +140,35 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "$(TargetPath)" "$(SolutionDir)../pack\utils\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <WarningLevel>Level3</WarningLevel>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "$(TargetPath)" "$(SolutionDir)../pack\utils\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="..\lua_src\src\lapi.h" />
-    <ClInclude Include="..\lua_src\src\lauxlib.h" />
-    <ClInclude Include="..\lua_src\src\lcode.h" />
-    <ClInclude Include="..\lua_src\src\lctype.h" />
-    <ClInclude Include="..\lua_src\src\ldebug.h" />
-    <ClInclude Include="..\lua_src\src\ldo.h" />
-    <ClInclude Include="..\lua_src\src\lfunc.h" />
-    <ClInclude Include="..\lua_src\src\lgc.h" />
-    <ClInclude Include="..\lua_src\src\ljumptab.h" />
-    <ClInclude Include="..\lua_src\src\llex.h" />
-    <ClInclude Include="..\lua_src\src\llimits.h" />
-    <ClInclude Include="..\lua_src\src\lmem.h" />
-    <ClInclude Include="..\lua_src\src\lobject.h" />
-    <ClInclude Include="..\lua_src\src\lopcodes.h" />
-    <ClInclude Include="..\lua_src\src\lopnames.h" />
-    <ClInclude Include="..\lua_src\src\lparser.h" />
-    <ClInclude Include="..\lua_src\src\lprefix.h" />
-    <ClInclude Include="..\lua_src\src\lstate.h" />
-    <ClInclude Include="..\lua_src\src\lstring.h" />
-    <ClInclude Include="..\lua_src\src\ltable.h" />
-    <ClInclude Include="..\lua_src\src\ltm.h" />
-    <ClInclude Include="..\lua_src\src\lua.h" />
-    <ClInclude Include="..\lua_src\src\lua.hpp" />
-    <ClInclude Include="..\lua_src\src\luaconf.h" />
-    <ClInclude Include="..\lua_src\src\lualib.h" />
-    <ClInclude Include="..\lua_src\src\lundump.h" />
-    <ClInclude Include="..\lua_src\src\lvm.h" />
-    <ClInclude Include="..\lua_src\src\lzio.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\lua_src\src\lapi.c" />
-    <ClCompile Include="..\lua_src\src\lauxlib.c" />
-    <ClCompile Include="..\lua_src\src\lbaselib.c" />
-    <ClCompile Include="..\lua_src\src\lcode.c" />
-    <ClCompile Include="..\lua_src\src\lcorolib.c" />
-    <ClCompile Include="..\lua_src\src\lctype.c" />
-    <ClCompile Include="..\lua_src\src\ldblib.c" />
-    <ClCompile Include="..\lua_src\src\ldebug.c" />
-    <ClCompile Include="..\lua_src\src\ldo.c" />
-    <ClCompile Include="..\lua_src\src\ldump.c" />
-    <ClCompile Include="..\lua_src\src\lfunc.c" />
-    <ClCompile Include="..\lua_src\src\lgc.c" />
-    <ClCompile Include="..\lua_src\src\linit.c" />
-    <ClCompile Include="..\lua_src\src\liolib.c" />
-    <ClCompile Include="..\lua_src\src\llex.c" />
-    <ClCompile Include="..\lua_src\src\lmathlib.c" />
-    <ClCompile Include="..\lua_src\src\lmem.c" />
-    <ClCompile Include="..\lua_src\src\loadlib.c" />
-    <ClCompile Include="..\lua_src\src\lobject.c" />
-    <ClCompile Include="..\lua_src\src\lopcodes.c" />
-    <ClCompile Include="..\lua_src\src\loslib.c" />
-    <ClCompile Include="..\lua_src\src\lparser.c" />
-    <ClCompile Include="..\lua_src\src\lstate.c" />
-    <ClCompile Include="..\lua_src\src\lstring.c" />
-    <ClCompile Include="..\lua_src\src\lstrlib.c" />
-    <ClCompile Include="..\lua_src\src\ltable.c" />
-    <ClCompile Include="..\lua_src\src\ltablib.c" />
-    <ClCompile Include="..\lua_src\src\ltm.c" />
-    <ClCompile Include="..\lua_src\src\lundump.c" />
-    <ClCompile Include="..\lua_src\src\lutf8lib.c" />
-    <ClCompile Include="..\lua_src\src\lvm.c" />
-    <ClCompile Include="..\lua_src\src\lzio.c" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

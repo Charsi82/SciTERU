@@ -1,4 +1,4 @@
-// SciTE - Scintilla based Text Editor
+﻿// SciTE - Scintilla based Text Editor
 /** @file IFaceTable.cxx
  ** SciTE iface function and constant descriptors.
  **/

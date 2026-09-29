@@ -1,4 +1,4 @@
-// SciTE - Scintilla based Text Editor
+﻿// SciTE - Scintilla based Text Editor
 /** @file SciTEBase.h
  ** Definition of platform independent base class of editor.
  **/
@@ -21,11 +21,11 @@ constexpr int IntFromTwoShorts(short a, short b) noexcept {
 #if defined (RB_SUBMENU) || defined (RB_ExtContextMenu)
 //!-start-[ExtendedContextMenu]
 class MenuEx {
-	void* mid{};
+	GUI::MenuID mid{};
 public:
 	MenuEx() noexcept = default;
-	MenuEx(void* _id) : mid(_id) {}
-	[[nodiscard]] void* GetID() const noexcept { return mid; }
+	MenuEx(GUI::MenuID _id) : mid(_id) {}
+	[[nodiscard]] GUI::MenuID GetID() const noexcept { return mid; }
 	void Add(const GUI::gui_char* label = nullptr, int cmd = 0, int enabled = 1, const char* mnemonic = nullptr, int position = -1) const;
 	void AddSubMenu(const GUI::gui_string_view label, MenuEx& subMenu, int position = -1) const;
 	void RemoveItems(int fromID = 0, int toID = -1) const;
@@ -934,7 +934,11 @@ protected:
 	void CheckMenusSave(); //!-add-[SaveEnabled]
 #endif // RB_SE
 
+#ifdef RB_CheckMenus
+	void CheckMenus() override; //!-add-[CheckMenus]
+#else
 	virtual void CheckMenus();
+#endif // RB_CheckMenus
 	
 #ifdef RB_ExtContextMenu
 	//!-start-[ExtendedContextMenu]
@@ -1076,11 +1080,11 @@ protected:
 	SA::ScintillaCall &PaneCaller(Pane p) noexcept override;
 
 #ifdef RB_LFL
-	std::string GetTranslation(const char* s, bool retainIfNotFound = true); //!-add-[LocalizationFromLua]
+	std::string GetTranslation(const char* s, bool retainIfNotFound = true) override; //!-add-[LocalizationFromLua]
 #endif // RB_LFL
 
 #ifdef RB_PDFL
-	bool ShowParametersDialog(const char* msg); //!-add-[ParametersDialogFromLua]
+	bool ShowParametersDialog(const char* msg) override; //!-add-[ParametersDialogFromLua]
 #endif // RB_PDFL
 
 	// Valid CurrentWord characters
@@ -1108,15 +1112,9 @@ public:
 
 	GUI::WindowID GetID() const noexcept { return wSciTE.GetID(); }
 
-#ifdef RB_GAP
-	//!-start-[GetApplicationProps]
-	static SciTEBase* GetApplicationInstance();
-	static PropSetFile* GetProps() {
-		SciTEBase* app = GetApplicationInstance();
-		if (app) return &(app->props);
-		return nullptr;
-	}
-	//!-end-[GetApplicationProps]
+#ifdef RB_GAP 
+	// [GetApplicationProps]
+	static PropSetFile* GetProps();
 #endif // RB_GAP
 
 	static bool PerformOnNewThread(Worker *pWorker);

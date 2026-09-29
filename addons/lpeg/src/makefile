@@ -1,59 +1,29 @@
-LIBNAME = lpeg
-LUADIR = ./lua/
+OUT = ../../bin\lpeg.dll
 
-COPT = -O2 -DNDEBUG
-# COPT = -O0 -DLPEG_DEBUG -g
+LUASRC = -I ../../lua_src/src
+LUADIR = -L ../../bin
 
-CWARNS = -Wall -Wextra -pedantic \
-	-Waggregate-return \
-	-Wcast-align \
-	-Wcast-qual \
-	-Wdisabled-optimization \
-	-Wpointer-arith \
-	-Wshadow \
-	-Wredundant-decls \
-	-Wsign-compare \
-	-Wundef \
-	-Wwrite-strings \
-	-Wbad-function-cast \
-	-Wdeclaration-after-statement \
-	-Wmissing-prototypes \
-	-Wmissing-declarations \
-	-Wnested-externs \
-	-Wstrict-prototypes \
-	-Wc++-compat \
-# -Wunreachable-code \
+LIBS = -lshlwapi -lcomdlg32 -lole32 -lcomctl32 -lgdi32 -lUxTheme -llua -luuid
+LIBDIR = $(LUADIR)
 
-
-CFLAGS = $(CWARNS) $(COPT) -std=c99 -I$(LUADIR) -fPIC
 CC = gcc
+ifdef clang
+CC = clang
+endif
+CFLAGS = -O2 -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -Wno-unknown-pragmas -DUNICODE $(LUASRC)
 
-FILES = lpvm.o lpcap.o lptree.o lpcode.o lpprint.o lpcset.o
+all: $(OUT)
 
-# For Linux
-linux:
-	$(MAKE) lpeg.so "DLLFLAGS = -shared -fPIC"
+SRC_FILES := $(wildcard *.c)
+OBJ_FILES := $(SRC_FILES:.c=.o)
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-# For Mac OS
-macosx:
-	$(MAKE) lpeg.so "DLLFLAGS = -bundle -undefined dynamic_lookup"
+$(OUT): $(OBJ_FILES) resfile.o
+	$(CC) -shared -s -o $@ $^ $(LIBDIR) $(LIBS)
 
-lpeg.so: $(FILES)
-	env $(CC) $(DLLFLAGS) $(FILES) -o lpeg.so
-
-$(FILES): makefile
-
-test: test.lua re.lua lpeg.so
-	./test.lua
+resfile.o: Resource.rc
+	windres -o $@ $<
 
 clean:
-	rm -f $(FILES) lpeg.so
-
-
-lpcap.o: lpcap.c lpcap.h lptypes.h
-lpcode.o: lpcode.c lptypes.h lpcode.h lptree.h lpvm.h lpcap.h lpcset.h
-lpcset.o: lpcset.c lptypes.h lpcset.h lpcode.h lptree.h lpvm.h lpcap.h
-lpprint.o: lpprint.c lptypes.h lpprint.h lptree.h lpvm.h lpcap.h lpcode.h
-lptree.o: lptree.c lptypes.h lpcap.h lpcode.h lptree.h lpvm.h lpprint.h \
- lpcset.h
-lpvm.o: lpvm.c lpcap.h lptypes.h lpvm.h lpprint.h lptree.h
+	del /q *.o

@@ -95,7 +95,8 @@ SHAREDOBJS=\
 	StyleDefinition.obj \
 	StyleWriter.obj \
 	UniqueInstance.obj \
-	Utf8_16.obj
+	Utf8_16.obj \
+	WinBasics.obj
 
 OBJS=\
 	$(SHAREDOBJS) \

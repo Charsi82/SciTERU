@@ -15,186 +15,186 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\lua_src\src\ltm.h">
+    <ClInclude Include="..\src\ltm.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lua.h">
+    <ClInclude Include="..\src\lua.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lua.hpp">
+    <ClInclude Include="..\src\lua.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\luaconf.h">
+    <ClInclude Include="..\src\luaconf.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lualib.h">
+    <ClInclude Include="..\src\lualib.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lundump.h">
+    <ClInclude Include="..\src\lundump.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lvm.h">
+    <ClInclude Include="..\src\lvm.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lzio.h">
+    <ClInclude Include="..\src\lzio.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lapi.h">
+    <ClInclude Include="..\src\lapi.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lauxlib.h">
+    <ClInclude Include="..\src\lauxlib.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lcode.h">
+    <ClInclude Include="..\src\lcode.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lctype.h">
+    <ClInclude Include="..\src\lctype.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\ldebug.h">
+    <ClInclude Include="..\src\ldebug.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\ldo.h">
+    <ClInclude Include="..\src\ldo.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lfunc.h">
+    <ClInclude Include="..\src\lfunc.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lgc.h">
+    <ClInclude Include="..\src\lgc.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\ljumptab.h">
+    <ClInclude Include="..\src\ljumptab.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\llex.h">
+    <ClInclude Include="..\src\llex.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\llimits.h">
+    <ClInclude Include="..\src\llimits.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lmem.h">
+    <ClInclude Include="..\src\lmem.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lobject.h">
+    <ClInclude Include="..\src\lobject.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lopcodes.h">
+    <ClInclude Include="..\src\lopcodes.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lopnames.h">
+    <ClInclude Include="..\src\lopnames.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lparser.h">
+    <ClInclude Include="..\src\lparser.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lprefix.h">
+    <ClInclude Include="..\src\lprefix.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lstate.h">
+    <ClInclude Include="..\src\lstate.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\lstring.h">
+    <ClInclude Include="..\src\lstring.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\lua_src\src\ltable.h">
+    <ClInclude Include="..\src\ltable.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\lua_src\src\lundump.c">
+    <ClCompile Include="..\src\lundump.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\lutf8lib.c">
+    <ClCompile Include="..\src\lutf8lib.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\lvm.c">
+    <ClCompile Include="..\src\lvm.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\lzio.c">
+    <ClCompile Include="..\src\lzio.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\lapi.c">
+    <ClCompile Include="..\src\lapi.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\lauxlib.c">
+    <ClCompile Include="..\src\lauxlib.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\lbaselib.c">
+    <ClCompile Include="..\src\lbaselib.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\lcode.c">
+    <ClCompile Include="..\src\lcode.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\lcorolib.c">
+    <ClCompile Include="..\src\lcorolib.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\lctype.c">
+    <ClCompile Include="..\src\lctype.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\ldblib.c">
+    <ClCompile Include="..\src\ldblib.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\ldebug.c">
+    <ClCompile Include="..\src\ldebug.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\ldo.c">
+    <ClCompile Include="..\src\ldo.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\ldump.c">
+    <ClCompile Include="..\src\ldump.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\lfunc.c">
+    <ClCompile Include="..\src\lfunc.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\lgc.c">
+    <ClCompile Include="..\src\lgc.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\linit.c">
+    <ClCompile Include="..\src\linit.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\liolib.c">
+    <ClCompile Include="..\src\liolib.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\llex.c">
+    <ClCompile Include="..\src\llex.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\lmathlib.c">
+    <ClCompile Include="..\src\lmathlib.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\lmem.c">
+    <ClCompile Include="..\src\lmem.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\loadlib.c">
+    <ClCompile Include="..\src\loadlib.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\lobject.c">
+    <ClCompile Include="..\src\lobject.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\lopcodes.c">
+    <ClCompile Include="..\src\lopcodes.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\loslib.c">
+    <ClCompile Include="..\src\loslib.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\lparser.c">
+    <ClCompile Include="..\src\lparser.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\lstate.c">
+    <ClCompile Include="..\src\lstate.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\lstring.c">
+    <ClCompile Include="..\src\lstring.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\lstrlib.c">
+    <ClCompile Include="..\src\lstrlib.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\ltable.c">
+    <ClCompile Include="..\src\ltable.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\ltablib.c">
+    <ClCompile Include="..\src\ltablib.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\lua_src\src\ltm.c">
+    <ClCompile Include="..\src\ltm.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>

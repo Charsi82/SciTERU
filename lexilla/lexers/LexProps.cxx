@@ -79,7 +79,7 @@ void ColourisePropsLine(
 			|| lineBuffer[i] == ';') {
 #else
 		if (lineBuffer[i] == '#' || lineBuffer[i] == '!' || lineBuffer[i] == ';') {
-#endif
+#endif // RB_PCF
 			styler.ColourTo(endPos, SCE_PROPS_COMMENT);
 #ifdef RB_PCF
 			return SCE_PROPS_COMMENT; //!-add-[PropsColouriseFix]
@@ -148,7 +148,7 @@ void ColourisePropsLine(
 				//!-end-[PropsKeysSets]
 #else
 				styler.ColourTo(startLine + i - 1, SCE_PROPS_KEY);
-#endif
+#endif // RB_PKS
 				styler.ColourTo(startLine + i, SCE_PROPS_ASSIGNMENT);
 				styler.ColourTo(endPos, SCE_PROPS_DEFAULT);
 			} else {
@@ -222,7 +222,7 @@ void ColourisePropsDoc(Sci_PositionU startPos, Sci_Position length, int, WordLis
 			ColourisePropsLine(lineBuffer.c_str(), lineBuffer.length(), startLine, i, styler, allowInitialSpaces);
 #endif // RB_PKS
 
-#endif
+#endif // RB_PCF
 			lineBuffer.clear();
 			startLine = i + 1;
 		}

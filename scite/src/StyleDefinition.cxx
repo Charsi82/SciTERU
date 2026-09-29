@@ -36,11 +36,11 @@ StyleDefinition::StyleDefinition(std::string_view definition) :
 #endif // RB_SD
 	weight(SA::FontWeight::Normal), stretch(SA::FontStretch::Normal),
 	italics(false), eolfilled(false), underlined(false),
-	caseForce(SA::CaseVisible::Mixed),
-	visible(true), changeable(true),
 #ifdef RB_HOTSPOT
 	hotspot(false), //!-add-[StyleDefHotspot]
-#endif
+#endif // RB_HOTSPOT
+	caseForce(SA::CaseVisible::Mixed),
+	visible(true), changeable(true),
 	specified(sdNone) {
 	ParseStyleDefinition(definition);
 }

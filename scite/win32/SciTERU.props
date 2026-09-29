@@ -3,7 +3,7 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
     <LUA_SRC>..\..\addons\lua_src\src\</LUA_SRC>
-    <LUA_LIB>..\..\addons\lua_staticlib\Intermediate\bin\</LUA_LIB>
+    <LUA_LIB>..\..\addons\lua_src\lua_lib\Intermediate\bin\</LUA_LIB>
   </PropertyGroup>
   <PropertyGroup>
     <OutDir>../Intermediate\bin\</OutDir>

@@ -20,7 +20,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\lua_src\src\lua.c">
+    <ClCompile Include="..\src\lua.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>

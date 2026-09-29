@@ -5,7 +5,7 @@
 ' Проверка орфографии выделенного текста с помощью объекта "Word.Application"
 ' т.е. необходимо чтобы на машине был установлен MS Word с компонентом "Проверка орфографии"
 ' Для подключения добавьте в свой файл .properties следующие строки:
-' command.name.22.*=Проверка орфографии
+' command.name.22.*=Spelling
 ' command.22.*=wscript "$(SciteDefaultHome)\tools\SpellCheck.vbs"
 ' command.input.22.*=$(CurrentSelection)
 ' command.mode.22.*=subsystem:windows,replaceselection:auto,savebefore:no,quiet:yes

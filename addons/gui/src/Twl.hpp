@@ -1,4 +1,4 @@
-// TWL.H
+// TWL.HPP
 // Steve Donovan, 2003
 // This is GPL'd software, and the usual disclaimers apply.
 // See LICENCE

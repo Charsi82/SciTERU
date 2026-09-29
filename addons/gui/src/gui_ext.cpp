@@ -13,6 +13,9 @@
 #include <list>
 #include <string>
 #include <ranges>
+#ifdef __GNUC__
+	#include <memory>
+#endif
 
 #include "twl.hpp"
 #include "twl_utils.hpp"
@@ -2344,7 +2347,7 @@ int list_add_item(lua_State* L, TListViewLua* lv, bool at_index)
 	else
 	{
 		vecws items = table_to_str_array(L, next_arg);
-		const int _min = min(lv->columns(), items.size());
+		const int _min = std::min<unsigned int>(lv->columns(), items.size());
 		int idx = lv->add_item_at(ipos, items.at(0).data(), 0, ref_idx); // init first column
 		for (int i = 1; (i < _min) && items.at(i).size(); ++i) // init others
 			lv->add_subitem(idx, items.at(i).data(), i);

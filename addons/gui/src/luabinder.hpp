@@ -44,8 +44,8 @@ public:
 			lua_createtable(L, 1, 1);
 			lua_pushcfunction(L, lookup);
 			lua_setfield(L, -2, "__index");
-			const int inh_size = static_cast<int>(inherits.size());
-			lua_createtable(L, inh_size, inh_size);
+			const size_t inh_size = inherits.size();
+			lua_createtable(L, static_cast<int>(inh_size), static_cast<int>(inh_size));
 
 			for (size_t i = 0; i < inh_size;)
 			{

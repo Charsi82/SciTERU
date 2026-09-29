@@ -4,6 +4,10 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+#ifdef __GNUC__
+#include <cstdint>
+#include <cstring>
+#endif
 #include "lua.hpp"
 #include "luabinder.hpp"
 #include "utf.h"
@@ -114,6 +118,7 @@ static int destroy_twbitmap(lua_State* L)
 	return do_destroy<twBitMap>(L);
 }
 
+template<>
 const luaL_Reg LuaBinder<twBitMap>::metamethods[] =
 {
 	{ "__gc",		destroy_twbitmap	},
@@ -122,6 +127,7 @@ const luaL_Reg LuaBinder<twBitMap>::metamethods[] =
 	{ NULL, NULL }
 };
 
+template<>
 const luaL_Reg LuaBinder<twBitMap>::methods[] =
 {
 	{ "reset",			do_reset_bitmap	},
@@ -204,20 +210,18 @@ void twBitMap::fill_pixels(COLORREF color)
 }
 void twBitMap::grayscale(double r, double g, double b)
 {
-	int8_t maximum = 0;
+	uint8_t maximum = 0;
 	for (size_t pos = 0; pos < imageSize; pos += bytesPerPixel)
 	{
 		data[pos + 0] = data[pos + 1] = data[pos + 2] =
 			static_cast<uint8_t>(data[pos + 0] * r + data[pos + 1] * r + data[pos + 2] * b);
 		if (data[pos] > maximum) maximum = data[pos];
 	}
-	if (maximum < 255)
-	{
+	if (maximum == 255) return;
 		for (size_t pos = 0; pos < imageSize; pos += bytesPerPixel)
 		{
 			data[pos + 0] = data[pos + 1] = data[pos + 2] =
 				static_cast<uint8_t>(data[pos] * 255 / maximum);
-		}
 	}
 }
 

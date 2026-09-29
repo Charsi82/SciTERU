@@ -1,5 +1,5 @@
 // ASResource.cpp
-// Copyright (c) 2025 The Artistic Style Authors.
+// Copyright (c) 2026 The Artistic Style Authors.
 // This code is licensed under the MIT License.
 // License.md describes the conditions under which this software may be distributed.
 
@@ -105,6 +105,10 @@ const std::string ASResource::AS_CLOSE_COMMENT = std::string("*/");
 
 const std::string ASResource::AS_GSC_OPEN_COMMENT = std::string("/#");
 const std::string ASResource::AS_GSC_CLOSE_COMMENT = std::string("#/");
+
+const std::string ASResource::AS_OPEN_CONFLICT = std::string("<<<<<<<");
+const std::string ASResource::AS_MIDDLE_CONFLICT = std::string("=======");
+const std::string ASResource::AS_CLOSE_CONFLICT = std::string(">>>>>>>");
 
 const std::string ASResource::AS_ASSIGN = std::string("=");
 const std::string ASResource::AS_PLUS_ASSIGN = std::string("+=");

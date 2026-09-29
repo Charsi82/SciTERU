@@ -1,0 +1,136 @@
+[definitions]
+def element=(def element |() layout=true\n\t\n)
+def css=(def css |()\n)
+def macro=(def macro |()\n)
+
+[common]
+element=(element |\n\t\n)
+macro=(macro |)
+scope=(scope\n\t(var count:number| = 30)\n)
+block=(block\n\t|\n)
+style=(style\n\
+	(position = "absolute")\n\
+	(height = 40px)\n\
+	(width = 40px)\n\
+	(marginTop = -10px)\n\
+	(marginLeft = -10px)\n\
+	(backgroundSize = "fill")\n\
+	(backgroundImage = 'url:')\n\
+	(flow = "horizontal")\n\
+	(align = "bottom")\n\
+	(alpha = 0)\n\)
+
+tf=(tf\n\
+	(class $TextDefaultBold18NM)\n\
+	(style (alpha = "TA"))\n\
+	(bind text "|")\n)
+
+mc=(mc '|'\n\
+	(name = 'mcName')\n\
+	(bindcall gotoAndPlay "stateFrame")\n\)
+
+sprite=(sprite\n\
+	(width = 500)\n\
+	(height = 500)\n\
+	(x = 100px)\n\
+	(y = 200px)\n\
+	(scaleX = 2)\n\
+	(alpha = 0.5)\n\
+	(rotation = 45)\n)
+
+[controllers]
+$Instance=(controller $Instance renderer='|'\n\
+	(bind enabled "true")\n\
+		(args\n\
+	)\n)\n
+
+$FxInstance=(controller $FxInstance renderer='|' lifetime=1\n\
+	(args _value="42")\n\
+	(bindcall create (event "evName"))\n)\n
+
+$Animation=(controller $Animation\n\
+	(bindcall play\n\
+		delay = "0.3"\n\
+		duration = "2"\n\
+		from	 = "{ alpha: 0 }"\n\
+		to		 = "{ alpha: 1 }"\n\
+		keyframes = "[\n\
+			{percent: 50,	to: { alpha: 0, scaleY: 1 }},\n\
+			{percent: 70,	to: { alpha: 0, scaleY: 1 }},\n\
+			{percent: 100,	to: { alpha: 1, scaleY: 1 }},\n\
+		]"\n\
+		trigger = ""\n\
+		init	 = true\n\
+	)\n)\n
+
+$Repeat=(controller $Repeat renderer='|'\n\
+	(bind count "")\n\
+	(args\n\
+		\n\
+	)\n)\n
+
+$Sector=(controller $Sector\n\
+	(offset -90)\n\
+	(color = 0xFFFFFF)\n\
+	(arc = 360)\n\
+	(radius = 20)\n\
+	(innerRadius = 20)\n\
+	(lineThickness = "1")\n\
+	(lineAlpha = "1")\n\
+	(lineColor = "0")\n\
+	(dashLength = "10")\n\
+	(spacing = "5")\n)\n
+
+$Tooltip=(controller $Tooltip\n\
+	(renderer = '|')\n\
+	(args\n\
+		\n\
+	)\n\
+	(macro DEFAULT_TOOLTIP_BEHAVIOUR)\n)\n
+
+$Spine=(controller $Spine\n\
+	(mergeLayers = true)\n\
+	(bind enabled "isCondition")\n\
+	(bindcall play sequence="{}" (event ""))\n\
+	(bindcall pause init=true	(bind enabled "isCondition"))\n\
+	(bindcall resume (bind enabled "!isCondition"))\n\
+	(bindcall stop (event "eventName"))\n)\n
+
+$GameFaceView=(controller $GameFaceView\n)\n
+
+$Focus=(controller $Focus\n\
+	tabIndex = "_focusIndex"\n\
+	defaultFocus = "_defaultFocused"\n\
+	clickFocus = "false"\n\
+	clickInterval = "_clickInterval"\n\
+	(bind enabled "isFocusEnabled")\n\
+	(bind isFocused "$event" init=false on='evFocused')\n\
+	(bind isKeyDown "$event && isFocused && enabled" init=false on='evKeyboardClick')\n\)\n
+
+$DynamicRepeat=(controller $DynamicRepeat renderer='|' name='_name'\n\
+	(bind count "_size")\n\
+	(args\n\
+		\n\
+	)\n\
+	(itemWidth =	"_itemWidth")\n\
+	(itemHeight =	"_itemHeight")\n\
+	(itemOffset =	"_itemOffset")\n\)\n
+
+$Draggable=(controller $Draggable\n\
+	(bind enabled "isEnabled")\n\
+	(slotId = "_SLOT_ID")\n\
+	(args\n\
+		slotId = "subCollectionKey"\n\
+		commandId = "slotComandId"\n\
+	)\n\
+	(dispatch 'evDragElementStarted'	on='evDragStarted')\n\
+	(dispatch 'evDragBitmapAppear'		on='evBitmapAppear')\n\
+	(dispatch 'evDragElementEnded'		on='evDragEnded')\n\)\n
+
+$Droppable=(controller $Droppable\n\
+	(bind slotIds "activeIds")\n\
+	(dispatch 'evDragStarted' args="$event" on='evDragStarted')\n\
+	(dispatch 'evDragStopped' args="$event" on='evDragStopped')\n\
+	(dispatch 'evDragAccept' args="$event" on='evDragFinished')\n\
+	(dispatch 'evDragFadeIn' args="$event" on='evDragIn')\n\
+	(dispatch 'evDragFadeOut' args="$event" on='evDragOut')\n\)\n

@@ -1,5 +1,5 @@
 // astyle_main.cpp
-// Copyright (c) 2025 The Artistic Style Authors.
+// Copyright (c) 2026 The Artistic Style Authors.
 // This code is licensed under the MIT License.
 // License.md describes the conditions under which this software may be distributed.
 
@@ -43,8 +43,6 @@
 #include <fstream>
 #include <sstream>
 
-#include <filesystem>
-
 // includes for recursive getFileNames() function
 #ifdef _WIN32
 	#undef UNICODE		// use ASCII windows functions
@@ -54,9 +52,8 @@
 	#include <fcntl.h>
 
 #else
-	#include <dirent.h>
-	#include <sys/stat.h>
 	#include <unistd.h>
+	#include <fcntl.h>		// open, O_NOFOLLOW for writeFile
 
 #endif
 
@@ -270,6 +267,18 @@ std::streamoff ASStreamIterator<T>::tellg()
 }
 
 
+// Replace control characters that could be interpreted as terminal escape sequences.
+// Defined at file scope (not inside the console-only block) so option-error
+// reporting can use it in the library and JNI builds as well.
+static std::string sanitizeForTerminal(const std::string& s)
+{
+	std::string out;
+	out.reserve(s.size());
+	for (unsigned char c : s)
+		out += (c < 0x20 && c != '\t') ? '?' : static_cast<char>(c);
+	return out;
+}
+
 //-----------------------------------------------------------------------------
 // ASConsole class
 // main function will be included only in the console build
@@ -342,6 +351,33 @@ FileEncoding ASConsole::detectEncoding(const char* data, size_t dataSize) const
 	return ENCODING_8BIT;
 }
 
+// Detect a UTF-16 file that has no byte-order mark. detectEncoding() recognizes
+// UTF-16 only by its BOM, so a BOM-less UTF-16 file is classified as 8-bit text
+// and silently corrupted by the formatter. UTF-16-encoded text keeps a 0x00 byte
+// in every other position (odd offsets for little-endian, even offsets for
+// big-endian); plain 8-bit source contains no 0x00 bytes. Requiring all nulls on
+// a single parity, with none on the other, avoids misclassifying 8-bit files.
+bool ASConsole::isBomlessUtf16(const char* data, size_t dataSize) const
+{
+	if (dataSize < 2)
+		return false;
+	// BOM-tagged files are already handled by detectEncoding().
+	if (memcmp(data, "\xFE\xFF", 2) == 0 || memcmp(data, "\xFF\xFE", 2) == 0)
+		return false;
+
+	const size_t sample = dataSize < 64 ? dataSize : 64;
+	size_t evenNulls = 0;
+	size_t oddNulls = 0;
+	for (size_t i = 0; i < sample; i++)
+	{
+		if (data[i] == '\0')
+			(i % 2 == 0 ? evenNulls : oddNulls)++;
+	}
+	bool looksLittleEndian = oddNulls > 0 && evenNulls == 0;
+	bool looksBigEndian = evenNulls > 0 && oddNulls == 0;
+	return looksLittleEndian || looksBigEndian;
+}
+
 // error exit without a message
 void ASConsole::error() const
 {
@@ -352,7 +388,9 @@ void ASConsole::error() const
 // error exit with a message
 void ASConsole::error(const char* why, const char* what) const
 {
-	(*errorStream) << why << ' ' << what << '\n';
+	// 'what' is often an untrusted file path or option string; strip control
+	// characters so it cannot inject terminal escape sequences.
+	(*errorStream) << why << ' ' << sanitizeForTerminal(what) << '\n';
 	error();
 }
 
@@ -386,8 +424,8 @@ void ASConsole::formatCinToCout()
 
 	// enforce binary mode to avoid auto conversion of \n to \r\n
 #ifdef _WIN32
-	_setmode( _fileno( stdout ),  _O_BINARY );
-	_setmode( _fileno( stdin ),  _O_BINARY );
+	std::ignore = _setmode( _fileno( stdout ),  _O_BINARY );
+	std::ignore = _setmode( _fileno( stdin ),  _O_BINARY );
 #endif
 
 	std::stringstream outStream;
@@ -436,6 +474,23 @@ void ASConsole::formatCinToCout()
  */
 void ASConsole::formatFile(const std::string& fileName_)
 {
+	// Skip a UTF-16 file that has no byte-order mark. Encoding detection is
+	// BOM-based, so such a file would be treated as 8-bit text and silently
+	// corrupted. Peek at the header and leave the file untouched instead.
+	{
+		std::ifstream fin(fileName_.c_str(), std::ios::binary);
+		char header[64];
+		fin.read(header, sizeof(header));
+		if (isBomlessUtf16(header, static_cast<size_t>(fin.gcount())))
+		{
+			std::string displayName(fileName_);
+			if (hasWildcard)
+				displayName = fileName_.substr(targetDirectory.length() + 1);
+			printMsg(_("Skipped (UTF-16 without BOM)  %s\n"), sanitizeForTerminal(displayName));
+			return;
+		}
+	}
+
 	std::stringstream in;
 	std::ostringstream out;
 	FileEncoding encoding = readFile(fileName_, in);
@@ -518,13 +573,13 @@ void ASConsole::formatFile(const std::string& fileName_)
 	{
 		if (!isDryRun)
 			writeFile(fileName_, encoding, out);
-		printMsg(_("Formatted  %s\n"), displayName);
+		printMsg(_("Formatted  %s\n"), sanitizeForTerminal(displayName));
 		filesFormatted++;
 	}
 	else
 	{
 		if (!isFormattedOnly)
-			printMsg(_("Unchanged  %s\n"), displayName);
+			printMsg(_("Unchanged  %s\n"), sanitizeForTerminal(displayName));
 		filesUnchanged++;
 	}
 
@@ -621,6 +676,10 @@ std::vector<std::string> ASConsole::getFileName() const
 // for unit testing
 std::vector<std::string> ASConsole::getFileNameVector() const
 { return fileNameVector; }
+
+// for unit testing
+std::vector<std::string> ASConsole::getIncludeVector() const
+{ return includeVector; }
 
 // for unit testing
 std::vector<std::string> ASConsole::getFileOptionsVector() const
@@ -819,14 +878,17 @@ FileEncoding ASConsole::readFile(const std::string& fileName_, std::stringstream
 			// convert utf-16 to utf-8
 			size_t utf8Size = encode.utf8LengthFromUtf16(data, dataSize, isBigEndian);
 			char* utf8Out = new (std::nothrow) char[utf8Size];
-			if (utf8Out == nullptr)
+			if (utf8Out == nullptr) {
 				error("Cannot allocate memory for utf-8 conversion", fileName_.c_str());
-			size_t utf8Len = encode.utf16ToUtf8(data, dataSize, isBigEndian, firstBlock, utf8Out);
-			assert(utf8Len <= utf8Size);
-			in << std::string(utf8Out, utf8Len);
-			delete[] utf8Out;
+			}
+			else {
+				size_t utf8Len = encode.utf16ToUtf8(data, dataSize, isBigEndian, firstBlock, utf8Out);
+				assert(utf8Len <= utf8Size);
+				in << std::string(utf8Out, utf8Len);
+				delete[] utf8Out;
+			}
 		}
-		else
+		else if (data != nullptr)
 			in << std::string(data, dataSize);
 		fin.read(data, blockSize);
 		if (fin.bad())
@@ -888,6 +950,185 @@ void ASConsole::setAcceptEmptyInputFileList(bool state)
 { acceptEmptyFileList = state; }
 
 
+/**
+ * Function to get the current directory using C++17 filesystem.
+ *
+ * @return              The path of the current directory
+ */
+std::string ASConsole::getCurrentDirectory(const std::string& fileName_) const
+{
+	std::string currentDir = std::filesystem::current_path().string();
+	if (currentDir.empty())
+		error("Cannot find file", fileName_.c_str());
+	return currentDir;
+}
+
+
+/**
+ * Function to resolve wildcards and recurse into sub directories using C++17 filesystem.
+ * The fileName vector is filled with the path and names of files to process.
+ *
+ * @param directory     The path of the directory to be processed.
+ * @param wildcards     A vector of wildcards to be processed (e.g. *.cpp).
+ */
+void ASConsole::getFileNames(const std::string& directory, const std::vector<std::string>& wildcards)
+{
+	// If directory doesn't exist, handle error
+	if (!std::filesystem::exists(directory))
+		error(_("Cannot open directory"), directory.c_str());
+
+	// Save files and subdirectories
+	std::vector<std::string> subDirectory;
+
+	for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+		const std::string entryPath = entry.path().string();
+		const std::string entryName = entry.path().filename().string();
+
+		// Skip symlinks. is_directory()/is_regular_file() below follow symlinks,
+		// so descending into a symlinked directory can escape the target tree or
+		// loop forever on a symlink cycle. entry.is_symlink() uses symlink_status
+		// and does not follow the link.
+		if (entry.is_symlink())
+			continue;
+
+		// Skip hidden or read-only files
+		if (entryName[0] == '.' || !isWriteable(entry.path()))
+			continue;
+
+		// If it's a directory and recursive is enabled
+		if (std::filesystem::is_directory(entry) && isRecursive) {
+			if (isPathExcluded(entryPath))
+				printMsg(_("Exclude  %s\n"), sanitizeForTerminal(entryPath.substr(mainDirectoryLength)));
+			else
+				subDirectory.emplace_back(entryPath);
+			continue;
+		}
+
+		// If it's a regular file
+		if (std::filesystem::is_regular_file(entry)) {
+			// Check exclude before wildcard to avoid "unmatched exclude" error
+			bool isExcluded = isPathExcluded(entryPath);
+			// Save file name if wildcard match
+			for (const std::string& wildcard : wildcards) {
+				if (wildcmp(wildcard.c_str(), entryName.c_str())) {
+					if (isExcluded)
+						printMsg(_("Exclude  %s\n"), sanitizeForTerminal(entryPath.substr(mainDirectoryLength)));
+					else
+						fileName.emplace_back(entryPath);
+					break;
+				}
+			}
+		}
+	}
+
+	// Recurse into subdirectories
+	if (subDirectory.size() > 1)
+		std::sort(subDirectory.begin(), subDirectory.end());
+	for (const auto& subDir : subDirectory) {
+		getFileNames(subDir, wildcards);
+	}
+}
+
+/**
+ * Function to format a number according to the current locale using C++17.
+ * This formats positive integers only, no float.
+ *
+ * @param num       The number to be formatted.
+ * @param lcid      The LCID of the locale to be used for testing (Windows only).
+ * @return          The formatted number.
+ */
+std::string ASConsole::getNumberFormat(int num, size_t /*lcid*/) const
+{
+	#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__BORLANDC__) || defined(__GNUC__)
+	// Compilers that don't support C++ locales should still support this assert.
+	// The C locale should be set but not the C++.
+	// This function is not necessary if the C++ locale is set.
+	// The locale().name() return value is not portable to all compilers.
+	assert(std::locale().name() == "C");
+	#endif
+
+	// convert num to a string
+	std::stringstream alphaNum;
+	alphaNum << num;
+	std::string number = alphaNum.str();
+	if (useAscii)
+		return number;
+
+	// Get C locale information
+	struct lconv* lc = localeconv();
+	if (lc == nullptr)
+		return number;
+
+	// Format the number using the grouping and separator from the locale
+	return getNumberFormat(num, lc->grouping, lc->thousands_sep);
+}
+
+/**
+ * Helper function to check if a file is writable using C++17 filesystem.
+ *
+ * @param entry         The filesystem entry to check
+ * @return              true if the file is writable
+ */
+bool ASConsole::isWriteable(const std::filesystem::path& path) const
+{
+#ifdef _WIN32
+	// Windows implementation
+	DWORD attributes = GetFileAttributes(path.string().c_str());
+	return !(attributes & FILE_ATTRIBUTE_READONLY);
+#else
+	// Linux implementation
+	struct stat statbuf;
+	stat(path.c_str(), &statbuf);
+	return (statbuf.st_mode & S_IWUSR);
+#endif
+}
+
+/**
+ * Helper function to format a number according to the current locale.
+ * This formats positive integers only, no float.
+ *
+ * @param num            The number to be formatted.
+ * @param groupingArg    The grouping string from the locale.
+ * @param separator      The thousands group separator from the locale.
+ * @return               The formatted number.
+ */
+std::string ASConsole::getNumberFormat(int num, const char* groupingArg, const char* separator) const
+{
+	// convert num to a string
+	std::stringstream alphaNum;
+	alphaNum << num;
+	std::string number = alphaNum.str();
+	// format the number from right to left
+	std::string formattedNum;
+	size_t ig = 0;	// grouping index
+	int grouping = groupingArg[ig];
+	int i = number.length();
+	// check for no grouping
+	if (grouping == 0)
+		grouping = number.length();
+	while (i > 0)
+	{
+		// extract a group of numbers
+		std::string group;
+		if (i < grouping)
+			group = number;
+		else
+			group = number.substr(i - grouping);
+		// update formatted number
+		formattedNum.insert(0, group);
+		i -= grouping;
+		if (i < 0)
+			i = 0;
+		if (i > 0)
+			formattedNum.insert(0, separator);
+		number.erase(i);
+		// update grouping
+		if (groupingArg[ig] != '\0'
+			&& groupingArg[ig + 1] != '\0')
+			grouping = groupingArg[++ig];
+	}
+	return formattedNum;
+}
 
 #ifdef _WIN32  // Windows specific
 
@@ -912,150 +1153,6 @@ void ASConsole::displayLastError()
 	LocalFree(msgBuf);
 }
 
-/**
- * WINDOWS function to get the current directory.
- * NOTE: getenv("CD") does not work for Windows Vista.
- *        The Windows function GetCurrentDirectory is used instead.
- *
- * @return              The path of the current directory
- */
-std::string ASConsole::getCurrentDirectory(const std::string& fileName_) const
-{
-	char currdir[MAX_PATH];
-	currdir[0] = '\0';
-	if (!GetCurrentDirectory(sizeof(currdir), currdir))
-		error("Cannot find file", fileName_.c_str());
-	return std::string(currdir);
-}
-
-/**
- * WINDOWS function to resolve wildcards and recurse into sub directories.
- * The fileName vector is filled with the path and names of files to process.
- *
- * @param directory     The path of the directory to be processed.
- * @param wildcards     A vector of wildcards to be processed (e.g. *.cpp).
- */
-void ASConsole::getFileNames(const std::string& directory, const std::vector<std::string>& wildcards)
-{
-	std::vector<std::string> subDirectory;    // sub directories of directory
-	WIN32_FIND_DATA findFileData;   // for FindFirstFile and FindNextFile
-
-	// Find the first file in the directory
-	// Find will get at least "." and "..".
-	std::string firstFile = directory + "\\*";
-	HANDLE hFind = FindFirstFile(firstFile.c_str(), &findFileData);
-
-	if (hFind == INVALID_HANDLE_VALUE)
-	{
-		// Error (3) The system cannot find the path specified.
-		// Error (123) The filename, directory name, or volume label syntax is incorrect.
-		// ::FindClose(hFind); before exiting
-		displayLastError();
-		error(_("Cannot open directory"), directory.c_str());
-	}
-
-	// save files and sub directories
-	do
-	{
-		// skip hidden or read only
-		if (findFileData.cFileName[0] == '.'
-		        || (findFileData.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN)
-		        || (findFileData.dwFileAttributes & FILE_ATTRIBUTE_READONLY))
-			continue;
-
-		// is this a sub directory
-		if (findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-		{
-			if (!isRecursive)
-				continue;
-			// if a sub directory and recursive, save sub directory
-			std::string subDirectoryPath = directory + g_fileSeparator + findFileData.cFileName;
-			if (isPathExcluded(subDirectoryPath))
-				printMsg(_("Exclude  %s\n"), subDirectoryPath.substr(mainDirectoryLength));
-			else
-				subDirectory.emplace_back(subDirectoryPath);
-			continue;
-		}
-
-		std::string filePathName = directory + g_fileSeparator + findFileData.cFileName;
-		// check exclude before wildcmp to avoid "unmatched exclude" error
-		bool isExcluded = isPathExcluded(filePathName);
-		// save file name if wildcard match
-		for (const std::string& wildcard : wildcards)
-		{
-			if (wildcmp(wildcard.c_str(), findFileData.cFileName))
-			{
-				if (isExcluded)
-					printMsg(_("Exclude  %s\n"), filePathName.substr(mainDirectoryLength));
-				else
-					fileName.emplace_back(filePathName);
-				break;
-			}
-		}
-	}
-	while (FindNextFile(hFind, &findFileData) != 0);
-
-	// check for processing error
-	::FindClose(hFind);
-	DWORD dwError = GetLastError();
-	if (dwError != ERROR_NO_MORE_FILES)
-		error("Error processing directory", directory.c_str());
-
-	// recurse into sub directories
-	// if not doing recursive subDirectory is empty
-	for (const std::string& subDirectoryName : subDirectory)
-		getFileNames(subDirectoryName, wildcards);
-}
-
-
-/**
- * WINDOWS function to format a number according to the current locale.
- * This formats positive integers only, no float.
- *
- * @param num		The number to be formatted.
- * @param lcid		The LCID of the locale to be used for testing.
- * @return			The formatted number.
- */
-std::string ASConsole::getNumberFormat(int num, size_t lcid) const
-{
-#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__BORLANDC__) || defined(__GNUC__)
-	// Compilers that don't support C++ locales should still support this assert.
-	// The C locale should be set but not the C++.
-	// This function is not necessary if the C++ locale is set.
-	// The locale().name() return value is not portable to all compilers.
-	assert(std::locale().name() == "C");
-#endif
-	// convert num to a string
-	std::stringstream alphaNum;
-	alphaNum << num;
-	std::string number = alphaNum.str();
-	if (useAscii)
-		return number;
-
-	// format the number using the Windows API
-	if (lcid == 0)
-		lcid = LOCALE_USER_DEFAULT;
-	int outSize = ::GetNumberFormat(lcid, 0, number.c_str(), nullptr, nullptr, 0);
-	char* outBuf = new (std::nothrow) char[outSize];
-	if (outBuf == nullptr)
-		return number;
-	::GetNumberFormat(lcid, 0, number.c_str(), nullptr, outBuf, outSize);
-	std::string formattedNum(outBuf);
-	delete[] outBuf;
-	// remove the decimal
-	int decSize = ::GetLocaleInfo(lcid, LOCALE_SDECIMAL, nullptr, 0);
-	char* decBuf = new (std::nothrow) char[decSize];
-	if (decBuf == nullptr)
-		return number;
-	::GetLocaleInfo(lcid, LOCALE_SDECIMAL, decBuf, decSize);
-	size_t i = formattedNum.rfind(decBuf);
-	delete[] decBuf;
-	if (i != std::string::npos)
-		formattedNum.erase(i);
-	if (!formattedNum.length())
-		formattedNum = "0";
-	return formattedNum;
-}
 
 /**
  * WINDOWS function to check for a HOME directory
@@ -1133,114 +1230,11 @@ void ASConsole::launchDefaultBrowser(const char* filePathIn /*nullptr*/) const
 
 #else  // Linux specific
 
-/**
- * LINUX function to get the current directory.
- * This is done if the fileName does not contain a path.
- * It is probably from an editor sending a single file.
- *
- * @param fileName_     The filename is used only for  the error message.
- * @return              The path of the current directory
- */
-std::string ASConsole::getCurrentDirectory(const std::string& fileName_) const
-{
-	const char* const currdir = getenv("PWD");
-	if (currdir == nullptr)
-		error("Cannot find file", fileName_.c_str());
-	return std::string(currdir);
-}
+// Linux implementation now uses the cross-platform version defined in the Windows section
 
-/**
- * LINUX function to resolve wildcards and recurse into sub directories.
- * The fileName vector is filled with the path and names of files to process.
- *
- * @param directory     The path of the directory to be processed.
- * @param wildcards     A vector of wildcards to be processed (e.g. *.cpp).
- */
-void ASConsole::getFileNames(const std::string& directory, const std::vector<std::string>& wildcards)
-{
-	struct dirent* entry;           // entry from readdir()
-	struct stat statbuf;            // entry from stat()
-	std::vector<std::string> subDirectory;    // sub directories of this directory
 
-	// errno is defined in <errno.h> and is set for errors in opendir, readdir, or stat
-	errno = 0;
 
-	DIR* dp = opendir(directory.c_str());
-	if (dp == nullptr)
-		error(_("Cannot open directory"), directory.c_str());
-
-	// save the first fileName entry for this recursion
-	const unsigned firstEntry = fileName.size();
-
-	// save files and sub directories
-	while ((entry = readdir(dp)) != nullptr)
-	{
-		// get file status
-		std::string entryFilepath = directory + g_fileSeparator + entry->d_name;
-
-		if (stat(entryFilepath.c_str(), &statbuf) != 0)
-		{
-			if (errno == EOVERFLOW)         // file over 2 GB is OK
-			{
-				errno = 0;
-				continue;
-			}
-			perror("errno message");
-			//error("Error getting file status in directory", directory.c_str());
-			error("Error getting file status for", entryFilepath.c_str());
-		}
-		// skip hidden or read only
-		if (entry->d_name[0] == '.' || !(statbuf.st_mode & S_IWUSR))
-			continue;
-		// if a sub directory and recursive, save sub directory
-		if (S_ISDIR(statbuf.st_mode) && isRecursive)
-		{
-			if (isPathExcluded(entryFilepath))
-				printMsg(_("Exclude  %s\n"), entryFilepath.substr(mainDirectoryLength));
-			else
-				subDirectory.emplace_back(entryFilepath);
-			continue;
-		}
-
-		// if a file, save file name
-		if (S_ISREG(statbuf.st_mode))
-		{
-			// check exclude before wildcmp to avoid "unmatched exclude" error
-			bool isExcluded = isPathExcluded(entryFilepath);
-			// save file name if wildcard match
-			for (const std::string& wildcard : wildcards)
-			{
-				if (wildcmp(wildcard.c_str(), entry->d_name) != 0)
-				{
-					if (isExcluded)
-						printMsg(_("Exclude  %s\n"), entryFilepath.substr(mainDirectoryLength));
-					else
-						fileName.emplace_back(entryFilepath);
-					break;
-				}
-			}
-		}
-	}
-
-	if (closedir(dp) != 0)
-	{
-		perror("errno message");
-		error("Error reading directory", directory.c_str());
-	}
-
-	// sort the current entries for fileName
-	if (firstEntry < fileName.size())
-		sort(fileName.begin() + firstEntry, fileName.end());
-
-	// recurse into sub directories
-	// if not doing recursive, subDirectory is empty
-	if (subDirectory.size() > 1)
-		sort(subDirectory.begin(), subDirectory.end());
-	for (const auto & i : subDirectory)
-	{
-		getFileNames(i, wildcards);
-	}
-}
+// Linux implementation now uses the cross-platform version defined in the Windows section
 
 
 // LINUX function to get the documentation file path prefix
@@ -1256,78 +1250,7 @@ std::string ASConsole::getHtmlInstallPrefix() const
 	return astyleHtmlPrefix;
 }
 
-/**
- * LINUX function to get locale information and call getNumberFormat.
- * This formats positive integers only, no float.
- *
- * @param num		The number to be formatted.
- *                  size_t is for compatibility with the Windows function.
- * @return			The formatted number.
- */
-std::string ASConsole::getNumberFormat(int num, size_t /*lcid*/) const
-{
-#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__BORLANDC__) || defined(__GNUC__)
-	// Compilers that don't support C++ locales should still support this assert.
-	// The C locale should be set but not the C++.
-	// This function is not necessary if the C++ locale is set.
-	// The locale().name() return value is not portable to all compilers.
-	assert(std::locale().name() == "C");
-#endif
-
-	// get the locale info
-	struct lconv* lc;
-	lc = localeconv();
-
-	// format the number
-	return getNumberFormat(num, lc->grouping, lc->thousands_sep);
-}
-
-/**
- * LINUX function to format a number according to the current locale.
- * This formats positive integers only, no float.
- *
- * @param num			The number to be formatted.
- * @param groupingArg   The grouping string from the locale.
- * @param  separator	The thousands group separator from the locale.
- * @return				The formatted number.
- */
-std::string ASConsole::getNumberFormat(int num, const char* groupingArg, const char* separator) const
-{
-	// convert num to a string
-	std::stringstream alphaNum;
-	alphaNum << num;
-	std::string number = alphaNum.str();
-	// format the number from right to left
-	std::string formattedNum;
-	size_t ig = 0;	// grouping index
-	int grouping = groupingArg[ig];
-	int i = number.length();
-	// check for no grouping
-	if (grouping == 0)
-		grouping = number.length();
-	while (i > 0)
-	{
-		// extract a group of numbers
-		std::string group;
-		if (i < grouping)
-			group = number;
-		else
-			group = number.substr(i - grouping);
-		// update formatted number
-		formattedNum.insert(0, group);
-		i -= grouping;
-		if (i < 0)
-			i = 0;
-		if (i > 0)
-			formattedNum.insert(0, separator);
-		number.erase(i);
-		// update grouping
-		if (groupingArg[ig] != '\0'
-		        && groupingArg[ig + 1] != '\0')
-			grouping = groupingArg[++ig];
-	}
-	return formattedNum;
-}
+// Linux implementation now uses the cross-platform version defined earlier
 
 /**
  * LINUX function to check for a HOME directory
@@ -1391,9 +1314,7 @@ void ASConsole::launchDefaultBrowser(const char* filePathIn /*nullptr*/) const
 	const char* const envPaths = getenv("PATH");
 	if (envPaths == nullptr)
 		error("Cannot read PATH environment variable", "");
-	size_t envlen = strlen(envPaths);
-	char* paths = new char[envlen + 1];
-	strcpy(paths, envPaths);
+
 	// find xdg-open (usually in /usr/bin)
 	// Mac uses open instead
 #ifdef __APPLE__
@@ -1401,21 +1322,27 @@ void ASConsole::launchDefaultBrowser(const char* filePathIn /*nullptr*/) const
 #else
 	const char* fileOpen = "xdg-open";
 #endif
+
 	std::string searchPath;
-	char* searchDir = strtok(paths, ":");
-	while (searchDir != nullptr)
-	{
-		searchPath = searchDir;
-		if (!searchPath.empty()
-		        && searchPath[searchPath.length() - 1] != g_fileSeparator)
-			searchPath.append(std::string(1, g_fileSeparator));
-		searchPath.append(fileOpen);
-		if (stat(searchPath.c_str(), &statbuf) == 0 && (statbuf.st_mode & S_IFREG))
-			break;
-		searchDir = strtok(nullptr, ":");
+	std::string pathsStr(envPaths);
+	std::istringstream pathStream(pathsStr);
+	std::string token;
+
+	while (std::getline(pathStream, token, ':')) {
+		if (!token.empty()) {
+			searchPath = token;
+			if (searchPath.back() != g_fileSeparator)
+				searchPath.append(1, g_fileSeparator);
+			searchPath.append(fileOpen);
+
+			if (std::filesystem::exists(searchPath) &&
+				std::filesystem::is_regular_file(searchPath))
+				break;
+		}
+		searchPath.clear();
 	}
-	delete[] paths;
-	if (searchDir == nullptr)
+
+	if (searchPath.empty())
 		error(_("Command is not installed"), fileOpen);
 
 	// browser open will be bypassed in test programs
@@ -1475,8 +1402,7 @@ void ASConsole::getFilePaths(const std::string& filePath)
 	std::vector<std::string> targetFilenameVector;
 
 	// separate directory and file name
-	size_t separator = filePath.find_last_of(g_fileSeparator);
-	if (separator == std::string::npos)
+	if (size_t separator = filePath.find_last_of(g_fileSeparator); separator == std::string::npos)
 	{
 		// if no directory is present, use the currently active directory
 		targetDirectory = getCurrentDirectory(filePath);
@@ -1520,7 +1446,7 @@ void ASConsole::getFilePaths(const std::string& filePath)
 	if (hasWildcard)
 	{
 		printSeparatingLine();
-		printMsg(_("Directory  %s\n"), targetDirectory + g_fileSeparator + targetFilename);
+		printMsg(_("Directory  %s\n"), sanitizeForTerminal(targetDirectory + g_fileSeparator + targetFilename));
 	}
 
 	// clear exclude hits vector
@@ -1555,14 +1481,14 @@ void ASConsole::getFilePaths(const std::string& filePath)
 			if (!ignoreExcludeErrorsDisplay)
 			{
 				if (ignoreExcludeErrors)
-					printMsg(_("Exclude (unmatched)  %s\n"), excludeVector[ix]);
+					printMsg(_("Exclude (unmatched)  %s\n"), sanitizeForTerminal(excludeVector[ix]));
 				else
-					fprintf(stderr, _("Exclude (unmatched)  %s\n"), excludeVector[ix].c_str());
+					fprintf(stderr, _("Exclude (unmatched)  %s\n"), sanitizeForTerminal(excludeVector[ix]).c_str());
 			}
 			else
 			{
 				if (!ignoreExcludeErrors)
-					fprintf(stderr, _("Exclude (unmatched)  %s\n"), excludeVector[ix].c_str());
+					fprintf(stderr, _("Exclude (unmatched)  %s\n"), sanitizeForTerminal(excludeVector[ix]).c_str());
 			}
 		}
 	}
@@ -1577,7 +1503,7 @@ void ASConsole::getFilePaths(const std::string& filePath)
 	// check if files were found (probably an input error if not)
 	if (fileName.empty() && !acceptEmptyFileList)
 	{
-		fprintf(stderr, _("No file to process %s\n"), filePath.c_str());
+		fprintf(stderr, _("No file to process %s\n"), sanitizeForTerminal(filePath).c_str());
 		if (hasWildcard && !isRecursive)
 			fprintf(stderr, "%s\n", _("Did you intend to use --recursive"));
 		error();
@@ -1588,28 +1514,28 @@ void ASConsole::getFilePaths(const std::string& filePath)
 }
 
 // Check if a file exists
-bool ASConsole::fileExists(const char* file) const
+[[nodiscard]] bool ASConsole::fileExists(const char* file) const
 {
 	struct stat buf;
 	return (stat(file, &buf) == 0);
 }
 
-bool ASConsole::fileNameVectorIsEmpty() const
+[[nodiscard]] bool ASConsole::fileNameVectorIsEmpty() const
 {
 	return fileNameVector.empty();
 }
 
-bool ASConsole::isOption(const std::string& arg, const char* op)
+[[nodiscard]] bool ASConsole::isOption(const std::string& arg, const char* op)
 {
 	return arg == op;
 }
 
-bool ASConsole::isOption(const std::string& arg, const char* a, const char* b)
+[[nodiscard]] bool ASConsole::isOption(const std::string& arg, const char* a, const char* b)
 {
 	return (isOption(arg, a) || isOption(arg, b));
 }
 
-bool ASConsole::isParamOption(const std::string& arg, const char* option)
+[[nodiscard]] bool ASConsole::isParamOption(const std::string& arg, const char* option)
 {
 	bool retVal = arg.compare(0, strlen(option), option) == 0;
 	// if comparing for short option, 2nd char of arg must be numeric
@@ -1623,7 +1549,7 @@ bool ASConsole::isParamOption(const std::string& arg, const char* option)
 // used for both directories and filenames
 // updates the g_excludeHitsVector
 // return true if a match
-bool ASConsole::isPathExcluded(const std::string& subPath)
+[[nodiscard]] bool ASConsole::isPathExcluded(const std::string& subPath)
 {
 	for (size_t i = 0; i < excludeVector.size(); ++i)
 	{
@@ -1641,8 +1567,8 @@ bool ASConsole::isPathExcluded(const std::string& subPath)
 
 		if (!g_isCaseSensitive)
 		{
-			std::transform(compare.begin(), compare.end(), compare.begin(), ::tolower);
-			std::transform(exclude.begin(), exclude.end(), exclude.begin(), ::tolower);
+			std::transform(compare.begin(), compare.end(), compare.begin(), [](char c) { return static_cast<char>(::tolower(static_cast<unsigned char>(c))); });
+			std::transform(exclude.begin(), exclude.end(), exclude.begin(), [](char c) { return static_cast<char>(::tolower(static_cast<unsigned char>(c))); });
 		}
 
 		if (compare == exclude)
@@ -1723,7 +1649,7 @@ void ASConsole::printHelp() const
 	std::cout << "    If no brace style is requested, the opening braces will not be\n";
 	std::cout << "    changed and closing braces will be broken from the preceding line.\n";
 	std::cout << '\n';
-	std::cout << "    --style=allman  OR  --style=bsd  OR  --style=break  OR  -A1\n";
+	std::cout << "    --style=allman  OR  -A1\n";
 	std::cout << "    Allman style formatting/indenting.\n";
 	std::cout << "    Broken braces.\n";
 	std::cout << '\n';
@@ -1731,7 +1657,7 @@ void ASConsole::printHelp() const
 	std::cout << "    Java style formatting/indenting.\n";
 	std::cout << "    Attached braces.\n";
 	std::cout << '\n';
-	std::cout << "    --style=kr  OR  --style=k&r  OR  --style=k/r  OR  -A3\n";
+	std::cout << "    --style=kr  OR  -A3\n";
 	std::cout << "    Kernighan & Ritchie style formatting/indenting.\n";
 	std::cout << "    Linux braces.\n";
 	std::cout << '\n';
@@ -1748,7 +1674,7 @@ void ASConsole::printHelp() const
 	std::cout << "    VTK style formatting/indenting.\n";
 	std::cout << "    Broken, indented braces except for the opening braces.\n";
 	std::cout << '\n';
-	std::cout << "    --style=ratliff  OR  --style=banner  OR  -A6\n";
+	std::cout << "    --style=ratliff  OR  -A6\n";
 	std::cout << "    Ratliff style formatting/indenting.\n";
 	std::cout << "    Attached, indented braces.\n";
 	std::cout << '\n';
@@ -1756,15 +1682,15 @@ void ASConsole::printHelp() const
 	std::cout << "    GNU style formatting/indenting.\n";
 	std::cout << "    Broken braces, indented blocks.\n";
 	std::cout << '\n';
-	std::cout << "    --style=linux  OR  --style=knf  OR  -A8\n";
+	std::cout << "    --style=linux  OR  -A8\n";
 	std::cout << "    Linux style formatting/indenting.\n";
 	std::cout << "    Linux braces, minimum conditional indent is one-half indent.\n";
 	std::cout << '\n';
-	std::cout << "    --style=horstmann  OR  --style=run-in  OR  -A9\n";
+	std::cout << "    --style=horstmann  OR  -A9\n";
 	std::cout << "    Horstmann style formatting/indenting.\n";
 	std::cout << "    Run-in braces, indented switches.\n";
 	std::cout << '\n';
-	std::cout << "    --style=1tbs  OR  --style=otbs  OR  -A10\n";
+	std::cout << "    --style=1tbs  OR  -A10\n";
 	std::cout << "    One True Brace Style formatting/indenting.\n";
 	std::cout << "    Linux braces, add braces to all conditionals.\n";
 	std::cout << '\n';
@@ -1791,6 +1717,9 @@ void ASConsole::printHelp() const
 	std::cout << "    Attached opening braces and attached closing braces.\n";
 	std::cout << "    Uses keep one line statements.\n";
 	std::cout << '\n';
+	std::cout << "    --style=none\n";
+	std::cout << "    Preserve existing braces; do not reformat brace placement.\n";
+	std::cout << '\n';
 	std::cout << "Tab Options:\n";
 	std::cout << "------------\n";
 	std::cout << "    default indent option\n";
@@ -1800,6 +1729,9 @@ void ASConsole::printHelp() const
 	std::cout << "    --indent=spaces=#  OR  -s#\n";
 	std::cout << "    Indent using # spaces per indent. Not specifying #\n";
 	std::cout << "    will result in a default of 4 spaces per indent.\n";
+	std::cout << '\n';
+	std::cout << "    --indent=none\n";
+	std::cout << "    Preserve existing indentation; do not recompute indent depth.\n";
 	std::cout << '\n';
 	std::cout << "    --indent=tab  OR  --indent=tab=#  OR  -t  OR  -t#\n";
 	std::cout << "    Indent using tab characters, assuming that each\n";
@@ -1827,7 +1759,7 @@ void ASConsole::printHelp() const
 	std::cout << "    --attach-inlines  OR  -xl\n";
 	std::cout << "    Attach braces to class inline function definitions.\n";
 	std::cout << '\n';
-	std::cout << "    --attach-extern-c  OR  -xk\n";
+	std::cout << "    --attach-extern-c  OR  -xa\n";
 	std::cout << "    Attach braces to an extern \"C\" statement.\n";
 	std::cout << '\n';
 	std::cout << "    --attach-closing-while  OR  -xV\n";
@@ -1883,7 +1815,7 @@ void ASConsole::printHelp() const
 	std::cout << "    Indent line comments that start in column one.\n";
 	std::cout << '\n';
 	std::cout << "    --indent-lambda\n";
-	std::cout << "    Indent C++ lambda functions (experimental, broken for complex fct bodies)\n";
+	std::cout << "    Indent C++ lambda functions (experimental)\n";
 	std::cout << '\n';
 	std::cout << "    --min-conditional-indent=#  OR  -m#\n";
 	std::cout << "    Indent a minimal # spaces in a continuous conditional\n";
@@ -1904,9 +1836,7 @@ void ASConsole::printHelp() const
 	std::cout << "----------------\n";
 	std::cout << "    --break-blocks  OR  -f\n";
 	std::cout << "    Insert empty lines around unrelated blocks, labels, classes, ...\n";
-	std::cout << '\n';
-	std::cout << "    --break-blocks=all  OR  -F\n";
-	std::cout << "    Like --break-blocks, except also insert empty lines\n";
+	std::cout << "    --break-blocks=all  OR  -F  additionally inserts empty lines\n";
 	std::cout << "    around closing headers (e.g. 'else', 'catch', ...), structs,\n";
 	std::cout << "    and functions.\n";
 	std::cout << '\n';
@@ -1934,14 +1864,14 @@ void ASConsole::printHelp() const
 	std::cout << "    Insert space padding around parenthesis on both the outside\n";
 	std::cout << "    and the inside.\n";
 	std::cout << '\n';
-	std::cout << "    --pad-paren-out  OR  -d\n";
+	std::cout << "    --pad-paren=out  OR  -d\n";
 	std::cout << "    Insert space padding around parenthesis on the outside only.\n";
 	std::cout << '\n';
 	std::cout << "    --pad-first-paren-out  OR  -xd\n";
 	std::cout << "    Insert space padding around first parenthesis in a series on\n";
 	std::cout << "    the outside only.\n";
 	std::cout << '\n';
-	std::cout << "    --pad-paren-in  OR  -D\n";
+	std::cout << "    --pad-paren=in  OR  -D\n";
 	std::cout << "    Insert space padding around parenthesis on the inside only.\n";
 	std::cout << '\n';
 	std::cout << "    --pad-empty-paren  OR  -xo\n";
@@ -1951,23 +1881,27 @@ void ASConsole::printHelp() const
 	std::cout << "    --pad-header  OR  -H\n";
 	std::cout << "    Insert space padding after paren headers (e.g. 'if', 'for'...).\n";
 	std::cout << '\n';
-	std::cout << "    --unpad-paren  OR  -U\n";
+	std::cout << "    --pad-paren=none  OR  -U\n";
 	std::cout << "    Remove unnecessary space padding around parenthesis. This\n";
 	std::cout << "    can be used in combination with the 'pad' options above.\n";
 	std::cout << '\n';
 
 	std::cout << "    --pad-brackets\n";
-	std::cout << "    Insert space padding around square brackets on both the outside\n";
-	std::cout << "    and the inside.\n";
+	std::cout << "    Insert space padding around square brackets on both the\n";
+	std::cout << "    outside and the inside.\n";
 	std::cout << '\n';
-	std::cout << "    --pad-brackets-in\n";
-	std::cout << "    Insert space padding around square brackets on the inside only.\n";
-	std::cout << '\n';
-	std::cout << "    --pad-brackets-out\n";
+	std::cout << "    --pad-brackets=out\n";
 	std::cout << "    Insert space padding around square brackets on the outside only.\n";
 	std::cout << '\n';
-	std::cout << "    --unpad-brackets\n";
+	std::cout << "    --pad-brackets=in\n";
+	std::cout << "    Insert space padding around square brackets on the inside only.\n";
+	std::cout << '\n';
+	std::cout << "    --pad-brackets=none\n";
 	std::cout << "    Remove unnecessary space padding around square brackets.\n";
+	std::cout << '\n';
+
+	std::cout << "    --pad-semicolon=none\n";
+	std::cout << "    Remove space padding before a semicolon.\n";
 	std::cout << '\n';
 
 	std::cout << "    --delete-empty-lines  OR  -xe\n";
@@ -2012,6 +1946,18 @@ void ASConsole::printHelp() const
 	std::cout << "    --break-elseifs  OR  -e\n";
 	std::cout << "    Break 'else if()' statements into two different lines.\n";
 	std::cout << '\n';
+	std::cout << "    --break-elseifs=no-indent\n";
+	std::cout << "    Like --break-elseifs, but do not add extra indentation\n";
+	std::cout << "    to an 'if' statement that immediately follows an 'else'.\n";
+	std::cout << '\n';
+	std::cout << "    --line-between-members\n";
+	std::cout << "    Insert an empty line between class/struct method definitions\n";
+	std::cout << "    and between top-level functions. Fields are not separated.\n";
+	std::cout << '\n';
+	std::cout << "    --line-between-members=all\n";
+	std::cout << "    Same as --line-between-members, but also inserts an empty\n";
+	std::cout << "    line between consecutive field declarations.\n";
+	std::cout << '\n';
 	std::cout << "    --break-one-line-headers  OR  -xb\n";
 	std::cout << "    Break one line headers (e.g. 'if', 'while', 'else', ...) from a\n";
 	std::cout << "    statement residing on the same line.\n";
@@ -2023,16 +1969,19 @@ void ASConsole::printHelp() const
 	std::cout << "    Add one line braces to unbraced one line conditional\n";
 	std::cout << "    statements.\n";
 	std::cout << '\n';
-	std::cout << "    --remove-braces  OR  -xj\n";
-	std::cout << "    Remove braces from a braced one line conditional statements.\n";
+	std::cout << "    --remove-braces           OR  -xj\n";
+	std::cout << "    --remove-braces=one-line  OR  -xk  [experimental]\n";
+	std::cout << "    Remove braces from braced conditional statements.\n";
+	std::cout << "    With =one-line only one-line blocks are affected;\n";
+	std::cout << "    multi-line braced blocks are left unchanged.\n";
 	std::cout << '\n';
 	std::cout << "    --break-return-type       OR  -xB\n";
-	std::cout << "    --break-return-type-decl  OR  -xD\n";
+	std::cout << "    --break-return-type=decl  OR  -xD\n";
 	std::cout << "    Break the return type from the function name. Options are\n";
 	std::cout << "    for the function definitions and the function declarations.\n";
 	std::cout << '\n';
 	std::cout << "    --attach-return-type       OR  -xf\n";
-	std::cout << "    --attach-return-type-decl  OR  -xh\n";
+	std::cout << "    --attach-return-type=decl  OR  -xh\n";
 	std::cout << "    Attach the return type to the function name. Options are\n";
 	std::cout << "    for the function definitions and the function declarations.\n";
 	std::cout << '\n';
@@ -2054,9 +2003,14 @@ void ASConsole::printHelp() const
 	std::cout << "    indent the comment text one indent.\n";
 	std::cout << '\n';
 	std::cout << "    --max-code-length=#    OR  -xC#\n";
+	std::cout << "    --max-code-length-mode=code|total|ignore-side-comments\n";
 	std::cout << "    --break-after-logical  OR  -xL\n";
 	std::cout << "    max-code-length=# will break the line if it exceeds more than\n";
 	std::cout << "    # characters. The valid values are 50 thru 200.\n";
+	std::cout << "    max-code-length-mode determines how line length is measured:\n";
+	std::cout << "     'code': code only, excluding indentation (default)\n";
+	std::cout << "     'total': entire line, including indentation (experimental)\n";
+	std::cout << "     'ignore-side-comments': ignore trailing side comments (experimental)\n";
 	std::cout << "    If the line contains logical conditionals they will be placed\n";
 	std::cout << "    first on the new line. The option break-after-logical will\n";
 	std::cout << "    cause the logical conditional to be placed last on the\n";
@@ -2086,20 +2040,20 @@ void ASConsole::printHelp() const
 	std::cout << "    Insert space padding after the '-' or '+' Objective-C\n";
 	std::cout << "    method prefix.\n";
 	std::cout << '\n';
-	std::cout << "    --unpad-method-prefix  OR  -xR\n";
+	std::cout << "    --pad-method-prefix=none  OR  -xR\n";
 	std::cout << "    Remove all space padding after the '-' or '+' Objective-C\n";
 	std::cout << "    method prefix.\n";
 	std::cout << '\n';
 	std::cout << "    --pad-return-type  OR  -xq\n";
 	std::cout << "    Insert space padding after the Objective-C return type.\n";
 	std::cout << '\n';
-	std::cout << "    --unpad-return-type  OR  -xr\n";
+	std::cout << "    --pad-return-type=none  OR  -xr\n";
 	std::cout << "    Remove all space padding after the Objective-C return type.\n";
 	std::cout << '\n';
 	std::cout << "    --pad-param-type  OR  -xS\n";
 	std::cout << "    Insert space padding after the Objective-C param type.\n";
 	std::cout << '\n';
-	std::cout << "    --unpad-param-type  OR  -xs\n";
+	std::cout << "    --pad-param-type=none  OR  -xs\n";
 	std::cout << "    Remove all space padding after the Objective-C param type.\n";
 	std::cout << '\n';
 	std::cout << "    --align-method-colon  OR  -xM\n";
@@ -2120,7 +2074,7 @@ void ASConsole::printHelp() const
 	std::cout << "    --suffix=none  OR  -n\n";
 	std::cout << "    Do not retain a backup of the original file.\n";
 	std::cout << '\n';
-	std::cout << "    --recursive  OR  -r  OR  -R\n";
+	std::cout << "    --recursive  OR  -r\n";
 	std::cout << "    Process subdirectories recursively.\n";
 	std::cout << '\n';
 	std::cout << "    --dry-run\n";
@@ -2128,6 +2082,10 @@ void ASConsole::printHelp() const
 	std::cout << '\n';
 	std::cout << "    --error-on-changes\n";
 	std::cout << "    With --dry-run: Report any file reformat as error.\n";
+	std::cout << '\n';
+	std::cout << "    --include=####\n";
+	std::cout << "    Specify a file pattern #### to be formatted (from options file).\n";
+	std::cout << "    Used when no files are given on the command line.\n";
 	std::cout << '\n';
 	std::cout << "    --exclude=####\n";
 	std::cout << "    Specify a file or directory #### to be excluded from processing.\n";
@@ -2149,7 +2107,7 @@ void ASConsole::printHelp() const
 	std::cout << '\n';
 	std::cout << "    --preserve-date  OR  -Z\n";
 	std::cout << "    Preserve the original file's date and time modified. The time\n";
-	std::cout << "     modified will be changed a few micro seconds to force a compile.\n";
+	std::cout << "    modified will be changed a few micro seconds to force a compile.\n";
 	std::cout << '\n';
 	std::cout << "    --verbose  OR  -v\n";
 	std::cout << "    Verbose mode. Extra informational messages will be displayed.\n";
@@ -2190,7 +2148,7 @@ void ASConsole::printHelp() const
 	std::cout << "    --version  OR  -V\n";
 	std::cout << "    Print version number.\n";
 	std::cout << '\n';
-	std::cout << "    --help  OR  -h  OR  -?\n";
+	std::cout << "    --help  OR  -h\n";
 	std::cout << "    Print this help message.\n";
 	std::cout << '\n';
 	std::cout << "    --html  OR  -! (deprecated)\n";
@@ -2409,6 +2367,33 @@ void ASConsole::processOptions(const std::vector<std::string>& argvOptions)
 		}
 	}
 
+	// auto-detect local project options file from CWD when no --project was specified
+	if (shouldParseProjectOptionFile && projectOptionFileName.empty())
+	{
+		std::string cwd = getCurrentDirectory("");
+		// skip if CWD is the home directory to avoid double-loading the same file
+		const char* const homeEnv = getenv("HOME");
+		bool cwdIsHome = (homeEnv != nullptr && cwd == std::string(homeEnv));
+		if (!cwdIsHome)
+		{
+			std::string name = cwd + g_fileSeparator + ".astylerc";
+			if (fileExists(name.c_str()))
+			{
+				standardizePath(name);
+				setProjectOptionFileName(name);
+			}
+			else
+			{
+				name = cwd + g_fileSeparator + "_astylerc";
+				if (fileExists(name.c_str()))
+				{
+					standardizePath(name);
+					setProjectOptionFileName(name);
+				}
+			}
+		}
+	}
+
 	ASOptions options(formatter, *this);
 	if (!optionFileName.empty())
 	{
@@ -2468,6 +2453,10 @@ void ASConsole::processOptions(const std::vector<std::string>& argvOptions)
 		(*errorStream) << _("For help on options type 'astyle -h'") << '\n';
 		error();
 	}
+
+	// use --include patterns as file arguments when no files were given on the command line
+	if (fileNameVector.empty() && !includeVector.empty())
+		fileNameVector = includeVector;
 }
 
 // remove a file and check for an error
@@ -2561,10 +2550,10 @@ void ASConsole::printVerboseHeader() const
 	printf("%s", header.c_str());
 	// print option files
 	if (!optionFileName.empty())
-		printf(_("Default option file  %s\n"), optionFileName.c_str());
+		printf(_("Default option file  %s\n"), sanitizeForTerminal(optionFileName).c_str());
 
 	if (!projectOptionFileName.empty())
-		printf(_("Project option file  %s\n"), projectOptionFileName.c_str());
+		printf(_("Project option file  %s\n"), sanitizeForTerminal(projectOptionFileName).c_str());
 }
 
 void ASConsole::printVerboseStats(clock_t startTime) const
@@ -2624,6 +2613,11 @@ void ASConsole::updateExcludeVector(const std::string& suffixParam)
 	standardizePath(excludeVector.back(), true);
 	// do not use emplace_back on vector<bool> until supported by macOS
 	excludeHitsVector.push_back(false);
+}
+
+void ASConsole::addIncludePattern(const std::string& pattern)
+{
+	includeVector.emplace_back(pattern);
 }
 
 int ASConsole::waitForRemove(const char* newFileName) const
@@ -2719,26 +2713,59 @@ void ASConsole::writeFile(const std::string& fileName_, FileEncoding encoding, s
 		renameFile(fileName_.c_str(), origFileName.c_str(), "Cannot create backup file");
 	}
 
-	// write the output file
-	std::ofstream fout(fileName_.c_str(), std::ios::binary | std::ios::trunc);
-	if (!fout)
-		error("Cannot open output file", fileName_.c_str());
+	// build the output bytes, converting to utf-16 if required
+	std::string outStr = out.str();
 	if (encoding == UTF_16LE || encoding == UTF_16BE)
 	{
 		// convert utf-8 to utf-16
 		bool isBigEndian = (encoding == UTF_16BE);
-		size_t utf16Size = encode.utf16LengthFromUtf8(out.str().c_str(), out.str().length());
+		size_t utf16Size = encode.utf16LengthFromUtf8(outStr.c_str(), outStr.length());
 		char* utf16Out = new char[utf16Size];
-		size_t utf16Len = encode.utf8ToUtf16(const_cast<char*>(out.str().c_str()),
-		                                     out.str().length(), isBigEndian, utf16Out);
+		size_t utf16Len = encode.utf8ToUtf16(const_cast<char*>(outStr.c_str()),
+		                                     outStr.length(), isBigEndian, utf16Out);
 		assert(utf16Len <= utf16Size);
-		fout << std::string(utf16Out, utf16Len);
+		outStr.assign(utf16Out, utf16Len);
 		delete[] utf16Out;
 	}
-	else
-		fout << out.str();
 
+	// Write the output file without following a symbolic link. A crafted symlink
+	// at fileName_ could otherwise redirect this truncating write to an arbitrary
+	// file the user can write to. This is exploitable with --suffix=none, where no
+	// backup rename first moves the link aside.
+#ifdef _WIN32
+	if (std::filesystem::is_symlink(std::filesystem::symlink_status(fileName_)))
+		error("Will not write through a symbolic link", fileName_.c_str());
+	std::ofstream fout(fileName_.c_str(), std::ios::binary | std::ios::trunc);
+	if (!fout)
+		error("Cannot open output file", fileName_.c_str());
+	fout.write(outStr.data(), static_cast<std::streamsize>(outStr.length()));
+	if (!fout)
+		error("Cannot write output file", fileName_.c_str());
 	fout.close();
+#else
+	// O_NOFOLLOW makes the refusal atomic with the open, closing the TOCTOU race:
+	// if fileName_ is a symlink the open fails (errno ELOOP) instead of following it.
+	mode_t createMode = statErr ? 0644 : (stBuf.st_mode & 0777);
+	int fd = open(fileName_.c_str(), O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW, createMode);
+	if (fd == -1)
+		error("Cannot open output file", fileName_.c_str());
+	const char* writePtr = outStr.data();
+	size_t remaining = outStr.length();
+	while (remaining != 0)
+	{
+		ssize_t written = write(fd, writePtr, remaining);
+		if (written < 0)
+		{
+			if (errno == EINTR)
+				continue;
+			close(fd);
+			error("Cannot write output file", fileName_.c_str());
+		}
+		writePtr += written;
+		remaining -= static_cast<size_t>(written);
+	}
+	close(fd);
+#endif
 
 	// change date modified to original file date
 	// Embarcadero must be linked with cw32mt not cw32
@@ -2903,14 +2930,11 @@ ASOptions::ASOptions(ASFormatter& formatterArg, ASConsole& consoleArg)
 bool ASOptions::parseOptions(std::vector<std::string>& optionsVector)
 {
 	std::vector<std::string>::iterator option;
-	std::string arg;
 	std::string subArg;
 	optionErrors.clear();
 
-	for (option = optionsVector.begin(); option != optionsVector.end(); ++option)
+	for (const auto &arg : optionsVector)
 	{
-		arg = *option;
-
 		if (arg.compare(0, 2, "--") == 0)
 			parseOption(arg.substr(2));
 		else if (arg[0] == '-')
@@ -2920,8 +2944,8 @@ bool ASOptions::parseOptions(std::vector<std::string>& optionsVector)
 			for (i = 1; i < arg.length(); ++i)
 			{
 				if (i > 1
-				        && isalpha((unsigned char) arg[i])
-				        && arg[i - 1] != 'x')
+					&& isalpha((unsigned char) arg[i])
+					&& arg[i - 1] != 'x')
 				{
 					// parse the previous option in subArg
 					parseOption(subArg);
@@ -3010,6 +3034,11 @@ void ASOptions::parseOption(const std::string& arg)
 	else if (isOption(arg, "A12", "style=lisp") || isOption(arg, "style=python"))
 	{
 		formatter.setFormattingStyle(STYLE_LISP);
+	}
+	else if (isOption(arg, "style=none"))
+	{
+		formatter.setFormattingStyle(STYLE_NONE);
+		formatter.setPreserveBraceFormat(true);
 	}
 	// must check for mode=cs before mode=c !!!
 	else if (isOption(arg, "mode=cs"))
@@ -3110,6 +3139,10 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		formatter.setSpaceIndentation(4);
 	}
+	else if (isOption(arg, "indent=none"))
+	{
+		formatter.setPreserveIndent(true);
+	}
 	else if (isParamOption(arg, "xt", "indent-continuation="))
 	{
 		int contIndent = 1;
@@ -3202,7 +3235,7 @@ void ASOptions::parseOption(const std::string& arg)
 		formatter.setParensOutsidePaddingMode(true);
 		formatter.setParensInsidePaddingMode(true);
 	}
-	else if (isOption(arg, "d", "pad-paren-out"))
+	else if (isOption(arg, "d", "pad-paren-out") || isOption(arg, "pad-paren=out"))
 	{
 		formatter.setParensOutsidePaddingMode(true);
 	}
@@ -3214,7 +3247,7 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		formatter.setEmptyParensPaddingMode(true);
 	}
-	else if (isOption(arg, "D", "pad-paren-in"))
+	else if (isOption(arg, "D", "pad-paren-in") || isOption(arg, "pad-paren=in"))
 	{
 		formatter.setParensInsidePaddingMode(true);
 	}
@@ -3222,7 +3255,11 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		formatter.setParensHeaderPaddingMode(true);
 	}
-	else if (isOption(arg, "U", "unpad-paren"))
+	else if (isOption(arg, "unpad-semicolon") || isOption(arg, "pad-semicolon=none"))
+	{
+		formatter.setSemicolonUnPaddingMode(true);
+	}
+	else if (isOption(arg, "U", "unpad-paren") || isOption(arg, "pad-paren=none"))
 	{
 		formatter.setParensUnPaddingMode(true);
 	}
@@ -3286,9 +3323,22 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		formatter.setBreakBlocksMode(true);
 	}
+	else if (isOption(arg, "break-elseifs=no-indent"))
+	{
+		formatter.setBreakElseIfsMode(true);
+		formatter.setNoIndentIfAfterElseMode(true);
+	}
 	else if (isOption(arg, "e", "break-elseifs"))
 	{
 		formatter.setBreakElseIfsMode(true);
+	}
+	else if (isOption(arg, "line-between-members=all"))
+	{
+		formatter.setLineBetweenAllMembersMode(true);
+	}
+	else if (isOption(arg, "line-between-members"))
+	{
+		formatter.setLineBetweenMembersMode(true);
 	}
 	else if (isOption(arg, "xb", "break-one-line-headers"))
 	{
@@ -3305,6 +3355,10 @@ void ASOptions::parseOption(const std::string& arg)
 	else if (isOption(arg, "xj", "remove-braces"))
 	{
 		formatter.setRemoveBracesMode(true);
+	}
+	else if (isOption(arg, "xk", "remove-braces=one-line"))
+	{
+		formatter.setRemoveOneLineBracesMode(true);
 	}
 	else if (isOption(arg, "Y", "indent-col1-comments"))
 	{
@@ -3394,6 +3448,19 @@ void ASOptions::parseOption(const std::string& arg)
 		else
 			formatter.setMaxCodeLength(maxLength);
 	}
+	else if (isParamOption(arg, "max-code-length-mode="))
+	{
+		std::string mode = getParam(arg, "max-code-length-mode=");
+		if (mode == "code" )
+			formatter.setMaxCodeLengthMode(MAXCODELENGTH_CODE);
+		else if (mode == "total" )
+			formatter.setMaxCodeLengthMode(MAXCODELENGTH_TOTAL);
+		else if (mode == "ignore-side-comments" )
+			formatter.setIgnoreSideCommentLengths(true);
+		else
+			isOptionError(arg);
+	}
+
 	else if (isOption(arg, "xL", "break-after-logical"))
 	{
 		formatter.setBreakAfterMode(true);
@@ -3406,7 +3473,7 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		formatter.setAttachClosingWhile(true);
 	}
-	else if (isOption(arg, "xk", "attach-extern-c"))
+	else if (isOption(arg, "xa", "attach-extern-c"))
 	{
 		formatter.setAttachExternC(true);
 	}
@@ -3426,7 +3493,7 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		formatter.setBreakReturnType(true);
 	}
-	else if (isOption(arg, "xD", "break-return-type-decl"))
+	else if (isOption(arg, "xD", "break-return-type-decl") || isOption(arg, "break-return-type=decl"))
 	{
 		formatter.setBreakReturnTypeDecl(true);
 	}
@@ -3434,7 +3501,7 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		formatter.setAttachReturnType(true);
 	}
-	else if (isOption(arg, "xh", "attach-return-type-decl"))
+	else if (isOption(arg, "xh", "attach-return-type-decl") || isOption(arg, "attach-return-type=decl"))
 	{
 		formatter.setAttachReturnTypeDecl(true);
 	}
@@ -3456,7 +3523,7 @@ bool ASOptions::parseOptionContinued(const std::string& arg)
 	{
 		formatter.setMethodPrefixPaddingMode(true);
 	}
-	else if (isOption(arg, "xR", "unpad-method-prefix"))
+	else if (isOption(arg, "xR", "unpad-method-prefix") || isOption(arg, "pad-method-prefix=none"))
 	{
 		formatter.setMethodPrefixUnPaddingMode(true);
 	}
@@ -3464,7 +3531,7 @@ bool ASOptions::parseOptionContinued(const std::string& arg)
 	{
 		formatter.setReturnTypePaddingMode(true);
 	}
-	else if (isOption(arg, "xr", "unpad-return-type"))
+	else if (isOption(arg, "xr", "unpad-return-type") || isOption(arg, "pad-return-type=none"))
 	{
 		formatter.setReturnTypeUnPaddingMode(true);
 	}
@@ -3472,7 +3539,7 @@ bool ASOptions::parseOptionContinued(const std::string& arg)
 	{
 		formatter.setParamTypePaddingMode(true);
 	}
-	else if (isOption(arg, "xs", "unpad-param-type"))
+	else if (isOption(arg, "xs", "unpad-param-type") || isOption(arg, "pad-param-type=none"))
 	{
 		formatter.setParamTypeUnPaddingMode(true);
 	}
@@ -3523,6 +3590,14 @@ bool ASOptions::parseOptionContinued(const std::string& arg)
 		std::string suffixParam = getParam(arg, "exclude=");
 		if (!suffixParam.empty())
 			console.updateExcludeVector(suffixParam);
+	}
+	else if (isParamOption(arg, "include="))
+	{
+		std::string pattern = getParam(arg, "include=");
+		if (pattern.empty())
+			isOptionError(arg);
+		else
+			console.addIncludePattern(pattern);
 	}
 	else if (isOption(arg, "r", "R") || isOption(arg, "recursive"))
 	{
@@ -3608,15 +3683,15 @@ bool ASOptions::parseOptionContinued(const std::string& arg)
 		formatter.setBracketsOutsidePaddingMode(true);
 		formatter.setBracketsInsidePaddingMode(true);
 	}
-	else if (isOption(arg, "pad-brackets-in"))
+	else if (isOption(arg, "pad-brackets-in") || isOption(arg, "pad-brackets=in"))
 	{
 		formatter.setBracketsInsidePaddingMode(true);
 	}
-	else if (isOption(arg, "pad-brackets-out"))
+	else if (isOption(arg, "pad-brackets-out") || isOption(arg, "pad-brackets=out"))
 	{
 		formatter.setBracketsOutsidePaddingMode(true);
 	}
-	else if (isOption(arg, "unpad-brackets"))
+	else if (isOption(arg, "unpad-brackets") || isOption(arg, "pad-brackets=none"))
 	{
 		formatter.setBracketsUnPaddingMode(true);
 	}
@@ -3710,7 +3785,9 @@ void ASOptions::isOptionError(const std::string& arg)
 {
 	if (optionErrors.str().empty())
 		optionErrors << "Invalid Artistic Style options:" << '\n';   // need main error message
-	optionErrors << "\t" << arg << '\n';
+	// arg is the raw user-supplied option string; strip control characters so a
+	// malicious option cannot inject terminal escape sequences when displayed.
+	optionErrors << "\t" << sanitizeForTerminal(arg) << '\n';
 }
 
 bool ASOptions::isParamOption(const std::string& arg, const char* option)
@@ -4204,7 +4281,8 @@ extern "C" EXPORT char* STDCALL AStyleMain(const char* pSourceIn,		// the source
 		}
 	}
 
-	size_t textSizeOut = out.str().length();
+	std::string textOut = out.str();
+	size_t textSizeOut = textOut.length();
 	char* pTextOut = fpMemoryAlloc((long) textSizeOut + 1);     // call memory allocation function
 	if (pTextOut == nullptr)
 	{
@@ -4212,7 +4290,9 @@ extern "C" EXPORT char* STDCALL AStyleMain(const char* pSourceIn,		// the source
 		return nullptr;
 	}
 
-	strcpy(pTextOut, out.str().c_str());
+	// memcpy with the known length so any embedded NUL bytes are preserved;
+	// strcpy would truncate the output at the first NUL.
+	memcpy(pTextOut, textOut.c_str(), textSizeOut + 1);
 #ifndef NDEBUG
 	// The checksum is an assert in the console build and ASFormatter.
 	// This error returns the incorrectly formatted file to the editor.

@@ -121,6 +121,8 @@ REGSAM reg_aux_getaccess(lua_State *L, int i, REGSAM def){
 				acc |= KEY_WOW64_64KEY;
 				break;
 			}
+			lua_error_invalid_option(L, i);
+			break;
 #endif
 #ifdef KEY_WOW64_32KEY
 			case '3': if(*++psz == '2') {
@@ -128,6 +130,8 @@ REGSAM reg_aux_getaccess(lua_State *L, int i, REGSAM def){
 				acc |= KEY_WOW64_32KEY;
 				break;
 			}
+			lua_error_invalid_option(L, i);
+			break;
 #endif
 			default : lua_error_invalid_option(L, i);
 			}
@@ -418,7 +422,7 @@ void reg_aux_pusheregluadata(lua_State *L, PVOID pdata, size_t cdata, DWORD dwTy
 		{
 			luaL_Buffer b;
 			luaL_buffinitsize(L, &b, cdata);
-			int i = 0; while (i < cdata) {
+			size_t i = 0; while (i < cdata) {
 				char buff[4] = { 0 };
 				sprintf_s(buff, sizeof(buff), "%02X ", (byte)(((const char*)pdata)[i++]));
 				luaL_addstring(&b, buff);

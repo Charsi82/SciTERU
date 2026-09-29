@@ -1,23 +1,19 @@
 #ifndef LUAARGS_H
 #define LUAARGS_H
 
-
 #include "lua.hpp"
-
 
 //------------------------------------------------------------------------------
 
 struct Refs;
 
 //------------------------------------------------------------------------------
-class LuaArgs {
+class LuaArgs
+{
 	lua_State* L;
 	int tbl;
 	int origin;
 	Refs* refs;
-
-private:
-	LuaArgs();
 	const char* scopy(int idx);
 	const char* scopy(const char* src);
 	const char* sref(int idx);

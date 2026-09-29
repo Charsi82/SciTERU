@@ -265,21 +265,101 @@ end
 		&nbsp;&nbsp;Проверяет существование файла или папки с указанным именем.<br />
 	<br />
 	<b>Параметры:</b><br />
-		&nbsp;&nbsp;<dfn>strFileName</dfn> - имя файла или папки<br />
+		&nbsp;&nbsp;<dfn>strFileNameOrPathName</dfn> - путь к файлу или папке<br />
 		<br />
-	<b>Возвращаемое значение:</b><br />
+	<b>Возвращаемые значения:</b><br />
 		&nbsp;&nbsp;содержит <var>true</var> если файл (папка) существует, либо <var>false</var> в противном случае<br />
+		&nbsp;&nbsp;содержит <var>true</var> если указан путь к папке, либо <var>false</var> в противном случае<br />
 	</p>
 		<p><b>Пример использования:</b></p>
 		<div class="example">
-		local result = shell.fileexists("c:\\MSDOS.SYS")<br />
-		if result then<br />
-		&nbsp;&nbsp;print("Файл существует")<br />
+		local exist, is_dir = shell.fileexists("c:\\MSDOS.SYS")<br />
+		if exist then<br />
+		&nbsp;&nbsp;print("Путь найден, "..(is_dir and "это папка" or "это не папка"))<br />
 		else<br />
-		&nbsp;&nbsp;print("Файл отсутствует")<br />
+		&nbsp;&nbsp;print("Путь не найден")<br />
 		end
 		</div>
 	<p class="author">Автор: VladVRO</p>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="pathexists">pathexists (strDirName)</dfn>
+	</p>
+	<p>
+	<b>Описание:</b><br />
+		&nbsp;&nbsp;Проверяет существование папки с указанным именем.<br />
+	<br />
+	<b>Параметры:</b><br />
+		&nbsp;&nbsp;<dfn>strDirName</dfn> - имя папки<br />
+		<br />
+	<b>Возвращаемое значение:</b><br />
+		&nbsp;&nbsp;содержит <var>true</var> если папка существует, либо <var>false</var> в противном случае<br />
+	</p>
+		<p><b>Пример использования:</b></p>
+		<div class="example">
+		local result = shell.pathexists("c:\\")<br />
+		if result then<br />
+		&nbsp;&nbsp;print("Папка существует")<br />
+		else<br />
+		&nbsp;&nbsp;print("Папка отсутствует")<br />
+		end
+		</div>
+	<p class="author">Автор: VladVRO</p>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="play_sound">play_sound (strWavName)</dfn>
+	</p>
+	<p>
+	<b>Описание:</b><br />
+		&nbsp;&nbsp;Воспроизводит указанный wav файл.<br />
+	<br />
+	<b>Параметры:</b><br />
+		&nbsp;&nbsp;<dfn>strWavName</dfn> - путь к wav файлу<br />
+		<br />
+	<b>Возвращаемое значение:</b><br />
+		&nbsp;&nbsp;<var>true</var> если воспроизведение успешно, либо <var>false</var> в противном случае<br />
+	</p>
+		<p><b>Пример использования:</b></p>
+		<div class="example">
+		local result = shell.play_sound("c:\\windows\\media\\ring03.wav")<br />
+		if result then<br />
+		&nbsp;&nbsp;print("Файл воспроизводится")<br />
+		else<br />
+		&nbsp;&nbsp;print("Файл недоступен")<br />
+		end
+		</div>
+	<p class="author">Автор: Charsi</p>
+</td></tr>
+
+<tr><td>
+	<p class="head">
+		<dfn id="beep">beep (soundFreq, duration)</dfn>
+	</p>
+	<p>
+	<b>Описание:</b><br />
+		&nbsp;&nbsp;Воспроизводит звуковой сигнал указанной частоты и длительности.<br />
+	<br />
+	<b>Параметры:</b><br />
+		&nbsp;&nbsp;<dfn>soundFreq</dfn> - частота звука от 20 до 32767 Гц<br />
+		&nbsp;&nbsp;<dfn>duration</dfn> - длительность звука от 0 до 1000 миллисекунд<br />
+		<br />
+	<b>Возвращаемое значение:</b><br />
+		&nbsp;&nbsp;<var>true</var> если воспроизведение успешно, либо <var>false</var> в противном случае<br />
+	</p>
+		<p><b>Пример использования:</b></p>
+		<div class="example">
+		local result = shell.beep(1000, 200)<br />
+		if result then<br />
+		&nbsp;&nbsp;print("звук воспроизводится")<br />
+		else<br />
+		&nbsp;&nbsp;print("что-то пошло не так")<br />
+		end
+		</div>
+	<p class="author">Автор: Charsi</p>
 </td></tr>
 
 <tr><td>
